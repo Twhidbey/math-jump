@@ -375,7 +375,8 @@ function buildArena(idx, easy = false) {
   // Bonking the keypad block opens the number pad.
   const padC = narrow ? 5 : 7;
   map[GR - 4][padC] = 'K';
-  L.arena = { q: def.gen(), padC, wait: 0 };
+  // Fights take turns: a 'dodge' phase where the boss attacks, then an 'open' phase where it is dizzy and you answer.
+  L.arena = { q: def.gen(), padC, wait: 0, phase: 'dodge', phaseT: 150 };
   const sp = BOSS_SPECS[W.boss.kind];
   L.boss = {
     ...W.boss, spec: sp, max: W.boss.hp, x: (cols - 4) * T, y: GR * T - sp.h, w: sp.w, h: sp.h,
@@ -625,7 +626,7 @@ function coinPop(c, r) {
 
 // ---------------------------------------------------------------- game logic
 function currentStation() {
-  if (L.arena) return L.arena.wait || L.boss.dying || L.boss.dead ? null : L.arena;
+  if (L.arena) return L.arena.phase !== 'open' || L.arena.wait || L.boss.dying || L.boss.dead ? null : L.arena;
   return L.stations.find(s => !s.solved) || null;
 }
 function findAnswer(c, r) {
@@ -703,6 +704,7 @@ function answer(c, r) {
 
 function nextBossQuestion() {
   const ar = L.arena; ar.q = nextQ(ar.q.text); ar.wait = 0;
+  startDodge();
 }
 
 // ---------------------------------------------------------------- boss answer pop-up
@@ -740,7 +742,7 @@ function tickPad(dt) {
   if (padLeft <= padTick && padTick > 0) { tone(1000, 0.06, 'square', 0.04); padTick--; }
   if (padLeft <= 0) {
     closePad();
-    const ar = L.arena; G.streak = 0; ar.q = freshQ(ar.q.text); L.boss.atk = 1;
+    const ar = L.arena; G.streak = 0; ar.q = freshQ(ar.q.text); startDodge(); L.boss.atk = 1;
     sfx.wrong(); floatText(P.x + P.w / 2, P.y - 20, 'Too slow! New question...', '#ff9a3c', 26);
   }
 }
@@ -757,7 +759,7 @@ function pickAnswer(i) {
     floatText(cx, cy - 20, ar.q.retry ? 'You remembered it!' : 'Shuriken!', '#ffd23f', 28);
   } else {
     G.mistakes++; G.streak = 0; remember(ar.q);
-    ar.q = freshQ(ar.q.text);
+    ar.q = freshQ(ar.q.text); startDodge(); L.boss.atk = 1;
     sfx.wrong(); floatText(cx, cy - 20, 'Oops! New question...', '#ff6b6b', 26);
   }
 }
@@ -874,6 +876,27 @@ function bossAttack(b) {
   sfx.attack();
 }
 
+const DODGE_FRAMES = () => (prog.easy ? 200 : 260);
+const OPEN_FRAMES = () => (prog.easy ? 900 : 600);
+function startDodge() {
+  const ar = L.arena; ar.phase = 'dodge'; ar.phaseT = DODGE_FRAMES(); L.boss.atk = 30;
+}
+function updateArena() {
+  const ar = L.arena, b = L.boss;
+  if (!ar || b.dying || b.dead || ar.wait) return;
+  if (--ar.phaseT > 0) return;
+  if (ar.phase === 'dodge') {
+    // The boss tires out: clear its attacks and open a window to answer.
+    ar.phase = 'open'; ar.phaseT = OPEN_FRAMES();
+    for (const p of L.proj) burst(p.x, p.y, '#ffffff', 5, 2);
+    L.proj = [];
+    floatText(b.x + b.w / 2, b.y - 16, 'Dizzy!', '#ffd23f', 28); sfx.gate();
+  } else {
+    floatText(b.x + b.w / 2, b.y - 16, 'Back on guard!', '#ff9a3c', 24);
+    startDodge();
+  }
+}
+
 function updateBoss() {
   const b = L.boss; if (!b || b.dead) return;
   if (b.dying > 0) {
@@ -887,15 +910,17 @@ function updateBoss() {
   }
   b.t++; if (b.flash > 0) b.flash--;
   b.vy = Math.min(b.vy + 0.55, 12);
+  const dizzy = L.arena.phase === 'open';
+  b.face = P.x + P.w / 2 < b.x + b.w / 2 ? -1 : 1;
+  if (dizzy) { moveY(b); return; }   // a dizzy boss stands still and can't hurt you
   if (b.x <= b.minX) b.vx = Math.abs(b.vx); else if (b.x >= b.maxX) b.vx = -Math.abs(b.vx);
   const vx0 = b.vx;
   if (moveX(b)) b.vx = -vx0;
   moveY(b);
   if (b.spec.hop && b.onGround && b.t % b.spec.hop === 0) b.vy = -10;
-  b.face = P.x + P.w / 2 < b.x + b.w / 2 ? -1 : 1;
   if (mode === 'play' && --b.atk <= 0) {
     bossAttack(b);
-    b.atk = b.spec.every * (prog.easy ? 1.6 : 1) * (0.8 + Math.random() * 0.4);
+    b.atk = b.spec.every * 0.8 * (prog.easy ? 1.6 : 1) * (0.8 + Math.random() * 0.4);
   }
   if (mode === 'play' && overlap(P, b)) hurt();
 }
@@ -1014,7 +1039,7 @@ function update() {
   G.time++;
   if (mode === 'play') { updatePlayer(); updateEnemies(); }
   else if (mode === 'win') { updateWin(); updateEnemies(); }
-  if (mode === 'play' || mode === 'win') { updateBoss(); if (L.boss) updateShotsAndProjectiles(); }
+  if (mode === 'play' || mode === 'win') { updateBoss(); if (L.boss) { updateArena(); updateShotsAndProjectiles(); } }
   updateGates();
   for (const [k, v] of G.bumps) { if (v <= 1) G.bumps.delete(k); else G.bumps.set(k, v - 1); }
   for (const p of G.parts) {
@@ -1481,6 +1506,12 @@ function drawBoss() {
   if (b.flash > 0 && Math.floor(b.flash / 3) % 2) return;
   const box = { x: b.x + (b.dying ? (Math.random() - 0.5) * 6 : 0), y: b.y, w: b.w, h: b.h };
   drawBaked(BOSS_SPR[b.kind], Math.floor(b.t / 12) % 2 ? 'b' : 'a', b.face > 0, box);
+  if (L.arena.phase === 'open' && !b.dying && !L.arena.wait) {
+    for (let k = 0; k < 3; k++) {
+      const a = tick * 0.08 + k * 2.09;
+      drawShuriken(b.x + b.w / 2 + Math.cos(a) * b.w * 0.45, b.y - 12 + Math.sin(a) * 6, tick * 0.2, '#ffd23f', '#b8860b', 7);
+    }
+  }
 }
 
 function drawProjectiles() {
@@ -1563,7 +1594,7 @@ function drawHUD() {
   const cur = currentStation(), by = narrow ? 92 : 10;   // banner sits below the hearts on narrow screens
   let txt;
   if (cur) txt = cur.q.text + ' = ?';
-  else if (L.boss) txt = L.boss.dead || L.boss.dying ? 'Grab the scroll!' : 'Nice hit!';
+  else if (L.boss) txt = L.boss.dead || L.boss.dying ? 'Grab the scroll!' : L.arena.wait ? 'Nice hit!' : `Dodge! ${Math.ceil(L.arena.phaseT / 60)}`;
   else txt = 'Run to the flag!';
   ctx.font = 'bold 38px "Trebuchet MS", sans-serif';
   const w = Math.max(240, ctx.measureText(txt).width + 50);
@@ -1580,7 +1611,12 @@ function drawHUD() {
       ctx.fillStyle = i < b.hp ? '#ff3355' : '#3a1a22';
       ctx.fillRect(bx + i * segW + 1, by + 94, segW - 2, 10);
     }
-    if (currentStation()) hudText('Bonk the keypad block to answer', VW / 2, by + 124, 15, '#fff', 'center');
+    if (currentStation()) {
+      hudText('Attack now! Bonk the keypad block', VW / 2, by + 124, 15, '#ffd23f', 'center');
+      const f = L.arena.phaseT / OPEN_FRAMES(), ww = 160;
+      ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(VW / 2 - ww / 2, by + 136, ww, 5);
+      ctx.fillStyle = '#ffd23f'; ctx.fillRect(VW / 2 - ww / 2, by + 136, ww * f, 5);
+    } else if (!L.boss.dying && !L.boss.dead && !L.arena.wait) hudText('Jump over the attacks!', VW / 2, by + 124, 15, '#fff', 'center');
   } else {
     const done = L.stations.filter(s => s.solved).length;
     hudText(cur ? `Bonk the right answer!  (${done}/${L.stations.length})` : `All ${L.stations.length} gates open!`, VW / 2, by + 80, 16, '#fff', 'center');
@@ -1636,7 +1672,7 @@ function startStage(i) {
   hide('menu');
   if (st.boss) {
     intro(`BOSS: ${W.boss.name}`, `<p class="taunt">“${W.boss.taunt}”</p>
-      <p>Bonk the right answer to throw a shuriken! Jump over the attacks.</p>`, 'Fight!');
+      <p>First <b>dodge</b> the attacks. When the boss gets dizzy, bonk the keypad block and pick the right answer to throw a shuriken!</p>`, 'Fight!');
   } else if (!prog.seenWorld[st.w]) {
     prog.seenWorld[st.w] = true; save();
     intro(`World ${st.w + 1}: ${W.name}`, `<p>${W.intro}</p>`, "Let's go!");
