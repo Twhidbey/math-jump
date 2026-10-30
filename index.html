@@ -116,6 +116,10 @@
   .skill { position: relative; }
   .skill.grade { box-shadow: inset 0 0 0 2px rgba(91,200,120,.8); }
   .gtag { position: absolute; top: -9px; left: 8px; background: #2ecc71; color: #08321a; font-size: 11px; font-weight: 800; border-radius: 999px; padding: 1px 7px; }
+  .autobtn { font: inherit; font-size: 15px; color: #fff; background: rgba(255,255,255,.08); border: 3px solid transparent; border-radius: 999px; padding: 6px 14px; cursor: pointer; margin: 0 auto 8px; display: block; }
+  .autobtn.on { border-color: #2ecc71; background: rgba(46,204,113,.18); }
+  .levelup { border-color: #2ecc71 !important; }
+  .mathchip .dots { color: #8a5a00; letter-spacing: 1px; font-size: 14px; }
   .homebar { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; margin: 4px 0 2px; }
   .mathchip { font: inherit; font-weight: 800; font-size: 18px; color: #3a2200; background: #ffd23f; border: none; border-bottom: 4px solid #b8860b;
     border-radius: 999px; padding: 8px 18px; cursor: pointer; }
@@ -265,6 +269,7 @@
   <div class="card shopcard">
     <h2>Pick your math</h2>
     <div class="shophint">Harder math ★ earns more gems and belt points!</div>
+    <button class="autobtn" id="autoBtn" type="button"></button>
     <div class="tabs" id="skillTabs"></div>
     <div class="skillgrid" id="skillGrid"></div>
     <div class="row"><button class="btn alt" id="skillsClose" type="button">Back</button></div>
@@ -426,6 +431,34 @@ const SKILLS = [
 ];
 SKILLS.find(k => k.id === 'dmix').gen = () => { const n = R(2, 10), k = R(1, 10); return mk(n * k, '÷', n, k); };
 const SKILL = Object.fromEntries(SKILLS.map(k => [k.id, k]));
+// Auto mode walks this path: two great rounds (0 or 1 wrong) on a skill moves the player to the next one.
+const PATH = ['add5', 'add10', 'sub10', 'make10', 'add20', 'sub20', 'addtens', 'subtens', 'add2d1d', 'sub2d1d', 'add2d', 'sub2d',
+  'x2', 'x5', 'x10', 'x3', 'x4', 'xmix25', 'd2', 'd5', 'd10', 'x6', 'x7', 'x8', 'x9', 'xmix69', 'd3', 'd4', 'd6', 'd7', 'd8', 'd9',
+  'x11', 'x12', 'xtens', 'xall', 'dmix'];
+const GOOD_NEEDED = 2;
+// In auto mode about 1 question in 5 reviews a skill the player already moved past.
+function genFor(skill) {
+  const at = PATH.indexOf(skill.id);
+  if (!prog.auto || skill.id !== prog.skill || at < 1) return skill.gen;
+  const review = PATH.slice(Math.max(0, at - 4), at).filter(id => (prog.good[id] || 0) >= GOOD_NEEDED);
+  return () => (review.length && Math.random() < 0.2 ? SKILL[review[Math.floor(Math.random() * review.length)]].gen() : skill.gen());
+}
+// Called at the end of a level, boss or race. Returns what to tell the player, or '' when auto is off.
+function pathRound(skill, wrong) {
+  if (!prog.auto || skill.id !== prog.skill || !PATH.includes(skill.id)) return '';
+  const great = wrong <= 1, next = PATH[PATH.indexOf(skill.id) + 1];
+  if (great) prog.good[skill.id] = (prog.good[skill.id] || 0) + 1;
+  const have = Math.min(prog.good[skill.id] || 0, GOOD_NEEDED);
+  if (great && have >= GOOD_NEEDED && next) {
+    prog.skill = next; save(); sfx.win();
+    return `<div class="promo levelup">🎉 <b>Math level up!</b> You mastered <b>${skill.name}</b>.<br>Next up: <b>${SKILL[next].name}</b> <span class="tier">${stars(SKILL[next].tier)}</span></div>`;
+  }
+  save();
+  const dots = `<span class="dots">${'●'.repeat(have)}${'○'.repeat(GOOD_NEEDED - have)}</span>`;
+  if (!next && have >= GOOD_NEEDED) return `<p>🧭 You've finished the whole math path. Amazing, ninja!</p>`;
+  return great ? `<p>🧭 ${skill.name} ${dots} One more great round to move up!</p>`
+    : `<p>🧭 ${skill.name} ${dots} Finish with 0 or 1 wrong to move up.</p>`;
+}
 const SKILL_CATS = [['add', '➕ Add'], ['sub', '➖ Take away'], ['mul', '✖️ Times'], ['div', '➗ Divide']];
 const TIER_GEMS = [1, 1.5, 2, 2.5, 3];   // harder math pays more gems
 const stars = t => '★'.repeat(t) + '☆'.repeat(5 - t);
@@ -488,7 +521,7 @@ function walkerFor(kind, c, speed) {
 function buildLevel(idx, easy = false, skill = curSkill()) {
   const def = STAGES[idx], W = WORLDS[def.w], rng = mulberry32(1234 + idx * 7919);
   const map = newMap();
-  const L = { idx, def, skill, gen: skill.gen, world: W, sky: W.skies[def.k], map, w: 0, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [], flagC: 0, castleC: 0, boss: null, proj: [] };
+  const L = { idx, def, skill, gen: genFor(skill), world: W, sky: W.skies[def.k], map, w: 0, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [], flagC: 0, castleC: 0, boss: null, proj: [] };
   const addCols = n => { for (let i = 0; i < n; i++) { for (let r = 0; r < ROWS; r++) map[r].push('.'); L.w++; } return L.w - n; };
   const flat = n => {
     const s = addCols(n);
@@ -607,7 +640,7 @@ const BOSS_SPECS = {
 function buildArena(idx, easy = false, skill = curSkill()) {
   const def = STAGES[idx], W = WORLDS[def.w], map = newMap(), narrow = VW < 700, cols = narrow ? 18 : 27;
   for (let c = 0; c < cols; c++) { for (let r = 0; r < ROWS; r++) map[r].push('.'); map[GR][c] = '#'; map[GR + 1][c] = '#'; }
-  const L = { idx, def, skill, gen: skill.gen, world: W, sky: W.skies[2], map, w: cols, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [1, cols - 4], flagC: -99, castleC: -99, proj: [] };
+  const L = { idx, def, skill, gen: genFor(skill), world: W, sky: W.skies[2], map, w: cols, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [1, cols - 4], flagC: -99, castleC: -99, proj: [] };
   // Bonking the keypad block opens the number pad.
   const padC = narrow ? 5 : 7;
   map[GR - 4][padC] = 'K';
@@ -929,9 +962,9 @@ const GRADES = [
   { id: 'K', name: 'Kindergarten', skill: 'add5', easy: true, picks: ['add5', 'add10', 'make10', 'sub10'] },
   { id: '1', name: '1st grade', skill: 'add10', easy: true, picks: ['add10', 'make10', 'sub10', 'add20', 'sub20', 'addtens'] },
   { id: '2', name: '2nd grade', skill: 'add20', easy: null, picks: ['add20', 'sub20', 'addtens', 'subtens', 'add2d1d', 'sub2d1d', 'add2d', 'sub2d', 'x2', 'x5', 'x10'] },
-  { id: '3', name: '3rd grade', skill: 'xmix25', easy: null, picks: ['x2', 'x5', 'x10', 'x3', 'x4', 'x6', 'x7', 'x8', 'x9', 'xmix25', 'xmix69', 'd2', 'd5', 'd10', 'd3', 'd4', 'add2d', 'sub2d'] },
-  { id: '4', name: '4th grade', skill: 'xmix69', easy: null, picks: ['xmix69', 'xall', 'xtens', 'x11', 'x12', 'd6', 'd7', 'd8', 'd9', 'dmix'] },
-  { id: '5', name: '5th grade +', skill: 'xall', easy: null, picks: ['xall', 'xtens', 'x11', 'x12', 'dmix'] },
+  { id: '3', name: '3rd grade', skill: 'x2', easy: null, picks: ['x2', 'x5', 'x10', 'x3', 'x4', 'x6', 'x7', 'x8', 'x9', 'xmix25', 'xmix69', 'd2', 'd5', 'd10', 'd3', 'd4', 'add2d', 'sub2d'] },
+  { id: '4', name: '4th grade', skill: 'x6', easy: null, picks: ['xmix69', 'xall', 'xtens', 'x11', 'x12', 'd6', 'd7', 'd8', 'd9', 'dmix'] },
+  { id: '5', name: '5th grade +', skill: 'xmix69', easy: null, picks: ['xall', 'xtens', 'x11', 'x12', 'dmix'] },
 ];
 const GRADE = Object.fromEntries(GRADES.map(g => [g.id, g]));
 const PLAYER_ICONS = ['🥷', '🐯', '🐼', '🦊', '🐸', '🐲', '🦄', '🐵', '🦖'];
@@ -940,7 +973,7 @@ try { const s = JSON.parse(localStorage.getItem(PLAYERS_KEY)); if (s && s.list &
 const keyFor = id => (id === 'p1' ? SAVE_KEY : `${SAVE_KEY}:${id}`);
 const curPlayer = () => players.list.find(x => x.id === players.cur) || players.list[0];
 function savePlayers() { try { localStorage.setItem(PLAYERS_KEY, JSON.stringify(players)); } catch (e) { /* no storage */ } }
-const freshProg = () => ({ best: {}, skill: 'add10', ride: 'panda', track: 'cherry', mastery: {}, easy: null, allOpen: false, seenIntro: false, seenWorld: {}, bank: 0, music: true,
+const freshProg = () => ({ best: {}, skill: 'add10', ride: 'panda', track: 'cherry', mastery: {}, easy: null, allOpen: false, seenIntro: false, seenWorld: {}, bank: 0, music: true, auto: true, good: {},
   badges: {}, golden: {}, stats: { bridges: 0, gems: 0 },
   owned: ['band-red', 'suit-navy'], equip: { band: 'band-red', suit: 'suit-navy', trail: null, pet: null }, raceBest: {} });
 let prog;
@@ -1339,15 +1372,24 @@ function bridgeStone(c, r) {
   for (const b of L.bridges) for (const st of b.stones) {
     if (st.c !== c || st.r !== r) continue;
     if (b.done || st.state === 'used') { sfx.bump(); return; }
-    if (st.state === 'carried') { st.state = 'home'; G.carry = null; sfx.bump(); return; }   // bonk again to put it back
-    if (G.carry) G.carry.stone.state = 'home';
-    st.state = 'carried'; G.carry = { b, stone: st };
-    sfx.coin(); floatText(c * T + T / 2, r * T - 10, `Got ${st.val}`, '#fff', 22);
+    if (st.state === 'carried') {   // bonk it again to put it back
+      st.state = 'home'; G.carry.stones = G.carry.stones.filter(t => t !== st); if (!G.carry.stones.length) G.carry = null;
+      sfx.bump(); floatText(c * T + T / 2, r * T - 10, `Put back ${st.val}`, '#ccc', 20); return;
+    }
+    if (G.carry && G.carry.b !== b) dropCarry();
+    if (!G.carry) G.carry = { b, stones: [] };
+    if (G.carry.stones.length >= 4) { sfx.bump(); floatText(c * T + T / 2, r * T - 10, 'Hands full!', '#ff6b6b', 20); return; }
+    st.state = 'carried'; G.carry.stones.push(st);
+    const sum = G.carry.stones.reduce((a, t) => a + t.val, 0);
+    sfx.coin(); floatText(c * T + T / 2, r * T - 10, G.carry.stones.length > 1 ? `Holding ${sum}` : `Got ${st.val}`, '#fff', 22);
     return;
   }
 }
+function dropCarry() { if (G.carry) { G.carry.stones.forEach(t => { t.state = 'home'; }); G.carry = null; } }
+// Everything being carried goes on the altar at once.
 function placeStone(b) {
-  const st = G.carry.stone; G.carry = null; st.state = 'used'; b.total += st.val;
+  const held = G.carry.stones; G.carry = null;
+  held.forEach(t => { t.state = 'used'; b.total += t.val; });
   const x = b.altarC * T + T / 2, y = (GR - 2) * T;
   if (b.total === b.target) {
     b.done = true; shake(8, 4); award('bridge');
@@ -1406,7 +1448,7 @@ function fell() {
   // In Easy mode a fall (only possible at a bridge) costs no heart.
   if (prog.easy) sfx.bump();
   else { G.hearts--; G.hit = true; sfx.hurt(); if (G.hearts <= 0) { gameOver(); return; } }
-  if (G.carry) { G.carry.stone.state = 'home'; G.carry = null; }
+  dropCarry();
   P.x = G.checkpoint; P.y = GR * T - P.h; P.vx = P.vy = 0; P.inv = 100;
 }
 function gameOver() {
@@ -1695,6 +1737,7 @@ function finishLevel() {
   if (dots === 3) award('gold-medal');
   if (sk.tier >= 4) award('brave');
   if (G.practice.size) body += `<p>Facts to practice: <b>${[...G.practice.values()].map(qSolved).join(' &nbsp;·&nbsp; ')}</b></p>`;
+  body += pathRound(sk, G.mistakes);
   if (after.idx > before.idx) body += `<div class="promo">${beltHTML(after)} &nbsp;New belt! You earned the <b>${after.name} Belt</b>!</div>`;
   const btns = [];
   const wolfOffer = i === 0 && !prog.owned.includes('pet-wolf');
@@ -1840,7 +1883,8 @@ function startRace() {
   const curves = [];
   for (let i = 0; i < Math.ceil(length / SEG) + DRAW + 10; i++) curves.push(Math.sin(i / 45) * 2.4 + Math.sin(i / 113) * 1.8);
   const gates = [];
-  for (let i = 0; i < GATES; i++) { const q = topic.gen(); gates.push({ z: START_Z + i * GATE_GAP, q, opts: shuffle(choices(q, 3)), done: false }); }
+  const tg = genFor(topic);
+  for (let i = 0; i < GATES; i++) { const q = tg(); gates.push({ z: START_Z + i * GATE_GAP, q, opts: shuffle(choices(q, 3)), done: false }); }
   const slow = prog.easy ? 0.82 : 1;   // Easy mode: everyone rides slower, so there is more time to think
   RC = {
     topic, length, curves, gates, z: 0, speed: 0, cruise: 4600 * slow, maxSpeed: 8200 * slow, boost: 3000 * slow,
@@ -1918,6 +1962,7 @@ function finishRace() {
     const medal = ['🥇', '🥈', '🥉', '🐎'][r.place - 1];
     let body = `<div class="bigicon">${medal}</div><p>Time <b>${r.time.toFixed(1)} s</b>${best ? ' · <b>New best!</b>' : ` · Best ${prev.toFixed(1)} s`}<br>
       Right answers <b>${r.right} / ${GATES}</b></p><p>💎 +${reward} gems for the Dojo Shop (you have <b>${prog.bank}</b>)</p>`;
+    body += pathRound(r.topic, GATES - r.right);
     if (r.missed.size) body += `<p>Facts to practice: <b>${[...r.missed.values()].map(qSolved).join(' &nbsp;·&nbsp; ')}</b></p>`;
     showMsg(['1st place!', '2nd place!', '3rd place!', '4th place'][r.place - 1], body, [
       { label: 'Race again', fn: startRace, primary: true },
@@ -2934,12 +2979,17 @@ function drawPlayer() {
     ctx.strokeStyle = `rgba(125,249,255,${0.5 + 0.3 * Math.sin(tick * 0.2)})`; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(p.x + p.w / 2, p.y + p.h / 2, 34, 0, 7); ctx.stroke();
   }
-  if (G.carry) {
-    const sx = p.x + p.w / 2 - 15, sy = p.y - 34;
-    ctx.fillStyle = '#4a5266'; rrect(sx, sy, 30, 26, 6); ctx.fill(); ctx.fillStyle = '#9aa3b5'; rrect(sx + 2, sy + 2, 26, 22, 5); ctx.fill();
-    ctx.fillStyle = '#1f2433'; ctx.font = `bold ${G.carry.stone.val >= 100 ? 13 : 17}px "Trebuchet MS", sans-serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(G.carry.stone.val, p.x + p.w / 2, sy + 14);
+  if (G.carry) {   // the stones stack up over the ninja's head, with the sum on top
+    const st = G.carry.stones, n = st.length, sum = st.reduce((a, t) => a + t.val, 0);
+    st.forEach((t, k) => {
+      const sx = p.x + p.w / 2 - 15, sy = p.y - 34 - k * 27;
+      ctx.fillStyle = '#4a5266'; rrect(sx, sy, 30, 26, 6); ctx.fill(); ctx.fillStyle = '#9aa3b5'; rrect(sx + 2, sy + 2, 26, 22, 5); ctx.fill();
+      ctx.fillStyle = '#1f2433'; ctx.font = `bold ${t.val >= 100 ? 13 : 17}px "Trebuchet MS", sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t.val, p.x + p.w / 2, sy + 14);
+    });
+    if (n > 1) hudText(`${st.map(t => t.val).join(' + ')} = ${sum}`, p.x + p.w / 2, p.y - 46 - (n - 1) * 27, 17, '#ffd23f', 'center');
   }
+
 }
 
 function drawParticles() {
@@ -3048,7 +3098,7 @@ function drawHUD() {
   } else if (L.vault) {
     hudText('Grab the gems, then take the exit door', VW / 2, by + 80, 16, '#fff', 'center');
   } else if (br) {
-    hudText(`Bonk number stones, carry them to the altar · so far ${br.total}`, VW / 2, by + 80, 16, '#fff', 'center');
+    hudText(`Bonk stones to pick up (one or more), carry to the altar · so far ${br.total}${G.carry ? ` · holding ${G.carry.stones.reduce((a, t) => a + t.val, 0)}` : ''}`, VW / 2, by + 80, 16, '#fff', 'center');
   } else {
     const done = L.stations.filter(s => s.solved).length;
     hudText(cur ? `Bonk the right answer!  (${done}/${L.stations.length})` : `All ${L.stations.length} gates open!`, VW / 2, by + 80, 16, '#fff', 'center');
@@ -3139,7 +3189,10 @@ function buildMenu() {
   const pts = totalPoints(), b = beltFor(pts), k = curSkill();
   $('rank').innerHTML = `${beltHTML(b)} <span><b>${b.name} Belt</b> · ${pts} pts</span>`;
   const me = curPlayer(); $('playerChip').textContent = `${me.icon} ${me.name} ▾`;
-  $('skillChip').innerHTML = `🧮 ${k.name} <span class="tier">${stars(k.tier)}</span> ✎`;
+  const have = Math.min(prog.good[k.id] || 0, GOOD_NEEDED);
+  $('skillChip').innerHTML = prog.auto && PATH.includes(k.id)
+    ? `🧭 ${k.name} <span class="tier">${stars(k.tier)}</span> <span class="dots">${'●'.repeat(have)}${'○'.repeat(GOOD_NEEDED - have)}</span> ✎`
+    : `🧮 ${k.name} <span class="tier">${stars(k.tier)}</span> ✎`;
   $('bankMenu').textContent = `${prog.bank}💎`;
   $('badgeMenu').textContent = `${BADGES.filter(x => prog.badges[x.id]).length}/${BADGES.length}`;
   const box = $('worlds'); box.innerHTML = '';
@@ -3179,6 +3232,8 @@ function openSkills(then) {
   hide('menu'); hide('msg'); renderSkills(); show('skills');
 }
 function renderSkills() {
+  $('autoBtn').innerHTML = prog.auto ? '🧭 Auto: <b>on</b> · moves up after 2 great rounds' : '🧭 Auto: <b>off</b> · tap to move up by itself';
+  $('autoBtn').classList.toggle('on', prog.auto);
   $('skillTabs').innerHTML = '';
   for (const [cat, label] of SKILL_CATS) {
     const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.className = cat === skillTab ? 'on' : '';
@@ -3203,7 +3258,7 @@ function showHowTo() {
     ${row('🕹️', isTouch ? 'Use ◀ ▶ to run and ▲ to jump.' : 'Arrow keys or A / D to run, Space or ↑ to jump, P to pause.')}
     ${row('⛩️', 'Jump up and bonk the block with the right answer to open each gate.')}
     ${row('💎', 'Grab gems: green = 1, blue = 5, red = 10. Spend them in the Dojo Shop.')}
-    ${row('🌉', 'Bridges: bonk number stones and carry them to the altar to make the exact number.')}
+    ${row('🌉', 'Bridges: bonk number stones to pick them up (you can carry up to 4) and take them to the altar to make the exact number. Bonk a stone again to put it back.')}
     ${row('👹', 'Bosses: dodge first. When the boss is dizzy, bonk the keypad block and pick the answer.')}
     ${row('🧮', 'Pick any math for any level. Harder math ★ earns more gems and belt points.')}
     ${row('🐣', 'Easy mode (in Settings): no holes, slower enemies, more time and 5 hearts.')}</div>`,
@@ -3311,6 +3366,7 @@ $('easyBtn').onclick = () => setEasy(!prog.easy);
 $('unlockBtn').onclick = () => setAllOpen(!prog.allOpen);
 $('storyBtn').onclick = () => { hide('settings'); showStory(() => { hide('msg'); show('menu'); }); };
 $('skillChip').onclick = () => { audio(); openSkills(toMenu); };
+$('autoBtn').onclick = () => { audio(); prog.auto = !prog.auto; save(); renderSkills(); };
 // ---------------------------------------------------------------- players
 let editing = null, pickGrade = null, pickIcon = null;
 function showPlayers() {
