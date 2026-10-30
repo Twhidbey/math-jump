@@ -126,12 +126,40 @@
   .autobtn.on { border-color: #2ecc71; background: rgba(46,204,113,.18); }
   .levelup { border-color: #2ecc71 !important; }
   .mathchip .dots { color: #8a5a00; letter-spacing: 1px; font-size: 14px; }
+  .dojobtn { font: inherit; font-weight: 800; font-size: 18px; color: #fff; background: #e8590c; border: none; border-bottom: 4px solid #a33d06; border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+  .dojobtn.done { background: #5a4a3a; border-bottom-color: #3a2e24; }
+  .factcard { width: min(640px, 100%); }
+  .factnav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 4px 0 10px; }
+  .factnav .btn { padding: 6px 14px; margin: 0; }
+  #fbTitle { font-weight: 800; font-size: 18px; }
+  #fbTitle small { display: block; font-weight: 400; font-size: 14px; opacity: .85; }
+  .factgrid { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-height: 46vh; overflow-y: auto; margin-bottom: 10px; }
+  .ft { display: inline-block; border-radius: 8px; padding: 4px 8px; font-weight: 800; font-size: 15px; background: rgba(255,255,255,.08); color: #aab; }
+  .ft.weak { background: rgba(255,90,90,.25); color: #ffb3b3; }
+  .ft.silver { background: #c9ccd6; color: #2a2a3a; }
+  .ft.gold { background: #ffd23f; color: #3a2200; }
+  .factlegend { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
+  .factlegend .ft { font-size: 12px; }
+  .tablegrid { display: grid; gap: 2px; margin: 0 auto 10px; max-width: 420px; }
+  .tablegrid span { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; border-radius: 3px; background: rgba(255,255,255,.08); color: #aab; }
+  .tablegrid span.h { background: none; color: #ffd23f; font-size: 13px; }
+  .tablegrid span.weak { background: rgba(255,90,90,.35); color: #fff; }
+  .tablegrid span.silver { background: #c9ccd6; color: #2a2a3a; }
+  .tablegrid span.gold { background: #ffd23f; color: #3a2200; }
+  .winrow { font-size: 26px; letter-spacing: 4px; margin: 10px 0; }
+  .expert { color: #7df9ff; font-size: 14px; margin-bottom: 8px; }
+  .ttag { position: absolute; top: -10px; right: 6px; font-size: 18px; }
+  .padkeys.keypad { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 300px; margin: 0 auto; }
+  .padkeys .ok { background: #2ecc71 !important; color: #08321a !important; }
+  .dojotop { display: flex; justify-content: space-between; font-size: 18px; margin-bottom: 8px; }
+  #djKeys button.right { background: #2ecc71; color: #08321a; }
+  #djKeys button.wrong { background: #e74c3c; color: #fff; }
   .homebar { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; margin: 4px 0 2px; }
   .mathchip { font: inherit; font-weight: 800; font-size: 18px; color: #3a2200; background: #ffd23f; border: none; border-bottom: 4px solid #b8860b;
     border-radius: 999px; padding: 8px 18px; cursor: pointer; }
   .mathchip .tier, .mathline .tier { color: #d35400; letter-spacing: 1px; }
   .mathline .tier { color: #ffd23f; }
-  .iconrow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; width: min(560px, 100%); margin: 6px 0 4px; }
+  .iconrow { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; width: min(620px, 100%); margin: 6px 0 4px; }
   .ibtn { font: inherit; font-weight: 800; font-size: 13px; color: #fff; background: rgba(255,255,255,.1); border: none; border-radius: 14px;
     padding: 8px 2px; cursor: pointer; display: grid; justify-items: center; gap: 2px; }
   .ibtn span { font-size: 26px; line-height: 1; }
@@ -215,11 +243,13 @@
   <div class="homebar">
     <button class="pchip" id="playerChip" type="button"></button>
     <button class="mathchip" id="skillChip" type="button"></button>
+    <button class="dojobtn" id="dojoBtn" type="button"></button>
     <div class="rank" id="rank"></div>
   </div>
   <div class="iconrow">
     <button class="ibtn" id="raceBtn" type="button"><span>🐎</span>Race</button>
     <button class="ibtn" id="shopBtn" type="button"><span>🏯</span>Shop <b id="bankMenu">0</b></button>
+    <button class="ibtn" id="factBtn" type="button"><span>📒</span>Facts</button>
     <button class="ibtn" id="badgeBtn" type="button"><span>🏅</span>Badges <b id="badgeMenu"></b></button>
     <button class="ibtn" id="settingsBtn" type="button"><span>⚙️</span>Settings</button>
     <button class="ibtn" id="helpBtn" type="button"><span>❓</span>How to</button>
@@ -312,6 +342,26 @@
 
 <div id="toast" class="hidden"></div>
 
+<div id="facts" class="overlay hidden">
+  <div class="card factcard">
+    <h2>📒 Fact Book</h2>
+    <div class="factnav"><button class="btn alt" id="fbPrev" type="button">◀</button><div id="fbTitle"></div><button class="btn alt" id="fbNext" type="button">▶</button></div>
+    <div id="fbBody"></div>
+    <div class="factlegend"><span class="ft new">new</span><span class="ft weak">practice</span><span class="ft silver">got it</span><span class="ft gold">mastered</span></div>
+    <div class="row"><button class="btn" id="fbClose" type="button">Done</button></div>
+  </div>
+</div>
+
+<div id="dojo" class="overlay hidden">
+  <div class="card padcard dojocard">
+    <div class="dojotop"><b>🔥 Daily Dojo</b><span id="djProg"></span></div>
+    <div class="fusebar"><i id="djFuse"></i></div>
+    <div class="padq" id="djQ"></div>
+    <div class="padkeys" id="djKeys"></div>
+    <div class="padmsg" id="djMsg"></div>
+  </div>
+</div>
+
 <div id="pad" class="overlay hidden">
   <div class="card padcard">
     <div class="fusebar"><i id="fuse"></i></div>
@@ -397,7 +447,7 @@ const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 // and never repeats one of the last few problems across a reshuffle.
 const deck = make => {
   let pile = [], recent = [];
-  return () => {
+  const g = () => {
     if (!pile.length) pile = shuffle(make());
     const size = make().length;
     const key = q => (q.op === '×' ? [q.a, q.b].sort((x, y) => x - y).join('×') : q.text);   // 7 × 5 and 5 × 7 are the same fact
@@ -407,6 +457,8 @@ const deck = make => {
     recent = [key(q), ...recent].slice(0, Math.max(1, Math.min(8, size - 2)));
     return { ...q };
   };
+  g.all = make;
+  return g;
 };
 const pairs = (as, bs, ok) => as.flatMap(a => bs.filter(b => ok(a, b)).map(b => [a, b]));
 const plus = (a, b) => mk(a, '+', b, a + b), minus = (a, b) => mk(a, '−', b, a - b);
@@ -486,32 +538,92 @@ SKILLS.push(
 );
 SKILLS.find(k => k.id === 'dmix').gen = () => { const n = R(2, 10), k = R(1, 10); return mk(n * k, '÷', n, k); };
 const SKILL = Object.fromEntries(SKILLS.map(k => [k.id, k]));
+// The mixed tables pick at random, but still have a fixed set of facts for the Fact Book.
+SKILL.xall.gen.all = () => pairs(range(2, 12), range(2, 12), (a, b) => a <= b).map(([a, b]) => mk(a, '×', b, a * b));
+SKILL.dmix.gen.all = () => pairs(range(2, 10), range(1, 10), () => true).map(([n, k]) => mk(n * k, '÷', n, k));
 // Auto mode walks this path: two great rounds (0 or 1 wrong) on a skill moves the player to the next one.
 const PATH = ['add5', 'add10', 'sub10', 'make10', 'add20', 'sub20', 'addtens', 'tskip', 'subtens', 'tmissadd', 'add2d1d', 'sub2d1d', 'add2d', 'sub2d', 'tbal',
   'x2', 'x5', 'x10', 'x3', 'x4', 'xmix25', 'd2', 'd5', 'd10', 'x6', 'x7', 'x8', 'x9', 'xmix69', 'tmissmul', 'd3', 'd4', 'd6', 'd7', 'd8', 'd9', 'tmissdiv',
   'x11', 'x12', 'tpattern', 'xtens', 'xall', 'tbalmul', 'dmix'];
-const GOOD_NEEDED = 2;
-// In auto mode about 1 question in 5 reviews a skill the player already moved past.
+// Every fact a player answers is remembered: right on the first try and fast (silver), and again on
+// another day (gold, mastered). A miss makes it a fact to practice. A skill is learned when 90% of its
+// facts are silver or gold; that moves auto mode up. Skills without a fixed list of facts (big numbers,
+// Think) use the last 10 answers instead: 9 right and fast means learned.
+const today = () => { const d = new Date(); return Math.floor((d.getTime() - d.getTimezoneOffset() * 60000) / 864e5); };
+const factKey = q => ((q.op === '×' || q.op === '+') && !q.missing ? [q.a, q.b].sort((x, y) => x - y).join(` ${q.op} `) : q.text);
+const factCache = {};
+function factList(k) {
+  if (k.cat === 'think' || !k.gen.all) return null;
+  return factCache[k.id] || (factCache[k.id] = [...new Map(k.gen.all().map(q => [factKey(q), q])).values()]);
+}
+function factStatus(key) {
+  const f = prog.facts[key];
+  if (!f) return 'new';
+  if (f.weak) return 'weak';
+  return f.days.length >= 2 ? 'gold' : f.days.length ? 'silver' : 'new';
+}
+function noteFact(q, right, fast, skill) {
+  if (!q || q.op === 'room') return;
+  const key = factKey(q), d = today();
+  const { retry, review, ...keep } = q;
+  const f = prog.facts[key] || (prog.facts[key] = { q: keep, days: [], ok: 0, miss: 0, last: d });
+  f.last = d;
+  if (right && fast) { f.ok++; f.weak = false; if (!f.days.includes(d)) f.days = [...f.days, d].slice(-3); }
+  else if (!right) { f.miss++; f.weak = true; f.days = []; }
+  if (skill && !review && !factList(skill)) {
+    const w = prog.win[skill.id] || (prog.win[skill.id] = []);
+    w.push(right && fast ? d : 0); if (w.length > 10) w.shift();
+  }
+}
+function skillProgress(k) {
+  const list = factList(k);
+  if (list) {
+    const st = list.map(q => factStatus(factKey(q))), n = list.length;
+    const learned = st.filter(x => x === 'silver' || x === 'gold').length, gold = st.filter(x => x === 'gold').length;
+    return { list, st, n, learned, gold, done: learned >= Math.ceil(n * 0.9), allGold: gold === n, mature: learned >= n * 0.6 };
+  }
+  const w = prog.win[k.id] || [], good = w.filter(Boolean), days = new Set(good).size;
+  return { n: 10, learned: good.length, gold: good.length >= 9 && days >= 2 ? 10 : 0, done: good.length >= 9, allGold: good.length >= 9 && days >= 2, mature: good.length >= 6, win: w };
+}
+// Facts to bring back: missed ones first, then ones learned on an earlier day that are due again.
+function reviewPool(exclude) {
+  const d = today();
+  return Object.entries(prog.facts).filter(([k, f]) => k !== exclude && (f.weak || (f.days.length === 1 && f.days[0] < d) || (f.days.length >= 2 && d - f.last >= 4))).map(([, f]) => f);
+}
+// In auto mode about 1 question in 5 is a review: a fact to practice, or one due again.
 function genFor(skill) {
-  const at = PATH.indexOf(skill.id);
-  if (!prog.auto || skill.id !== prog.skill || at < 1) return skill.gen;
-  const review = PATH.slice(Math.max(0, at - 4), at).filter(id => (prog.good[id] || 0) >= GOOD_NEEDED);
-  return () => (review.length && Math.random() < 0.2 ? SKILL[review[Math.floor(Math.random() * review.length)]].gen() : skill.gen());
+  if (!prog.auto || skill.id !== prog.skill) return skill.gen;
+  return () => {
+    if (Math.random() < 0.2) {
+      const pool = reviewPool();
+      if (pool.length) return { ...pool[R(0, pool.length - 1)].q, review: true };
+    }
+    return skill.gen();
+  };
+}
+// Mastering every fact of a skill (all gold) earns a trophy and gems.
+function checkTrophies() {
+  for (const k of SKILLS) {
+    if (prog.trophies[k.id] || !skillProgress(k).allGold) continue;
+    prog.trophies[k.id] = true; prog.bank += 25; save();
+    $('toast').innerHTML = `<span>🏆</span> Mastered: <b>${k.name}</b> · +25 💎`;
+    show('toast'); clearTimeout(toastTimer); toastTimer = setTimeout(() => hide('toast'), 3600);
+    [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.2, 'triangle', 0.05, null, 0.1 + i * 0.1));
+  }
 }
 // Called at the end of a level, boss or race. Returns what to tell the player, or '' when auto is off.
-function pathRound(skill, wrong) {
+function pathRound(skill) {
+  checkTrophies();
   if (!prog.auto || skill.id !== prog.skill || !PATH.includes(skill.id)) return '';
-  const great = wrong <= 1, next = PATH[PATH.indexOf(skill.id) + 1];
-  if (great) prog.good[skill.id] = (prog.good[skill.id] || 0) + 1;
-  const have = Math.min(prog.good[skill.id] || 0, GOOD_NEEDED);
-  if (great && have >= GOOD_NEEDED && next) {
+  const pr = skillProgress(skill), next = PATH[PATH.indexOf(skill.id) + 1];
+  if (pr.done && next) {
     prog.skill = next; save(); sfx.win();
     return `<div class="promo levelup">🎉 New math: <b>${SKILL[next].name}</b></div>`;
   }
   save();
-  if (!next && have >= GOOD_NEEDED) return '';
-  return `<span title="${great ? 'One more great round to move up' : 'Get 0 or 1 wrong to move up'}">🧭 ${'●'.repeat(have)}${'○'.repeat(GOOD_NEEDED - have)}</span>`;
+  return pr.done ? '' : `<span title="Facts learned">📒 ${pr.learned}/${pr.n}</span>`;
 }
+
 const SKILL_CATS = [['add', '➕ Add'], ['sub', '➖ Take away'], ['mul', '✖️ Times'], ['div', '➗ Divide'], ['think', '🧩 Think']];
 const TIER_GEMS = [1, 1.5, 2, 2.5, 3];   // harder math pays more gems
 const stars = t => '★'.repeat(t) + '☆'.repeat(5 - t);
@@ -574,7 +686,7 @@ function walkerFor(kind, c, speed) {
 function buildLevel(idx, easy = false, skill = curSkill()) {
   const def = STAGES[idx], W = WORLDS[def.w], rng = mulberry32(1234 + idx * 7919);
   const map = newMap();
-  const L = { idx, def, skill, gen: genFor(skill), world: W, sky: W.skies[def.k], map, w: 0, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [], flagC: 0, castleC: 0, boss: null, proj: [] };
+  const L = { idx, def, skill, gen: genFor(skill), expert: skillProgress(skill).mature, world: W, sky: W.skies[def.k], map, w: 0, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [], flagC: 0, castleC: 0, boss: null, proj: [] };
   const addCols = n => { for (let i = 0; i < n; i++) { for (let r = 0; r < ROWS; r++) map[r].push('.'); L.w++; } return L.w - n; };
   const flat = n => {
     const s = addCols(n);
@@ -650,8 +762,8 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     if (i === 2 || (i === 5 && def.w >= 2)) bridgeChunk();
     if (i === doorAt) doorChunk();
     // Question station: sign, three answer blocks, and a locked gate.
-    const s = flat(16), q = skill.gen();
-    const answers = choices(q).map((v, j) => ({ c: s + 4 + j * 3, r: GR - 4, val: v, state: 'idle', shake: 0 }));
+    const s = flat(16), q = L.gen(), five = L.expert;
+    const answers = gateChoices(q, five ? 5 : 3).map((v, j) => ({ c: five ? s + 3 + j * 2 : s + 4 + j * 3, r: GR - 4, val: v, state: 'idle', shake: 0 }));
     answers.forEach(a => { map[a.r][a.c] = 'A'; });
     for (let r = 0; r < GR; r++) { map[r][s + 13] = 'G'; map[r][s + 14] = 'G'; }
     L.stations.push({ s, q, answers, gate: [s + 13, s + 14], solved: false, opening: null, openT: 0 });
@@ -777,7 +889,7 @@ const BOSS_SPECS = {
 function buildArena(idx, easy = false, skill = curSkill()) {
   const def = STAGES[idx], W = WORLDS[def.w], map = newMap(), narrow = VW < 700, cols = narrow ? 18 : 27;
   for (let c = 0; c < cols; c++) { for (let r = 0; r < ROWS; r++) map[r].push('.'); map[GR][c] = '#'; map[GR + 1][c] = '#'; }
-  const L = { idx, def, skill, gen: genFor(skill), world: W, sky: W.skies[2], map, w: cols, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [1, cols - 4], flagC: -99, castleC: -99, proj: [] };
+  const L = { idx, def, skill, gen: genFor(skill), expert: skillProgress(skill).mature, world: W, sky: W.skies[2], map, w: cols, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [1, cols - 4], flagC: -99, castleC: -99, proj: [] };
   // Bonking the keypad block opens the number pad.
   const padC = narrow ? 5 : 7;
   map[GR - 4][padC] = 'K';
@@ -1110,7 +1222,7 @@ try { const s = JSON.parse(localStorage.getItem(PLAYERS_KEY)); if (s && s.list &
 const keyFor = id => (id === 'p1' ? SAVE_KEY : `${SAVE_KEY}:${id}`);
 const curPlayer = () => players.list.find(x => x.id === players.cur) || players.list[0];
 function savePlayers() { try { localStorage.setItem(PLAYERS_KEY, JSON.stringify(players)); } catch (e) { /* no storage */ } }
-const freshProg = () => ({ best: {}, skill: 'add10', ride: 'panda', track: 'cherry', mastery: {}, easy: null, allOpen: false, seenIntro: false, seenWorld: {}, bank: 0, music: true, auto: true, good: {},
+const freshProg = () => ({ best: {}, skill: 'add10', ride: 'panda', track: 'cherry', mastery: {}, easy: null, allOpen: false, seenIntro: false, seenWorld: {}, bank: 0, music: true, auto: true, facts: {}, win: {}, trophies: {}, daily: { last: 0, streak: 0, best: 0 },
   badges: {}, golden: {}, stats: { bridges: 0, gems: 0 },
   owned: ['band-red', 'suit-navy'], equip: { band: 'band-red', suit: 'suit-navy', trail: null, pet: null }, raceBest: {} });
 let prog;
@@ -1234,9 +1346,11 @@ function remember(q) {
   G.missed.push({ ...q, retry: false });
   G.practice.set(q.text, q);
 }
+// Three answer blocks, or five close ones (in order) once the skill is mostly learned.
+function gateChoices(q, n) { return n === 5 ? rowChoices(q, 5) : choices(q, n); }
 function setStationQ(st, q) {
-  st.q = q;
-  choices(q).forEach((v, j) => { st.answers[j].val = v; st.answers[j].state = 'idle'; });
+  st.q = q; st.shownAt = G.time;
+  gateChoices(q, st.answers.length).forEach((v, j) => { st.answers[j].val = v; st.answers[j].state = 'idle'; });
 }
 // First-try answers build a streak that multiplies the points.
 function streakUp(x, y) {
@@ -1281,11 +1395,13 @@ function answer(c, r) {
   const { st, a } = f, cx = c * T + T / 2, cy = r * T;
   if (a.val !== st.q.ans) {
     // A miss swaps in a new question, so trying every block no longer works.
+    noteFact(st.q, false, false, L.skill);
     a.state = 'wrong'; a.shake = 20; G.mistakes++; G.streak = 0;
     remember(st.q); st.swap = 50; missed(st.q);
     sfx.wrong(); floatText(cx, cy - 20, 'Oops! New question...', '#ff6b6b', 26);
     return;
   }
+  noteFact(st.q, true, G.time - (st.shownAt ?? G.time) <= 600, L.skill);   // 10 seconds counts as fast at a gate (there's running to do)
   a.state = 'right';
   st.answers.forEach(o => { if (o !== a) o.state = 'done'; });
   sfx.correct(); confetti(cx, cy); streakUp(cx, cy); gotIt(); award('first-gate');
@@ -1310,10 +1426,17 @@ function askQuestion(o) {
   mode = 'pad'; keys.left = keys.right = keys.jump = false;
   ask = { ...o, opts: rowChoices(o.q, o.n), left: o.time, tick: 3 };
   padSel = 0;
-  $('padQ').innerHTML = o.q.missing ? o.q.text.replace('?', '<span class="padin">?</span>') : `${o.q.text} = <span class="padin">?</span>`;
-  $('padMsg').textContent = o.msg;
-  const box = $('padKeys'); box.innerHTML = '';
-  ask.opts.forEach((v, i) => {
+  $('padQ').innerHTML = o.q.missing ? o.q.text.replace('?', '<span class="padin" id="padIn">?</span>') : `${o.q.text} = <span class="padin" id="padIn">?</span>`;
+  $('padMsg').textContent = o.keypad ? 'Type the answer!' : o.msg;
+  const box = $('padKeys'); box.innerHTML = ''; box.classList.toggle('keypad', !!o.keypad);
+  if (o.keypad) {   // expert mode: type the answer instead of picking it
+    ask.typed = '';
+    ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', '✓'].forEach(k => {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = k; if (k === '✓') b.className = 'ok';
+      b.addEventListener('click', () => padType(k));
+      box.appendChild(b);
+    });
+  } else ask.opts.forEach((v, i) => {
     const b = document.createElement('button'); b.type = 'button'; b.textContent = v;
     b.addEventListener('click', () => pickAnswer(i));
     box.appendChild(b);
@@ -1336,7 +1459,19 @@ function pickAnswer(i) {
   if (!ask) return;
   audio();
   const a = closePad();
-  (a.opts[i] === a.q.ans ? a.onRight : a.onWrong)();
+  (a.opts[i] === a.q.ans ? a.onRight : a.onWrong)(a.time - a.left);
+}
+function padType(k) {
+  if (!ask || !ask.keypad) return;
+  audio();
+  if (k === '⌫') ask.typed = ask.typed.slice(0, -1);
+  else if (k === '✓') {
+    if (!ask.typed) return;
+    const a = closePad();
+    (Number(a.typed) === a.q.ans ? a.onRight : a.onWrong)(a.time - a.left);
+    return;
+  } else if (ask.typed.length < 4) { ask.typed += k; tone(600 + Number(k) * 40, 0.05, 'square', 0.03); }
+  $('padIn').textContent = ask.typed || '?';
 }
 
 // Boss fights: two rows of answers for the harder bosses. A timeout isn't a mistake, but the boss attacks.
@@ -1345,10 +1480,11 @@ function openBossPad() {
   const ar = L.arena, w = STAGES[L.idx].w;
   const here = () => [P.x + P.w / 2, P.y];
   askQuestion({
-    q: ar.q, n: w >= 2 ? 10 : 5, time: PAD_TIME[w] * (prog.easy ? 1.6 : 1),
+    q: ar.q, n: w >= 2 ? 10 : 5, time: PAD_TIME[w] * (prog.easy ? 1.6 : 1), keypad: L.expert,
     msg: ar.q.retry ? 'This one came back. You can do it!' : 'Pick the answer before the fuse burns out!',
-    onRight() {
+    onRight(took) {
       // Throw a shuriken at the boss; the next question comes after it lands.
+      noteFact(ar.q, true, took <= 8, L.skill);
       const [cx, cy] = here();
       ar.wait = 1;
       G.shots.push({ x: cx, y: P.y + 10, spin: 0 });
@@ -1357,12 +1493,14 @@ function openBossPad() {
     },
     onWrong() {
       const [cx, cy] = here();
+      noteFact(ar.q, false, false, L.skill);
       G.mistakes++; G.streak = 0; remember(ar.q); missed(ar.q);
       ar.q = freshQ(ar.q.text); startDodge(); L.boss.atk = 1;
       sfx.wrong(); floatText(cx, cy - 20, 'Oops! New question...', '#ff6b6b', 26);
     },
     onTimeout() {
       const [cx, cy] = here();
+      noteFact(ar.q, false, false, L.skill);
       G.streak = 0; ar.q = freshQ(ar.q.text); startDodge(); L.boss.atk = 1;
       sfx.wrong(); floatText(cx, cy - 20, 'Too slow! New question...', '#ff9a3c', 26);
     },
@@ -1377,6 +1515,7 @@ const BADGES = [
   { id: 'power', icon: '⚡', name: 'Powered Up', text: 'Earn a streak power-up.' },
   { id: 'bridge', icon: '🌉', name: 'Bridge Builder', text: 'Build a number-stone bridge.' },
   { id: 'bridge10', icon: '🏗️', name: 'Master Builder', text: 'Build 10 bridges.' },
+  { id: 'dojo7', icon: '🔥', name: 'Dedicated', text: 'Do the Daily Dojo 7 days in a row.' },
   { id: 'vault', icon: '🚪', name: 'Secret Finder', text: 'Solve a secret room puzzle.' },
   { id: 'golden', icon: '🌟', name: 'Golden Gem', text: 'Find a hidden golden gem.' },
   { id: 'golden-all', icon: '👑', name: 'Golden Hunter', text: 'Find all 8 golden gems. Unlocks the Golden suit!' },
@@ -1904,6 +2043,7 @@ function update() {
   updateAmbient();
   if (!G) { cam = (tick * 1.2) % (L.w * T - VW); return; }
   G.time++;
+  { const cs = currentStation(); if (cs && cs.answers && cs.shownAt == null) cs.shownAt = G.time; }
   if (mode === 'play') { updatePlayer(); updateEnemies(); }
   else if (mode === 'win') { updateWin(); updateEnemies(); }
   if (mode === 'play' || mode === 'win') { updateBoss(); if (L.boss) { updateArena(); updateShotsAndProjectiles(); } }
@@ -2047,6 +2187,7 @@ function raceText(txt, col) { RC.texts.push({ txt, col, t: 1.4 }); }
 
 function judgeGate(g) {
   const r = RC; g.done = true;
+  noteFact(g.q, g.opts[r.lane] === g.q.ans, true, r.topic);
   if (g.opts[r.lane] === g.q.ans) {
     r.right++; r.streak++;
     r.speed = Math.min(r.maxSpeed, Math.max(r.speed, r.cruise) + r.boost);
@@ -3282,7 +3423,10 @@ function drawPet() {
   if (m === 'happy' || m === 'wow') oy = -Math.abs(Math.sin(pt.moodT * 0.25)) * 14;
   else if (m === 'sad' || m === 'hurt') ox = Math.sin(pt.moodT * 1.3) * 3;
   else if (m === 'dance') { oy = -Math.abs(Math.sin(pt.moodT * 0.3)) * 16; flip = Math.floor(pt.moodT / 10) % 2 === 0; }
+  const grow = prog.daily.last >= today() - 1 ? 1 + Math.min(prog.daily.streak, 10) * 0.04 : 1;   // the pet grows with the Daily Dojo streak
+  ctx.save(); ctx.translate(pt.x, pt.y + 24 + oy); ctx.scale(grow, grow); ctx.translate(-pt.x, -(pt.y + 24 + oy));
   drawBaked(PET_SPR[prog.equip.pet], Math.floor(tick / 10) % 2 ? 'b' : 'a', flip, { x: pt.x - 10 + ox, y: pt.y + oy, w: 20, h: 24 });
+  ctx.restore();
   if (G.bubble) {
     ctx.font = 'bold 14px "Trebuchet MS", sans-serif';
     const w = ctx.measureText(G.bubble.txt).width + 16, bx = pt.x + ox - w / 2, by = pt.y + oy - 34;
@@ -3587,10 +3731,11 @@ function buildMenu() {
   const pts = totalPoints(), b = beltFor(pts), k = curSkill();
   $('rank').innerHTML = `${beltHTML(b)} <span><b>${b.name} Belt</b> · ${pts} pts</span>`;
   const me = curPlayer(); $('playerChip').textContent = `${me.icon} ${me.name} ▾`;
-  const have = Math.min(prog.good[k.id] || 0, GOOD_NEEDED);
-  $('skillChip').innerHTML = prog.auto && PATH.includes(k.id)
-    ? `🧭 ${k.name} <span class="tier">${stars(k.tier)}</span> <span class="dots">${'●'.repeat(have)}${'○'.repeat(GOOD_NEEDED - have)}</span> ✎`
-    : `🧮 ${k.name} <span class="tier">${stars(k.tier)}</span> ✎`;
+  const pr = skillProgress(k);
+  $('skillChip').innerHTML = `${prog.auto && PATH.includes(k.id) ? '🧭' : '🧮'} ${k.name} <span class="tier">${stars(k.tier)}</span> <span class="dots">${pr.learned}/${pr.n}</span> ✎`;
+  const dl = prog.daily, live = dl.last >= today() - 1 ? dl.streak : 0;
+  $('dojoBtn').innerHTML = dl.last === today() ? `🔥 ${live} ✔` : `🔥 Daily Dojo${live ? ` · ${live}` : ''}`;
+  $('dojoBtn').classList.toggle('done', dl.last === today());
   $('bankMenu').textContent = `${prog.bank}💎`;
   $('badgeMenu').textContent = `${BADGES.filter(x => prog.badges[x.id]).length}/${BADGES.length}`;
   const box = $('worlds'); box.innerHTML = '';
@@ -3644,7 +3789,8 @@ function renderSkills() {
     const medal = ['', '🥉', '🥈', '🥇'][prog.mastery[k.id] || 0];
     const g = GRADE[curPlayer().grade], mine = g && g.picks.includes(k.id);
     if (mine) b.classList.add('grade');
-    b.innerHTML = `${mine ? `<span class="gtag">🎒 ${g.id === 'K' ? 'K' : g.name.split(' ')[0]}</span>` : ''}<span class="sn">${k.name} ${medal}</span><span class="se">like ${k.ex}</span><span class="st">${stars(k.tier)}</span><span class="sm">💎 ×${TIER_GEMS[k.tier - 1]}</span>`;
+    const kp = skillProgress(k);
+    b.innerHTML = `${prog.trophies[k.id] ? '<span class="ttag">🏆</span>' : ''}${mine ? `<span class="gtag">🎒 ${g.id === 'K' ? 'K' : g.name.split(' ')[0]}</span>` : ''}<span class="sn">${k.name} ${medal}</span><span class="se">like ${k.ex}</span><span class="st">${stars(k.tier)}</span><span class="sm">💎 ×${TIER_GEMS[k.tier - 1]} · 📒 ${kp.learned}/${kp.n}</span>`;
     b.onclick = () => { audio(); prog.skill = k.id; save(); hide('skills'); (skillsThen || toMenu)(); };
     $('skillGrid').appendChild(b);
   }
@@ -3659,6 +3805,8 @@ function showHowTo() {
     ${row('🌉', 'Bridges: bonk number stones to pick them up (you can carry up to 4) and take them to the altar to make the exact number. Bonk a stone again to put it back.')}
     ${row('👹', 'Bosses: dodge first. When the boss is dizzy, bonk the keypad block and pick the answer.')}
     ${row('🧮', 'Pick any math for any level. Harder math ★ earns more gems and belt points.')}
+    ${row('🔥', 'Daily Dojo: 10 quick questions a day. Keep your streak going and your pet grows!')}
+    ${row('📒', 'Fact Book: answer a fact right and fast to make it silver, then again on another day to make it gold.')}
     ${row('🐣', 'Easy mode (in Settings): no holes, slower enemies, more time and 5 hearts.')}</div>`,
     [{ label: 'Got it!', fn: () => { hide('msg'); show('menu'); }, primary: true }]);
 }// ---------------------------------------------------------------- dojo shop
@@ -3765,6 +3913,118 @@ $('unlockBtn').onclick = () => setAllOpen(!prog.allOpen);
 $('storyBtn').onclick = () => { hide('settings'); showStory(() => { hide('msg'); show('menu'); }); };
 $('skillChip').onclick = () => { audio(); openSkills(toMenu); };
 $('autoBtn').onclick = () => { audio(); prog.auto = !prog.auto; save(); renderSkills(); };
+// ---------------------------------------------------------------- fact book
+let fbAt = 0;
+function openFacts() { fbAt = Math.max(0, PATH.indexOf(prog.skill)); hide('menu'); renderFacts(); show('facts'); }
+function renderFacts() {
+  const k = SKILL[PATH[fbAt]], pr = skillProgress(k);
+  $('fbTitle').innerHTML = `${prog.trophies[k.id] ? '🏆 ' : ''}${k.name} <span class="tier">${stars(k.tier)}</span><small>🥇 ${pr.gold} · got it ${pr.learned} of ${pr.n}</small>`;
+  let html = pr.mature ? '<div class="expert">⚡ Expert mode: 5 answer blocks and a keypad for bosses</div>' : '';
+  if (pr.list && (k.id === 'xall' || k.id === 'dmix' || k.id === 'xmix69' || k.id === 'xmix25')) {
+    // a times-table grid that fills in gold
+    const lo = k.id === 'xmix69' ? 6 : 2, hi = k.id === 'xmix25' ? 5 : k.id === 'xmix69' ? 9 : k.id === 'dmix' ? 10 : 12, cols = k.id === 'xall' || k.id === 'dmix' ? 12 : 10;
+    const rows = range(lo, hi), across = range(k.id === 'xall' || k.id === 'xmix69' ? 2 : 1, cols);
+    html += `<div class="tablegrid" style="grid-template-columns: repeat(${across.length + 1}, 1fr)"><span class="h">${k.cat === 'div' ? '÷' : '×'}</span>${across.map(c => `<span class="h">${c}</span>`).join('')}`;
+    for (const r of rows) {
+      html += `<span class="h">${r}</span>`;
+      for (const c of across) {
+        const key = k.cat === 'div' ? `${r * c} ÷ ${r}` : [r, c].sort((x, y) => x - y).join(' × ');
+        html += `<span class="${factStatus(key)}">${k.cat === 'div' ? r * c : r * c}</span>`;
+      }
+    }
+    html += '</div>';
+  } else if (pr.list) {
+    html += `<div class="factgrid">${pr.list.map((q, i) => { const st = pr.st[i]; return `<span class="ft ${st}">${st === 'silver' || st === 'gold' ? qSolved(q) : qShow(q)}</span>`; }).join('')}</div>`;
+  } else {
+    const w = pr.win;
+    html += `<p>Last 10 answers</p><div class="winrow">${range(0, 9).map(i => (i < w.length ? (w[i] ? '🟡' : '🔴') : '⚪')).join('')}</div><p>${pr.done ? 'Learned!' : '9 right and fast means learned.'}</p>`;
+  }
+  $('fbBody').innerHTML = html;
+}
+$('factBtn').onclick = () => { audio(); openFacts(); };
+$('fbPrev').onclick = () => { audio(); fbAt = (fbAt + PATH.length - 1) % PATH.length; renderFacts(); };
+$('fbNext').onclick = () => { audio(); fbAt = (fbAt + 1) % PATH.length; renderFacts(); };
+$('fbClose').onclick = () => { audio(); hide('facts'); toMenu(); };
+
+// ---------------------------------------------------------------- daily dojo
+// Ten quick questions: facts to practice first, then ones due for review (this is what turns silver into
+// gold on a new day), then new facts from the current math. Once a day it grows the streak and pays gems.
+const DOJO_N = 10, DOJO_TIME = 10, DOJO_FAST = 5;
+let dojo = null;
+function dojoQuestions() {
+  const d = today(), seen = new Set(), out = [];
+  const add = q => { const k = factKey(q); if (!seen.has(k) && out.length < DOJO_N) { seen.add(k); out.push(q); } };
+  const all = Object.values(prog.facts);
+  shuffle(all.filter(f => f.weak)).slice(0, 4).forEach(f => add(f.q));
+  shuffle(all.filter(f => !f.weak && f.days.length === 1 && f.days[0] < d)).slice(0, 4).forEach(f => add(f.q));
+  shuffle(all.filter(f => !f.weak && f.days.length >= 2 && d - f.last >= 4)).slice(0, 2).forEach(f => add(f.q));
+  for (let i = 0; out.length < DOJO_N && i < 60; i++) add(curSkill().gen());
+  return shuffle(out);
+}
+function startDojo() {
+  hide('menu');
+  const before = new Map(Object.entries(prog.facts).map(([k]) => [k, factStatus(k)]));
+  dojo = { qs: dojoQuestions(), i: 0, right: 0, before, lock: false };
+  show('dojo'); dojoNext();
+}
+function dojoNext() {
+  if (dojo.i >= dojo.qs.length) { finishDojo(); return; }
+  const q = dojo.qs[dojo.i];
+  dojo.q = q; dojo.opts = rowChoices(q, 5); dojo.left = DOJO_TIME; dojo.lock = false; dojo.sel = 2;
+  $('djProg').textContent = `${dojo.i + 1} / ${dojo.qs.length}`;
+  $('djQ').innerHTML = q.missing ? q.text.replace('?', '<span class="padin">?</span>') : `${q.text} = <span class="padin">?</span>`;
+  $('djMsg').textContent = '';
+  const box = $('djKeys'); box.innerHTML = '';
+  dojo.opts.forEach((v, i) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = v; b.onclick = () => dojoPick(i); box.appendChild(b); });
+  dojoMark();
+}
+function dojoMark() { [...$('djKeys').children].forEach((b, i) => b.classList.toggle('sel', i === dojo.sel)); }
+function dojoPick(i) {
+  if (!dojo || dojo.lock) return;
+  audio(); dojo.lock = true;
+  const q = dojo.q, ok = i >= 0 && dojo.opts[i] === q.ans, btns = [...$('djKeys').children];
+  noteFact(q, ok, DOJO_TIME - dojo.left <= DOJO_FAST, null);
+  if (ok) { dojo.right++; sfx.correct(); btns[i].classList.add('right'); }
+  else {
+    sfx.wrong(); if (i >= 0) btns[i].classList.add('wrong');
+    const j = dojo.opts.indexOf(q.ans); if (j >= 0) btns[j].classList.add('right');
+    $('djMsg').textContent = i < 0 ? `Time's up! ${qSolved(q)}` : qSolved(q);
+  }
+  $('djQ').innerHTML = qSolved(q);
+  setTimeout(() => { if (dojo) { dojo.i++; dojoNext(); } }, ok ? 650 : 1500);
+}
+function dojoTick(dt) {
+  if (!dojo || dojo.lock || $('dojo').classList.contains('hidden')) return;
+  dojo.left -= dt;
+  $('djFuse').style.width = `${Math.max(0, dojo.left / DOJO_TIME) * 100}%`;
+  $('djFuse').classList.toggle('low', dojo.left <= 3);
+  if (dojo.left <= 0) dojoPick(-1);
+}
+function dojoKey(e) {
+  e.preventDefault();
+  if (!dojo || e.repeat) return;
+  if (/^[1-5]$/.test(e.key)) dojoPick(Number(e.key) - 1);
+  else if (e.code === 'ArrowLeft' || e.code === 'KeyA') { dojo.sel = clamp(dojo.sel - 1, 0, 4); dojoMark(); }
+  else if (e.code === 'ArrowRight' || e.code === 'KeyD') { dojo.sel = clamp(dojo.sel + 1, 0, 4); dojoMark(); }
+  else if (e.code === 'Enter' || e.code === 'Space' || e.code === 'NumpadEnter') dojoPick(dojo.sel);
+}
+function finishDojo() {
+  const d = today(), dl = prog.daily, first = dl.last !== d;
+  let gems = 0;
+  if (first) {
+    dl.streak = dl.last === d - 1 ? dl.streak + 1 : 1; dl.last = d; dl.best = Math.max(dl.best || 0, dl.streak);
+    gems = 10 + 2 * Math.min(dl.streak, 10); prog.bank += gems; prog.stats.gems += gems;
+    if (dl.streak >= 7) award('dojo7');
+  }
+  const golds = Object.keys(prog.facts).filter(k => factStatus(k) === 'gold' && dojo.before.get(k) !== 'gold').length;
+  save(); checkTrophies();
+  const right = dojo.right, n = dojo.qs.length; dojo = null; hide('dojo');
+  let body = `<div class="bigicon">🔥<small>${dl.streak}</small></div><div class="statrow"><span>✔ ${right}/${n}</span>${gems ? `<span>💎 +${gems}</span>` : ''}${golds ? `<span>🥇 +${golds}</span>` : ''}</div>`;
+  body += first ? `<div class="promo">${dl.streak > 1 ? `${dl.streak} days in a row!` : 'Come back tomorrow to grow your streak!'}</div>` : '<p>Extra practice! Your streak counts once a day.</p>';
+  showMsg(first ? 'Dojo done!' : 'Nice practice!', body, [{ label: 'Play ▶', fn: toMenu, primary: true }, { label: '📒 Facts', fn: () => { hide('msg'); openFacts(); }, alt: true }]);
+}
+$('dojoBtn').onclick = () => { audio(); startDojo(); };
+
 // ---------------------------------------------------------------- players
 let editing = null, pickGrade = null, pickIcon = null;
 function showPlayers() {
@@ -3874,6 +4134,14 @@ const KMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'righ
 window.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') { if (e.key === 'Enter') $('pSave').click(); return; }   // typing a name
   audio();
+  if (!$('dojo').classList.contains('hidden')) { dojoKey(e); return; }
+  if (mode === 'pad' && ask && ask.keypad) {
+    e.preventDefault();
+    if (/^[0-9]$/.test(e.key)) padType(e.key);
+    else if (e.key === 'Backspace') padType('⌫');
+    else if (e.code === 'Enter' || e.code === 'NumpadEnter') padType('✓');
+    return;
+  }
   if (mode === 'pad') {
     e.preventDefault();
     if (e.repeat) return;   // a held jump key must not pick an answer by itself
@@ -3944,6 +4212,7 @@ const STEP = 1000 / 60;
 function frame(now) {
   acc += Math.min(100, now - last); last = now;
   while (acc >= STEP) {
+    dojoTick(STEP / 1000);
     if (mode === 'pad') tickPad(STEP / 1000);
     else if (mode === 'race' || mode === 'racedone') { tick++; updateRace(STEP / 1000); }
     else if (mode !== 'pause' && mode !== 'intro' && !RC) {
