@@ -162,7 +162,7 @@
     font-family: "Lilita One", Nunito, "Trebuchet MS", sans-serif; font-weight: 400; letter-spacing: .5px; }
   /* world map */
   .worlds { width: min(720px, 100%); }
-  .zone { position: relative; border-radius: 18px; padding: 8px 10px 4px; margin: 8px 0; overflow: hidden; box-shadow: inset 0 -6px 0 rgba(0,0,0,.18); }
+  .zone { position: relative; padding: 8px 10px 4px; margin: 8px 0; overflow: hidden; box-shadow: inset 0 0 0 3px rgba(0,0,0,.35); }
   .z-japan { background: linear-gradient(#ffb3d1, #8fd27a); color: #3a1a2a; }
   .z-lava { background: linear-gradient(#3a0d05, #c2410c); color: #fff; }
   .z-robot { background: linear-gradient(#24364d, #4f7ea8); color: #fff; }
@@ -185,7 +185,7 @@
   .z-snow .node:not(.boss) { background: #3aa0dc; color: #fff; }
   .z-castle .node:not(.boss) { background: #a678ff; color: #fff; }
   .node.won { border-color: #ffd23f; }
-  .node:disabled { background: #5a5a6e !important; color: #ccc; border-color: #8a8a9a; cursor: not-allowed; box-shadow: 0 4px 0 rgba(0,0,0,.3); }
+
   .node:hover:not(:disabled) { transform: translate(-50%, -50%) scale(1.08); }
   .node:active:not(:disabled) { transform: translate(-50%, -45%) scale(.94); box-shadow: 0 2px 0 rgba(0,0,0,.35); }
   .node .nl { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 6px; width: max-content; max-width: min(116px, 23vw); text-align: center; line-height: 1.15; font-size: 12px; font-weight: 900;
@@ -220,6 +220,45 @@
   .node .pix.lk { width: 30px; height: 30px; margin: 0 auto; }
   .node .bossimg { width: 60px; height: 60px; margin: -8px auto 0; }
   .freed { font-style: italic; color: #ffe9a8; margin: 0 0 10px; }
+  /* one pixel-game look for the home screen */
+  #menu { background: rgba(8, 8, 25, .25); }
+  .hudpanel { width: min(720px, 100%); box-sizing: border-box; padding: 10px; margin: 4px 0 6px; background: #1c1830;
+    border: 3px solid #c9a24f; box-shadow: inset 0 0 0 3px #5a4630;
+    clip-path: polygon(0 10px, 5px 10px, 5px 5px, 10px 5px, 10px 0, calc(100% - 10px) 0, calc(100% - 10px) 5px, calc(100% - 5px) 5px, calc(100% - 5px) 10px, 100% 10px,
+      100% calc(100% - 10px), calc(100% - 5px) calc(100% - 10px), calc(100% - 5px) calc(100% - 5px), calc(100% - 10px) calc(100% - 5px), calc(100% - 10px) 100%,
+      10px 100%, 10px calc(100% - 5px), 5px calc(100% - 5px), 5px calc(100% - 10px), 0 calc(100% - 10px)); }
+  .hudpanel .homebar, .hudpanel .iconrow { width: 100%; }
+  .pxc, .hudpanel button, .hudpanel .rank, .zone { clip-path: polygon(0 6px, 3px 6px, 3px 3px, 6px 3px, 6px 0, calc(100% - 6px) 0, calc(100% - 6px) 3px, calc(100% - 3px) 3px, calc(100% - 3px) 6px, 100% 6px,
+      100% calc(100% - 6px), calc(100% - 3px) calc(100% - 6px), calc(100% - 3px) calc(100% - 3px), calc(100% - 6px) calc(100% - 3px), calc(100% - 6px) 100%,
+      6px 100%, 6px calc(100% - 3px), 3px calc(100% - 3px), 3px calc(100% - 6px), 0 calc(100% - 6px)); }
+  .hudpanel .pchip, .hudpanel .mathchip, .hudpanel .dojobtn, .hudpanel .rank, .hudpanel .ibtn {
+    border-radius: 0; background: #2e2850; color: #fff; border: none; box-shadow: inset 0 -4px 0 #1a1530, inset 0 2px 0 #463d72; }
+  .hudpanel .ibtn:hover, .hudpanel .pchip:hover, .hudpanel .mathchip:hover, .hudpanel .dojobtn:hover { background: #3a3364; filter: none; }
+  .hudpanel .mathchip .tier { color: #ffd23f; } .hudpanel .mathchip .dots { color: #c9b8ff; }
+  .hudpanel .dojobtn:not(.done) { color: #ffb36b; } .hudpanel .dojobtn.done { color: #a99bd0; }
+  .hudpanel .rank { padding: 6px 12px; }
+  .playbtn { width: 100%; font-family: "Lilita One", Nunito, sans-serif; font-size: 26px; letter-spacing: 1px; color: #3a2200; background: #ffd23f; border: none; cursor: pointer;
+    padding: 10px 14px; margin-bottom: 8px; box-shadow: inset 0 -5px 0 #c9961a, inset 0 3px 0 #ffe98a; transition: transform .1s; }
+  .playbtn small { font-family: Nunito, sans-serif; font-weight: 900; font-size: 16px; color: #6a4400; }
+  @media (max-width: 500px) { .hudpanel .ibtn { font-size: 10.5px; letter-spacing: 0; padding: 6px 1px; } .hudpanel .iconrow { gap: 5px; } .hudpanel { padding: 8px; } }
+  .playbtn:active { transform: scale(.97); } .playbtn:hover { filter: brightness(1.06); }
+  .zone { background-size: cover; background-position: center bottom; border-radius: 0; }
+  .zone .wname { text-shadow: 0 2px 0 rgba(0,0,0,.6); color: #fff; }
+  .zone .wname > span { background: rgba(0,0,0,.45); padding: 1px 8px; }
+  .zone .deco { display: none; }
+  .zone.fog::before { content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background: radial-gradient(ellipse at 20% 60%, rgba(210,215,235,.35), transparent 45%), radial-gradient(ellipse at 70% 40%, rgba(210,215,235,.3), transparent 40%),
+      linear-gradient(rgba(25,22,50,.45), rgba(25,22,50,.55));
+    background-size: 200% 100%; animation: fog 9s ease-in-out infinite alternate; backdrop-filter: grayscale(.5) brightness(.8); }
+  @keyframes fog { from { background-position: 0 0; } to { background-position: 100% 0; } }
+  .zone.fog .wname { position: relative; z-index: 2; }
+  .zmap { z-index: 1; }
+  .node:disabled { filter: saturate(.45) brightness(.62); border-color: rgba(255,255,255,.6); cursor: not-allowed; }
+  .z-japan .node:disabled:not(.boss) { background: #ff7eb6 !important; } .z-lava .node:disabled:not(.boss) { background: #ff8c1a !important; }
+  .z-robot .node:disabled:not(.boss) { background: #4cc9f0 !important; } .z-snow .node:disabled:not(.boss) { background: #3aa0dc !important; }
+  .z-castle .node:disabled:not(.boss) { background: #a678ff !important; } .node.boss:disabled { background: #6a1a2a !important; }
+  .node.boss:disabled .bossimg { filter: brightness(0) opacity(.75); }
+  .node .boss-lock { position: absolute; right: -6px; bottom: -6px; width: 26px !important; height: 26px !important; }
   .homebar { display: grid; grid-template-columns: auto 1fr auto; grid-template-areas: "player rank rank" "skill skill dojo"; gap: 8px; align-items: center; margin: 4px 0 2px; width: min(720px, 100%); }
   #playerChip { grid-area: player; justify-self: start; } #skillChip { grid-area: skill; } #dojoBtn { grid-area: dojo; } .homebar .rank { grid-area: rank; justify-self: end; margin: 0; }
   @media (max-width: 560px) { .homebar { grid-template-columns: 1fr auto; grid-template-areas: "player dojo" "skill skill" "rank rank"; } .homebar .rank { justify-self: center; } }
@@ -308,6 +347,8 @@
 
 <div id="menu" class="overlay">
   <h1>MATH NINJA</h1>
+  <div class="hudpanel">
+  <button class="playbtn" id="playBtn" type="button"></button>
   <div class="homebar">
     <button class="pchip" id="playerChip" type="button"></button>
     <button class="mathchip" id="skillChip" type="button"></button>
@@ -321,6 +362,7 @@
     <button class="ibtn" id="badgeBtn" type="button"><span data-pix="medal"></span>Badges <b id="badgeMenu"></b></button>
     <button class="ibtn" id="settingsBtn" type="button"><span data-pix="gear"></span>Settings</button>
     <button class="ibtn" id="helpBtn" type="button"><span data-pix="help"></span>How to</button>
+  </div>
   </div>
   <div class="worlds" id="worlds"></div>
 </div>
@@ -451,7 +493,7 @@
 'use strict';
 
 const cv = document.getElementById('game');
-const ctx = cv.getContext('2d');
+let ctx = cv.getContext('2d');
 const VH = 540, T = 36, ROWS = 15, GR = 13;   // GR = first ground row
 let VW = 960;                                 // 540 when the screen is taller than wide
 
@@ -4440,6 +4482,7 @@ function drawHUD() {
 
 function render() {
   if (RC) { renderRace(); return; }
+  if (mode === 'menu' && !G) { drawMenuBackdrop(); return; }
   if (L.room) drawRoomBg(); else drawBackground();
   if (L.twist === 'walljump') drawFireworks();
   const shk = G && G.shake > 0 ? G.shakeAmp : 0;
@@ -4526,6 +4569,35 @@ function unlockedCount() {
   return Math.min(n, STAGES.length);
 }
 
+// Each world strip on the map shows that world's real scenery, painted once with the game's own background code.
+const sceneCache = {};
+function worldScene(w) {
+  if (sceneCache[w]) return sceneCache[w];
+  const W = WORLDS[w], big = document.createElement('canvas'); big.width = 960; big.height = 540;
+  const saved = { ctx, L, cam, VW }; ctx = big.getContext('2d'); VW = 960;
+  L = { world: W, def: { k: 0, w }, sky: W.skies[0], map: [], w: 0 }; cam = 300 + w * 170;
+  const g = ctx.createLinearGradient(0, 0, 0, 540); g.addColorStop(0, W.skies[0][0]); g.addColorStop(1, W.skies[0][1]); ctx.fillStyle = g; ctx.fillRect(0, 0, 960, 540);
+  try { ({ japan: bgJapan, lava: bgLava, robot: bgRobot, snow: bgSnow, castle: bgCastle })[W.key](); } catch (e) { /* scenery is decoration */ }
+  for (let c = 0; c < 27; c++) { L.map[GR - 1] = []; try { drawGround(c * T, GR * T, c, GR, true); drawGround(c * T, (GR + 1) * T, c, GR + 1, false); } catch (e) { /* decoration */ } }
+  ({ ctx, L, cam, VW } = saved);
+  const crop = document.createElement('canvas'); crop.width = 960; crop.height = 330;
+  crop.getContext('2d').drawImage(big, 0, 540 - 330 - 30, 960, 330, 0, 0, 960, 330);
+  return (sceneCache[w] = crop.toDataURL('image/jpeg', 0.85));
+}
+// Behind the menu: Sensei's dojo on the mountain at night, with lanterns and twinkling stars.
+function drawMenuBackdrop() {
+  const g = ctx.createLinearGradient(0, 0, 0, VH); g.addColorStop(0, '#0b0d2a'); g.addColorStop(0.6, '#2a2050'); g.addColorStop(1, '#45306a'); ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+  for (let i = 0; i < 90; i++) { const tw = 0.4 + 0.6 * Math.abs(Math.sin(tick * 0.02 + i)); ctx.fillStyle = `rgba(255,255,255,${tw * 0.8})`; ctx.fillRect(hash(i) * VW, hash(i + 40) * VH * 0.6, 2, 2); }
+  blob(VW * 0.82, VH * 0.16, 30, '#fff6d5'); glowAt(VW * 0.82, VH * 0.16, 110, 'rgba(255,246,213,.25)');
+  poly([[-40, VH], [VW * 0.25, VH * 0.48], [VW * 0.45, VH * 0.62], [VW * 0.7, VH * 0.42], [VW + 40, VH * 0.7], [VW + 40, VH]], '#1d1a3a');
+  poly([[-40, VH], [VW * 0.15, VH * 0.7], [VW * 0.5, VH * 0.78], [VW * 0.85, VH * 0.66], [VW + 40, VH * 0.8], [VW + 40, VH]], '#151229');
+  const dx = VW * 0.5, dy = VH * 0.79;   // the dojo
+  ctx.fillStyle = '#0e0c1e'; ctx.fillRect(dx - 90, dy - 70, 180, 70);
+  roof(dx - 110, dy - 70, 220, 44, '#0e0c1e', '#3a2a5a'); roof(dx - 60, dy - 118, 120, 34, '#0e0c1e', '#3a2a5a');
+  ctx.fillStyle = `rgba(255,200,90,${0.75 + 0.15 * Math.sin(tick * 0.05)})`; for (let k = 0; k < 4; k++) ctx.fillRect(dx - 70 + k * 40, dy - 52, 18, 22);
+  for (const lx of [dx - 130, dx + 130]) paperLantern(lx, dy - 30 + Math.sin(tick * 0.04 + lx) * 2, 1);
+  for (let i = 0; i < 14; i++) { const x = (hash(i + 5) * VW + tick * (0.3 + hash(i) * 0.5)) % VW, y = (hash(i + 9) * VH + tick * (0.4 + hash(i + 2) * 0.4)) % VH; ctx.fillStyle = '#ffb7d5'; ctx.beginPath(); ctx.ellipse(x, y, 4, 2.5, tick * 0.02 + i, 0, 7); ctx.fill(); }
+}
 // Numbers that tick up to their new value instead of jumping.
 function countUp(el, to) {
   const from = Number(el.dataset.v ?? to); el.dataset.v = to;
@@ -4558,7 +4630,9 @@ function buildMenu() {
   WORLDS.forEach((W, w) => {
     const won = !!prog.best[bossOf(w)], found = [0, 1, 2].filter(j => prog.best[w * PER_WORLD + j]).length;
     const xs = [13, 37, 62, 87], ys = [48, 48, 48, 48];
-    const zone = document.createElement('div'); zone.className = `zone z-${W.key}`;
+    const reached = open > w * PER_WORLD;
+    const zone = document.createElement('div'); zone.className = `zone z-${W.key}${reached ? '' : ' fog'}`;
+    zone.style.backgroundImage = `linear-gradient(rgba(0,0,0,.05), rgba(0,0,0,.35)), url(${worldScene(w)})`;
     const pathD = `M ${xs[0]} ${ys[0]} L ${xs[3]} ${ys[3]}`;
     zone.innerHTML = `<div class="wname">${w + 1} · ${W.name}<span>${pixImg('scroll', 'pix sm')} ${won ? '✔' : `${found}/3`}</span></div>
       <div class="zmap"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="${pathD}" /></svg>
@@ -4569,14 +4643,17 @@ function buildMenu() {
       const k = st.k, el = document.createElement('button'), locked = i >= open, best = prog.best[i], d = best ? best.dots : 0;
       el.className = 'node' + (st.boss ? ' boss' : '') + (i === here ? ' here' : '') + (best ? ' won' : '');
       el.disabled = locked; el.style.left = xs[k] + '%'; el.style.top = ys[k] + '%';
-      el.innerHTML = `<b>${locked ? pixImg('lock', 'pix lk') : st.boss ? bossImg(W.boss.kind) : st.label}</b>${locked ? '' : `<em>${'●'.repeat(d) + '○'.repeat(3 - d)}</em>`}
-        <span class="nl">${!st.boss && prog.golden[i] ? '🌟 ' : ''}${st.boss ? W.boss.name : st.name}</span>`;
+      el.innerHTML = `<b>${st.boss ? bossImg(W.boss.kind) + (locked ? pixImg('lock', 'pix lk boss-lock') : '') : locked ? pixImg('lock', 'pix lk') : st.label}</b>${locked ? '' : `<em>${'●'.repeat(d) + '○'.repeat(3 - d)}</em>`}
+        <span class="nl">${!st.boss && prog.golden[i] ? '★ ' : ''}${st.boss ? (reached ? W.boss.name : '???') : st.name}</span>`;
       if (i === here) { const cv = document.createElement('canvas'); cv.width = 40; cv.height = 40; cv.className = 'kai'; drawNinjaPreview(cv, { ...prog.equip, pet: null }, 2); el.appendChild(cv); }
       el.onclick = () => { audio(); confirmStage(i); };
       map.appendChild(el);
     });
     box.appendChild(zone);
   });
+  const hs = STAGES[here], hw = WORLDS[hs.w];
+  $('playBtn').innerHTML = `▶ Play &nbsp;<small>${hs.boss ? `Boss: ${hw.boss.name}` : `${hs.label} · ${hs.name}`}</small>`;
+  $('playBtn').onclick = () => { audio(); confirmStage(here); };
   setTimeout(() => { const h = box.querySelector('.here'); if (h && h.scrollIntoView) h.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60);
 }
 
