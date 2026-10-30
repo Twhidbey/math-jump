@@ -66,6 +66,12 @@
   .card .taunt { font-style: italic; font-size: 20px; color: #ffb3b3; }
   .card .dots { color: #ffd23f; letter-spacing: 4px; font-size: 26px; }
   .bigicon { font-size: 64px; line-height: 1.1; }
+  .bigicon small { font-size: 22px; font-weight: 800; margin-left: 4px; color: #ffd23f; vertical-align: middle; }
+  .medalrow { font-size: 30px; margin: 2px 0 6px; }
+  .statrow { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 0 0 12px; }
+  .statrow span { background: rgba(255,255,255,.1); border-radius: 999px; padding: 6px 14px; font-size: 22px; font-weight: 800; }
+  .practice { display: flex; gap: 6px; justify-content: center; align-items: center; flex-wrap: wrap; margin: 0 0 12px; font-size: 18px; }
+  .practice span { background: rgba(255,107,107,.18); border-radius: 8px; padding: 3px 10px; font-weight: 800; }
   .promo { background: rgba(255,210,63,.15); border-radius: 10px; padding: 8px; margin: 0 0 14px; font-size: 18px; }
   #pauseBtn { position: absolute; top: 1.2%; right: 1%; width: max(40px, 5%); aspect-ratio: 1; border-radius: 10px;
     border: none; background: rgba(0,0,0,.35); color: #fff; font-size: clamp(14px, 2.4vw, 26px); cursor: pointer; z-index: 5; }
@@ -429,12 +435,61 @@ const SKILLS = [
   ...[2, 5, 10, 3, 4, 6, 7, 8, 9].map(n => ({ cat: 'div', id: 'd' + n, name: `Divide by ${n}`, ex: `${n * 6} ÷ ${n}`, tier: [2, 5, 10, 3, 4].includes(n) ? 3 : 4, gen: divTable(n) })),
   { cat: 'div', id: 'dmix', name: 'All division', ex: '56 ÷ 8', tier: 5, gen: () => { const n = R(2, 10); return mk(n * R(1, 10), '÷', n, 0); } },
 ];
+// Think: the same facts turned around, so kids reason about them instead of just recalling.
+// Each question carries its own tip and picture for Sensei.
+const blank = (text, ans, extra) => ({ missing: true, text, ans, a: 0, b: 0, op: 'think', ...extra });
+const thinkMissAdd = deck(() => [
+  ...pairs(range(2, 10), range(2, 10), (a, b) => a + b <= 20 && a + b >= 6).flatMap(([a, b]) => [
+    blank(`${a} + ? = ${a + b}`, b, { tip: `Start at ${a} and count up to ${a + b}. How many jumps? ${b}.`, pic: { k: 'frames', red: a, ghost: b } }),
+    blank(`? + ${b} = ${a + b}`, a, { tip: `What goes with ${b} to make ${a + b}? ${a + b} − ${b} = ${a}.`, pic: { k: 'frames', ghost: a, red: b } })]),
+  ...pairs(range(6, 18), range(2, 9), (a, b) => b < a && a - b <= 10).map(([a, b]) =>
+    blank(`${a} − ? = ${a - b}`, b, { tip: `Count up from ${a - b} to ${a}. That's ${b}.`, pic: { k: 'frames', red: a - b, ghost: b } })),
+]);
+const thinkSkip = deck(() => [2, 3, 5, 10].flatMap(st => range(0, 5).map(k => {
+  const seq = [1, 2, 3, 4].map(i => st * (k + i)), hole = [1, 2, 3, 3][R(0, 3)];
+  return blank(seq.map((v, i) => (i === hole ? '?' : v)).join(', '), seq[hole], { step: st, tip: `Count by ${st}s: each number is ${st} more than the one before.`, pic: { k: 'line', seq, hole } });
+})));
+const thinkBal = deck(() => pairs(range(2, 12), range(2, 9), (a, b) => a + b <= 20).flatMap(([a, b]) => {
+  const c = R(2, a + b - 2); if (c === a || c === b) return [];
+  return [blank(`${a} + ${b} = ? + ${c}`, a + b - c, { tip: `Both sides must match. ${a} + ${b} = ${a + b}, so ? + ${c} = ${a + b}.`, pic: { k: 'scale', l: `${a} + ${b}`, r: `? + ${c}` } })];
+}));
+const thinkMissMul = deck(() => pairs(range(2, 9), range(2, 10), () => true).map(([n, k]) => (R(0, 1)
+  ? blank(`? × ${n} = ${n * k}`, k, { tip: `How many ${n}s make ${n * k}? Count by ${n}s.`, pic: { k: 'array', rows: k, cols: n } })
+  : blank(`${n} × ? = ${n * k}`, k, { tip: `${n} times what is ${n * k}? Count by ${n}s.`, pic: { k: 'array', rows: n, cols: k } }))));
+const thinkMissDiv = deck(() => pairs(range(2, 9), range(2, 10), () => true).map(([n, k]) => (R(0, 1)
+  ? blank(`? ÷ ${n} = ${k}`, n * k, { tip: `${n} groups of ${k}: ${n} × ${k} = ${n * k}.`, pic: { k: 'groups', g: n, each: k } })
+  : blank(`${n * k} ÷ ? = ${k}`, n, { tip: `How many groups of ${k} make ${n * k}? ${n} × ${k} = ${n * k}.`, pic: { k: 'groups', g: n, each: k } }))));
+function thinkPattern() {
+  const kind = R(0, 3);
+  if (kind === 0) { const a = R(1, 6), seq = [a, a * 2, a * 4, a * 8, a * 16]; return blank(`${seq.slice(0, 4).join(', ')}, ?`, seq[4], { tip: 'Each number doubles: times 2 every time.', pic: { k: 'line', seq, hole: 4 } }); }
+  if (kind === 1) { const a = R(1, 5), seq = [a, a + 1, a + 3, a + 6, a + 10]; return blank(`${seq.slice(0, 4).join(', ')}, ?`, seq[4], { tip: 'The jumps grow: +1, +2, +3, then +4.', pic: { k: 'line', seq, hole: 4 } }); }
+  if (kind === 2) { const st = [3, 4, 6, 7, 8, 9][R(0, 5)], top = st * R(8, 10), seq = [0, 1, 2, 3, 4].map(i => top - st * i); return blank(`${seq.slice(0, 4).join(', ')}, ?`, seq[4], { step: st, tip: `Counting back by ${st}s: take away ${st} each time.`, pic: { k: 'line', seq, hole: 4 } }); }
+  const a = R(1, 3), seq = [0, 1, 2, 3, 4].map(i => (a + i) * (a + i)); return blank(`${seq.slice(0, 4).join(', ')}, ?`, seq[4], { tip: `Square numbers: ${a} × ${a}, ${a + 1} × ${a + 1}... next is ${a + 4} × ${a + 4}.`, pic: { k: 'array', rows: a + 4, cols: a + 4 } });
+}
+const thinkBalMul = deck(() => {
+  const out = [];
+  for (const a of range(2, 9)) for (const b of range(a, 9)) for (const c of range(2, 9)) {
+    const p = a * b, d = p / c;
+    if (c !== a && c !== b && Number.isInteger(d) && d >= 2 && d <= 12 && d !== a && d !== b)
+      out.push(blank(`${a} × ${b} = ${c} × ?`, d, { tip: `${a} × ${b} = ${p}. What times ${c} makes ${p}?`, pic: { k: 'scale', l: `${a} × ${b}`, r: `${c} × ?` } }));
+  }
+  return out;
+});
+SKILLS.push(
+  { cat: 'think', id: 'tmissadd', name: 'Missing number', ex: '8 + ? = 13', tier: 2, gen: thinkMissAdd },
+  { cat: 'think', id: 'tskip', name: 'Skip counting', ex: '5, 10, ?, 20', tier: 2, gen: thinkSkip },
+  { cat: 'think', id: 'tbal', name: 'Balance it', ex: '7 + 5 = ? + 8', tier: 3, gen: thinkBal },
+  { cat: 'think', id: 'tmissmul', name: 'Missing factor', ex: '? × 6 = 42', tier: 4, gen: thinkMissMul },
+  { cat: 'think', id: 'tmissdiv', name: 'Missing in division', ex: '? ÷ 4 = 7', tier: 4, gen: thinkMissDiv },
+  { cat: 'think', id: 'tpattern', name: 'Number patterns', ex: '1, 2, 4, 8, ?', tier: 4, gen: thinkPattern },
+  { cat: 'think', id: 'tbalmul', name: 'Balance times', ex: '4 × 6 = 8 × ?', tier: 5, gen: thinkBalMul },
+);
 SKILLS.find(k => k.id === 'dmix').gen = () => { const n = R(2, 10), k = R(1, 10); return mk(n * k, '÷', n, k); };
 const SKILL = Object.fromEntries(SKILLS.map(k => [k.id, k]));
 // Auto mode walks this path: two great rounds (0 or 1 wrong) on a skill moves the player to the next one.
-const PATH = ['add5', 'add10', 'sub10', 'make10', 'add20', 'sub20', 'addtens', 'subtens', 'add2d1d', 'sub2d1d', 'add2d', 'sub2d',
-  'x2', 'x5', 'x10', 'x3', 'x4', 'xmix25', 'd2', 'd5', 'd10', 'x6', 'x7', 'x8', 'x9', 'xmix69', 'd3', 'd4', 'd6', 'd7', 'd8', 'd9',
-  'x11', 'x12', 'xtens', 'xall', 'dmix'];
+const PATH = ['add5', 'add10', 'sub10', 'make10', 'add20', 'sub20', 'addtens', 'tskip', 'subtens', 'tmissadd', 'add2d1d', 'sub2d1d', 'add2d', 'sub2d', 'tbal',
+  'x2', 'x5', 'x10', 'x3', 'x4', 'xmix25', 'd2', 'd5', 'd10', 'x6', 'x7', 'x8', 'x9', 'xmix69', 'tmissmul', 'd3', 'd4', 'd6', 'd7', 'd8', 'd9', 'tmissdiv',
+  'x11', 'x12', 'tpattern', 'xtens', 'xall', 'tbalmul', 'dmix'];
 const GOOD_NEEDED = 2;
 // In auto mode about 1 question in 5 reviews a skill the player already moved past.
 function genFor(skill) {
@@ -451,15 +506,13 @@ function pathRound(skill, wrong) {
   const have = Math.min(prog.good[skill.id] || 0, GOOD_NEEDED);
   if (great && have >= GOOD_NEEDED && next) {
     prog.skill = next; save(); sfx.win();
-    return `<div class="promo levelup">🎉 <b>Math level up!</b> You mastered <b>${skill.name}</b>.<br>Next up: <b>${SKILL[next].name}</b> <span class="tier">${stars(SKILL[next].tier)}</span></div>`;
+    return `<div class="promo levelup">🎉 New math: <b>${SKILL[next].name}</b></div>`;
   }
   save();
-  const dots = `<span class="dots">${'●'.repeat(have)}${'○'.repeat(GOOD_NEEDED - have)}</span>`;
-  if (!next && have >= GOOD_NEEDED) return `<p>🧭 You've finished the whole math path. Amazing, ninja!</p>`;
-  return great ? `<p>🧭 ${skill.name} ${dots} One more great round to move up!</p>`
-    : `<p>🧭 ${skill.name} ${dots} Finish with 0 or 1 wrong to move up.</p>`;
+  if (!next && have >= GOOD_NEEDED) return '';
+  return `<span title="${great ? 'One more great round to move up' : 'Get 0 or 1 wrong to move up'}">🧭 ${'●'.repeat(have)}${'○'.repeat(GOOD_NEEDED - have)}</span>`;
 }
-const SKILL_CATS = [['add', '➕ Add'], ['sub', '➖ Take away'], ['mul', '✖️ Times'], ['div', '➗ Divide']];
+const SKILL_CATS = [['add', '➕ Add'], ['sub', '➖ Take away'], ['mul', '✖️ Times'], ['div', '➗ Divide'], ['think', '🧩 Think']];
 const TIER_GEMS = [1, 1.5, 2, 2.5, 3];   // harder math pays more gems
 const stars = t => '★'.repeat(t) + '☆'.repeat(5 - t);
 function harderSkill(k) { return SKILLS.find(x => x.cat === k.cat && x.tier > k.tier) || k; }
@@ -612,20 +665,104 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
   return L;
 }
 
-// The secret vault: one screen of platforms covered in gems, with an exit door on the right.
+// Secret rooms: one screen inside a building, with a math puzzle and a treasure chest. Solving the puzzle
+// (two steps) opens the chest and the gems spill out. The puzzle follows the chosen math's difficulty.
+const LOSHU = [[2, 7, 6], [9, 5, 1], [4, 3, 8]];
+function magicSquare(tier) {
+  let g = LOSHU.map(r => [...r]);
+  for (let i = R(0, 3); i > 0; i--) g = g[0].map((_, c) => g.map(r => r[c]).reverse());
+  if (R(0, 1)) g = g.map(r => [...r].reverse());
+  const f = [v => v, v => v * 2, v => v * 10, v => v + 10, v => v * 3][tier - 1];
+  g = g.map(r => r.map(f));
+  const r1 = R(0, 2), c1 = R(0, 2); let r2, c2;
+  do { r2 = R(0, 2); c2 = R(0, 2); } while (r2 === r1 || c2 === c1);   // each blank has a full row to work from
+  return { grid: g, sum: g[0][0] + g[0][1] + g[0][2], blanks: [[r1, c1], [r2, c2]], step: tier === 3 ? 10 : 1 };
+}
+const MACHINE_RULES = [
+  [[n => n + 1, '+1'], [n => n + 2, '+2'], [n => n + 3, '+3']],
+  [[n => n + 5, '+5'], [n => n + 10, '+10'], [n => n * 2, '×2']],
+  [[n => n * 3, '×3'], [n => n * 5, '×5'], [n => n * 10, '×10']],
+  [[n => n * 6, '×6'], [n => n * 7, '×7'], [n => n * 8, '×8'], [n => n * 9, '×9']],
+  [[n => n * 2 + 1, '×2 +1'], [n => n * 3 - 1, '×3 −1'], [n => n * 4 + 2, '×4 +2']],
+];
+function machine(tier) {
+  const set = MACHINE_RULES[tier - 1], [fn, rule] = set[R(0, set.length - 1)], ins = shuffle(range(1, 9)).slice(0, 5);
+  return { rule, rows: ins.map(n => [n, fn(n)]), known: 3 };
+}
+function balanceQ(tier, times) {
+  for (;;) {
+    if (times) {
+      const a = R(2, 9), b = R(2, 9), c = R(2, 9), d = a * b / c;
+      if (c !== a && c !== b && Number.isInteger(d) && d >= 2 && d <= 12) return { l: `${a} × ${b}`, r: `${c} × ?`, ans: d };
+      continue;
+    }
+    const k = tier === 3 ? 10 : 1, lim = tier === 1 ? 10 : tier === 2 ? 20 : 100;
+    const a = R(1, tier === 3 ? 7 : 9) * k, b = R(1, tier === 3 ? 7 : 9) * k, c = R(1, 9) * k;
+    if (a + b > lim || a + b - c <= 0 || c === a || c === b || (tier === 2 && a + b <= 10)) continue;
+    return R(0, 1) ? { l: `${a} + ${b}`, r: `? + ${c}`, ans: a + b - c, step: k } : { l: `${a} + ${b}`, r: `${c} + ?`, ans: a + b - c, step: k };
+  }
+}
 function buildVault(src) {
   const cols = Math.ceil(VW / T), map = newMap();
   for (let c = 0; c < cols; c++) { for (let r = 0; r < ROWS; r++) map[r].push('.'); map[GR][c] = '#'; map[GR + 1][c] = '#'; }
-  const V = { idx: src.idx, def: src.def, world: src.world, sky: ['#1a1206', '#6b4a10'], map, w: cols, enemies: [], coins: [], stations: [], bridges: [], doors: [],
-    decor: [], flagC: 9999, castleC: 9999, proj: [], vault: true, exitC: cols - 2 };
-  const coin = (c, r, v = 1) => V.coins.push({ x: c * T + T / 2, y: r * T + T / 2, v, taken: false });
-  for (let off = 0; off + 13 <= cols; off += 11) {
-    for (let c = 3; c <= 5; c++) { map[GR - 4][off + c] = 'B'; coin(off + c, GR - 5, 5); }
-    for (let c = 8; c <= 10; c++) { map[GR - 4][off + c] = 'B'; coin(off + c, GR - 5, 5); }
-    for (let c = 6; c <= 7; c++) { map[GR - 7][off + c] = 'B'; coin(off + c, GR - 8, 5); coin(off + c, GR - 9, 10); }
-  }
-  for (let c = 2; c < cols - 3; c++) coin(c, GR - 1);
+  const mid = Math.floor((cols - 3) / 2), tier = src.skill.tier, st = src.def;
+  const kind = ['scale', 'square', 'machine'][(st.w + st.k) % 3];
+  const room = { kind, tier, step: 0, steps: 2, wait: 0, open: false, openT: 0, blocks: [mid - 3, mid, mid + 3], tilt: -0.12, wobble: 0,
+    chestC: cols - 4, gems: [20, 25, 30, 40, 50][tier - 1] };
+  if (kind === 'scale') { const times = tier >= 4 || ['mul', 'div'].includes(src.skill.cat); room.qs = [balanceQ(tier, times), balanceQ(tier, times)]; }
+  if (kind === 'square') room.sq = magicSquare(tier);
+  if (kind === 'machine') room.mc = machine(tier);
+  for (const c of room.blocks) map[GR - 3][c] = 'R';
+  const V = { idx: src.idx, def: src.def, skill: src.skill, world: src.world, sky: ['#000', '#000'], map, w: cols, enemies: [], coins: [], stations: [], bridges: [], doors: [],
+    decor: [], flagC: 9999, castleC: 9999, proj: [], vault: true, room, exitC: cols - 2 };
+  roomRound(room);
   return V;
+}
+// The question for the current step, as { ans, step } plus three answers for the blocks.
+function roomQ(room) {
+  if (room.kind === 'scale') return room.qs[room.step];
+  if (room.kind === 'square') { const [r, c] = room.sq.blanks[room.step]; return { ans: room.sq.grid[r][c], step: room.sq.step }; }
+  const [, out] = room.mc.rows[room.mc.known + room.step]; return { ans: out, step: 1 };
+}
+function roomRound(room) {
+  room.q = roomQ(room);
+  room.opts = shuffle(choices({ ...room.q, op: 'room' }, 3));
+  room.state = room.opts.map(() => 'idle');
+}
+function roomAnswer(c) {
+  const room = L.room, i = room.blocks.indexOf(c);
+  if (i < 0 || room.open || room.wait || room.state[i] !== 'idle') { sfx.bump(); return; }
+  const x = c * T + T / 2, y = (GR - 3) * T;
+  if (room.opts[i] !== room.q.ans) {
+    room.state[i] = 'wrong'; room.wobble = 30; room.gems = Math.max(5, room.gems - 5);
+    sfx.wrong(); petSay('sad'); floatText(x, y - 20, 'Not that one... −5 💎', '#ff6b6b', 24);
+    return;
+  }
+  room.state[i] = 'right'; room.step++; room.wobble = 0;
+  sfx.correct(); confetti(x, y); gotIt();
+  if (room.step < room.steps) { room.wait = 45; floatText(x, y - 20, 'Yes! One more...', '#3ae374', 26); }
+  else openChest(room);
+}
+function openChest(room) {
+  room.open = true; room.openT = 0; room.tilt = 0;
+  const cx = room.chestC * T + T / 2, cy = GR * T - 30;
+  sfx.win(); shake(8, 3); confetti(cx, cy - 20); confetti(cx, cy - 20); petSay('wow'); award('vault');
+  floatText(cx, cy - 70, `Treasure! +${room.gems}`, '#ffd23f', 30);
+  // the gems spill out across the room for the ninja to collect
+  let left = room.gems, k = 0;
+  while (left > 0) {
+    const v = left >= 10 && k % 3 === 0 ? 10 : left >= 5 ? 5 : 1; left -= v;
+    const col = 2 + (k * 7) % (L.w - 5), row = GR - 1 - (k % 3);
+    L.coins.push({ x: col * T + T / 2, y: row * T + T / 2, v, taken: false });
+    G.parts.push({ k: 'bit', x: cx, y: cy, vx: (Math.random() - 0.5) * 9, vy: -6 - Math.random() * 6, life: 40, col: GEM_COL[v][0], s: 6 });
+    k++;
+  }
+}
+function updateRoom() {
+  const room = L.room; if (!room) return;
+  if (room.wait && --room.wait === 0) roomRound(room);
+  if (room.wobble) room.wobble--;
+  if (room.open) room.openT++;
 }
 
 const BOSS_SPECS = {
@@ -960,11 +1097,11 @@ setInterval(() => {
 const SAVE_KEY = 'mathninja-v2', PLAYERS_KEY = 'mathninja-players';
 const GRADES = [
   { id: 'K', name: 'Kindergarten', skill: 'add5', easy: true, picks: ['add5', 'add10', 'make10', 'sub10'] },
-  { id: '1', name: '1st grade', skill: 'add10', easy: true, picks: ['add10', 'make10', 'sub10', 'add20', 'sub20', 'addtens'] },
-  { id: '2', name: '2nd grade', skill: 'add20', easy: null, picks: ['add20', 'sub20', 'addtens', 'subtens', 'add2d1d', 'sub2d1d', 'add2d', 'sub2d', 'x2', 'x5', 'x10'] },
-  { id: '3', name: '3rd grade', skill: 'x2', easy: null, picks: ['x2', 'x5', 'x10', 'x3', 'x4', 'x6', 'x7', 'x8', 'x9', 'xmix25', 'xmix69', 'd2', 'd5', 'd10', 'd3', 'd4', 'add2d', 'sub2d'] },
-  { id: '4', name: '4th grade', skill: 'x6', easy: null, picks: ['xmix69', 'xall', 'xtens', 'x11', 'x12', 'd6', 'd7', 'd8', 'd9', 'dmix'] },
-  { id: '5', name: '5th grade +', skill: 'xmix69', easy: null, picks: ['xall', 'xtens', 'x11', 'x12', 'dmix'] },
+  { id: '1', name: '1st grade', skill: 'add10', easy: true, picks: ['add10', 'make10', 'sub10', 'add20', 'sub20', 'addtens', 'tskip', 'tmissadd'] },
+  { id: '2', name: '2nd grade', skill: 'add20', easy: null, picks: ['add20', 'sub20', 'addtens', 'subtens', 'add2d1d', 'sub2d1d', 'add2d', 'sub2d', 'x2', 'x5', 'x10', 'tskip', 'tmissadd', 'tbal'] },
+  { id: '3', name: '3rd grade', skill: 'x2', easy: null, picks: ['x2', 'x5', 'x10', 'x3', 'x4', 'x6', 'x7', 'x8', 'x9', 'xmix25', 'xmix69', 'd2', 'd5', 'd10', 'd3', 'd4', 'add2d', 'sub2d', 'tbal', 'tmissmul', 'tmissdiv'] },
+  { id: '4', name: '4th grade', skill: 'x6', easy: null, picks: ['xmix69', 'xall', 'xtens', 'x11', 'x12', 'd6', 'd7', 'd8', 'd9', 'dmix', 'tmissmul', 'tmissdiv', 'tpattern', 'tbalmul'] },
+  { id: '5', name: '5th grade +', skill: 'xmix69', easy: null, picks: ['xall', 'xtens', 'x11', 'x12', 'dmix', 'tpattern', 'tbalmul'] },
 ];
 const GRADE = Object.fromEntries(GRADES.map(g => [g.id, g]));
 const PLAYER_ICONS = ['🥷', '🐯', '🐼', '🦊', '🐸', '🐲', '🦄', '🐵', '🦖'];
@@ -1004,7 +1141,7 @@ const keys = { left: false, right: false, jump: false, jumpPressed: false };
 const ambient = [];         // falling petals / rising embers, in screen space
 
 // ---------------------------------------------------------------- physics
-const SOLID = new Set(['#', 'B', '?', 'U', 'S', 'P', 'Q', 'p', 'q', 'G', 'A', 'K', 'N', 'b']);
+const SOLID = new Set(['#', 'B', '?', 'U', 'S', 'P', 'Q', 'p', 'q', 'G', 'A', 'K', 'N', 'b', 'R']);
 function solid(c, r) {
   if (c < 0 || c >= L.w) return true;
   if (r >= ROWS) return false;
@@ -1127,6 +1264,7 @@ function bump(c, r) {
   else if (t === 'A') answer(c, r);
   else if (t === 'K' && currentStation()) openBossPad();
   else if (t === 'N') bridgeStone(c, r);
+  else if (t === 'R') roomAnswer(c);
   else if (t === 'H') {
     L.map[r][c] = 'U'; prog.golden[L.idx] = true; save();
     G.parts.push({ k: 'coin', x: c * T + T / 2, y: r * T, vx: 0, vy: -9, life: 40, v: 25 });
@@ -1239,7 +1377,7 @@ const BADGES = [
   { id: 'power', icon: '⚡', name: 'Powered Up', text: 'Earn a streak power-up.' },
   { id: 'bridge', icon: '🌉', name: 'Bridge Builder', text: 'Build a number-stone bridge.' },
   { id: 'bridge10', icon: '🏗️', name: 'Master Builder', text: 'Build 10 bridges.' },
-  { id: 'vault', icon: '🚪', name: 'Secret Finder', text: 'Find a secret vault.' },
+  { id: 'vault', icon: '🚪', name: 'Secret Finder', text: 'Solve a secret room puzzle.' },
   { id: 'golden', icon: '🌟', name: 'Golden Gem', text: 'Find a hidden golden gem.' },
   { id: 'golden-all', icon: '👑', name: 'Golden Hunter', text: 'Find all 8 golden gems. Unlocks the Golden suit!' },
   { id: 'boss-nohit', icon: '🛡️', name: 'Untouchable', text: 'Beat a boss without getting hit.' },
@@ -1297,6 +1435,7 @@ function petTick() {
 }
 // Two misses in a row brings Sensei with a tip for the fact that was missed.
 function tipFor(q) {
+  if (q.tip) return q.tip;
   const { a, b, op, ans } = q;
   if (q.missing) return `Count up from ${a} to ${a + ans}. That's ${ans}.`;
   if (q.step && op === '+') return `Think in tens: ${a / 10} tens + ${b / 10} tens = ${ans / 10} tens, which is ${ans}.`;
@@ -1326,13 +1465,26 @@ function tipFor(q) {
   }
   return `Think times tables: what times ${b} makes ${a}? ${ans} × ${b} = ${a}.`;
 }
-function senseiTip(txt) {
-  G.tip = { txt, t: 420 };
+// A picture to go with the tip: ten frames, arrays, groups, a number line or a balance.
+function picFor(q) {
+  if (q.pic) return q.pic;
+  const { a, b, op, ans } = q;
+  if (q.missing && op === '+' && a + ans <= 20) return { k: 'frames', red: a, ghost: ans };
+  if (q.step && (op === '+' || op === '−')) return { k: 'line', seq: [a, ans], hole: 1, jump: op === '+' ? `+${b}` : `−${b}` };
+  if (op === '+' && ans <= 20) return { k: 'frames', red: a, blue: b };
+  if (op === '−' && a <= 20) return { k: 'frames', red: a, cross: b };
+  if (op === '+' || op === '−') { const t = Math.floor(b / 10) * 10, mid = op === '+' ? a + t : a - t; return { k: 'line', seq: t && b % 10 ? [a, mid, ans] : [a, ans], hole: -1, jumps: t && b % 10 ? [`${op === '+' ? '+' : '−'}${t}`, `${op === '+' ? '+' : '−'}${b % 10}`] : [`${op === '+' ? '+' : '−'}${b}`] }; }
+  if (op === '×' && !q.step && a * b <= 144) return { k: 'array', rows: Math.min(a, b), cols: Math.max(a, b) };
+  if (op === '÷' && a <= 100) return { k: 'groups', g: b, each: ans };
+  return null;
+}
+function senseiTip(txt, q = null) {
+  G.tip = { txt, t: 480, pic: q ? picFor(q) : null };
   [392, 523, 659].forEach((f, i) => tone(f, 0.25, 'triangle', 0.04, null, i * 0.1));
 }
 function missed(q) {
   petSay('sad');
-  if (++G.wrongRun >= 2) { senseiTip(tipFor(q)); G.wrongRun = 0; }
+  if (++G.wrongRun >= 2) { senseiTip(tipFor(q), q); G.wrongRun = 0; }
 }
 function gotIt() { petSay('happy'); G.wrongRun = 0; }
 
@@ -1411,24 +1563,15 @@ const activeBridge = () => L.bridges.find(b => !b.done && P.x > b.startX - 3 * T
 
 // ---------------------------------------------------------------- secret doors and the vault
 const doorBox = c => ({ x: c * T, y: GR * T - 2.5 * T, w: 1.4 * T, h: 2.5 * T });
-function harderGen() { return harderSkill(L.skill).gen; }
-function openDoor(d) {
-  d.used = true;
-  const locked = () => { sfx.wrong(); floatText(P.x + P.w / 2, P.y - 20, 'The door stays locked', '#ff9a3c', 24); };
-  askQuestion({
-    q: harderGen()(), n: 5, time: prog.easy ? 18 : 12, msg: 'A secret door! Answer this harder one to open it.',
-    onRight() { streakUp(P.x + P.w / 2, P.y); enterVault(); },
-    onWrong: locked, onTimeout: locked,
-  });
-}
+function openDoor(d) { d.used = true; G.roomDoor = d; enterVault(); }
 function enterVault() {
-  award('vault');
   G.saved = { L, x: P.x, y: P.y };
   L = buildVault(L);
   P.x = 1.5 * T; P.y = GR * T - P.h; P.vx = P.vy = 0; cam = 0;
-  sfx.win(); floatText(P.x + 40, P.y - 30, 'Secret vault!', '#ffd23f', 30);
+  sfx.gate(); floatText(P.x + 110, P.y - 30, 'A secret room!', '#ffd23f', 26);
 }
 function leaveVault() {
+  if (G.roomDoor) G.roomDoor.solved = L.room.open;
   L = G.saved.L; P.x = G.saved.x + T; P.y = G.saved.y; P.vx = P.vy = 0; G.saved = null;
   sfx.gate();
 }
@@ -1498,6 +1641,7 @@ function updatePlayer() {
     G.parts.push({ k: 'bit', x: p.x + p.w / 2 - p.face * 10, y: p.y + p.h - 6, vx: -p.face * 0.5, vy: -1 - Math.random(), life: 26, col: cols[R(0, 2)], s: 4 });
   }
   petTick();
+  updateRoom();
 
   // Bridges: carry stones to the altar; reaching a bridge makes it the respawn point.
   for (const b of L.bridges || []) {
@@ -1717,15 +1861,11 @@ function finishLevel() {
   prog.mastery[sk.id] = Math.max(prog.mastery[sk.id] || 0, dots);
   save();
   const after = currentBelt(), last = i === STAGES.length - 1;
-  let title = 'Level complete!', body = '';
-  if (st.boss) { title = `You got the ${W.scroll} back!`; body = `<div class="bigicon">📜</div><p>${W.boss.name} is beaten!</p>`; }
-  else {
-    const found = [0, 1].filter(k => prog.best[st.w * 3 + k]).length;
-    body = `<div class="bigicon">🧩</div><p>You found a torn piece of the <b>${W.scroll}</b> (${found} of 2). Beat the boss to win back the whole scroll!</p>`;
-  }
-  body += `<p><span class="dots">${'●'.repeat(dots) + '○'.repeat(3 - dots)}</span> ${['', '🥉', '🥈', '🥇'][dots]} ${sk.name}<br>
-    +${pts} ninja points (${dots} × ${stars(sk.tier)})<br>Score <b>${G.score}</b> &nbsp;·&nbsp; Gems <b>${G.coins}</b><br>
-    ${G.mistakes === 0 ? 'Perfect: no mistakes!' : `Wrong answers: <b>${G.mistakes}</b>`} &nbsp;·&nbsp; Best streak <b>${G.bestStreak}</b></p>`;
+  // Kept short for kids: a big picture, the medal, two numbers, and at most a couple of highlights.
+  const found = [0, 1].filter(k => prog.best[st.w * 3 + k]).length;
+  const title = st.boss ? 'Scroll won!' : G.mistakes === 0 ? 'Perfect!' : 'Level complete!';
+  let body = st.boss ? '<div class="bigicon">📜</div>' : `<div class="bigicon">🧩<small>${found}/2</small></div>`;
+  body += `<div class="medalrow"><span class="dots">${'●'.repeat(dots) + '○'.repeat(3 - dots)}</span> ${['', '🥉', '🥈', '🥇'][dots]}</div>`;
   const earned = Math.round((G.coins + (st.boss ? 20 : 0)) * TIER_GEMS[sk.tier - 1]);
   prog.bank += earned; prog.stats.gems += earned; save();
   if (G.mistakes === 0) award('perfect');
@@ -1733,15 +1873,16 @@ function finishLevel() {
   if ([2, 5, 8, 11].every(k => prog.best[k])) award('boss-all');
   if (prog.stats.gems >= 500) award('gems500');
   if (currentBelt().name === 'Black') award('black-belt');
-  body += `<p>💎 +${earned} gems for the Dojo Shop${sk.tier > 1 ? ` (×${TIER_GEMS[sk.tier - 1]} for ${stars(sk.tier)} math)` : ''} · you have <b>${prog.bank}</b></p>`;
   if (dots === 3) award('gold-medal');
   if (sk.tier >= 4) award('brave');
-  if (G.practice.size) body += `<p>Facts to practice: <b>${[...G.practice.values()].map(qSolved).join(' &nbsp;·&nbsp; ')}</b></p>`;
-  body += pathRound(sk, G.mistakes);
-  if (after.idx > before.idx) body += `<div class="promo">${beltHTML(after)} &nbsp;New belt! You earned the <b>${after.name} Belt</b>!</div>`;
+  const path = pathRound(sk, G.mistakes), up = path.startsWith('<div');
+  body += `<div class="statrow"><span>💎 +${earned}</span><span>🥋 +${pts}</span>${up ? '' : path}</div>`;
+  if (up) body += path;
+  if (after.idx > before.idx) body += `<div class="promo">${beltHTML(after)} &nbsp;<b>${after.name} Belt!</b></div>`;
+  if (G.practice.size) body += `<div class="practice">🔁 ${[...G.practice.values()].slice(0, 3).map(q => `<span>${qSolved(q)}</span>`).join('')}</div>`;
   const btns = [];
   const wolfOffer = i === 0 && !prog.owned.includes('pet-wolf');
-  if (wolfOffer) body += `<div class="promo">🐺 A wolf pup wants to join you! Adopt it in the Dojo Shop for just <b>5 gems</b>.</div>`;
+  if (wolfOffer) body += `<div class="promo">🐺 Wolf pup: just <b>5 💎</b></div>`;
   if (last) btns.push({ label: 'The end ▶', fn: showEnding, primary: true });
   else btns.push({ label: (st.boss ? 'Next world' : 'Next') + ' ▶', fn: () => startStage(i + 1), primary: true });
   btns.push({ label: 'Replay', fn: () => startStage(i), alt: true });
@@ -1960,10 +2101,10 @@ function finishRace() {
     if (RC !== r) return;
     mode = 'racedone'; hide('pauseBtn'); showTouch(false);
     const medal = ['🥇', '🥈', '🥉', '🐎'][r.place - 1];
-    let body = `<div class="bigicon">${medal}</div><p>Time <b>${r.time.toFixed(1)} s</b>${best ? ' · <b>New best!</b>' : ` · Best ${prev.toFixed(1)} s`}<br>
-      Right answers <b>${r.right} / ${GATES}</b></p><p>💎 +${reward} gems for the Dojo Shop (you have <b>${prog.bank}</b>)</p>`;
-    body += pathRound(r.topic, GATES - r.right);
-    if (r.missed.size) body += `<p>Facts to practice: <b>${[...r.missed.values()].map(qSolved).join(' &nbsp;·&nbsp; ')}</b></p>`;
+    const path = pathRound(r.topic, GATES - r.right), up = path.startsWith('<div');
+    let body = `<div class="bigicon">${medal}</div><div class="statrow"><span>⏱ ${r.time.toFixed(1)}s${best ? ' 🆕' : ''}</span><span>✔ ${r.right}/${GATES}</span><span>💎 +${reward}</span>${up ? '' : path}</div>`;
+    if (up) body += path;
+    if (r.missed.size) body += `<div class="practice">🔁 ${[...r.missed.values()].slice(0, 3).map(q => `<span>${qSolved(q)}</span>`).join('')}</div>`;
     showMsg(['1st place!', '2nd place!', '3rd place!', '4th place'][r.place - 1], body, [
       { label: 'Race again', fn: startRace, primary: true },
       { label: 'Change math', fn: () => openSkills(showRaceSetup), alt: true },
@@ -2413,6 +2554,198 @@ function block(x, y, fill, dark, light) {
   [[5, 5], [T - 8, 5], [5, T - 8], [T - 8, T - 8]].forEach(([a, b]) => ctx.fillRect(x + a, y + b, 3, 3));
 }
 
+// ---------------------------------------------------------------- secret room art
+// Inside walls for each world: a paper-screen dojo, a lava cave, a robot control room and a castle hall.
+function drawRoomBg() {
+  const k = L.world.key, W = Math.max(VW, L.w * T), floorY = GR * T;
+  ctx.save(); ctx.translate(-Math.round(cam), 0);
+  if (k === 'japan') {
+    ctx.fillStyle = '#efe2c4'; ctx.fillRect(0, 0, W, floorY);
+    for (let x = 0; x < W; x += 30) { ctx.fillStyle = 'rgba(160,120,70,.18)'; ctx.fillRect(x, 40, 2, floorY - 80); }
+    for (let y = 70; y < floorY - 40; y += 34) { ctx.fillStyle = 'rgba(160,120,70,.18)'; ctx.fillRect(0, y, W, 2); }
+    ctx.fillStyle = '#6b4226';
+    for (let x = 0; x < W; x += 150) ctx.fillRect(x, 0, 12, floorY);
+    ctx.fillRect(0, 34, W, 10); ctx.fillRect(0, floorY - 46, W, 10);
+    ctx.fillStyle = '#4a2c17'; ctx.fillRect(0, 0, W, 30);
+    // hanging scroll and a paper lantern
+    ctx.fillStyle = '#3a2410'; ctx.fillRect(84, 60, 72, 6); ctx.fillRect(84, 214, 72, 6);
+    ctx.fillStyle = '#fffaf0'; ctx.fillRect(90, 66, 60, 148);
+    ctx.strokeStyle = '#222'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(108, 90); ctx.quadraticCurveTo(135, 100, 118, 130); ctx.moveTo(104, 150); ctx.lineTo(136, 150); ctx.moveTo(120, 140); ctx.lineTo(118, 196); ctx.stroke();
+    ctx.fillStyle = '#c0392b'; ctx.beginPath(); ctx.arc(130, 186, 7, 0, 7); ctx.fill();
+    const lx = W - 120;
+    ctx.fillStyle = '#3a2410'; ctx.fillRect(lx - 1, 30, 2, 40);
+    glowAt(lx, 100, 70, 'rgba(255,140,60,.35)');
+    ctx.fillStyle = '#e63946'; ctx.beginPath(); ctx.ellipse(lx, 100, 26, 32, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#2a1a10'; ctx.fillRect(lx - 14, 66, 28, 6); ctx.fillRect(lx - 14, 128, 28, 6);
+    ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 2; for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.ellipse(lx, 100, Math.abs(i) * 6 + 2, 31, 0, 0, 7); ctx.stroke(); }
+  } else if (k === 'lava') {
+    const g = ctx.createLinearGradient(0, 0, 0, floorY); g.addColorStop(0, '#120806'); g.addColorStop(1, '#2e140c');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, floorY);
+    for (let i = 0; i < 40; i++) {
+      const x = hash(i) * W, y = hash(i + 50) * floorY, rx = 30 + hash(i + 9) * 50;
+      ctx.fillStyle = i % 2 ? '#2a1610' : '#3a1d14'; ctx.beginPath(); ctx.ellipse(x, y, rx, rx * 0.6, hash(i + 3), 0, 7); ctx.fill();
+    }
+    for (let i = 0; i < 6; i++) {   // glowing crystals
+      const x = 60 + hash(i + 20) * (W - 120), y = 60 + hash(i + 30) * 180, s = 10 + hash(i + 40) * 10;
+      glowAt(x, y, s * 3, `rgba(255,120,30,${0.25 + 0.15 * Math.sin(tick * 0.05 + i)})`);
+      poly([[x, y - s * 1.6], [x + s * 0.6, y], [x, y + s * 0.5], [x - s * 0.6, y]], '#ff8c1a'); poly([[x, y - s * 1.2], [x + s * 0.25, y - s * 0.1], [x, y + s * 0.2]], '#ffe066');
+    }
+    for (const tx of [70, W - 70]) {   // torches
+      ctx.fillStyle = '#4a3020'; ctx.fillRect(tx - 4, 200, 8, 34);
+      const f = Math.sin(tick * 0.3 + tx) * 3;
+      glowAt(tx, 190, 80, 'rgba(255,140,40,.4)');
+      ctx.fillStyle = '#ff6a00'; ctx.beginPath(); ctx.ellipse(tx, 188, 10, 18 + f, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#ffe066'; ctx.beginPath(); ctx.ellipse(tx, 194, 5, 9 + f / 2, 0, 0, 7); ctx.fill();
+    }
+    ctx.fillStyle = '#0d0504'; ctx.beginPath(); ctx.moveTo(0, 0);
+    for (let x = 0; x <= W; x += 40) ctx.lineTo(x, 22 + hash(x) * 26);
+    ctx.lineTo(W, 0); ctx.fill();
+  } else if (k === 'robot') {
+    ctx.fillStyle = '#2b3646'; ctx.fillRect(0, 0, W, floorY);
+    for (let x = 0; x < W; x += 96) for (let y = 30; y < floorY; y += 96) {
+      ctx.fillStyle = '#323f52'; ctx.fillRect(x + 3, y + 3, 90, 90);
+      ctx.fillStyle = '#5a6b80'; [[8, 8], [84, 8], [8, 84], [84, 84]].forEach(([a, b]) => ctx.fillRect(x + a, y + b, 4, 4));
+    }
+    ctx.fillStyle = '#5f6f80'; ctx.fillRect(0, 44, W, 14); ctx.fillStyle = '#8395a7'; ctx.fillRect(0, 46, W, 4);
+    ctx.fillStyle = '#1b2430'; ctx.fillRect(0, 0, W, 30);
+    for (const [px, py] of [[50, 90], [W - 170, 90]]) {   // consoles with blinking lights
+      ctx.fillStyle = '#141b24'; rrect(px, py, 120, 76, 8); ctx.fill();
+      ctx.fillStyle = '#0d3b2e'; ctx.fillRect(px + 10, py + 10, 100, 34);
+      ctx.strokeStyle = '#3ae374'; ctx.lineWidth = 2; ctx.beginPath();
+      for (let i = 0; i <= 100; i += 5) ctx.lineTo(px + 10 + i, py + 27 + Math.sin(i * 0.2 + tick * 0.1) * 8); ctx.stroke();
+      ['#ff5a5a', '#ffd23f', '#3ae374', '#4cc9f0'].forEach((col, i) => { ctx.fillStyle = (tick >> 4) % 4 === i ? col : '#2a3340'; ctx.beginPath(); ctx.arc(px + 22 + i * 25, py + 60, 6, 0, 7); ctx.fill(); });
+    }
+  } else {
+    ctx.fillStyle = '#232846'; ctx.fillRect(0, 0, W, floorY);
+    for (let y = 0; y < floorY; y += 26) for (let x = (y / 26) % 2 ? -30 : 0; x < W; x += 60) {
+      ctx.fillStyle = '#2c3256'; ctx.fillRect(x + 2, y + 2, 56, 22);
+    }
+    const wx = W / 2;   // arched window with the moon
+    ctx.fillStyle = '#141830'; ctx.beginPath(); ctx.moveTo(wx - 60, 230); ctx.lineTo(wx - 60, 100); ctx.arc(wx, 100, 60, Math.PI, 0); ctx.lineTo(wx + 60, 230); ctx.fill();
+    const g = ctx.createLinearGradient(0, 50, 0, 225); g.addColorStop(0, '#1a2a6c'); g.addColorStop(1, '#3a4a9c');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(wx - 50, 222); ctx.lineTo(wx - 50, 104); ctx.arc(wx, 104, 50, Math.PI, 0); ctx.lineTo(wx + 50, 222); ctx.fill();
+    ctx.fillStyle = '#fff6c8'; ctx.beginPath(); ctx.arc(wx + 18, 96, 16, 0, 7); ctx.fill();
+    ctx.fillStyle = '#141830'; ctx.fillRect(wx - 2, 54, 4, 170); ctx.fillRect(wx - 50, 150, 100, 4);
+    for (const bx of [110, W - 110]) {   // banners and candles
+      ctx.fillStyle = '#8b1a2b'; ctx.beginPath(); ctx.moveTo(bx - 30, 40); ctx.lineTo(bx + 30, 40); ctx.lineTo(bx + 30, 190); ctx.lineTo(bx, 170); ctx.lineTo(bx - 30, 190); ctx.fill();
+      ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(bx, 100, 14, 0, 7); ctx.fill(); ctx.fillStyle = '#8b1a2b'; ctx.beginPath(); ctx.arc(bx, 100, 8, 0, 7); ctx.fill();
+      ctx.fillStyle = '#c9a24f'; ctx.fillRect(bx - 3, floorY - 120, 6, 120); ctx.fillRect(bx - 16, floorY - 124, 32, 6);
+      ctx.fillStyle = '#f4f0e0'; ctx.fillRect(bx - 4, floorY - 146, 8, 22);
+      glowAt(bx, floorY - 152, 40, 'rgba(255,200,80,.35)');
+      ctx.fillStyle = '#ffb627'; ctx.beginPath(); ctx.ellipse(bx, floorY - 152, 4, 8 + Math.sin(tick * 0.3 + bx), 0, 0, 7); ctx.fill();
+    }
+    ctx.fillStyle = '#141830'; ctx.fillRect(0, 0, W, 26);
+  }
+  // pillars at both ends make it feel like a room
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(0, 0, 18, floorY); ctx.fillRect(W - 18, 0, 18, floorY);
+  ctx.restore();
+}
+function drawRoomFloor(x, y, c, r, top) {
+  const k = L.world.key;
+  if (k === 'japan') {   // tatami mats
+    ctx.fillStyle = '#c9c27a'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#b5ad66'; for (let i = 4; i < T; i += 6) ctx.fillRect(x, y + i, T, 1);
+    if (c % 3 === 0) { ctx.fillStyle = '#2f4a2a'; ctx.fillRect(x, y, 4, T); }
+    if (top) { ctx.fillStyle = '#2f4a2a'; ctx.fillRect(x, y, T, 5); }
+  } else if (k === 'lava') {
+    ctx.fillStyle = '#2a1a16'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#3a2620'; ctx.fillRect(x + 2, y + 2, T / 2 - 3, T / 2 - 3); ctx.fillRect(x + T / 2 + 1, y + T / 2 + 1, T / 2 - 3, T / 2 - 3);
+    if (top && c % 4 === 1) { ctx.fillStyle = `rgba(255,120,0,${0.5 + 0.3 * Math.sin(tick * 0.1 + c)})`; ctx.fillRect(x + 6, y + 3, 14, 2); }
+  } else if (k === 'robot') {
+    ctx.fillStyle = '#3a4656'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#2a3442';
+    for (let i = 0; i < T; i += 9) ctx.fillRect(x, y + i, T, 3);
+    if (top) { ctx.save(); ctx.beginPath(); ctx.rect(x, y, T, 7); ctx.clip(); ctx.fillStyle = '#ffd23f'; ctx.fillRect(x, y, T, 7);
+      for (let k2 = -1; k2 < 4; k2++) poly([[x + k2 * 12, y], [x + k2 * 12 + 6, y], [x + k2 * 12 + 13, y + 7], [x + k2 * 12 + 7, y + 7]], '#222'); ctx.restore(); }
+  } else {   // wooden planks
+    ctx.fillStyle = '#6b4a2e'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#5a3d25'; ctx.fillRect(x, y + T / 2, T, 2);
+    ctx.fillRect(x + ((c + r) % 2 ? 10 : 26), y, 2, T / 2); ctx.fillRect(x + ((c + r) % 2 ? 22 : 4), y + T / 2, 2, T / 2);
+    if (top) { ctx.fillStyle = '#8a6440'; ctx.fillRect(x, y, T, 4); }
+  }
+}
+function drawRoomBlock(x, y, c) {
+  const room = L.room, i = room.blocks.indexOf(c), st = room.state[i];
+  if (st === 'right') block(x, y, '#2ecc71', '#1e8449', '#8ff0b5');
+  else if (st === 'wrong') block(x, y, '#7a7a8a', '#4a4a58', '#9a9aaa');
+  else if (room.open) block(x, y, '#9b6a3c', '#5e3a1c', '#b8875a');
+  else block(x, y, '#f7b928', '#a8600a', '#ffe08a');
+  if (room.open || room.wait) return;
+  const v = String(room.opts[i]);
+  ctx.fillStyle = st === 'idle' ? '#5a2a00' : '#fff'; ctx.font = `bold ${v.length >= 3 ? 16 : 22}px "Trebuchet MS", sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(v, x + T / 2, y + T / 2 + 1);
+}
+// The puzzle on the back wall, the treasure chest, and its gem tag.
+function drawRoom() {
+  const room = L.room, cx = room.blocks[1] * T + T / 2, top = VW < 700 ? 192 : 110, bottom = (GR - 3) * T - 14;
+  const font = s => { ctx.font = `bold ${s}px "Trebuchet MS", sans-serif`; };
+  ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const done = room.step;   // how many steps are solved
+  if (room.kind === 'scale') {
+    const q = room.qs[Math.min(done, 1)], solvedNow = room.open || (room.wait && done > 0);
+    const wob = room.wobble ? Math.sin(room.wobble * 0.6) * 0.12 : 0, ang = solvedNow ? 0 : room.tilt + wob;
+    const py = top + 22, arm = Math.min(170, VW * 0.22);
+    ctx.fillStyle = '#8a6a2a'; ctx.fillRect(cx - 6, py, 12, bottom - py); ctx.fillRect(cx - 40, bottom - 10, 80, 10);
+    ctx.fillStyle = '#c9a24f'; ctx.fillRect(cx - 4, py, 8, bottom - py - 10);
+    ctx.save(); ctx.translate(cx, py); ctx.rotate(ang);
+    ctx.fillStyle = '#c9a24f'; ctx.fillRect(-arm, -4, arm * 2, 8); ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(0, 0, 9, 0, 7); ctx.fill();
+    ctx.restore();
+    for (const side of [-1, 1]) {
+      const ex = cx + Math.cos(ang) * arm * side, ey = py + Math.sin(ang) * arm * side, panY = ey + 70;
+      ctx.strokeStyle = '#c9a24f'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex - 52, panY); ctx.moveTo(ex, ey); ctx.lineTo(ex + 52, panY); ctx.stroke();
+      ctx.fillStyle = '#c9a24f'; ctx.beginPath(); ctx.ellipse(ex, panY, 62, 12, 0, 0, Math.PI); ctx.fill();
+      ctx.fillStyle = 'rgba(20,20,50,.85)'; rrect(ex - 50, panY - 40, 100, 36, 8); ctx.fill();
+      const lab = side < 0 ? q.l : q.r, shown = solvedNow ? lab.replace('?', q.ans) : lab;
+      font(22); ctx.fillStyle = '#fff'; ctx.fillText(shown, ex, panY - 21);
+    }
+    ctx.fillStyle = 'rgba(20,20,50,.85)'; rrect(cx - 26, py - 32, 52, 22, 8); ctx.fill();
+    font(15); ctx.fillStyle = '#ffd23f'; ctx.fillText(`${Math.min(done + (room.wait ? 0 : 1), 2)} / 2`, cx, py - 20);
+  } else if (room.kind === 'square') {
+    const sq = room.sq, cell = Math.min(54, (bottom - top - 30) / 3), gx = cx - cell * 1.5, gy = top + 28;
+    ctx.fillStyle = '#5a4030'; rrect(gx - 12, gy - 12, cell * 3 + 24, cell * 3 + 24, 10); ctx.fill();
+    ctx.fillStyle = '#d9c39a'; rrect(gx - 6, gy - 6, cell * 3 + 12, cell * 3 + 12, 6); ctx.fill();
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) {
+      const bi = sq.blanks.findIndex(([br, bc]) => br === r && bc === c), x = gx + c * cell, y = gy + r * cell;
+      ctx.strokeStyle = '#5a4030'; ctx.lineWidth = 2; ctx.strokeRect(x, y, cell, cell);
+      let txt = sq.grid[r][c], col = '#3a2200';
+      if (bi >= 0 && bi >= done) { txt = bi === done ? '?' : ''; col = '#1a7fa0'; if (bi === done && !room.wait) { ctx.fillStyle = `rgba(125,249,255,${0.35 + 0.25 * Math.sin(tick * 0.15)})`; ctx.fillRect(x + 3, y + 3, cell - 6, cell - 6); } }
+      else if (bi >= 0) col = '#1e8449';
+      font(sq.grid[r][c] >= 100 ? 18 : 24); ctx.fillStyle = col; ctx.fillText(txt, x + cell / 2, y + cell / 2 + 1);
+    }
+    font(16);
+    for (let r = 0; r < 3; r++) {
+      const lx = gx + cell * 3 + 44, ly = gy + r * cell + cell / 2;
+      ctx.fillStyle = 'rgba(20,20,50,.85)'; rrect(lx - 28, ly - 12, 56, 24, 8); ctx.fill();
+      ctx.fillStyle = '#ffd23f'; ctx.fillText(`= ${sq.sum}`, lx, ly + 1);
+    }
+  } else {
+    const mc = room.mc, rows = mc.rows.slice(0, mc.known + Math.min(done + 1, 2)), rh = Math.min(34, (bottom - top - 40) / rows.length);
+    const bw = 220, bx = cx - bw / 2, by0 = top + 6;
+    // the machine: a box with a funnel in and a chute out
+    ctx.fillStyle = '#4a5868'; rrect(bx, by0, bw, 34, 8); ctx.fill();
+    ctx.fillStyle = '#8395a7'; rrect(bx + 6, by0 + 5, bw - 12, 24, 6); ctx.fill();
+    font(16); ctx.fillStyle = '#1b2430'; ctx.fillText(room.open ? `Rule: ${mc.rule}` : 'IN  ➜  ⚙️  ➜  OUT', cx, by0 + 18);
+    rows.forEach(([a, b], i) => {
+      const y = by0 + 44 + i * rh, asking = i >= mc.known && i - mc.known === done && !room.open;
+      ctx.fillStyle = asking ? 'rgba(125,249,255,.25)' : 'rgba(20,20,50,.7)'; rrect(bx + 10, y, bw - 20, rh - 4, 6); ctx.fill();
+      font(20); ctx.fillStyle = '#fff'; ctx.fillText(a, bx + 50, y + rh / 2 - 1);
+      ctx.fillStyle = '#ffd23f'; ctx.fillText('➜', cx, y + rh / 2 - 1);
+      ctx.fillStyle = asking ? '#7df9ff' : '#fff'; ctx.fillText(asking ? '?' : b, bx + bw - 50, y + rh / 2 - 1);
+    });
+  }
+  // treasure chest
+  const chx = room.chestC * T - 6, chy = GR * T - 40, open = room.open;
+  if (open) glowAt(chx + 24, chy, 90 + Math.sin(tick * 0.1) * 8, 'rgba(255,215,80,.45)');
+  ctx.fillStyle = '#5e3a1c'; ctx.fillRect(chx, chy + 12, 48, 28);
+  ctx.fillStyle = '#8b5a2b'; ctx.fillRect(chx + 3, chy + 15, 42, 22);
+  ctx.fillStyle = '#ffd23f'; ctx.fillRect(chx, chy + 12, 48, 4); ctx.fillRect(chx + 21, chy + 16, 6, 10);
+  if (open) { ctx.fillStyle = '#5e3a1c'; ctx.fillRect(chx, chy - 14, 48, 14); ctx.fillStyle = '#ffd23f'; ctx.fillRect(chx, chy - 2, 48, 3); }
+  else {
+    ctx.fillStyle = '#5e3a1c'; ctx.beginPath(); ctx.moveTo(chx, chy + 12); ctx.lineTo(chx, chy + 4); ctx.quadraticCurveTo(chx + 24, chy - 10, chx + 48, chy + 4); ctx.lineTo(chx + 48, chy + 12); ctx.fill();
+    ctx.fillStyle = '#ffd23f'; ctx.fillRect(chx + 20, chy + 8, 8, 9);
+    ctx.fillStyle = 'rgba(20,20,50,.85)'; rrect(chx - 6, chy - 40, 60, 26, 8); ctx.fill();
+    font(16); ctx.fillStyle = '#fff'; ctx.fillText(`💎 ${room.gems}`, chx + 24, chy - 26);
+  }
+  ctx.restore();
+}
+
 function drawGround(x, y, c, r, top) {
   switch (L.world.key) {
     case 'japan': {
@@ -2461,7 +2794,8 @@ function drawGround(x, y, c, r, top) {
 function drawTile(t, x, y, c, r) {
   const W = L.world;
   switch (t) {
-    case '#': drawGround(x, y, c, r, L.map[r - 1][c] !== '#'); break;
+    case '#': if (L.room) drawRoomFloor(x, y, c, r, L.map[r - 1][c] !== '#'); else drawGround(x, y, c, r, L.map[r - 1][c] !== '#'); break;
+    case 'R': drawRoomBlock(x, y, c); break;
     case 'B':
       ctx.fillStyle = W.brick[1]; ctx.fillRect(x, y, T, T);
       ctx.fillStyle = W.brick[0];
@@ -2612,7 +2946,7 @@ function drawPuzzles() {
       }
     }
   }
-  const doors = [...(L.doors || []).map(d => ({ c: d.c, used: d.used, exit: false })), ...(L.vault ? [{ c: L.exitC, used: false, exit: true }] : [])];
+  const doors = [...(L.doors || []).map(d => ({ c: d.c, used: d.used, solved: d.solved, exit: false })), ...(L.vault ? [{ c: L.exitC, used: false, exit: true }] : [])];
   for (const d of doors) {
     const { x, y, w, h } = doorBox(d.c);
     if (x > cam + VW || x + w < cam) continue;
@@ -2620,7 +2954,7 @@ function drawPuzzles() {
     ctx.fillStyle = d.exit ? '#2e8b57' : d.used ? '#5a5a6e' : '#6b2fa3'; ctx.fillRect(x, y, w, h);
     ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fillRect(x + w / 2 - 1, y, 2, h);
     ctx.fillStyle = '#ffd23f'; ctx.font = 'bold 26px "Trebuchet MS", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(d.exit ? '➜' : d.used ? '🔒' : '?', x + w / 2, y + h / 2);
+    ctx.fillText(d.exit ? '➜' : d.used ? (d.solved ? '✔' : '🔒') : '?', x + w / 2, y + h / 2);
     if (!d.used) hudText(d.exit ? 'Exit' : 'Secret door', x + w / 2, y - 18 + Math.sin(tick * 0.1) * 3, 14, '#ffd23f', 'center');
   }
 }
@@ -3025,7 +3359,7 @@ function wrapLines(txt, maxW) {
 }
 function drawTip() {
   // slides down under the question banner, so it never covers the ninja
-  const t = G.tip, w = Math.min(560, VW - 24), h = 100, x = (VW - w) / 2, slide = Math.min(1, (420 - t.t) / 14, t.t / 14);
+  const t = G.tip, w = Math.min(560, VW - 24), h = t.pic ? 196 : 100, x = (VW - w) / 2, slide = Math.min(1, (480 - t.t) / 14, t.t / 14);
   const top = VW < 700 ? 196 : 104, y = top - (1 - slide) * (top + h + 20);
   ctx.fillStyle = 'rgba(20,20,50,.92)'; rrect(x, y, w, h, 14); ctx.fill();
   ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 3; ctx.stroke();
@@ -3034,6 +3368,67 @@ function drawTip() {
   ctx.fillText("Sensei's tip", x + 76, y + 10);
   ctx.font = '16px "Trebuchet MS", sans-serif'; ctx.fillStyle = '#ffffff';
   wrapLines(t.txt, w - 92).slice(0, 3).forEach((ln, i) => ctx.fillText(ln, x + 76, y + 32 + i * 20));
+  if (t.pic) drawTipPic(t.pic, x + 14, y + 96, w - 28, h - 106);
+}
+function drawTipPic(pic, x, y, w, h) {
+  const dot = (cx, cy, r, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill(); };
+  ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  if (pic.k === 'frames') {   // ten frames: red dots, then blue (or ghost) dots, so "make 10" shows itself
+    const red = pic.red || 0, more = pic.blue || pic.ghost || 0, total = red + more, frames = total > 10 || red > 10 ? 2 : 1;
+    const cell = Math.min(18, h / 2 - 2, (w - 20) / (frames * 5 + 1)), fw = cell * 5;
+    const x0 = x + (w - (frames * fw + (frames - 1) * cell)) / 2, y0 = y + (h - cell * 2) / 2;
+    for (let f = 0; f < frames; f++) for (let i = 0; i < 10; i++) {
+      const n = f * 10 + i, cx = x0 + f * (fw + cell) + (i % 5) * cell, cy = y0 + Math.floor(i / 5) * cell;
+      ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2; ctx.strokeRect(cx, cy, cell, cell);
+      const mx = cx + cell / 2, my = cy + cell / 2;
+      if (n < red) {
+        dot(mx, my, cell * 0.36, '#ff5a5a');
+        if (pic.cross && n >= red - pic.cross) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(mx - 5, my - 5); ctx.lineTo(mx + 5, my + 5); ctx.moveTo(mx + 5, my - 5); ctx.lineTo(mx - 5, my + 5); ctx.stroke(); }
+      } else if (n < total) {
+        if (pic.ghost) { ctx.strokeStyle = '#7df9ff'; ctx.lineWidth = 2; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.arc(mx, my, cell * 0.34, 0, 7); ctx.stroke(); ctx.setLineDash([]); }
+        else dot(mx, my, cell * 0.36, '#4aa8ff');
+      }
+    }
+  } else if (pic.k === 'array') {   // rows of dots; every fifth column is a different colour to help counting
+    const cell = Math.min(16, h / pic.rows, (w - 40) / pic.cols), x0 = x + (w - cell * pic.cols) / 2, y0 = y + (h - cell * pic.rows) / 2;
+    for (let r = 0; r < pic.rows; r++) for (let c = 0; c < pic.cols; c++) dot(x0 + c * cell + cell / 2, y0 + r * cell + cell / 2, cell * 0.36, Math.floor(c / 5) % 2 ? '#4aa8ff' : '#ff5a5a');
+    ctx.font = 'bold 15px "Trebuchet MS", sans-serif'; ctx.fillStyle = '#ffd23f';
+    ctx.fillText(`${pic.rows} rows of ${pic.cols}`, x0 - 40 < x ? x + w - 46 : x0 - 46, y + h / 2);
+  } else if (pic.k === 'groups') {   // circles with the same number of dots in each
+    const g = pic.g, rad = Math.min(h / 2 - 4, (w - 10) / g / 2.2), per = pic.each;
+    for (let i = 0; i < g; i++) {
+      const cx = x + (w - g * rad * 2.2) / 2 + rad * 1.1 + i * rad * 2.2, cy = y + h / 2;
+      ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, rad, 0, 7); ctx.stroke();
+      const cols = Math.ceil(Math.sqrt(per)), d = rad * 1.3 / cols;
+      for (let k = 0; k < per; k++) dot(cx - (cols - 1) * d / 2 + (k % cols) * d, cy - (Math.ceil(per / cols) - 1) * d / 2 + Math.floor(k / cols) * d, Math.max(1.5, d * 0.32), '#ff5a5a');
+    }
+  } else if (pic.k === 'line') {   // a number line with hops between the numbers
+    const seq = pic.seq, n = seq.length, ly = y + h - 18, x0 = x + 30, step = (w - 60) / Math.max(1, n - 1);
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x + 10, ly); ctx.lineTo(x + w - 10, ly); ctx.stroke();
+    ctx.font = 'bold 16px "Trebuchet MS", sans-serif';
+    seq.forEach((v, i) => {
+      const px = x0 + i * step;
+      ctx.fillStyle = '#fff'; ctx.fillRect(px - 1, ly - 6, 2, 12);
+      ctx.fillStyle = i === pic.hole ? '#7df9ff' : '#ffd23f'; ctx.fillText(i === pic.hole ? '?' : v, px, ly + 14);
+      if (i) {
+        const arcH = Math.min(step / 3, h - 44);
+        ctx.strokeStyle = '#ff8a5a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(px - step + 4, ly - 4); ctx.quadraticCurveTo(px - step / 2, ly - 4 - arcH * 2, px - 4, ly - 4); ctx.stroke();
+        const lab = pic.jumps ? pic.jumps[i - 1] : pic.jump || (seq[i] - seq[i - 1] >= 0 ? `+${seq[i] - seq[i - 1]}` : `${seq[i] - seq[i - 1]}`);
+        if (i !== pic.hole || pic.jumps || pic.jump) { ctx.fillStyle = '#ff8a5a'; ctx.font = 'bold 13px "Trebuchet MS", sans-serif'; ctx.fillText(lab, px - step / 2, ly - arcH - 14); ctx.font = 'bold 16px "Trebuchet MS", sans-serif'; }
+      }
+    });
+  } else if (pic.k === 'scale') {   // a level balance: both sides weigh the same
+    const cx = x + w / 2, top = y + 14;
+    ctx.fillStyle = '#c9a24f'; ctx.fillRect(cx - 3, top, 6, h - 22); ctx.fillRect(cx - 26, y + h - 10, 52, 6);
+    ctx.fillRect(cx - 150, top, 300, 5);
+    for (const [sx, lab] of [[cx - 130, pic.l], [cx + 130, pic.r]]) {
+      ctx.strokeStyle = '#c9a24f'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sx, top + 4); ctx.lineTo(sx - 46, top + 36); ctx.moveTo(sx, top + 4); ctx.lineTo(sx + 46, top + 36); ctx.stroke();
+      ctx.fillStyle = '#c9a24f'; ctx.beginPath(); ctx.ellipse(sx, top + 38, 54, 8, 0, 0, Math.PI); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 18px "Trebuchet MS", sans-serif'; ctx.fillText(lab, sx, top + 24);
+    }
+    ctx.fillStyle = '#ffd23f'; ctx.font = 'bold 22px "Trebuchet MS", sans-serif'; ctx.fillText('=', cx, top + 30);
+  }
+  ctx.restore();
 }
 
 // ---------------------------------------------------------------- drawing: HUD
@@ -3069,7 +3464,7 @@ function drawHUD() {
   const cur = currentStation(), by = narrow ? 92 : 10;   // banner sits below the hearts on narrow screens
   const br = activeBridge();
   let txt;
-  if (L.vault) txt = 'Secret vault!';
+  if (L.room) txt = L.room.open ? 'Treasure!' : { scale: 'Balance the scale!', square: 'Magic square!', machine: 'Number machine!' }[L.room.kind];
   else if (br) txt = `Make ${br.target}!`;
   else if (cur) txt = qShow(cur.q);
   else if (L.boss) txt = L.boss.dead || L.boss.dying ? 'Grab the scroll!' : L.arena.wait ? 'Nice hit!' : `Dodge! ${Math.ceil(L.arena.phaseT / 60)}`;
@@ -3096,7 +3491,9 @@ function drawHUD() {
       ctx.fillStyle = '#ffd23f'; ctx.fillRect(VW / 2 - ww / 2, by + 136, ww * f, 5);
     } else if (!L.boss.dying && !L.boss.dead && !L.arena.wait) hudText('Jump over the attacks!', VW / 2, by + 124, 15, '#fff', 'center');
   } else if (L.vault) {
-    hudText('Grab the gems, then take the exit door', VW / 2, by + 80, 16, '#fff', 'center');
+    const rm = L.room;
+    hudText(rm.open ? 'Grab the gems, then exit ➜' : rm.kind === 'scale' ? 'Bonk the number that makes both sides the same'
+      : rm.kind === 'square' ? `Every row, column and diagonal adds up to ${rm.sq.sum}` : 'Find the rule, then bonk what comes out', VW / 2, by + 80, 16, '#fff', 'center');
   } else if (br) {
     hudText(`Bonk stones to pick up (one or more), carry to the altar · so far ${br.total}${G.carry ? ` · holding ${G.carry.stones.reduce((a, t) => a + t.val, 0)}` : ''}`, VW / 2, by + 80, 16, '#fff', 'center');
   } else {
@@ -3107,12 +3504,13 @@ function drawHUD() {
 
 function render() {
   if (RC) { renderRace(); return; }
-  drawBackground();
+  if (L.room) drawRoomBg(); else drawBackground();
   const shk = G && G.shake > 0 ? G.shakeAmp : 0;
   ctx.save(); ctx.translate(-Math.round(cam) + (Math.random() - 0.5) * 2 * shk, (Math.random() - 0.5) * 2 * shk);
   for (const d of L.decor) if (d * T > cam - 80 && d * T < cam + VW + 40) drawDecor(d);
   drawSigns();
   drawPuzzles();
+  if (L.room) drawRoom();
   if (!L.boss && !L.vault) drawGoal();
   const c0 = Math.max(0, Math.floor(cam / T)), c1 = Math.min(L.w - 1, c0 + Math.ceil(VW / T) + 1);
   drawTiles();
