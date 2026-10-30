@@ -82,6 +82,39 @@
   body.portrait .tbtn[data-k="jump"] { right: 12px; width: 120px; height: 120px; }
   body.portrait .tbtn:not([data-k="jump"]) { bottom: calc(max(36px, env(safe-area-inset-bottom)) + 10px); }
   body.touch .keys { display: none; }
+  body.racing .tbtn[data-k="jump"] { display: none; }
+  .bigrow { margin: 4px 0 2px; }
+  .badgegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin: 12px 0 14px; }
+  .badge { background: rgba(255,255,255,.05); border-radius: 12px; padding: 10px 8px; opacity: .55; }
+  .badge.got { background: rgba(255,210,63,.14); border: 2px solid #ffd23f; opacity: 1; }
+  .badge .bi { font-size: 34px; }
+  .badge .bn { font-weight: 800; font-size: 15px; margin-top: 2px; }
+  .badge .bt { font-size: 12px; opacity: .85; }
+  #toast { position: fixed; top: max(14px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 30;
+    background: #22224a; color: #fff; border: 3px solid #ffd23f; border-radius: 14px; padding: 10px 18px; font-size: 18px;
+    box-shadow: 0 6px 24px rgba(0,0,0,.4); animation: toastin .35s ease-out; white-space: nowrap; }
+  #toast span { font-size: 24px; vertical-align: middle; }
+  @keyframes toastin { from { transform: translate(-50%, -30px); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { #toast { animation: none; } }
+  .bigrow .btn { font-size: 17px; }
+  .shopcard { width: min(720px, 100%); max-width: 720px; }
+  .shoptop { display: flex; gap: 16px; align-items: center; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
+  .shoptop canvas { image-rendering: pixelated; background: rgba(255,255,255,.06); border-radius: 10px; }
+  .bankline { font-size: 22px; }
+  .bankline b { color: #ffd23f; }
+  .shophint { font-size: 14px; opacity: .75; }
+  .shopgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 10px 0 14px; }
+  .item { background: rgba(255,255,255,.07); border-radius: 12px; padding: 8px; display: grid; gap: 4px; justify-items: center; }
+  .item canvas { image-rendering: pixelated; }
+  .item .nm { font-weight: 800; font-size: 14px; }
+  .item .pr { font-size: 13px; opacity: .85; }
+  .item button { font: inherit; font-weight: 800; font-size: 13px; border: none; border-radius: 8px; padding: 6px 10px; cursor: pointer; background: #5b6bd6; color: #fff; }
+  .item button.buy { background: #2ecc71; }
+  .item button:disabled { background: #555566; color: #bbb; cursor: default; }
+  .buybox { background: rgba(255,210,63,.12); border: 2px solid #ffd23f; border-radius: 12px; padding: 10px; margin: 6px 0; }
+  .buybox p { margin: 4px 0 10px; }
+  .buybox .row button { font: inherit; font-weight: 800; font-size: 20px; min-width: 70px; border: none; border-radius: 10px; padding: 8px 12px; cursor: pointer; background: #5b6bd6; color: #fff; }
+  .buybox .row button.no { background: #8a8aa0; font-size: 14px; }
   .padcard { width: min(440px, 100%); padding: 16px 18px 18px; }
   .padq { font-size: clamp(30px, 8vw, 44px); font-weight: 800; margin: 2px 0 4px; }
   .padq .padin { display: inline-block; min-width: 2.2ch; border-bottom: 4px solid #ffd23f; color: #ffd23f; }
@@ -110,14 +143,21 @@
 
 <div id="menu" class="overlay">
   <h1>MATH NINJA</h1>
-  <div class="tag">The Shadow Shogun stole Sensei's Magic Math Scrolls! Solve the math gates, collect the scroll pieces, and beat the bosses to bring them home.</div>
+  <div class="tag">The Shadow Shogun stole Sensei's Magic Math Scrolls! Solve the math gates, find the torn scroll pieces, and beat the bosses to bring the scrolls home.</div>
   <div class="rank" id="rank"></div>
+  <div class="row bigrow">
+    <button class="btn" id="raceBtn" type="button">🐎 Horse Race</button>
+    <button class="btn alt" id="shopBtn" type="button">🏯 Dojo Shop · <span id="bankMenu">0</span> 💎</button>
+    <button class="btn alt" id="badgeBtn" type="button">🏅 Badges · <span id="badgeMenu">0</span></button>
+  </div>
   <div class="worlds" id="worlds"></div>
   <div class="help"><span class="keys">⬅ ➡ or A / D to move &nbsp;·&nbsp; Space / ⬆ / W to jump &nbsp;·&nbsp; P to pause &nbsp;·&nbsp; M for sound<br></span>
+    💎 Gems: green = 1, blue = 5, red = 10. Spend them in the Dojo Shop.<br>
     🐣 Easy mode: no holes, fewer and slower enemies, gentler bosses, more time to answer, and 5 hearts.</div>
   <div class="row">
     <button class="btn ghost" id="storyBtn">📖 Story</button>
     <button class="btn ghost" id="muteBtn">🔊 Sound on</button>
+    <button class="btn ghost" id="musicBtn">🎵 Music on</button>
     <button class="btn ghost" id="easyBtn">🐣 Easy mode: off</button>
     <button class="btn ghost" id="unlockBtn">🔓 Unlock all levels</button>
     <button class="btn ghost" id="resetBtn">↺ Reset progress</button>
@@ -131,6 +171,28 @@
     <div class="row" id="msgBtns"></div>
   </div>
 </div>
+
+<div id="shop" class="overlay hidden">
+  <div class="card shopcard">
+    <h2>Dojo Shop</h2>
+    <div class="shoptop"><canvas id="shopPreview" width="140" height="88"></canvas>
+      <div><div class="bankline">💎 <b id="bank">0</b> gems</div><div class="shophint">Collect gems in levels and horse races.</div></div></div>
+    <div class="buybox hidden" id="buyBox"></div>
+    <div class="shopgrid" id="shopGrid"></div>
+    <div class="row"><button class="btn alt" id="shopClose" type="button">Back</button></div>
+  </div>
+</div>
+
+<div id="badges" class="overlay hidden">
+  <div class="card shopcard">
+    <h2>Badge Book</h2>
+    <div class="shophint" id="badgeCount"></div>
+    <div class="badgegrid" id="badgeGrid"></div>
+    <div class="row"><button class="btn alt" id="badgesClose" type="button">Back</button></div>
+  </div>
+</div>
+
+<div id="toast" class="hidden"></div>
 
 <div id="pad" class="overlay hidden">
   <div class="card padcard">
@@ -285,7 +347,7 @@ function walkerFor(kind, c, speed) {
 function buildLevel(idx, easy = false) {
   const def = STAGES[idx], W = WORLDS[def.w], rng = mulberry32(1234 + idx * 7919);
   const map = newMap();
-  const L = { idx, def, world: W, sky: W.skies[def.k], map, w: 0, enemies: [], coins: [], stations: [], decor: [], flagC: 0, castleC: 0, boss: null, proj: [] };
+  const L = { idx, def, world: W, sky: W.skies[def.k], map, w: 0, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [], flagC: 0, castleC: 0, boss: null, proj: [] };
   const addCols = n => { for (let i = 0; i < n; i++) { for (let r = 0; r < ROWS; r++) map[r].push('.'); L.w++; } return L.w - n; };
   const flat = n => {
     const s = addCols(n);
@@ -293,7 +355,7 @@ function buildLevel(idx, easy = false) {
     if (n >= 4 && rng() < 0.35) L.decor.push(s + ri(rng, 0, n - 2));
     return s;
   };
-  const coin = (c, r) => L.coins.push({ x: c * T + T / 2, y: r * T + T / 2, taken: false });
+  const coin = (c, r, v = 1) => L.coins.push({ x: c * T + T / 2, y: r * T + T / 2, v, taken: false });
   const speed = (0.9 + idx * 0.05) * (easy ? 0.7 : 1);
   const maybeEnemy = c => { if (rng() < def.enemy * (easy ? 0.4 : 1)) L.enemies.push(walkerFor(W.walker, c, speed)); };
 
@@ -313,7 +375,7 @@ function buildLevel(idx, easy = false) {
         for (let i = 1; i <= 5; i++) map[r][s + i] = (i % 2 === 0 && rng() < 0.85) ? '?' : 'B';
         if (rng() < 0.5) {
           for (let i = 2; i <= 4; i++) map[GR - 7][s + i] = i === 3 ? '?' : 'B';
-          coin(s + 2, GR - 8); coin(s + 4, GR - 8);
+          coin(s + 2, GR - 8, 5); coin(s + 4, GR - 8, 5);   // blue gems up high
         }
         maybeEnemy(s + 6); break;
       }
@@ -329,7 +391,7 @@ function buildLevel(idx, easy = false) {
       case 'stairs': {
         const s = flat(8);
         [1, 2, 3, 3, 2, 1].forEach((h, i) => { for (let k = 0; k < h; k++) map[GR - 1 - k][s + 1 + i] = 'S'; });
-        coin(s + 3, GR - 5); coin(s + 4, GR - 5); break;
+        coin(s + 3, GR - 5, 5); coin(s + 4, GR - 5); break;
       }
       case 'float': {
         if (def.pit < 3) return chunk('coins');
@@ -341,23 +403,55 @@ function buildLevel(idx, easy = false) {
     }
   }
 
+  // Number-stone bridge: stones float on the left, the altar sits at the edge of a pit too wide to jump.
+  function bridgeChunk() {
+    const { target, stones } = bridgePuzzle(def.w), s = flat(15);
+    const b = { target, total: 0, overs: 0, done: false, signC: s, startX: s * T, altarC: s + 14, c0: 0, w: 7, stones: [] };
+    stones.forEach((v, i) => { const c = s + 4 + i * 2, r = GR - 4; map[r][c] = 'N'; b.stones.push({ c, r, val: v, state: 'home' }); });
+    b.c0 = addCols(7);
+    flat(2);
+    L.bridges.push(b);
+  }
+  function doorChunk() { const s = flat(7); L.doors.push({ c: s + 3, used: false }); }
+
   const kinds = easy ? ['coins', 'bricks', 'pipe', 'stairs'] : ['coins', 'pit', 'bricks', 'pipe', 'stairs', 'float'];
+  const doorAt = def.n > 6 ? 4 : 3, goldAt = 1 + idx % Math.max(1, def.n - 2);
   flat(10);
   for (let i = 0; i < def.n; i++) {
     const n = ri(rng, 2, 3);
     for (let k = 0; k < n; k++) chunk(kinds[ri(rng, 0, kinds.length - 1)]);
+    if (i === 2 || (i === 5 && def.w >= 2)) bridgeChunk();
+    if (i === doorAt) doorChunk();
     // Question station: sign, three answer blocks, and a locked gate.
     const s = flat(16), q = def.gen();
     const answers = choices(q).map((v, j) => ({ c: s + 4 + j * 3, r: GR - 4, val: v, state: 'idle', shake: 0 }));
     answers.forEach(a => { map[a.r][a.c] = 'A'; });
     for (let r = 0; r < GR; r++) { map[r][s + 13] = 'G'; map[r][s + 14] = 'G'; }
     L.stations.push({ s, q, answers, gate: [s + 13, s + 14], solved: false, opening: null, openT: 0 });
+    if (i === goldAt && !def.boss) map[GR - 5][s + 1] = 'H';   // hidden block above the sign
   }
   // Finale: staircase, flag, dojo.
   const s = flat(24);
   [1, 2, 3, 4, 5, 6, 6].forEach((h, i) => { for (let k = 0; k < h; k++) map[GR - 1 - k][s + 2 + i] = 'S'; });
+  coin(s + 8, GR - 8, 10);   // a red gem for climbing to the top
   L.flagC = s + 13; L.castleC = s + 17;
   return L;
+}
+
+// The secret vault: one screen of platforms covered in gems, with an exit door on the right.
+function buildVault(src) {
+  const cols = Math.ceil(VW / T), map = newMap();
+  for (let c = 0; c < cols; c++) { for (let r = 0; r < ROWS; r++) map[r].push('.'); map[GR][c] = '#'; map[GR + 1][c] = '#'; }
+  const V = { idx: src.idx, def: src.def, world: src.world, sky: ['#1a1206', '#6b4a10'], map, w: cols, enemies: [], coins: [], stations: [], bridges: [], doors: [],
+    decor: [], flagC: 9999, castleC: 9999, proj: [], vault: true, exitC: cols - 2 };
+  const coin = (c, r, v = 1) => V.coins.push({ x: c * T + T / 2, y: r * T + T / 2, v, taken: false });
+  for (let off = 0; off + 13 <= cols; off += 11) {
+    for (let c = 3; c <= 5; c++) { map[GR - 4][off + c] = 'B'; coin(off + c, GR - 5, 5); }
+    for (let c = 8; c <= 10; c++) { map[GR - 4][off + c] = 'B'; coin(off + c, GR - 5, 5); }
+    for (let c = 6; c <= 7; c++) { map[GR - 7][off + c] = 'B'; coin(off + c, GR - 8, 5); coin(off + c, GR - 9, 10); }
+  }
+  for (let c = 2; c < cols - 3; c++) coin(c, GR - 1);
+  return V;
 }
 
 const BOSS_SPECS = {
@@ -372,7 +466,7 @@ const BOSS_SPECS = {
 function buildArena(idx, easy = false) {
   const def = STAGES[idx], W = WORLDS[def.w], map = newMap(), narrow = VW < 700, cols = narrow ? 18 : 27;
   for (let c = 0; c < cols; c++) { for (let r = 0; r < ROWS; r++) map[r].push('.'); map[GR][c] = '#'; map[GR + 1][c] = '#'; }
-  const L = { idx, def, world: W, sky: W.skies[2], map, w: cols, enemies: [], coins: [], stations: [], decor: [1, cols - 4], flagC: -99, castleC: -99, proj: [] };
+  const L = { idx, def, world: W, sky: W.skies[2], map, w: cols, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [1, cols - 4], flagC: -99, castleC: -99, proj: [] };
   // Bonking the keypad block opens the number pad.
   const padC = narrow ? 5 : 7;
   map[GR - 4][padC] = 'K';
@@ -464,6 +558,54 @@ const ENEMY_SPR = {
   shadow: bakeNinja({ n: '#3d2466', N: '#6b44a8', r: '#b388ff', R: '#7d55c7', b: '#b388ff', s: '#1d1033', w: '#ff3355', e: '#ff3355' }),
 };
 
+// ---------------------------------------------------------------- dojo shop items
+const SHOP = [
+  { id: 'band-red', slot: 'band', name: 'Red headband', price: 0, col: ['#e63946', '#a91d2b'] },
+  { id: 'band-blue', slot: 'band', name: 'Blue headband', price: 40, col: ['#3a86ff', '#1d4fa8'] },
+  { id: 'band-pink', slot: 'band', name: 'Pink headband', price: 55, col: ['#ff6fb5', '#c43d84'] },
+  { id: 'band-gold', slot: 'band', name: 'Gold headband', price: 90, col: ['#ffd23f', '#c99a1a'] },
+  { id: 'suit-navy', slot: 'suit', name: 'Navy suit', price: 0, col: ['#2c3a6b', '#5a72c2'] },
+  { id: 'suit-black', slot: 'suit', name: 'Midnight suit', price: 70, col: ['#1c1a24', '#3d3a52'] },
+  { id: 'suit-green', slot: 'suit', name: 'Forest suit', price: 85, col: ['#1f6b3a', '#3fa35f'] },
+  { id: 'suit-red', slot: 'suit', name: 'Crimson suit', price: 105, col: ['#8b1e2b', '#c43a4b'] },
+  { id: 'suit-gold', slot: 'suit', name: 'Golden suit', price: 0, col: ['#d9a21e', '#ffd86b'], badge: 'golden-all' },
+  { id: 'suit-white', slot: 'suit', name: 'Snow suit', price: 135, col: ['#c9d2de', '#f4f7fb'] },
+  { id: 'trail-spark', slot: 'trail', name: 'Sparkle trail', price: 120 },
+  { id: 'trail-fire', slot: 'trail', name: 'Flame trail', price: 180 },
+  { id: 'pet-cat', slot: 'pet', name: 'Lucky cat', price: 0 },
+  { id: 'pet-fox', slot: 'pet', name: 'Kitsune pup', price: 225 },
+  { id: 'pet-dragon', slot: 'pet', name: 'Baby dragon', price: 330 },
+];
+const ITEM = Object.fromEntries(SHOP.map(i => [i.id, i]));
+// The hero's colours: the equipped headband and suit, and the belt that matches the current rank.
+function heroPal(equip = prog.equip) {
+  const band = ITEM[equip.band].col, suit = ITEM[equip.suit].col;
+  return { r: band[0], R: band[1], n: suit[0], N: suit[1], b: currentBelt().col };
+}
+// Pets follow the hero around. Two frames each; they face right.
+const PET_SPR = {
+  'pet-cat': bake(makeFrames(14, 12, { w: '#f4f4f4', g: '#c9cbd6', p: '#ffb3c1', e: '#16121f', r: '#e63946', y: '#ffd23f' }, ({ P, R, E }, f) => {
+    P(2, 4 - f, 'w'); P(2, 5 - f, 'w'); P(3, 6, 'w'); P(3, 7, 'w');
+    E(7, 8.2, 3.4, 2.4, 'w'); E(10, 5, 2.8, 2.6, 'w');
+    P(8, 2, 'w'); P(12, 2, 'w'); P(8, 3, 'p'); P(12, 3, 'p');
+    P(9, 5, 'e'); P(11, 5, 'e'); P(10, 6, 'p');
+    R(8, 7, 4, 1, 'r'); P(10, 8, 'y');
+    P(5, 10, 'g'); P(9, 10, 'g'); if (f) P(7, 10, 'g');
+  }, 2), ['a', 'b']),
+  'pet-fox': bake(makeFrames(14, 12, { o: '#f28c28', O: '#c8691a', w: '#fff4e6', e: '#16121f', P: '#ffb3c1' }, ({ P, R, E }, f) => {
+    E(3, 6 - f, 2.2, 2.6, 'o'); E(2.4, 4 - f, 1.3, 1.3, 'w');
+    E(7.5, 8, 3.2, 2.2, 'o'); E(10.5, 5, 2.8, 2.5, 'o');
+    P(9, 2, 'o'); P(12, 2, 'o'); P(9, 3, 'P'); P(12, 3, 'P');
+    P(12, 6, 'w'); P(13, 6, 'w'); P(13, 5, 'e'); P(11, 4, 'e');
+    if (f) { P(6, 10, 'O'); P(9, 10, 'O'); } else { P(5, 10, 'O'); P(10, 10, 'O'); }
+  }, 2), ['a', 'b']),
+  'pet-dragon': bake(makeFrames(14, 12, { g: '#3fbf6a', G: '#2a8a4a', y: '#ffe08a', w: '#f4ead5', e: '#16121f', r: '#e8452c' }, ({ P, L, E }, f) => {
+    if (f) E(4, 6, 2.6, 1.6, 'G'); else E(4, 3.5, 2.4, 2, 'G');
+    L(4, 9, 1, 10, 'g'); E(7, 7.5, 3.4, 2.8, 'g'); E(7, 8.5, 2, 1.5, 'y');
+    E(11, 4.5, 2.6, 2.3, 'g'); P(13, 5, 'g'); P(10, 2, 'w'); P(12, 2, 'w'); P(12, 4, 'e'); P(13, 6, 'r');
+  }, 2), ['a', 'b']),
+};
+
 // Bosses face left (toward the hero). Two frames each, drawn at 4x so they tower over the hero.
 const BOSS_SPR = {
   kage: bake(makeFrames(26, 26, { d: '#2a2838', D: '#4a4762', m: '#b8c0cc', M: '#7d8797', r: '#ff2a4a', p: '#6b2fa3', P: '#9b59d6', b: '#c0392b', g: '#eef3f8', y: '#ffd23f', h: '#6b4423', f: '#1b1926' }, ({ P, R, E, L }, f) => {
@@ -545,6 +687,7 @@ const sfx = {
   gate: () => tone(200, 0.6, 'triangle', 0.05, 800),
   throw: () => tone(1200, 0.15, 'sawtooth', 0.025, 300),
   streak: () => [784, 988, 1175, 1568].forEach((f, i) => tone(f, 0.12, 'square', 0.04, null, 0.3 + i * 0.07)),
+  power: () => [523, 784, 1047, 1568, 2093].forEach((f, i) => tone(f, 0.1, 'triangle', 0.05, null, 0.6 + i * 0.06)),
   hit: () => { tone(150, 0.25, 'square', 0.07, 60); tone(900, 0.08, 'square', 0.04); },
   attack: () => tone(600, 0.12, 'triangle', 0.03, 250),
   bossDown: () => [392, 330, 262, 196, 131].forEach((f, i) => tone(f, 0.18, 'sawtooth', 0.04, null, i * 0.12)),
@@ -552,10 +695,100 @@ const sfx = {
   over: () => [392, 330, 262, 196].forEach((f, i) => tone(f, 0.25, 'triangle', 0.06, null, i * 0.2)),
 };
 
+
+// ---------------------------------------------------------------- music
+// Little chiptune loops: one per world, plus boss, race and menu themes. Each token is a 16th note.
+const NOTE = n => {
+  const m = /^([A-G])(#|b)?(\d)$/.exec(n);
+  const k = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
+  return 440 * Math.pow(2, (k + (+m[3] + 1) * 12 - 69) / 12);
+};
+const seq = str => str.trim().split(/\s+/).map(t => (t === '.' ? 0 : NOTE(t)));
+const SONGS = {
+  japan: { bpm: 104, lead: 'triangle', vol: 0.05, drum: 'k.....h.s.....h.',
+    mel: seq(`A4 . . C5 . . E5 . F5 . E5 . C5 . B4 .   A4 . . . E4 . . . A4 . B4 . C5 . . .
+              E5 . . F5 . . E5 . C5 . B4 . A4 . C5 .   B4 . . . A4 . . . . . . . . . . .`),
+    bass: seq(`A2 . . . . . . . A2 . . . E2 . . .   F2 . . . . . . . F2 . . . E2 . . .
+               A2 . . . . . . . A2 . . . E2 . . .   E2 . . . . . . . A2 . . . . . . .`) },
+  lava: { bpm: 132, lead: 'square', vol: 0.02, drum: 'k.h.s.h.k.k.s.h.',
+    mel: seq(`E5 . G5 . A5 . B5 . A5 . G5 . E5 . D5 .   E5 . . . B4 . . . E5 . G5 . F#5 . . .
+              G5 . A5 . B5 . D6 . B5 . A5 . G5 . E5 .   F#5 . . . D5 . . . E5 . . . . . . .`),
+    bass: seq(`E2 . E2 . E3 . E2 . E2 . E2 . E3 . E2 .   E2 . E2 . E3 . E2 . D2 . D2 . D3 . D2 .
+               C2 . C2 . C3 . C2 . C2 . C2 . C3 . C2 .   D2 . D2 . D3 . D2 . B1 . B1 . B2 . B1 .`) },
+  robot: { bpm: 120, lead: 'square', vol: 0.014, drum: 'k...s...k.k.s...',
+    mel: seq(`C5 Eb5 G5 C6 G5 Eb5 C5 Eb5 C5 Eb5 G5 C6 G5 Eb5 C5 Eb5   Ab4 C5 Eb5 Ab5 Eb5 C5 Ab4 C5 Ab4 C5 Eb5 Ab5 Eb5 C5 Ab4 C5
+              Bb4 D5 F5 Bb5 F5 D5 Bb4 D5 Bb4 D5 F5 Bb5 F5 D5 Bb4 D5   G4 B4 D5 G5 D5 B4 G4 B4 G4 B4 D5 G5 D5 B4 G4 B4`),
+    bass: seq(`C3 . . . C3 . . . C3 . . . C3 . C3 .   Ab2 . . . Ab2 . . . Ab2 . . . Ab2 . Ab2 .
+               Bb2 . . . Bb2 . . . Bb2 . . . Bb2 . Bb2 .   G2 . . . G2 . . . G2 . . . G2 . G2 .`) },
+  castle: { bpm: 92, lead: 'triangle', vol: 0.05, drum: 'k.......s...h...',
+    mel: seq(`D5 . . . F5 . E5 . D5 . . . A4 . . .   Bb4 . . . D5 . C5 . A4 . . . . . . .
+              D5 . . . F5 . G5 . A5 . . . G5 . F5 .   E5 . . . C#5 . . . D5 . . . . . . .`),
+    bass: seq(`D2 . . . . . . . D3 . . . . . . .   Bb1 . . . . . . . Bb2 . . . . . . .
+               G1 . . . . . . . G2 . . . . . . .   A1 . . . . . . . A2 . . . . . . .`) },
+  boss: { bpm: 150, lead: 'square', vol: 0.02, drum: 'k.hsk.hsk.hsk.hs',
+    mel: seq(`A4 A4 . C5 . A4 . E5 . D5 C5 . B4 . G4 .   A4 A4 . C5 . A4 . E5 . F5 E5 . D5 . E5 .
+              F5 F5 . E5 . D5 . C5 . D5 E5 . C5 . B4 .   A4 . . E4 . A4 . B4 . C5 . B4 . G#4 . .`),
+    bass: seq(`A2 . A3 . A2 . A3 . A2 . A3 . A2 . A3 .   A2 . A3 . A2 . A3 . A2 . A3 . A2 . A3 .
+               F2 . F3 . F2 . F3 . G2 . G3 . G2 . G3 .   A2 . A3 . A2 . A3 . E2 . E3 . E2 . E3 .`) },
+  race: { bpm: 144, lead: 'square', vol: 0.02, drum: 'k.hhs.hhk.hhs.hh',
+    mel: seq(`G5 . D5 . B4 . D5 . G5 . A5 . B5 . . .   A5 . G5 . E5 . G5 . D5 . . . . . . .
+              C6 . B5 . A5 . G5 . A5 . B5 . G5 . E5 .   D5 . . . A5 . . . G5 . . . . . . .`),
+    bass: seq(`G2 . G2 G2 . . G2 . G2 . G2 G2 . . G2 .   C3 . C3 C3 . . C3 . D3 . D3 D3 . . D3 .
+               C3 . C3 C3 . . C3 . G2 . G2 G2 . . G2 .   D3 . D3 D3 . . D3 . G2 . G2 G2 . . . .`) },
+};
+SONGS.menu = { ...SONGS.japan, bpm: 84, drum: 'k...............' };
+let musicOn = true, song = null, songName = null, songStep = 0, songNext = 0, noiseBuf = null;
+function playMusic(name) { if (songName === name) return; songName = name; song = SONGS[name] || null; songStep = 0; songNext = 0; }
+function stopMusic() { songName = null; song = null; }
+function noise() {
+  if (!noiseBuf) {
+    noiseBuf = AC.createBuffer(1, AC.sampleRate * 0.3, AC.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  return noiseBuf;
+}
+function voice(type, f, t, d, v) {
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+  o.connect(g).connect(AC.destination); o.start(t); o.stop(t + d + 0.02);
+}
+function drumHit(kind, t) {
+  if (kind === 'k') {
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+    g.gain.setValueAtTime(0.09, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+    o.connect(g).connect(AC.destination); o.start(t); o.stop(t + 0.15);
+    return;
+  }
+  const src = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain(), len = kind === 'h' ? 0.04 : 0.12;
+  src.buffer = noise(); f.type = kind === 'h' ? 'highpass' : 'bandpass'; f.frequency.value = kind === 'h' ? 7000 : 1800;
+  g.gain.setValueAtTime(kind === 'h' ? 0.022 : 0.045, t); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+  src.connect(f).connect(g).connect(AC.destination); src.start(t); src.stop(t + len + 0.01);
+}
+// Schedules notes a little ahead of time so the music keeps steady time.
+setInterval(() => {
+  if (!AC || !song || muted || !musicOn || mode === 'pause' || AC.state !== 'running') { songNext = 0; return; }
+  const step = 60 / song.bpm / 4;
+  if (songNext < AC.currentTime) songNext = AC.currentTime + 0.05;
+  while (songNext < AC.currentTime + 0.25) {
+    const i = songStep, m = song.mel[i % song.mel.length], b = song.bass[i % song.bass.length], d = song.drum[i % song.drum.length];
+    if (m) voice(song.lead, m, songNext, step * 1.8, song.vol);
+    if (b) voice('triangle', b, songNext, step * 1.6, 0.05);
+    if (d !== '.') drumHit(d, songNext);
+    songNext += step; songStep++;
+  }
+}, 60);
+
 // ---------------------------------------------------------------- progress
 const SAVE_KEY = 'mathninja-v2';
-let prog = { best: {}, easy: null, allOpen: false, seenIntro: false, seenWorld: {} };
+let prog = { best: {}, easy: null, allOpen: false, seenIntro: false, seenWorld: {}, bank: 0, music: true,
+  badges: {}, golden: {}, stats: { bridges: 0, gems: 0 },
+  owned: ['band-red', 'suit-navy', 'pet-cat'], equip: { band: 'band-red', suit: 'suit-navy', trail: null, pet: 'pet-cat' }, raceBest: {} };
 try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s) prog = Object.assign(prog, s); } catch (e) { /* no storage */ }
+// Older saves get the free lucky cat too.
+if (!prog.owned.includes('pet-cat')) { prog.owned.push('pet-cat'); if (!prog.equip.pet) prog.equip.pet = 'pet-cat'; }
 function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(prog)); } catch (e) { /* no storage */ } }
 const totalPoints = () => Object.values(prog.best).reduce((a, b) => a + b, 0);
 const beltFor = pts => BELTS.filter(b => b.need <= pts).pop();
@@ -569,11 +802,13 @@ const keys = { left: false, right: false, jump: false, jumpPressed: false };
 const ambient = [];         // falling petals / rising embers, in screen space
 
 // ---------------------------------------------------------------- physics
-const SOLID = new Set(['#', 'B', '?', 'U', 'S', 'P', 'Q', 'p', 'q', 'G', 'A', 'K']);
+const SOLID = new Set(['#', 'B', '?', 'U', 'S', 'P', 'Q', 'p', 'q', 'G', 'A', 'K', 'N', 'b']);
 function solid(c, r) {
   if (c < 0 || c >= L.w) return true;
   if (r >= ROWS) return false;
-  return SOLID.has(L.map[Math.max(0, r)][c]);
+  const t = L.map[Math.max(0, r)][c];
+  if (t === 'K') return !!currentStation();   // the boss keypad block is a ghost you can jump through while dodging
+  return SOLID.has(t);
 }
 function moveX(b) {
   b.x += b.vx;
@@ -597,7 +832,8 @@ function moveY(b) {
   } else if (b.vy < 0) {
     const r = Math.floor(b.y / T);
     let hit = null, best = 1e9;
-    for (let c = l; c <= rr; c++) if (solid(c, r)) {
+    // hidden blocks ('H') can only be found by jumping into them from below
+    for (let c = l; c <= rr; c++) if (solid(c, r) || (r >= 0 && c >= 0 && c < L.w && L.map[r][c] === 'H')) {
       const d = Math.abs((c + 0.5) * T - (b.x + b.w / 2));
       if (d < best) { best = d; hit = c; }
     }
@@ -612,6 +848,14 @@ function circleHits(px, py, r, b) {
 }
 
 // ---------------------------------------------------------------- effects
+function shake(frames, amp) { if (!G) return; G.shakeAmp = G.shake > 0 ? Math.max(G.shakeAmp, amp) : amp; G.shake = Math.max(G.shake, frames); }
+// Gems ring a little higher each time you grab several in a row.
+function gemSound() {
+  G.chain = tick - G.lastGem < 45 ? G.chain + 1 : 0; G.lastGem = tick;
+  const f = 880 * Math.pow(1.06, Math.min(G.chain, 12));
+  tone(f, 0.07, 'triangle', 0.06); tone(f * 1.335, 0.2, 'triangle', 0.06, null, 0.07);
+}
+function flyGem(x, y, v) { G.flyers.push({ x: x - cam, y, v, t: 0 }); }
 function burst(x, y, col, n, spd = 4) {
   for (let i = 0; i < n; i++) G.parts.push({ k: 'bit', x, y, vx: (Math.random() - 0.5) * spd * 2, vy: -Math.random() * spd - 2, life: 50, col, s: 6 });
 }
@@ -620,9 +864,11 @@ function confetti(x, y) {
   for (let i = 0; i < 40; i++) G.parts.push({ k: 'bit', x, y, vx: (Math.random() - 0.5) * 10, vy: -Math.random() * 9 - 3, life: 70, col: cols[i % 5], s: 5 });
 }
 function floatText(x, y, txt, col = '#fff', size = 22) { G.parts.push({ k: 'text', x, y, vx: 0, vy: -1.2, life: 60, txt, col, size }); }
-function coinPop(c, r) {
-  G.parts.push({ k: 'coin', x: c * T + T / 2, y: r * T, vx: 0, vy: -9, life: 30 });
-  G.coins++; G.score += 100; sfx.coin();
+// ?-blocks hold a blue gem worth 5.
+function coinPop(c, r, v = 5) {
+  G.parts.push({ k: 'coin', x: c * T + T / 2, y: r * T, vx: 0, vy: -9, life: 30, v });
+  G.coins += v; G.score += 100 * v; sfx.coin();
+  floatText(c * T + T / 2, r * T - 50, '+' + v, GEM_COL[v][0], 22);
 }
 
 // ---------------------------------------------------------------- game logic
@@ -657,8 +903,9 @@ function setStationQ(st, q) {
 function streakUp(x, y) {
   G.streak++; G.bestStreak = Math.max(G.bestStreak, G.streak);
   G.score += 500 * Math.min(G.streak, 5);
+  if (G.streak >= 10) award('streak10');
   if (G.streak >= 2) floatText(x, y - 48, `${G.streak} in a row!`, '#ffb627', 22 + Math.min(G.streak, 6) * 2);
-  if (G.streak % 5 === 0) { confetti(x, y - 30); confetti(x, y - 30); sfx.streak(); }
+  if (G.streak % 5 === 0) { confetti(x, y - 30); confetti(x, y - 30); sfx.streak(); grantPower(); }
 }
 
 function bump(c, r) {
@@ -676,7 +923,15 @@ function bump(c, r) {
     burst(c * T + T / 2, r * T + T / 2, L.world.brick[0], 8);
   }
   else if (t === 'A') answer(c, r);
-  else if (t === 'K' && currentStation()) openPad();
+  else if (t === 'K' && currentStation()) openBossPad();
+  else if (t === 'N') bridgeStone(c, r);
+  else if (t === 'H') {
+    L.map[r][c] = 'U'; prog.golden[L.idx] = true; save();
+    G.parts.push({ k: 'coin', x: c * T + T / 2, y: r * T, vx: 0, vy: -9, life: 40, v: 25 });
+    G.coins += 25; G.score += 2500; sfx.win(); confetti(c * T + T / 2, r * T); shake(8, 3); petSay('wow');
+    floatText(c * T + T / 2, r * T - 50, 'Golden gem! +25', '#ffd23f', 28);
+    award('golden'); if (Object.keys(prog.golden).length >= 8) award('golden-all');
+  }
   else sfx.bump();
 }
 
@@ -687,14 +942,14 @@ function answer(c, r) {
   if (a.val !== st.q.ans) {
     // A miss swaps in a new question, so trying every block no longer works.
     a.state = 'wrong'; a.shake = 20; G.mistakes++; G.streak = 0;
-    remember(st.q); st.swap = 50;
+    remember(st.q); st.swap = 50; missed(st.q);
     sfx.wrong(); floatText(cx, cy - 20, 'Oops! New question...', '#ff6b6b', 26);
     return;
   }
   a.state = 'right';
   st.answers.forEach(o => { if (o !== a) o.state = 'done'; });
-  sfx.correct(); confetti(cx, cy); streakUp(cx, cy);
-  st.solved = true; st.opening = GR - 1;
+  sfx.correct(); confetti(cx, cy); streakUp(cx, cy); gotIt(); award('first-gate');
+  st.solved = true; st.opening = GR - 1; shake(6, 2);
   G.checkpoint = (st.s + 15) * T;
   setTimeout(sfx.gate, 350);
   const praise = st.q.retry ? 'You remembered it!' : ['Correct!', 'Great job!', 'Awesome!', 'You got it!', 'Super!', 'Hi-yah!'][R(0, 5)];
@@ -708,20 +963,17 @@ function nextBossQuestion() {
   startDodge();
 }
 
-// ---------------------------------------------------------------- boss answer pop-up
-// Bonking the keypad block freezes the fight and shows a row of answers (two rows for the harder bosses)
-// under a burning fuse. Running out of time isn't a mistake, but the boss gets a free attack.
-const PAD_TIME = [12, 10, 10, 9];   // seconds, per world
-let padSel = 0, padLeft = 0, padMax = 0, padTick = 0;
-function openPad() {
-  const ar = L.arena, w = STAGES[L.idx].w, n = w >= 2 ? 10 : 5;
+// ---------------------------------------------------------------- answer pop-up
+// Freezes the game and shows a sorted row of answers under a burning fuse. Bosses and secret doors use it.
+let ask = null, padSel = 0;
+function askQuestion(o) {
   mode = 'pad'; keys.left = keys.right = keys.jump = false;
-  ar.opts = rowChoices(ar.q, n);
-  padSel = 0; padMax = padLeft = PAD_TIME[w] * (prog.easy ? 1.6 : 1); padTick = 3;
-  $('padQ').innerHTML = `${ar.q.text} = <span class="padin">?</span>`;
-  $('padMsg').textContent = ar.q.retry ? 'This one came back. You can do it!' : 'Pick the answer before the fuse burns out!';
+  ask = { ...o, opts: rowChoices(o.q, o.n), left: o.time, tick: 3 };
+  padSel = 0;
+  $('padQ').innerHTML = `${o.q.text} = <span class="padin">?</span>`;
+  $('padMsg').textContent = o.msg;
   const box = $('padKeys'); box.innerHTML = '';
-  ar.opts.forEach((v, i) => {
+  ask.opts.forEach((v, i) => {
     const b = document.createElement('button'); b.type = 'button'; b.textContent = v;
     b.addEventListener('click', () => pickAnswer(i));
     box.appendChild(b);
@@ -729,55 +981,261 @@ function openPad() {
   markSel(); updateFuse(); show('pad'); showTouch(false); hide('pauseBtn');
 }
 function markSel() { [...$('padKeys').children].forEach((b, i) => b.classList.toggle('sel', i === padSel)); }
-function moveSel(dx, dy) {
-  const n = L.arena.opts.length, cols = 5;
-  padSel = clamp(padSel + dx + dy * cols, 0, n - 1); markSel();
-}
+function moveSel(dx, dy) { if (ask) { padSel = clamp(padSel + dx + dy * 5, 0, ask.opts.length - 1); markSel(); } }
 function updateFuse() {
-  const f = Math.max(0, padLeft / padMax);
-  $('fuse').style.width = (f * 100) + '%';
-  $('fuse').classList.toggle('low', padLeft <= 3);
+  $('fuse').style.width = (Math.max(0, ask.left / ask.time) * 100) + '%';
+  $('fuse').classList.toggle('low', ask.left <= 3);
 }
 function tickPad(dt) {
-  padLeft -= dt; updateFuse();
-  if (padLeft <= padTick && padTick > 0) { tone(1000, 0.06, 'square', 0.04); padTick--; }
-  if (padLeft <= 0) {
-    closePad();
-    const ar = L.arena; G.streak = 0; ar.q = freshQ(ar.q.text); startDodge(); L.boss.atk = 1;
-    sfx.wrong(); floatText(P.x + P.w / 2, P.y - 20, 'Too slow! New question...', '#ff9a3c', 26);
+  ask.left -= dt; updateFuse();
+  if (ask.left <= ask.tick && ask.tick > 0) { tone(1000, 0.06, 'square', 0.04); ask.tick--; }
+  if (ask.left <= 0) { const a = closePad(); a.onTimeout(); }
+}
+function closePad() { const a = ask; ask = null; hide('pad'); mode = 'play'; show('pauseBtn'); showTouch(true); return a; }
+function pickAnswer(i) {
+  if (!ask) return;
+  audio();
+  const a = closePad();
+  (a.opts[i] === a.q.ans ? a.onRight : a.onWrong)();
+}
+
+// Boss fights: two rows of answers for the harder bosses. A timeout isn't a mistake, but the boss attacks.
+const PAD_TIME = [12, 10, 10, 9];   // seconds, per world
+function openBossPad() {
+  const ar = L.arena, w = STAGES[L.idx].w;
+  const here = () => [P.x + P.w / 2, P.y];
+  askQuestion({
+    q: ar.q, n: w >= 2 ? 10 : 5, time: PAD_TIME[w] * (prog.easy ? 1.6 : 1),
+    msg: ar.q.retry ? 'This one came back. You can do it!' : 'Pick the answer before the fuse burns out!',
+    onRight() {
+      // Throw a shuriken at the boss; the next question comes after it lands.
+      const [cx, cy] = here();
+      ar.wait = 1;
+      G.shots.push({ x: cx, y: P.y + 10, spin: 0 });
+      P.throwT = 14; sfx.correct(); sfx.throw(); streakUp(cx, cy); gotIt();
+      floatText(cx, cy - 20, ar.q.retry ? 'You remembered it!' : 'Shuriken!', '#ffd23f', 28);
+    },
+    onWrong() {
+      const [cx, cy] = here();
+      G.mistakes++; G.streak = 0; remember(ar.q); missed(ar.q);
+      ar.q = freshQ(ar.q.text); startDodge(); L.boss.atk = 1;
+      sfx.wrong(); floatText(cx, cy - 20, 'Oops! New question...', '#ff6b6b', 26);
+    },
+    onTimeout() {
+      const [cx, cy] = here();
+      G.streak = 0; ar.q = freshQ(ar.q.text); startDodge(); L.boss.atk = 1;
+      sfx.wrong(); floatText(cx, cy - 20, 'Too slow! New question...', '#ff9a3c', 26);
+    },
+  });
+}
+
+// ---------------------------------------------------------------- badges
+const BADGES = [
+  { id: 'first-gate', icon: '⛩️', name: 'First Gate', text: 'Open your first math gate.' },
+  { id: 'perfect', icon: '💯', name: 'Perfect Ninja', text: 'Finish a level with no wrong answers.' },
+  { id: 'streak10', icon: '🔥', name: 'On Fire', text: 'Get 10 answers in a row.' },
+  { id: 'power', icon: '⚡', name: 'Powered Up', text: 'Earn a streak power-up.' },
+  { id: 'bridge', icon: '🌉', name: 'Bridge Builder', text: 'Build a number-stone bridge.' },
+  { id: 'bridge10', icon: '🏗️', name: 'Master Builder', text: 'Build 10 bridges.' },
+  { id: 'vault', icon: '🚪', name: 'Secret Finder', text: 'Find a secret vault.' },
+  { id: 'golden', icon: '🌟', name: 'Golden Gem', text: 'Find a hidden golden gem.' },
+  { id: 'golden-all', icon: '👑', name: 'Golden Hunter', text: 'Find all 8 golden gems. Unlocks the Golden suit!' },
+  { id: 'boss-nohit', icon: '🛡️', name: 'Untouchable', text: 'Beat a boss without getting hit.' },
+  { id: 'boss-all', icon: '📜', name: 'Scroll Keeper', text: 'Win back all four scrolls.' },
+  { id: 'race-win', icon: '🥇', name: 'Champion Rider', text: 'Win a horse race.' },
+  { id: 'race-perfect', icon: '🐎', name: 'Perfect Ride', text: 'Get every gate right in a horse race.' },
+  { id: 'shopper', icon: '🛍️', name: 'Shopper', text: 'Buy something in the Dojo Shop.' },
+  { id: 'gems500', icon: '💎', name: 'Gem Collector', text: 'Collect 500 gems in total.' },
+  { id: 'black-belt', icon: '🥋', name: 'Black Belt', text: 'Reach the Black Belt rank.' },
+];
+let toastTimer = null;
+function award(id) {
+  if (prog.badges[id]) return;
+  prog.badges[id] = true;
+  if (id === 'golden-all' && !prog.owned.includes('suit-gold')) prog.owned.push('suit-gold');   // the secret costume
+  save();
+  const b = BADGES.find(x => x.id === id);
+  $('toast').innerHTML = `<span>${b.icon}</span> Badge unlocked: <b>${b.name}</b>`;
+  show('toast'); clearTimeout(toastTimer); toastTimer = setTimeout(() => hide('toast'), 3200);
+  [659, 784, 988, 1319].forEach((f, i) => tone(f, 0.18, 'triangle', 0.05, null, 0.15 + i * 0.09));
+}
+function openBadges() {
+  hide('menu');
+  const got = BADGES.filter(b => prog.badges[b.id]).length;
+  $('badgeCount').textContent = `${got} of ${BADGES.length} badges · 🌟 ${Object.keys(prog.golden).length} of 8 golden gems`;
+  $('badgeGrid').innerHTML = BADGES.map(b => `<div class="badge ${prog.badges[b.id] ? 'got' : ''}"><div class="bi">${prog.badges[b.id] ? b.icon : '❔'}</div>
+    <div class="bn">${b.name}</div><div class="bt">${b.text}</div></div>`).join('');
+  show('badges');
+}
+
+// ---------------------------------------------------------------- pet reactions and Sensei's tips
+// The pet cheers right answers, looks worried after mistakes and dances at the flag.
+const PET_LINES = {
+  happy: ['Yay!', 'Hi-yah!', 'You rock!', 'Nice one!', 'Woo!', 'Brainy!'],
+  sad: ['Hmm...', "You've got this!", 'So close!', 'Try again!'],
+  hurt: ['Ouch!', 'Careful!', 'Yikes!'],
+  dance: ['We did it!', 'Hooray!', 'Party time!'],
+  wow: ['Whoa, power!', 'So cool!'],
+};
+function petSay(mood) {
+  if (!G || !G.pet) return;
+  const lines = PET_LINES[mood];
+  G.bubble = { txt: lines[R(0, lines.length - 1)], t: 80 };
+  G.pet.mood = mood; G.pet.moodT = mood === 'dance' ? 150 : 40;
+}
+function petTick() {
+  if (!G.pet) return;
+  const p = P, pt = G.pet;
+  const tx = p.x + p.w / 2 - p.face * 34, ty = p.y + (prog.equip.pet === 'pet-dragon' ? -14 : 14) + Math.sin(tick * 0.12) * 3;
+  pt.x += (tx - pt.x) * 0.12; pt.y += (ty - pt.y) * 0.12;
+  if (pt.moodT > 0) pt.moodT--;
+  if (G.bubble && --G.bubble.t <= 0) G.bubble = null;
+}
+// Two misses in a row brings Sensei with a tip for the fact that was missed.
+function tipFor(q) {
+  const { a, b, op, ans } = q;
+  if (op === '+') {
+    if (a === b) return `Doubles! ${a} + ${a} is double ${a}, which is ${ans}.`;
+    if (Math.abs(a - b) === 1) { const m = Math.min(a, b); return `Near double: ${m} + ${m} = ${m * 2}, plus 1 more is ${ans}.`; }
+    if (a < 10 && b < 10 && ans > 10) { const big = Math.max(a, b), small = Math.min(a, b), need = 10 - big; return `Make 10 first: ${big} + ${need} = 10, then ${small - need} more is ${ans}.`; }
+    if (a >= 10 && b >= 10) { const t = Math.floor(a / 10) * 10 + Math.floor(b / 10) * 10, o = a % 10 + b % 10; return `Add the tens, then the ones: ${t} + ${o} = ${ans}.`; }
+    return `Start at the bigger number and count on ${Math.min(a, b)} more: ${ans}.`;
+  }
+  if (op === '−') {
+    if (b <= 3) return `Count back ${b} from ${a}: ${ans}.`;
+    if (a >= 20 && b >= 10) { const t = Math.floor(b / 10) * 10; return `Take away the tens, then the ones: ${a} − ${t} = ${a - t}, then take away ${b % 10} more: ${ans}.`; }
+    return `Count up from ${b} to ${a}. That's ${ans} steps.`;
+  }
+  if (op === '×') {
+    const other = n => (a === n ? b : a);
+    if (a === 1 || b === 1) return `Anything times 1 stays the same: ${ans}.`;
+    if (a === 2 || b === 2) return `Times 2 is doubling: double ${other(2)} is ${ans}.`;
+    if (a === 10 || b === 10) return `Times 10: put a zero on the end. ${other(10)} becomes ${ans}.`;
+    if (a === 5 || b === 5) return `Count by 5s, ${other(5)} times: 5, 10, 15... all the way to ${ans}.`;
+    if (a === 9 || b === 9) { const o = other(9); return `Times 9: do times 10, then take one away. ${o * 10} − ${o} = ${ans}.`; }
+    if (a === 4 || b === 4) { const o = other(4); return `Times 4: double, then double again. ${o}, ${o * 2}, ${ans}.`; }
+    return `Use one you know: ${a} × ${b - 1} = ${a * (b - 1)}, plus one more ${a} is ${ans}.`;
+  }
+  return `Think times tables: what times ${b} makes ${a}? ${ans} × ${b} = ${a}.`;
+}
+function senseiTip(txt) {
+  G.tip = { txt, t: 420 };
+  [392, 523, 659].forEach((f, i) => tone(f, 0.25, 'triangle', 0.04, null, i * 0.1));
+}
+function missed(q) {
+  petSay('sad');
+  if (++G.wrongRun >= 2) { senseiTip(tipFor(q)); G.wrongRun = 0; }
+}
+function gotIt() { petSay('happy'); G.wrongRun = 0; }
+
+// ---------------------------------------------------------------- streak power-ups
+// Every 5 answers in a row grants a power for a while: double jump, a shield, or a fire aura.
+const POWERS = {
+  double: { name: 'Double jump', icon: '🪽', time: 1200 },
+  shield: { name: 'Shield', icon: '🛡️', time: 1500 },
+  fire: { name: 'Fire aura', icon: '🔥', time: 600 },
+};
+const hasPower = k => !!(G && G.power && G.power.kind === k);
+function grantPower() {
+  const kinds = Object.keys(POWERS), kind = kinds[G.powerN++ % kinds.length];
+  G.power = { kind, t: POWERS[kind].time };
+  floatText(P.x + P.w / 2, P.y - 110, `Power up: ${POWERS[kind].name}!`, '#7df9ff', 26);
+  sfx.power(); petSay('wow'); award('power');
+}
+
+// ---------------------------------------------------------------- number-stone bridges
+// A pit too wide to jump. Bonk number stones to pick them up and carry them to the altar;
+// the stones have to add up to exactly the target or the bridge cracks.
+function bridgePuzzle(w) {
+  const unit = w >= 2 ? 5 : 1, target = [10, 20, 50, 100][w], k = w === 0 ? 2 : 3, units = target / unit;
+  const cuts = new Set();
+  while (cuts.size < k - 1) cuts.add(R(1, units - 1));
+  const marks = [0, ...[...cuts].sort((a, b) => a - b), units];
+  const parts = marks.slice(1).map((m, i) => (m - marks[i]) * unit);
+  // Two extra stones that differ from the answer stones (and each other) where possible.
+  const extra = [];
+  for (let tries = 0; extra.length < 2 && tries < 40; tries++) {
+    const v = R(1, Math.max(2, Math.floor(units * 0.7))) * unit;
+    if ((!parts.includes(v) && !extra.includes(v)) || tries > 30) extra.push(v);
+  }
+  return { target, stones: shuffle([...parts, ...extra]) };
+}
+function bridgeStone(c, r) {
+  for (const b of L.bridges) for (const st of b.stones) {
+    if (st.c !== c || st.r !== r) continue;
+    if (b.done || st.state === 'used') { sfx.bump(); return; }
+    if (st.state === 'carried') { st.state = 'home'; G.carry = null; sfx.bump(); return; }   // bonk again to put it back
+    if (G.carry) G.carry.stone.state = 'home';
+    st.state = 'carried'; G.carry = { b, stone: st };
+    sfx.coin(); floatText(c * T + T / 2, r * T - 10, `Got ${st.val}`, '#fff', 22);
+    return;
   }
 }
-function closePad() { hide('pad'); mode = 'play'; show('pauseBtn'); showTouch(true); }
-function pickAnswer(i) {
-  audio();
-  const ar = L.arena, right = ar.opts[i] === ar.q.ans, cx = P.x + P.w / 2, cy = P.y;
-  closePad();
-  if (right) {
-    // Throw a shuriken at the boss; the next question comes after it lands.
-    ar.wait = 1;
-    G.shots.push({ x: cx, y: P.y + 10, spin: 0 });
-    P.throwT = 14; sfx.correct(); sfx.throw(); streakUp(cx, cy);
-    floatText(cx, cy - 20, ar.q.retry ? 'You remembered it!' : 'Shuriken!', '#ffd23f', 28);
+function placeStone(b) {
+  const st = G.carry.stone; G.carry = null; st.state = 'used'; b.total += st.val;
+  const x = b.altarC * T + T / 2, y = (GR - 2) * T;
+  if (b.total === b.target) {
+    b.done = true; shake(8, 4); award('bridge');
+    if (++prog.stats.bridges >= 10) award('bridge10'); save();
+    for (let c = b.c0; c < b.c0 + b.w; c++) L.map[GR][c] = 'b';
+    sfx.gate(); confetti(x, y); streakUp(x, y); gotIt();
+    floatText(x, y - 30, `${b.target}! Bridge built!`, '#3ae374', 30);
+    G.parts.push({ k: 'coin', x, y: y - 10, vx: 0, vy: -9, life: 34, v: 10 }); G.coins += 10;   // a red gem as a reward
+  } else if (b.total > b.target) {
+    floatText(x, y - 30, `${b.total} is too much! Try again`, '#ff6b6b', 26); sfx.wrong(); petSay('sad');
+    if (++b.overs === 2) senseiTip(`Add the stones up in your head before you carry them. You need exactly ${b.target}.`);
+    for (let c = b.c0; c < b.c0 + b.w; c++) burst(c * T + T / 2, GR * T, '#8b5a2b', 3);
+    b.total = 0; b.stones.forEach(t => { t.state = 'home'; });
   } else {
-    G.mistakes++; G.streak = 0; remember(ar.q);
-    ar.q = freshQ(ar.q.text); startDodge(); L.boss.atk = 1;
-    sfx.wrong(); floatText(cx, cy - 20, 'Oops! New question...', '#ff6b6b', 26);
+    sfx.coin(); floatText(x, y - 30, `So far: ${b.total}`, '#ffd23f', 26);
   }
+}
+const activeBridge = () => L.bridges.find(b => !b.done && P.x > b.startX - 3 * T && P.x < (b.c0 + b.w) * T);
+
+// ---------------------------------------------------------------- secret doors and the vault
+const doorBox = c => ({ x: c * T, y: GR * T - 2.5 * T, w: 1.4 * T, h: 2.5 * T });
+function harderGen() { const nxt = STAGES.slice(L.idx + 1).find(t => !t.boss); return nxt ? nxt.gen : gens.mixed; }
+function openDoor(d) {
+  d.used = true;
+  const locked = () => { sfx.wrong(); floatText(P.x + P.w / 2, P.y - 20, 'The door stays locked', '#ff9a3c', 24); };
+  askQuestion({
+    q: harderGen()(), n: 5, time: prog.easy ? 18 : 12, msg: 'A secret door! Answer this harder one to open it.',
+    onRight() { streakUp(P.x + P.w / 2, P.y); enterVault(); },
+    onWrong: locked, onTimeout: locked,
+  });
+}
+function enterVault() {
+  award('vault');
+  G.saved = { L, x: P.x, y: P.y };
+  L = buildVault(L);
+  P.x = 1.5 * T; P.y = GR * T - P.h; P.vx = P.vy = 0; cam = 0;
+  sfx.win(); floatText(P.x + 40, P.y - 30, 'Secret vault!', '#ffd23f', 30);
+}
+function leaveVault() {
+  L = G.saved.L; P.x = G.saved.x + T; P.y = G.saved.y; P.vx = P.vy = 0; G.saved = null;
+  sfx.gate();
 }
 
 function hurt() {
   if (P.inv > 0 || mode !== 'play') return;
-  G.hearts--; sfx.hurt();
+  if (hasPower('shield')) {
+    G.power = null; P.inv = 60; sfx.stomp();
+    burst(P.x + P.w / 2, P.y + P.h / 2, '#7df9ff', 16, 5); floatText(P.x + P.w / 2, P.y - 20, 'Shield blocked it!', '#7df9ff', 24);
+    return;
+  }
+  G.hearts--; sfx.hurt(); shake(10, 5); petSay('hurt'); G.hit = true;
   P.inv = 100; P.vy = -7; P.vx = -P.face * 4;
   if (G.hearts <= 0) gameOver();
 }
 function fell() {
-  G.hearts--; sfx.hurt();
-  if (G.hearts <= 0) { gameOver(); return; }
+  // In Easy mode a fall (only possible at a bridge) costs no heart.
+  if (prog.easy) sfx.bump();
+  else { G.hearts--; G.hit = true; sfx.hurt(); if (G.hearts <= 0) { gameOver(); return; } }
+  if (G.carry) { G.carry.stone.state = 'home'; G.carry = null; }
   P.x = G.checkpoint; P.y = GR * T - P.h; P.vx = P.vy = 0; P.inv = 100;
 }
 function gameOver() {
-  mode = 'over'; sfx.over(); showTouch(false); hide('pauseBtn');
+  mode = 'over'; stopMusic(); sfx.over(); showTouch(false); hide('pauseBtn');
   setTimeout(() => showMsg('Out of hearts!', '<p>Every ninja falls sometimes. Get up and try again!</p>', [
     { label: 'Try again', fn: () => startStage(G.idx), primary: true },
     { label: 'Levels', fn: toMenu, alt: true },
@@ -795,31 +1253,57 @@ function updatePlayer() {
   if (keys.jumpPressed) { p.jbuf = 8; keys.jumpPressed = false; }
   if (p.jbuf > 0) p.jbuf--;
   if (p.onGround) p.coyote = 7; else if (p.coyote > 0) p.coyote--;
-  if (p.jbuf > 0 && p.coyote > 0) { p.vy = -13.2; p.onGround = false; p.coyote = 0; p.jbuf = 0; sfx.jump(); }
+  if (p.jbuf > 0 && p.coyote > 0) { p.vy = -13.2; p.onGround = false; p.coyote = 0; p.jbuf = 0; p.squash = -8; sfx.jump(); }
+  if (p.onGround) p.usedDouble = false;
+  else if (p.jbuf > 0 && p.coyote === 0 && hasPower('double') && !p.usedDouble) {
+    p.vy = -12; p.usedDouble = true; p.jbuf = 0; sfx.jump(); burst(p.x + p.w / 2, p.y + p.h, '#ffffff', 8, 2);
+  }
   if (!keys.jump && p.vy < -4.5) p.vy = -4.5;   // short hop when jump is released early
   p.vy = Math.min(p.vy + 0.55, 12);
 
   moveX(p);
+  const wasAir = !p.onGround, fallSpeed = p.vy;
   const hit = moveY(p);
   if (hit) bump(hit.c, hit.r);
+  if (wasAir && p.onGround && fallSpeed > 6) { p.squash = 8; burst(p.x + p.w / 2, p.y + p.h, '#e8e0d0', 4, 1.5); }
+  if (p.squash > 0) p.squash--; else if (p.squash < 0) p.squash++;
   if (p.inv > 0) p.inv--;
   if (p.throwT > 0) p.throwT--;
   p.anim += Math.abs(p.vx) * 0.06;
 
   if (p.y > VH + 60) fell();
 
+  if (G.power && --G.power.t <= 0) { G.power = null; floatText(p.x + p.w / 2, p.y - 20, 'Power faded', '#cccccc', 20); }
+  if (hasPower('fire') && tick % 2 === 0) G.parts.push({ k: 'bit', x: p.x + Math.random() * p.w, y: p.y + p.h - Math.random() * p.h, vx: 0, vy: -1.5, life: 22, col: ['#ff6a00', '#ffd23f', '#ff3b1f'][R(0, 2)], s: 5 });
+  const trail = prog.equip.trail;
+  if (trail && p.onGround && Math.abs(p.vx) > 2 && tick % 3 === 0) {
+    const cols = trail === 'trail-fire' ? ['#ff6a00', '#ffd23f', '#ff3b1f'] : ['#ffffff', '#fff3a0', '#9be7ff'];
+    G.parts.push({ k: 'bit', x: p.x + p.w / 2 - p.face * 10, y: p.y + p.h - 6, vx: -p.face * 0.5, vy: -1 - Math.random(), life: 26, col: cols[R(0, 2)], s: 4 });
+  }
+  petTick();
+
+  // Bridges: carry stones to the altar; reaching a bridge makes it the respawn point.
+  for (const b of L.bridges || []) {
+    if (b.done) continue;
+    if (p.x > b.startX && G.checkpoint < b.startX) G.checkpoint = b.startX + T;
+    if (G.carry && G.carry.b === b && overlap(p, { x: b.altarC * T, y: GR * T - 2 * T, w: T, h: 2 * T })) placeStone(b);
+  }
+  for (const d of L.doors || []) if (!d.used && p.onGround && overlap(p, doorBox(d.c))) { openDoor(d); return; }
+  if (L.vault && overlap(p, doorBox(L.exitC))) { leaveVault(); return; }
+
   for (const c of L.coins) {
     if (!c.taken && Math.abs(c.x - (p.x + p.w / 2)) < 22 && Math.abs(c.y - (p.y + p.h / 2)) < 30) {
-      c.taken = true; G.coins++; G.score += 100; sfx.coin();
+      c.taken = true; G.coins += c.v; G.score += 100 * c.v; gemSound(); flyGem(c.x, c.y, c.v);
+      if (c.v > 1) floatText(c.x, c.y - 24, '+' + c.v, GEM_COL[c.v][0], 22);
     }
   }
   if (L.prize && overlap(p, L.prize)) {
-    L.prize = null; mode = 'win'; G.winT = 0; sfx.win(); hide('pauseBtn'); showTouch(false);
+    L.prize = null; mode = 'win'; G.winT = 0; stopMusic(); sfx.win(); hide('pauseBtn'); showTouch(false); petSay('dance');
     G.score += G.hearts * 300; confetti(p.x + p.w / 2, p.y);
     floatText(p.x + p.w / 2, p.y - 20, 'Scroll recovered!', '#ffd23f', 30);
   }
-  if (!L.boss && p.x + p.w >= L.flagC * T + T / 2 - 6) {
-    mode = 'win'; G.winT = 0; sfx.win(); hide('pauseBtn'); showTouch(false);
+  if (!L.boss && !L.vault && p.x + p.w >= L.flagC * T + T / 2 - 6) {
+    mode = 'win'; G.winT = 0; stopMusic(); sfx.win(); hide('pauseBtn'); showTouch(false); petSay('dance');
     const bonus = Math.max(0, GR - Math.floor((p.y + p.h) / T)) * 100 + G.hearts * 300;
     G.score += bonus; floatText(p.x, p.y - 10, '+' + bonus, '#ffd23f', 26);
   }
@@ -839,7 +1323,9 @@ function updateEnemies() {
         e.vy += 0.4; e.y += e.vy;
         if (e.y >= e.home) { e.y = e.home; e.up = false; e.t = 0; e.delay = R(70, 140); }
       }
-      if (mode === 'play' && e.up && overlap(P, e)) hurt();
+      if (mode === 'play' && e.up && overlap(P, e)) {
+        if (hasPower('fire')) { e.up = false; e.y = e.home; burst(e.x + 13, e.y - 40, '#ffd23f', 6); } else hurt();
+      }
       continue;
     }
     e.vy = Math.min(e.vy + 0.5, 10);
@@ -853,8 +1339,12 @@ function updateEnemies() {
     }
     if (e.y > VH + 100) e.dead = 'gone';
     if (mode === 'play' && overlap(P, e)) {
-      if (P.vy > 0 && P.y + P.h - e.y < 18) {
-        e.dead = 'squash'; e.t = 0; P.vy = keys.jump ? -11 : -7;
+      if (hasPower('fire')) {
+        e.dead = 'flip'; e.vy = -7; G.score += 200; sfx.stomp();
+        burst(e.x + e.w / 2, e.y + e.h / 2, '#ff6a00', 10); floatText(e.x + e.w / 2, e.y, '+200');
+      } else if (P.vy > 0 && P.y + P.h - e.y < 18) {
+        e.dead = 'squash'; e.t = 0; P.vy = keys.jump ? -11 : -7; shake(6, 3);
+        burst(e.x + e.w / 2, e.y + e.h, '#ffffff', 6, 2);
         G.score += 200; sfx.stomp(); floatText(e.x + e.w / 2, e.y, '+200');
         if (e.kind === 'robot') burst(e.x + 15, e.y + 10, '#c8d3de', 8);
         if (e.kind === 'rock') burst(e.x + 17, e.y + 10, '#7d706a', 8);
@@ -923,7 +1413,7 @@ function updateBoss() {
     bossAttack(b);
     b.atk = b.spec.every * 0.8 * (prog.easy ? 1.6 : 1) * (0.8 + Math.random() * 0.4);
   }
-  if (mode === 'play' && overlap(P, b)) hurt();
+  if (mode === 'play' && overlap(P, b) && !hasPower('fire')) hurt();
 }
 
 function updateShotsAndProjectiles() {
@@ -932,9 +1422,9 @@ function updateShotsAndProjectiles() {
     s.spin += 0.5;
     const tx = b.x + b.w / 2, ty = b.y + b.h / 2, dx = tx - s.x, dy = ty - s.y, d = Math.hypot(dx, dy);
     if (d < 16) {
-      s.done = true; b.hp--; b.flash = 36; sfx.hit();
+      s.done = true; b.hp--; b.flash = 36; sfx.hit(); shake(12, 6); G.freeze = 5;
       burst(tx, ty, '#ffd23f', 14, 5); floatText(tx, b.y - 10, 'POW!', '#ffd23f', 34);
-      if (b.hp <= 0) { b.dying = 90; L.proj = []; sfx.bossDown(); }
+      if (b.hp <= 0) { b.dying = 90; L.proj = []; sfx.bossDown(); shake(30, 8); G.slow = 120; G.flash = 1; }
       else L.arena.wait = 45;   // short breather, then a new question
     } else { s.x += dx / d * 13; s.y += dy / d * 13; }
   }
@@ -945,7 +1435,7 @@ function updateShotsAndProjectiles() {
     p.x += p.vx; p.vy += p.g; p.y += p.vy;
     if (p.g && p.y > GR * T - p.r) { p.done = true; burst(p.x, GR * T - 4, p.k === 'rock' ? '#ff6a00' : '#b388ff', 8); }
     if (p.x < -40 || p.x > L.w * T + 40) p.done = true;
-    if (!p.done && mode === 'play' && circleHits(p.x, p.y, p.r - 2, P)) { p.done = true; hurt(); }
+    if (!p.done && mode === 'play' && circleHits(p.x, p.y, p.r - 2, P)) { p.done = true; if (hasPower('fire')) burst(p.x, p.y, '#ff6a00', 8); else hurt(); }
   }
   L.proj = L.proj.filter(p => !p.done);
 
@@ -972,7 +1462,7 @@ function updateGates() {
 }
 
 function updateWin() {
-  const p = P; G.winT++;
+  const p = P; G.winT++; petTick();
   if (L.boss) {
     p.vx *= 0.8; p.vy = Math.min(p.vy + 0.55, 12); moveX(p); moveY(p);
     if (G.winT === 120) finishLevel();
@@ -1013,8 +1503,20 @@ function finishLevel() {
   const dots = '●'.repeat(pts) + '○'.repeat(3 - pts);
   let title = 'Level complete!', body = '';
   if (st.boss) { title = `You got the ${W.scroll} back!`; body = `<div class="bigicon">📜</div><p>${W.boss.name} is beaten!</p>`; }
-  body += `<p><span class="dots">${dots}</span><br>Score <b>${G.score}</b> &nbsp;·&nbsp; Scroll pieces <b>${G.coins}</b><br>
+  else {
+    const found = [0, 1].filter(k => prog.best[st.w * 3 + k]).length;
+    body = `<div class="bigicon">🧩</div><p>You found a torn piece of the <b>${W.scroll}</b> (${found} of 2). Beat the boss to win back the whole scroll!</p>`;
+  }
+  body += `<p><span class="dots">${dots}</span><br>Score <b>${G.score}</b> &nbsp;·&nbsp; Gems <b>${G.coins}</b><br>
     ${G.mistakes === 0 ? 'Perfect: no mistakes!' : `Wrong answers: <b>${G.mistakes}</b>`} &nbsp;·&nbsp; Best streak <b>${G.bestStreak}</b></p>`;
+  const earned = G.coins + (st.boss ? 20 : 0);
+  prog.bank += earned; prog.stats.gems += earned; save();
+  if (G.mistakes === 0) award('perfect');
+  if (st.boss && !G.hit) award('boss-nohit');
+  if ([2, 5, 8, 11].every(k => prog.best[k])) award('boss-all');
+  if (prog.stats.gems >= 500) award('gems500');
+  if (currentBelt().name === 'Black') award('black-belt');
+  body += `<p>💎 +${earned} gems for the Dojo Shop (you have <b>${prog.bank}</b>)</p>`;
   if (G.practice.size) body += `<p>Facts to practice: <b>${[...G.practice.values()].map(q => `${q.text} = ${q.ans}`).join(' &nbsp;·&nbsp; ')}</b></p>`;
   if (after.idx > before.idx) body += `<div class="promo">${beltHTML(after)} &nbsp;New belt! You earned the <b>${after.name} Belt</b>!</div>`;
   const btns = [];
@@ -1049,7 +1551,288 @@ function update() {
     if (p.k === 'coin') p.vy += 0.6;
   }
   G.parts = G.parts.filter(p => p.life > 0);
+  if (G.shake > 0) G.shake--;
+  if (G.tip && --G.tip.t <= 0) G.tip = null;
+  if (G.flash > 0) G.flash = Math.max(0, G.flash - 0.04);
+  for (const f of G.flyers) { f.t += 1 / 28; if (f.t >= 1) G.pulse = 8; }
+  G.flyers = G.flyers.filter(f => f.t < 1);
+  if (G.pulse > 0) G.pulse--;
   cam = clamp(P.x + P.w / 2 - VW * 0.4, 0, Math.max(0, L.w * T - VW));
+}
+
+
+// ---------------------------------------------------------------- horse race side quest
+// A behind-the-rider road with three lanes. Each gate hangs three answers over the lanes:
+// steer into the right one for a speed boost; a wrong one makes the horse stumble.
+const RACE_TOPICS = [
+  { id: 'add', name: 'Adding', ex: '8 + 7', gen: gens.add20 },
+  { id: 'sub', name: 'Taking away', ex: '15 − 6', gen: gens.sub20 },
+  { id: 'times', name: 'Times tables', ex: '7 × 8', gen: gens.times },
+  { id: 'div', name: 'Division', ex: '24 ÷ 6', gen: gens.div },
+  { id: 'mixed', name: 'Mixed', ex: 'a bit of everything', gen: gens.mixed },
+];
+const SEG = 200, ROAD_W = 1600, CAM_H = 1500, PLAYER_Z = 1200, DRAW = 150, DEPTH = 0.84;
+const GATES = 12, GATE_GAP = 26000, START_Z = 9000, RIDER_H = 300;
+const LANES = [-2 / 3, 0, 2 / 3];   // lane centres, as a fraction of half the road width
+const RIDER_BASE = { h: '#8b5a2b', H: '#5e3a1c', l: '#a8743f', m: '#2a1a10', s: '#c0392b', f: '#2a2a2a', n: '#2c3a6b', N: '#5a72c2', R: '#e63946', b: '#f4f4f4' };
+// Seen from behind: the ninja on a galloping horse, headband tails flying.
+function drawRider({ P, R, E }, f) {
+  const up = f ? 1 : 0;
+  R(7, 18 + up, 3, 4, 'H'); R(14, 19 - up, 3, 4, 'H'); R(7, 22 + up, 3, 1, 'f'); R(14, 23 - up, 3, 1, 'f');
+  E(12, 15, 7, 5, 'h'); E(9.5, 13.5, 2.5, 1.6, 'l');
+  R(11, 17, 2, 4, 'm'); P(f ? 13 : 10, 21, 'm');
+  P(9, 3, 'h'); P(15, 3, 'h'); P(9, 4, 'm'); P(15, 4, 'm');
+  R(8, 11, 8, 2, 's');
+  R(9, 7, 6, 4, 'n'); P(8, 8, 'n'); P(15, 8, 'n'); P(7, 9, 'n'); P(16, 9, 'n'); P(10, 8, 'N');
+  R(9, 10, 6, 1, 'b');
+  E(12, 5, 2.6, 2.6, 'n'); P(11, 4, 'N');
+  R(9, 4, 7, 1, 'R');
+  if (f) { P(16, 4, 'R'); P(17, 3, 'R'); P(18, 3, 'R'); } else { P(16, 4, 'R'); P(17, 5, 'R'); P(18, 5, 'R'); }
+}
+const bakeRider = pal => bake(makeFrames(24, 24, { ...RIDER_BASE, ...pal }, drawRider, 2), ['a', 'b'], 4);
+const RIVALS = [
+  { name: 'Red Bandit', col: '#e63946', pal: { n: '#a3242f', N: '#d0485a', R: '#1a1a1a', b: '#1a1a1a', h: '#5e3a1c', H: '#3d2410', l: '#7a4f2a' }, speed: 5250 },
+  { name: 'Gray Wolf', col: '#c9c4b8', pal: { n: '#5a5f6e', N: '#8a90a0', R: '#ffd23f', b: '#ffd23f', h: '#d8d2c4', H: '#a59d8c', l: '#f0ece2', m: '#8a8478' }, speed: 4900 },
+  { name: 'Shadow Rider', col: '#b388ff', pal: { n: '#3d2466', N: '#6b44a8', R: '#b388ff', b: '#b388ff', h: '#2a2730', H: '#16141c', l: '#45405a' }, speed: 4500 },
+].map(v => ({ ...v, spr: bakeRider(v.pal) }));
+let RC = null;
+
+function showRaceSetup() {
+  RC = null; document.body.classList.remove('racing');
+  hide('menu'); hide('pauseBtn'); showTouch(false);
+  const best = RACE_TOPICS.filter(t => prog.raceBest[t.id]).map(t => `${t.name}: <b>${prog.raceBest[t.id].toFixed(1)} s</b>`).join(' · ');
+  showMsg('Horse Race', `<div class="bigicon">🐎</div>
+    <p>Race the Red Bandit, the Gray Wolf and the Shadow Rider! Steer into the lane with the right answer for a speed boost.
+    Use ◀ ▶ (or the arrow keys) to change lanes.</p>${best ? `<p>Best times: ${best}</p>` : ''}<p>Pick what to practice:</p>`,
+    [...RACE_TOPICS.map(t => ({ label: `${t.name} (${t.ex})`, fn: () => startRace(t.id) })), { label: 'Back', fn: toMenu, alt: true }]);
+}
+
+function startRace(id) {
+  const topic = RACE_TOPICS.find(t => t.id === id), length = START_Z + GATES * GATE_GAP + 6000;
+  const curves = [];
+  for (let i = 0; i < Math.ceil(length / SEG) + DRAW + 10; i++) curves.push(Math.sin(i / 45) * 2.4 + Math.sin(i / 113) * 1.8);
+  const gates = [];
+  for (let i = 0; i < GATES; i++) { const q = topic.gen(); gates.push({ z: START_Z + i * GATE_GAP, q, opts: shuffle(choices(q, 3)), done: false }); }
+  const slow = prog.easy ? 0.82 : 1;   // Easy mode: everyone rides slower, so there is more time to think
+  RC = {
+    topic, length, curves, gates, z: 0, speed: 0, cruise: 4600 * slow, maxSpeed: 8200 * slow, boost: 3000 * slow,
+    lane: 1, laneX: 0, time: 0, count: 3.99, goT: 0, anim: 0, bg: 0, right: 0, wrong: 0, streak: 0, finished: false, place: 0,
+    missed: new Map(), texts: [], spr: bakeRider({ ...pickRiderPal() }),
+    rivals: RIVALS.map((v, k) => ({ ...v, z: 0, speed: 0, base: v.speed * slow, lane: k === 0 ? 0 : k === 1 ? 2 : 1, laneX: LANES[k === 0 ? 0 : k === 1 ? 2 : 1], switchT: R(3, 6) })),
+  };
+  RC.rivals[2].z = -500;   // the third rival starts just behind you
+  G = null; mode = 'race'; playMusic('race');
+  hide('menu'); hide('msg'); hide('shop'); show('pauseBtn'); document.body.classList.add('racing'); showTouch(true);
+}
+function pickRiderPal() { const hp = heroPal(); return { n: hp.n, N: hp.N, R: hp.r, b: hp.b }; }
+function raceSteer(d) {
+  if (!RC || mode !== 'race' || RC.finished) return;
+  const lane = clamp(RC.lane + d, 0, 2);
+  if (lane !== RC.lane) { RC.lane = lane; tone(500 + lane * 120, 0.05, 'triangle', 0.04); }
+}
+function raceText(txt, col) { RC.texts.push({ txt, col, t: 1.4 }); }
+
+function judgeGate(g) {
+  const r = RC; g.done = true;
+  if (g.opts[r.lane] === g.q.ans) {
+    r.right++; r.streak++;
+    r.speed = Math.min(r.maxSpeed, Math.max(r.speed, r.cruise) + r.boost);
+    sfx.correct(); tone(300, 0.35, 'sawtooth', 0.03, 900);
+    raceText(r.streak >= 3 ? `Hyah! ${r.streak} in a row!` : ['Hyah! Boost!', 'Zoom!', 'Speed up!'][R(0, 2)], '#3ae374');
+  } else {
+    r.wrong++; r.streak = 0; r.speed = Math.min(r.speed, 1700); r.missed.set(g.q.text, g.q);
+    sfx.wrong(); raceText(`Stumble! ${g.q.text} = ${g.q.ans}`, '#ff6b6b');
+  }
+}
+
+function updateRace(dt) {
+  const r = RC; r.anim += dt * (2 + r.speed / 900);
+  r.texts.forEach(t => { t.t -= dt; }); r.texts = r.texts.filter(t => t.t > 0);
+  if (r.goT > 0) r.goT -= dt;
+  if (r.count > 0) {
+    const before = Math.ceil(r.count); r.count -= dt;
+    if (Math.ceil(r.count) !== before) { if (r.count > 0) tone(440, 0.15, 'square', 0.05); else { tone(880, 0.3, 'square', 0.05); r.goT = 0.8; } }
+    return;
+  }
+  r.laneX += (LANES[r.lane] - r.laneX) * Math.min(1, dt * 10);
+  if (r.finished) r.speed = Math.max(0, r.speed - 2500 * dt);
+  else if (r.speed < r.cruise) r.speed = Math.min(r.cruise, r.speed + 1800 * dt);
+  else r.speed = Math.max(r.cruise, r.speed - 1100 * dt);
+  r.z += r.speed * dt;
+  if (!r.finished) r.time += dt;
+  r.bg += (r.curves[Math.floor(r.z / SEG)] || 0) * r.speed * dt * 0.00004;
+  for (const g of r.gates) if (!g.done && r.z >= g.z) judgeGate(g);
+  for (const v of r.rivals) {
+    v.speed = Math.min(v.base, v.speed + 1500 * dt);
+    v.z += v.speed * dt * (1 + Math.sin(r.time * 0.6 + v.base) * 0.04);
+    if ((v.switchT -= dt) <= 0) { v.lane = R(0, 2); v.switchT = R(3, 6); }
+    v.laneX += (LANES[v.lane] - v.laneX) * Math.min(1, dt * 3);
+    if (v.finishT === undefined && v.z >= r.length) v.finishT = r.time;
+  }
+  if (!r.finished && r.z >= r.length) finishRace();
+}
+
+function racePlace() { return 1 + RC.rivals.filter(v => (v.finishT !== undefined && (!RC.finished || v.finishT <= RC.time)) || (!RC.finished && v.z > RC.z)).length; }
+
+function finishRace() {
+  const r = RC; r.finished = true; r.place = racePlace(); stopMusic();
+  sfx.win(); raceText(['1st place!', '2nd place!', '3rd place!', '4th place'][r.place - 1], '#ffd23f');
+  const reward = [15, 10, 6, 3][r.place - 1] + r.right, prev = prog.raceBest[r.topic.id];
+  const best = !prev || r.time < prev;
+  if (best) prog.raceBest[r.topic.id] = r.time;
+  prog.bank += reward; prog.stats.gems += reward; save();
+  if (r.place === 1) award('race-win');
+  if (r.right === GATES) award('race-perfect');
+  if (prog.stats.gems >= 500) award('gems500');
+  setTimeout(() => {
+    if (RC !== r) return;
+    mode = 'racedone'; hide('pauseBtn'); showTouch(false);
+    const medal = ['🥇', '🥈', '🥉', '🐎'][r.place - 1];
+    let body = `<div class="bigicon">${medal}</div><p>Time <b>${r.time.toFixed(1)} s</b>${best ? ' · <b>New best!</b>' : ` · Best ${prev.toFixed(1)} s`}<br>
+      Right answers <b>${r.right} / ${GATES}</b></p><p>💎 +${reward} gems for the Dojo Shop (you have <b>${prog.bank}</b>)</p>`;
+    if (r.missed.size) body += `<p>Facts to practice: <b>${[...r.missed.values()].map(q => `${q.text} = ${q.ans}`).join(' &nbsp;·&nbsp; ')}</b></p>`;
+    showMsg(['1st place!', '2nd place!', '3rd place!', '4th place'][r.place - 1], body, [
+      { label: 'Race again', fn: () => startRace(r.topic.id), primary: true },
+      { label: 'New topic', fn: showRaceSetup, alt: true },
+      { label: 'Menu', fn: toMenu, alt: true },
+    ]);
+  }, 2200);
+}
+
+function quad(x1, y1, w1, x2, y2, w2, col) { poly([[x1 - w1, y1], [x1 + w1, y1], [x2 + w2, y2], [x2 - w2, y2]], col); }
+
+function renderRace() {
+  const r = RC, W = VW, H = VH, hz = H * 0.4, camZ = r.z - PLAYER_Z, camX = r.laneX * ROAD_W * 0.5;
+  // sky, Mount Fuji and hills slide sideways on bends
+  const sky = ctx.createLinearGradient(0, 0, 0, hz); sky.addColorStop(0, '#6fb4f0'); sky.addColorStop(1, '#ffd6e8');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, hz);
+  const off = ((r.bg * 300) % (W * 1.5) + W * 1.5) % (W * 1.5);
+  for (let k = -1; k <= 1; k++) {
+    const x = W * 0.6 + k * W * 1.5 - off;
+    poly([[x - 260, hz], [x - 50, hz - 150], [x + 50, hz - 150], [x + 260, hz]], '#8e9fd6');
+    poly([[x - 78, hz - 112], [x - 50, hz - 150], [x + 50, hz - 150], [x + 78, hz - 112], [x + 30, hz - 122], [x - 20, hz - 110]], '#fff');
+  }
+  ctx.fillStyle = '#9ad37a';
+  const hoff = ((r.bg * 700) % 400 + 400) % 400;
+  for (let x = -hoff - 200; x < W + 200; x += 400) { ctx.beginPath(); ctx.ellipse(x, hz, 230, 46, 0, Math.PI, 0); ctx.fill(); }
+  ctx.fillStyle = '#5fbf4a'; ctx.fillRect(0, hz, W, H - hz);
+
+  // road, from far to near
+  const first = Math.floor(camZ / SEG) + 1, pts = [];
+  let x = 0, dx = 0;
+  for (let n = 0; n < DRAW; n++) {
+    const i = first + n, sc = DEPTH / (i * SEG - camZ);
+    pts.push({ i, cx: x, X: W / 2 + sc * (x - camX) * W / 2, Y: hz + sc * CAM_H * H / 2, w: sc * ROAD_W * W / 2 });
+    x += dx; dx += r.curves[i] || 0;
+  }
+  for (let n = pts.length - 2; n >= 0; n--) {
+    const a = pts[n], b = pts[n + 1];
+    if (b.Y >= a.Y) continue;
+    const alt = Math.floor(a.i / 3) % 2;
+    ctx.fillStyle = alt ? '#5fbf4a' : '#54ad41'; ctx.fillRect(0, b.Y, W, a.Y - b.Y + 1);
+    quad(a.X, a.Y, a.w * 1.12, b.X, b.Y, b.w * 1.12, alt ? '#e63946' : '#f4f4f4');
+    quad(a.X, a.Y, a.w, b.X, b.Y, b.w, alt ? '#c9a77a' : '#bf9d70');
+    if (alt) for (const lx of [-1 / 3, 1 / 3]) quad(a.X + a.w * lx, a.Y, a.w * 0.02, b.X + b.w * lx, b.Y, b.w * 0.02, '#f4ead5');
+  }
+
+  // things along the road, drawn far to near
+  const proj = z => {
+    const zRel = z - camZ; if (zRel < 150 || zRel > (DRAW - 2) * SEG) return null;
+    const pt = pts[clamp(Math.floor(z / SEG) - first, 0, pts.length - 1)], sc = DEPTH / zRel;
+    return { zRel, sc, cx: pt.cx, Y: hz + sc * CAM_H * H / 2, u: sc * W / 2 };
+  };
+  const sxOf = (p, offX) => W / 2 + p.sc * (p.cx + offX - camX) * W / 2;
+  const items = [];
+  for (let i = first - first % 4; i < first + DRAW; i += 4) {
+    const p = proj(i * SEG); if (!p) continue;
+    items.push({ p, draw: () => roadside(p, sxOf, (i / 4) % 2 ? 1 : -1, (i / 8) % 4 < 2) });
+  }
+  for (const g of r.gates) { const p = proj(g.z); if (p && !g.done) items.push({ p, draw: () => raceGate(p, sxOf, g) }); }
+  for (const v of r.rivals) { const p = proj(v.z); if (p) items.push({ p, draw: () => rider(v.spr, p, sxOf(p, v.laneX * ROAD_W), r.anim + v.base) }); }
+  { const p = proj(r.length); if (p) items.push({ p, draw: () => finishBanner(p, sxOf) }); }
+  items.sort((a, b) => b.p.zRel - a.p.zRel).forEach(it => it.draw());
+
+  // the player's rider
+  const pp = proj(r.z);
+  if (pp) rider(r.spr, pp, sxOf(pp, r.laneX * ROAD_W), r.anim, true);
+  // speed lines while boosted
+  if (r.speed > r.cruise + 500) {
+    ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 2;
+    for (let k = 0; k < 10; k++) {
+      const side = k % 2 ? 1 : -1, y = hz + 30 + ((k * 53 + tick * 9) % (H - hz - 40)), x0 = W / 2 + side * (W * 0.28 + (k * 37 % 80));
+      ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + side * 60, y + 18); ctx.stroke();
+    }
+  }
+  drawRaceHUD();
+}
+
+function roadside(p, sxOf, side, tree) {
+  const x = sxOf(p, side * ROAD_W * 1.7), u = p.u, y = p.Y;
+  if (tree) {
+    ctx.fillStyle = '#6b3e2a'; ctx.fillRect(x - 40 * u, y - 520 * u, 80 * u, 520 * u);
+    [[-220, -560, 230, '#ffb7d5'], [200, -600, 240, '#ffb7d5'], [0, -760, 280, '#ffc8df'], [-60, -500, 180, '#ff9cc4']].forEach(([dx, dy, rr, c]) => {
+      ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x + dx * u, y + dy * u, rr * u, 0, 7); ctx.fill();
+    });
+  } else {
+    ctx.fillStyle = '#7d8197'; ctx.fillRect(x - 30 * u, y - 380 * u, 60 * u, 380 * u); ctx.fillRect(x - 110 * u, y - 500 * u, 220 * u, 130 * u);
+    poly([[x - 150 * u, y - 500 * u], [x, y - 620 * u], [x + 150 * u, y - 500 * u]], '#646880');
+    ctx.fillStyle = '#ffd23f'; ctx.fillRect(x - 60 * u, y - 470 * u, 120 * u, 70 * u);
+  }
+}
+function raceGate(p, sxOf, g) {
+  const u = p.u, y = p.Y, near = p.zRel < 7000;
+  const xl = sxOf(p, -ROAD_W * 1.1), xr = sxOf(p, ROAD_W * 1.1);
+  ctx.fillStyle = '#c0392b';
+  ctx.fillRect(xl - 50 * u, y - 1150 * u, 100 * u, 1150 * u); ctx.fillRect(xr - 50 * u, y - 1150 * u, 100 * u, 1150 * u);
+  ctx.fillRect(xl - 160 * u, y - 1230 * u, xr - xl + 320 * u, 90 * u);
+  ctx.fillStyle = '#222'; ctx.fillRect(xl - 200 * u, y - 1290 * u, xr - xl + 400 * u, 60 * u);
+  g.opts.forEach((v, k) => {
+    const cx = sxOf(p, LANES[k] * ROAD_W), w = 780 * u, h = 380 * u, top = y - 1080 * u;
+    ctx.fillStyle = '#5e3a1c'; ctx.fillRect(cx - w / 2 - 6 * u - 1, top - 6 * u - 1, w + 12 * u + 2, h + 12 * u + 2);
+    ctx.fillStyle = '#f6e1b5'; ctx.fillRect(cx - w / 2, top, w, h);
+    if (near && k === RC.lane) { ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = Math.max(2, 22 * u); ctx.strokeRect(cx - w / 2, top, w, h); }
+    const fs = h * 0.66;
+    if (fs > 7) { ctx.fillStyle = '#3a2200'; ctx.font = `bold ${fs}px "Trebuchet MS", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(v, cx, top + h / 2 + fs * 0.05); }
+  });
+}
+function finishBanner(p, sxOf) {
+  const u = p.u, y = p.Y, xl = sxOf(p, -ROAD_W * 1.15), xr = sxOf(p, ROAD_W * 1.15), sq = 120 * u;
+  ctx.fillStyle = '#ddd'; ctx.fillRect(xl - 30 * u, y - 1100 * u, 60 * u, 1100 * u); ctx.fillRect(xr - 30 * u, y - 1100 * u, 60 * u, 1100 * u);
+  for (let k = 0; xl + k * sq < xr; k++) for (let j = 0; j < 2; j++) {
+    ctx.fillStyle = (k + j) % 2 ? '#111' : '#fff'; ctx.fillRect(xl + k * sq, y - 1100 * u + j * sq, Math.min(sq, xr - xl - k * sq), sq);
+  }
+  for (let k = 0; xl + k * sq < xr; k++) { ctx.fillStyle = k % 2 ? '#111' : '#fff'; ctx.fillRect(xl + k * sq, y - 30 * u, Math.min(sq, xr - xl - k * sq), 30 * u); }
+}
+function rider(set, p, x, anim, isPlayer) {
+  const size = RIDER_H * p.u, y = p.Y + (Math.floor(anim * 2) % 2 ? -size * 0.02 : 0);
+  ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(x, p.Y, size * 0.32, size * 0.07, 0, 0, 7); ctx.fill();
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(set[Math.floor(anim) % 2 ? 'b' : 'a'][0], x - size / 2, y - size, size, size);
+  if (isPlayer && RC.speed > RC.cruise + 500) {
+    ctx.fillStyle = 'rgba(210,180,140,.6)';
+    for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.arc(x + (k - 1.5) * size * 0.18, p.Y - 4 + (k % 2) * 4, size * 0.05 * (1 + (tick + k * 7) % 10 / 10), 0, 7); ctx.fill(); }
+  }
+}
+function drawRaceHUD() {
+  const r = RC, narrow = VW < 700, by = narrow ? 70 : 10, next = r.gates.find(g => !g.done);
+  hudText(`⏱ ${r.time.toFixed(1)} s`, 18, 26, 20, '#fff');
+  const place = r.finished ? r.place : racePlace();
+  hudText(`${['1st', '2nd', '3rd', '4th'][place - 1]} of 4`, VW - 70, 26, 22, '#ffd23f', 'right');
+  // progress: everyone's position along the track
+  const bw = narrow ? 140 : 220, bx = narrow ? 18 : VW - 70 - bw, bY = narrow ? 52 : 50;
+  ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(bx, bY, bw, 6);
+  for (const v of r.rivals) { ctx.fillStyle = v.col; ctx.beginPath(); ctx.arc(bx + bw * clamp(v.z / r.length, 0, 1), bY + 3, 5, 0, 7); ctx.fill(); }
+  ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(bx + bw * clamp(r.z / r.length, 0, 1), bY + 3, 7, 0, 7); ctx.fill();
+  const txt = next ? `${next.q.text} = ?` : r.finished ? 'Finish!' : 'Sprint to the finish!';
+  ctx.font = 'bold 38px "Trebuchet MS", sans-serif';
+  const w = Math.max(240, ctx.measureText(txt).width + 50);
+  ctx.fillStyle = 'rgba(20,20,50,.75)'; rrect(VW / 2 - w / 2, by, w, 64, 14); ctx.fill();
+  ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 3; ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, VW / 2, by + 34);
+  if (next) hudText(`Steer into the right answer!  (${GATES - r.gates.filter(g => !g.done).length + 1}/${GATES})`, VW / 2, by + 80, 16, '#fff', 'center');
+  r.texts.forEach((t, k) => hudText(t.txt, VW / 2, by + 120 + k * 34 - (1.4 - t.t) * 20, 28, t.col, 'center'));
+  if (r.count > 0) hudText(String(Math.ceil(r.count)), VW / 2, VH * 0.45, 110, '#ffd23f', 'center');
+  else if (r.goT > 0) hudText('GO!', VW / 2, VH * 0.45, 110, '#3ae374', 'center');
 }
 
 // ---------------------------------------------------------------- drawing: shapes
@@ -1108,6 +1891,15 @@ function drawShuriken(x, y, phase, col = '#ffd23f', edge = '#b8860b', size = 14)
   ctx.closePath(); ctx.fillStyle = col; ctx.fill();
   ctx.strokeStyle = edge; ctx.lineWidth = 2; ctx.stroke();
   ctx.fillStyle = edge; ctx.beginPath(); ctx.arc(x, y, size * 0.18, 0, 7); ctx.fill();
+}
+const GEM_COL = { 1: ['#3ae374', '#1e9e4a', '#c4ffd8'], 5: ['#4cc9f0', '#1f7fb5', '#d2f5ff'], 10: ['#ff4d6d', '#b81f3d', '#ffc9d4'], 25: ['#ffd23f', '#c99a1a', '#fff6c9'] };
+function drawGem(x, y, v = 1, phase = 0) {
+  const [c, d, l] = GEM_COL[v] || GEM_COL[1], w = 8 + (v >= 5 ? 2 : 0) + (v >= 10 ? 2 : 0) + (v >= 25 ? 3 : 0), h = w * 1.3;
+  const ww = w * (0.65 + Math.abs(Math.cos(phase)) * 0.35);   // turning shimmer
+  poly([[x - ww - 2, y - h * 0.25], [x - ww * 0.5, y - h * 0.65 - 2], [x + ww * 0.5, y - h * 0.65 - 2], [x + ww + 2, y - h * 0.25], [x, y + h * 0.75 + 2]], '#120f1a');
+  poly([[x - ww, y - h * 0.25], [x - ww * 0.5, y - h * 0.65], [x + ww * 0.5, y - h * 0.65], [x + ww, y - h * 0.25], [x, y + h * 0.75]], c);
+  poly([[x - ww, y - h * 0.25], [x + ww, y - h * 0.25], [x, y + h * 0.75]], d);
+  poly([[x - ww * 0.5, y - h * 0.65], [x, y - h * 0.25], [x - ww, y - h * 0.25]], l);
 }
 function drawScroll(x, y, s = 1) {
   ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
@@ -1300,6 +2092,13 @@ function drawTile(t, x, y, c, r) {
       break;
     }
     case 'U': block(x, y, '#9b6a3c', '#5e3a1c', '#b8875a'); break;
+    case 'H':   // invisible, but it twinkles now and then as a hint
+      if (tick % 150 < 24) {
+        const a = Math.sin((tick % 150) / 24 * Math.PI), cx = x + T / 2, cy = y + T / 2;
+        ctx.fillStyle = `rgba(255,255,220,${a})`;
+        poly([[cx, cy - 10 * a], [cx + 3, cy - 3], [cx + 10 * a, cy], [cx + 3, cy + 3], [cx, cy + 10 * a], [cx - 3, cy + 3], [cx - 10 * a, cy], [cx - 3, cy - 3]], ctx.fillStyle);
+      }
+      break;
     case 'S': block(x, y, W.stair[0], W.stair[1], W.stair[2]); break;
     case 'P': case 'Q': case 'p': case 'q': {
       const top = t === 'P' || t === 'Q', left = t === 'P' || t === 'p';
@@ -1324,11 +2123,26 @@ function drawTile(t, x, y, c, r) {
       break;
     }
     case 'A': drawAnswer(x, y, c, r); break;
+    case 'N': {
+      const st = L.bridges.flatMap(b => b.stones).find(t => t.c === c && t.r === r);
+      if (!st || st.state !== 'home') { ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.setLineDash([4, 4]); ctx.strokeRect(x + 3, y + 3, T - 6, T - 6); ctx.setLineDash([]); break; }
+      block(x, y, '#9aa3b5', '#4a5266', '#d5dbe6');
+      ctx.fillStyle = '#1f2433'; ctx.font = `bold ${st.val >= 100 ? 15 : 20}px "Trebuchet MS", sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(st.val, x + T / 2, y + T / 2 + 1);
+      break;
+    }
+    case 'b':
+      ctx.fillStyle = '#5e3a1c'; ctx.fillRect(x, y, T, 14);
+      ctx.fillStyle = '#a8743f'; for (let k = 0; k < 3; k++) ctx.fillRect(x + 1 + k * 12, y + 2, 10, 10);
+      ctx.fillStyle = '#d9b26a'; ctx.fillRect(x, y - 10, T, 2);
+      break;
     case 'K': {
       const on = !!currentStation();
+      if (!on) ctx.globalAlpha = 0.3;
       block(x, y, on ? '#f7b928' : '#9b6a3c', on ? '#a8600a' : '#5e3a1c', on ? '#ffe08a' : '#b8875a');
       ctx.fillStyle = on ? '#5a2a00' : '#3a2410';
       for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) ctx.fillRect(x + 8 + i * 8, y + 8 + j * 8, 5, 5);
+      ctx.globalAlpha = 1;
       if (on) {
         ctx.strokeStyle = `rgba(255,255,255,${0.4 + 0.4 * Math.sin(tick * 0.15)})`; ctx.lineWidth = 3; ctx.strokeRect(x - 2, y - 2, T + 4, T + 4);
         hudText('Bonk me!', x + T / 2, y - 16 + Math.sin(tick * 0.12) * 3, 15, '#ffd23f', 'center');
@@ -1366,7 +2180,7 @@ function drawPits(c0, c1) {
   const kind = L.world.pit;
   if (kind === 'void') return;
   for (let c = c0; c <= c1; c++) {
-    if (L.map[GR][c] !== '.') continue;
+    if (L.map[GR][c] !== '.' && L.map[GR][c] !== 'b') continue;
     const x = c * T, y = GR * T + 14 + Math.sin(tick * 0.08 + c) * 3;
     if (kind === 'water') {
       ctx.fillStyle = '#3a8fd6'; ctx.fillRect(x, y, T, VH - y);
@@ -1386,6 +2200,43 @@ function drawTiles() {
     let y = r * T;
     if (G) { const b = G.bumps.get(c + ',' + r); if (b) y -= Math.sin((10 - b) / 10 * Math.PI) * 9; }
     drawTile(t, c * T, y, c, r);
+  }
+}
+
+// Bridge signs, the altar, preview planks over the pit, and secret doors.
+function drawPuzzles() {
+  for (const b of L.bridges) {
+    const sx = b.signC * T + 4, sy = (GR - 3.1) * T, sw = 3.5 * T, sh = 1.25 * T;
+    if (sx < cam + VW && (b.c0 + b.w) * T > cam) {
+      ctx.fillStyle = '#6e4627'; ctx.fillRect(sx + sw / 2 - 4, sy + sh, 8, GR * T - sy - sh);
+      ctx.fillStyle = '#5e3a1c'; rrect(sx - 3, sy - 3, sw + 6, sh + 6, 6); ctx.fill();
+      ctx.fillStyle = b.done ? '#c8f7d4' : '#f6e1b5'; rrect(sx, sy, sw, sh, 5); ctx.fill();
+      ctx.fillStyle = '#3a2200'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 16px "Trebuchet MS", sans-serif'; ctx.fillText(`Bridge needs ${b.target}`, sx + sw / 2, sy + 14);
+      ctx.font = 'bold 14px "Trebuchet MS", sans-serif'; ctx.fillText(b.done ? 'Built!' : `So far: ${b.total}`, sx + sw / 2, sy + 32);
+      // altar at the pit edge
+      const ax = b.altarC * T, ay = GR * T;
+      ctx.fillStyle = '#6a6f8a'; ctx.fillRect(ax + 6, ay - 30, T - 12, 30); ctx.fillStyle = '#8a90ad'; ctx.fillRect(ax + 2, ay - 36, T - 4, 8);
+      if (!b.done) {
+        ctx.fillStyle = `rgba(255,210,63,${0.5 + 0.4 * Math.sin(tick * 0.15)})`; ctx.fillRect(ax + 8, ay - 40, T - 16, 4);
+        if (G && G.carry && G.carry.b === b) hudText('Drop here!', ax + T / 2, ay - 56 + Math.sin(tick * 0.12) * 3, 15, '#ffd23f', 'center');
+        const built = Math.floor(b.total / b.target * b.w);
+        ctx.globalAlpha = 0.45; ctx.fillStyle = '#a8743f';
+        for (let c = b.c0; c < b.c0 + built; c++) ctx.fillRect(c * T, GR * T, T - 2, 12);
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+  const doors = [...(L.doors || []).map(d => ({ c: d.c, used: d.used, exit: false })), ...(L.vault ? [{ c: L.exitC, used: false, exit: true }] : [])];
+  for (const d of doors) {
+    const { x, y, w, h } = doorBox(d.c);
+    if (x > cam + VW || x + w < cam) continue;
+    ctx.fillStyle = '#3a2410'; ctx.fillRect(x - 4, y - 6, w + 8, h + 6);
+    ctx.fillStyle = d.exit ? '#2e8b57' : d.used ? '#5a5a6e' : '#6b2fa3'; ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fillRect(x + w / 2 - 1, y, 2, h);
+    ctx.fillStyle = '#ffd23f'; ctx.font = 'bold 26px "Trebuchet MS", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(d.exit ? '➜' : d.used ? '🔒' : '?', x + w / 2, y + h / 2);
+    if (!d.used) hudText(d.exit ? 'Exit' : 'Secret door', x + w / 2, y - 18 + Math.sin(tick * 0.1) * 3, 14, '#ffd23f', 'center');
   }
 }
 
@@ -1538,6 +2389,23 @@ function drawProjectiles() {
   }
 }
 
+function drawPet() {
+  const pt = G.pet; if (!pt) return;
+  const m = pt.moodT > 0 ? pt.mood : null;
+  let ox = 0, oy = 0, flip = P.face < 0;
+  if (m === 'happy' || m === 'wow') oy = -Math.abs(Math.sin(pt.moodT * 0.25)) * 14;
+  else if (m === 'sad' || m === 'hurt') ox = Math.sin(pt.moodT * 1.3) * 3;
+  else if (m === 'dance') { oy = -Math.abs(Math.sin(pt.moodT * 0.3)) * 16; flip = Math.floor(pt.moodT / 10) % 2 === 0; }
+  drawBaked(PET_SPR[prog.equip.pet], Math.floor(tick / 10) % 2 ? 'b' : 'a', flip, { x: pt.x - 10 + ox, y: pt.y + oy, w: 20, h: 24 });
+  if (G.bubble) {
+    ctx.font = 'bold 14px "Trebuchet MS", sans-serif';
+    const w = ctx.measureText(G.bubble.txt).width + 16, bx = pt.x + ox - w / 2, by = pt.y + oy - 34;
+    ctx.fillStyle = '#ffffff'; rrect(bx, by, w, 24, 10); ctx.fill();
+    poly([[pt.x + ox - 5, by + 23], [pt.x + ox + 5, by + 23], [pt.x + ox, by + 30]], '#ffffff');
+    ctx.fillStyle = '#22224a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(G.bubble.txt, pt.x + ox, by + 12);
+  }
+}
+
 function drawPlayer() {
   const p = P;
   if (p.inv > 0 && Math.floor(p.inv / 4) % 2 === 0) return;
@@ -1545,14 +2413,33 @@ function drawPlayer() {
   let k = 'stand';
   if (p.throwT > 0 || (!p.onGround && mode !== 'win')) k = 'jump';
   else if (Math.abs(p.vx) > 0.3) k = Math.floor(p.anim) % 2 ? 'walkA' : 'stand';
+  if (hasPower('fire')) {
+    const g = ctx.createRadialGradient(p.x + p.w / 2, p.y + p.h / 2, 6, p.x + p.w / 2, p.y + p.h / 2, 40);
+    g.addColorStop(0, 'rgba(255,140,0,.5)'); g.addColorStop(1, 'rgba(255,80,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(p.x - 30, p.y - 20, p.w + 60, p.h + 40);
+  }
+  // squash when landing, stretch when jumping, anchored at the feet
+  const f = (p.squash || 0) / 8, sx = f > 0 ? 1 + 0.25 * f : 1 + 0.15 * f, sy = f > 0 ? 1 - 0.2 * f : 1 - 0.15 * f;
+  ctx.save(); ctx.translate(p.x + p.w / 2, p.y + p.h); ctx.scale(sx, sy); ctx.translate(-(p.x + p.w / 2), -(p.y + p.h));
   drawBaked(SPR, k, p.face < 0, p);
+  ctx.restore();
+  if (hasPower('shield')) {
+    ctx.strokeStyle = `rgba(125,249,255,${0.5 + 0.3 * Math.sin(tick * 0.2)})`; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(p.x + p.w / 2, p.y + p.h / 2, 34, 0, 7); ctx.stroke();
+  }
+  if (G.carry) {
+    const sx = p.x + p.w / 2 - 15, sy = p.y - 34;
+    ctx.fillStyle = '#4a5266'; rrect(sx, sy, 30, 26, 6); ctx.fill(); ctx.fillStyle = '#9aa3b5'; rrect(sx + 2, sy + 2, 26, 22, 5); ctx.fill();
+    ctx.fillStyle = '#1f2433'; ctx.font = `bold ${G.carry.stone.val >= 100 ? 13 : 17}px "Trebuchet MS", sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(G.carry.stone.val, p.x + p.w / 2, sy + 14);
+  }
 }
 
 function drawParticles() {
   for (const p of G.parts) {
     const a = Math.min(1, p.life / 20);
     if (p.k === 'bit') { ctx.globalAlpha = a; ctx.fillStyle = p.col; ctx.fillRect(p.x, p.y, p.s, p.s); }
-    else if (p.k === 'coin') { ctx.globalAlpha = a; drawScroll(p.x, p.y, 1.1); }
+    else if (p.k === 'coin') { ctx.globalAlpha = a; drawGem(p.x, p.y, p.v || 5, p.life * 0.4); }
     else if (p.k === 'text') {
       ctx.globalAlpha = a; ctx.font = `bold ${p.size}px "Trebuchet MS", sans-serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -1561,6 +2448,35 @@ function drawParticles() {
     }
   }
   ctx.globalAlpha = 1;
+}
+
+// ---------------------------------------------------------------- drawing: Sensei's tip
+const SENSEI_SPR = bake(makeFrames(18, 18, { s: '#f2c49b', S: '#d9a273', w: '#f4f4f4', W: '#cfcfd8', e: '#16121f', g: '#4a5a7a', G: '#6b7fa8' }, ({ P, R, E }) => {
+  R(3, 12, 12, 6, 'g'); R(4, 12, 2, 6, 'G');
+  E(9, 6, 4.2, 4.4, 's'); P(7, 3, 'w'); P(8, 3, 'S');
+  R(5, 5, 3, 1, 'w'); R(10, 5, 3, 1, 'w'); P(6, 6, 'e'); P(11, 6, 'e');
+  E(9, 11, 3.6, 3.4, 'w'); E(9, 14, 2.2, 2.6, 'W'); R(7, 8, 4, 1, 'w');
+}, 1), ['a'], 3);
+function wrapLines(txt, maxW) {
+  const lines = []; let cur = '';
+  for (const w of txt.split(' ')) {
+    const t = cur ? cur + ' ' + w : w;
+    if (ctx.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t;
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+function drawTip() {
+  // slides down under the question banner, so it never covers the ninja
+  const t = G.tip, w = Math.min(560, VW - 24), h = 100, x = (VW - w) / 2, slide = Math.min(1, (420 - t.t) / 14, t.t / 14);
+  const top = VW < 700 ? 196 : 104, y = top - (1 - slide) * (top + h + 20);
+  ctx.fillStyle = 'rgba(20,20,50,.92)'; rrect(x, y, w, h, 14); ctx.fill();
+  ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 3; ctx.stroke();
+  ctx.drawImage(SENSEI_SPR.a[0], x + 10, y + 22);
+  ctx.font = 'bold 15px "Trebuchet MS", sans-serif'; ctx.fillStyle = '#ffd23f'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText("Sensei's tip", x + 76, y + 10);
+  ctx.font = '16px "Trebuchet MS", sans-serif'; ctx.fillStyle = '#ffffff';
+  wrapLines(t.txt, w - 92).slice(0, 3).forEach((ln, i) => ctx.fillText(ln, x + 76, y + 32 + i * 20));
 }
 
 // ---------------------------------------------------------------- drawing: HUD
@@ -1582,9 +2498,10 @@ function hudText(txt, x, y, size, col = '#fff', align = 'left') {
 function drawHUD() {
   const narrow = VW < 700, st = STAGES[G.idx];
   for (let i = 0; i < G.maxHearts; i++) heart(30 + i * 36, 16, 13, i < G.hearts ? '#ff4d6d' : 'rgba(0,0,0,.35)');
-  drawScroll(34, 64, 1.1);
-  hudText('× ' + G.coins, 54, 65, 22);
+  drawGem(34, 64, 1, tick * 0.06);
+  hudText('× ' + G.coins, 54, 65, 22 + G.pulse);
   if (G.streak >= 2) hudText(`🔥 ${G.streak} in a row`, 20, 100, 18, '#ffb627');
+  if (G.power) { const pw = POWERS[G.power.kind]; hudText(`${pw.icon} ${pw.name} ${Math.ceil(G.power.t / 60)}s`, 20, 126, 17, '#7df9ff'); }
   const label = st.boss ? `World ${st.w + 1}: Boss` : `Level ${st.label}: ${st.name}`;
   if (narrow) hudText('Score ' + G.score, VW - 72, 64, 20, '#ffd23f', 'right');
   else {
@@ -1593,10 +2510,13 @@ function drawHUD() {
   }
 
   const cur = currentStation(), by = narrow ? 92 : 10;   // banner sits below the hearts on narrow screens
+  const br = activeBridge();
   let txt;
-  if (cur) txt = cur.q.text + ' = ?';
+  if (L.vault) txt = 'Secret vault!';
+  else if (br) txt = `Make ${br.target}!`;
+  else if (cur) txt = cur.q.text + ' = ?';
   else if (L.boss) txt = L.boss.dead || L.boss.dying ? 'Grab the scroll!' : L.arena.wait ? 'Nice hit!' : `Dodge! ${Math.ceil(L.arena.phaseT / 60)}`;
-  else txt = 'Run to the flag!';
+  else txt = 'Get the scroll piece!';
   ctx.font = 'bold 38px "Trebuchet MS", sans-serif';
   const w = Math.max(240, ctx.measureText(txt).width + 50);
   ctx.fillStyle = 'rgba(20,20,50,.75)'; rrect(VW / 2 - w / 2, by, w, 64, 14); ctx.fill();
@@ -1618,6 +2538,10 @@ function drawHUD() {
       ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(VW / 2 - ww / 2, by + 136, ww, 5);
       ctx.fillStyle = '#ffd23f'; ctx.fillRect(VW / 2 - ww / 2, by + 136, ww * f, 5);
     } else if (!L.boss.dying && !L.boss.dead && !L.arena.wait) hudText('Jump over the attacks!', VW / 2, by + 124, 15, '#fff', 'center');
+  } else if (L.vault) {
+    hudText('Grab the gems, then take the exit door', VW / 2, by + 80, 16, '#fff', 'center');
+  } else if (br) {
+    hudText(`Bonk number stones, carry them to the altar · so far ${br.total}`, VW / 2, by + 80, 16, '#fff', 'center');
   } else {
     const done = L.stations.filter(s => s.solved).length;
     hudText(cur ? `Bonk the right answer!  (${done}/${L.stations.length})` : `All ${L.stations.length} gates open!`, VW / 2, by + 80, 16, '#fff', 'center');
@@ -1625,20 +2549,32 @@ function drawHUD() {
 }
 
 function render() {
+  if (RC) { renderRace(); return; }
   drawBackground();
-  ctx.save(); ctx.translate(-Math.round(cam), 0);
+  const shk = G && G.shake > 0 ? G.shakeAmp : 0;
+  ctx.save(); ctx.translate(-Math.round(cam) + (Math.random() - 0.5) * 2 * shk, (Math.random() - 0.5) * 2 * shk);
   for (const d of L.decor) if (d * T > cam - 80 && d * T < cam + VW + 40) drawDecor(d);
   drawSigns();
-  if (!L.boss) drawFlagDojo();
+  drawPuzzles();
+  if (!L.boss && !L.vault) drawFlagDojo();
   const c0 = Math.max(0, Math.floor(cam / T)), c1 = Math.min(L.w - 1, c0 + Math.ceil(VW / T) + 1);
   drawTiles();
-  for (const c of L.coins) if (!c.taken && c.x > cam - 20 && c.x < cam + VW + 20) drawScroll(c.x, c.y + Math.sin(tick * 0.08 + c.x) * 3);
+  for (const c of L.coins) if (!c.taken && c.x > cam - 20 && c.x < cam + VW + 20) drawGem(c.x, c.y + Math.sin(tick * 0.08 + c.x) * 3, c.v, tick * 0.08 + c.x);
   for (const e of L.enemies) drawEnemy(e);
   drawPits(c0, c1);   // after enemies, so lava blobs rise out of the lava
   drawBoss();
-  if (G) { drawPlayer(); drawProjectiles(); drawParticles(); }
+  if (G) { drawPet(); drawPlayer(); drawProjectiles(); drawParticles(); }
   ctx.restore();
-  if (G) drawHUD();
+  if (G) {
+    drawHUD();
+    // gems fly up into the counter
+    for (const f of G.flyers) {
+      const e = f.t * f.t;
+      drawGem(f.x + (34 - f.x) * e, f.y + (64 - f.y) * e - Math.sin(Math.PI * f.t) * 60, f.v, tick * 0.2);
+    }
+    if (G.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${G.flash * 0.7})`; ctx.fillRect(0, 0, VW, VH); }
+    if (G.tip) drawTip();
+  }
 }
 
 // ---------------------------------------------------------------- UI
@@ -1664,11 +2600,14 @@ function showMsg(title, body, btns) {
 
 function startStage(i) {
   const st = STAGES[i], W = WORLDS[st.w];
+  RC = null; document.body.classList.remove('racing');
+  playMusic(st.boss ? 'boss' : W.key);
   L = st.boss ? buildArena(i, prog.easy) : buildLevel(i, prog.easy);
   P = { x: 1.5 * T, y: GR * T - 44, w: 24, h: 44, vx: 0, vy: 0, onGround: false, face: 1, inv: 0, anim: 0, coyote: 0, jbuf: 0, throwT: 0 };
   const hearts = prog.easy ? 5 : 3;
-  G = { idx: i, hearts, maxHearts: hearts, coins: 0, score: 0, mistakes: 0, streak: 0, bestStreak: 0, missed: [], practice: new Map(), checkpoint: 1.5 * T, time: 0, parts: [], shots: [], bumps: new Map(), winT: 0 };
-  SPR = bakeNinja({ b: currentBelt().col });   // the ninja wears the belt you've earned
+  G = { idx: i, hearts, maxHearts: hearts, coins: 0, score: 0, shake: 0, shakeAmp: 0, freeze: 0, slow: 0, flash: 0, flyers: [], pulse: 0, chain: 0, lastGem: -99, mistakes: 0, streak: 0, bestStreak: 0, missed: [], practice: new Map(), power: null, powerN: 0, carry: null, saved: null,
+    pet: prog.equip.pet ? { x: P.x, y: P.y, mood: null, moodT: 0 } : null, bubble: null, tip: null, wrongRun: 0, checkpoint: 1.5 * T, time: 0, parts: [], shots: [], bumps: new Map(), winT: 0 };
+  SPR = bakeNinja(heroPal());   // equipped headband and suit, plus the belt you've earned
   cam = 0; ambient.length = 0;
   hide('menu');
   if (st.boss) {
@@ -1693,12 +2632,15 @@ function buildMenu() {
   const pts = totalPoints(), b = beltFor(pts), next = BELTS[b.idx + 1];
   $('rank').innerHTML = `${beltHTML(b)} <span>Rank: <b>${b.name} Belt</b></span>
     <span>${pts} / ${MAX_POINTS} ninja points${next ? ` · ${next.name} Belt at ${next.need}` : ' · Grand Master!'}</span>`;
+  $('bankMenu').textContent = prog.bank;
+  $('badgeMenu').textContent = `${BADGES.filter(b => prog.badges[b.id]).length}/${BADGES.length}`;
   const box = $('worlds'); box.innerHTML = '';
   const open = unlockedCount();
   WORLDS.forEach((W, w) => {
     const won = !!prog.best[w * 3 + 2];
     const div = document.createElement('div'); div.className = 'world';
-    div.innerHTML = `<div class="wname">World ${w + 1} · ${W.name}<span>📜 ${W.scroll} ${won ? '✔' : ''}</span></div><div class="stages"></div>`;
+    const found = [0, 1].filter(k => prog.best[w * 3 + k]).length;
+    div.innerHTML = `<div class="wname">World ${w + 1} · ${W.name}<span>📜 ${W.scroll}: ${won ? 'won back ✔' : `${found} of 2 pieces`}</span></div><div class="stages"></div>`;
     const row = div.querySelector('.stages');
     STAGES.forEach((st, i) => {
       if (st.w !== w) return;
@@ -1706,7 +2648,7 @@ function buildMenu() {
       el.className = 'lvl' + (st.boss ? ' boss' : ''); el.disabled = locked;
       const title = st.boss ? W.boss.name : st.name, sub = locked ? '🔒 locked' : st.boss ? '👹 boss fight' : st.ex;
       el.innerHTML = `<span class="num">${st.boss ? 'BOSS' : 'LEVEL ' + st.label}</span><br>${title}<small>${sub}</small>` +
-        `<span class="dots">${locked ? '&nbsp;' : '●'.repeat(p) + '○'.repeat(3 - p)}</span>`;
+        `<span class="dots">${locked ? '&nbsp;' : '●'.repeat(p) + '○'.repeat(3 - p) + (st.boss ? '' : prog.golden[i] ? ' 🌟' : ' ☆')}</span>`;
       el.onclick = () => { audio(); startStage(i); };
       row.appendChild(el);
     });
@@ -1714,29 +2656,95 @@ function buildMenu() {
   });
 }
 
+// ---------------------------------------------------------------- dojo shop
+// Buying asks for the change: "you have 52, it costs 35, how many will you have left?"
+function drawNinjaPreview(cv, equip, scale) {
+  const c = cv.getContext('2d'); c.clearRect(0, 0, cv.width, cv.height); c.imageSmoothingEnabled = false;
+  const set = bake(makeFrames(16, 16, { ...KAI_PAL, ...heroPal(equip) }, drawKai, 1), ['stand'], scale);
+  c.drawImage(set.stand[0], 4, cv.height - 16 * scale);
+  if (equip.pet) c.drawImage(PET_SPR[equip.pet].a[0], 16 * scale + 6, cv.height - 12 * 3 - 4);
+}
+function drawItemPreview(cv, it) {
+  const c = cv.getContext('2d'); c.clearRect(0, 0, cv.width, cv.height); c.imageSmoothingEnabled = false;
+  if (it.slot === 'band' || it.slot === 'suit') {
+    const set = bake(makeFrames(16, 16, { ...KAI_PAL, ...heroPal({ ...prog.equip, [it.slot]: it.id }) }, drawKai, 1), ['stand'], 3);
+    c.drawImage(set.stand[0], (cv.width - 48) / 2, cv.height - 48);
+  } else if (it.slot === 'pet') c.drawImage(PET_SPR[it.id].a[0], (cv.width - 42) / 2, cv.height - 40);
+  else {
+    const cols = it.id === 'trail-fire' ? ['#ff6a00', '#ffd23f', '#ff3b1f'] : ['#ffffff', '#fff3a0', '#9be7ff'];
+    for (let i = 0; i < 18; i++) { c.fillStyle = cols[i % 3]; c.fillRect(8 + i * 4, cv.height - 10 - Math.abs(Math.sin(i * 1.3)) * 30, 5, 5); }
+  }
+}
+function openShop() { hide('menu'); hide('buyBox'); renderShop(); show('shop'); }
+function renderShop() {
+  $('bank').textContent = prog.bank;
+  drawNinjaPreview($('shopPreview'), prog.equip, 5);
+  const grid = $('shopGrid'); grid.innerHTML = '';
+  for (const it of SHOP) {
+    const owned = prog.owned.includes(it.id), on = prog.equip[it.slot] === it.id;
+    const el = document.createElement('div'); el.className = 'item';
+    el.innerHTML = `<canvas width="90" height="54"></canvas><div class="nm">${it.name}</div><div class="pr">${owned ? 'Owned' : `💎 ${it.price}`}</div><button type="button"></button>`;
+    drawItemPreview(el.querySelector('canvas'), it);
+    const b = el.querySelector('button');
+    if (it.badge && !prog.badges[it.badge] && !owned) { b.textContent = '🔒 Badge: Golden Hunter'; b.disabled = true; el.querySelector('.pr').textContent = 'Find all 8 golden gems'; }
+    else if (on) { b.textContent = it.slot === 'trail' || it.slot === 'pet' ? 'Take off' : 'Wearing'; b.disabled = !(it.slot === 'trail' || it.slot === 'pet'); }
+    else if (owned) b.textContent = 'Wear';
+    else if (prog.bank >= it.price) { b.textContent = 'Buy'; b.className = 'buy'; }
+    else { b.textContent = `Need ${it.price - prog.bank} more`; b.disabled = true; }
+    b.onclick = () => {
+      audio();
+      if (on) { prog.equip[it.slot] = null; save(); renderShop(); }
+      else if (owned) { prog.equip[it.slot] = it.id; save(); renderShop(); }
+      else askChange(it);
+    };
+    grid.appendChild(el);
+  }
+}
+function askChange(it) {
+  const left = prog.bank - it.price, box = $('buyBox');
+  const opts = shuffle(choices({ a: prog.bank, b: it.price, op: '−', ans: left }, 3));
+  box.innerHTML = `<p>You have <b>${prog.bank}</b> gems. The ${it.name} costs <b>${it.price}</b>.<br>How many will you have left?</p><div class="row"></div>`;
+  const row = box.querySelector('.row');
+  opts.forEach(v => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = v;
+    b.onclick = () => {
+      if (v === left) {
+        prog.bank = left; prog.owned.push(it.id); prog.equip[it.slot] = it.id; save(); award('shopper');
+        sfx.win(); hide('buyBox'); renderShop();
+      } else { sfx.wrong(); b.disabled = true; box.querySelector('p').innerHTML += '<br><b>Not quite. Count again!</b>'; }
+    };
+    row.appendChild(b);
+  });
+  const no = document.createElement('button'); no.type = 'button'; no.className = 'no'; no.textContent = 'Not now';
+  no.onclick = () => hide('buyBox'); row.appendChild(no);
+  show('buyBox'); box.scrollIntoView({ block: 'nearest' });
+}
+
 function toMenu() {
-  mode = 'menu'; G = null; P = null;
+  mode = 'menu'; G = null; P = null; RC = null; document.body.classList.remove('racing'); playMusic('menu');
   const newest = Math.min(unlockedCount() - 1, STAGES.length - 1);
   L = buildLevel(STAGES[newest].w * 3);   // menu backdrop shows the newest world
   ambient.length = 0;
-  hide('msg'); hide('pauseBtn'); showTouch(false); buildMenu(); show('menu');
+  hide('msg'); hide('shop'); hide('pauseBtn'); showTouch(false); buildMenu(); show('menu');
 }
 
 function showStory(then) {
   showMsg('The Stolen Scrolls', `<div class="bigicon">🥷📜</div><p>${STORY}</p>`, [{ label: "Let's go!", fn: then, primary: true }]);
 }
 
+let pausedMode = 'play';
 function togglePause() {
-  if (mode === 'play') {
-    mode = 'pause'; showTouch(false);
+  if (mode === 'play' || mode === 'race') {
+    pausedMode = mode; mode = 'pause'; showTouch(false);
     showMsg('Paused', '<p>Take a breath, ninja!</p>', [
       { label: 'Resume', fn: togglePause, primary: true },
-      { label: 'Restart', fn: () => startStage(G.idx), alt: true },
-      { label: 'Levels', fn: toMenu, alt: true },
+      { label: 'Restart', fn: () => (pausedMode === 'race' ? startRace(RC.topic.id) : startStage(G.idx)), alt: true },
+      { label: pausedMode === 'race' ? 'Menu' : 'Levels', fn: toMenu, alt: true },
     ]);
-  } else if (mode === 'pause') { mode = 'play'; hide('msg'); showTouch(true); }
+  } else if (mode === 'pause') { mode = pausedMode; hide('msg'); showTouch(true); }
 }
 
+function setMusic(on) { musicOn = prog.music = on; save(); $('musicBtn').textContent = on ? '🎵 Music on' : '🎵 Music off'; }
 function setMuted(m) { muted = m; $('muteBtn').textContent = muted ? '🔇 Sound off' : '🔊 Sound on'; }
 function setEasy(on) { prog.easy = on; save(); $('easyBtn').textContent = on ? '🐣 Easy mode: on' : '🐣 Easy mode: off'; }
 // Levels open by finishing the one before; "unlock all" is a switch on top that can be turned back off.
@@ -1746,6 +2754,7 @@ function setAllOpen(on) {
 }
 
 $('muteBtn').onclick = () => setMuted(!muted);
+$('musicBtn').onclick = () => { audio(); setMusic(!musicOn); };
 $('easyBtn').onclick = () => setEasy(!prog.easy);
 $('unlockBtn').onclick = () => setAllOpen(!prog.allOpen);
 $('storyBtn').onclick = () => { hide('menu'); showStory(() => { hide('msg'); show('menu'); }); };
@@ -1753,6 +2762,11 @@ $('resetBtn').onclick = () => {
   if (confirm('Reset all belts, points and unlocked levels?')) { prog.best = {}; prog.seenWorld = {}; setAllOpen(false); }
 };
 $('pauseBtn').onclick = togglePause;
+$('shopBtn').onclick = () => { audio(); openShop(); };
+$('raceBtn').onclick = () => { audio(); showRaceSetup(); };
+$('shopClose').onclick = () => { hide('shop'); buildMenu(); show('menu'); };
+$('badgeBtn').onclick = () => { audio(); openBadges(); };
+$('badgesClose').onclick = () => { hide('badges'); buildMenu(); show('menu'); };
 
 // ---------------------------------------------------------------- input
 const KMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'jump', KeyW: 'jump', Space: 'jump', KeyZ: 'jump' };
@@ -1768,6 +2782,10 @@ window.addEventListener('keydown', e => {
     else if (e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Space') pickAnswer(padSel);
     return;
   }
+  if (mode === 'race') {
+    if (!e.repeat && (e.code === 'ArrowLeft' || e.code === 'KeyA')) raceSteer(-1);
+    if (!e.repeat && (e.code === 'ArrowRight' || e.code === 'KeyD')) raceSteer(1);
+  }
   const k = KMAP[e.code];
   if (k) {
     e.preventDefault();
@@ -1779,7 +2797,7 @@ window.addEventListener('keydown', e => {
   if (e.code === 'Enter' && msgPrimary && !$('msg').classList.contains('hidden')) msgPrimary.click();
 });
 window.addEventListener('keyup', e => { const k = KMAP[e.code]; if (k) keys[k] = false; });
-window.addEventListener('blur', () => { keys.left = keys.right = keys.jump = false; if (mode === 'play') togglePause(); });
+window.addEventListener('blur', () => { keys.left = keys.right = keys.jump = false; if (mode === 'play' || mode === 'race') togglePause(); });
 
 const isTouch = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 
@@ -1805,7 +2823,11 @@ if (window.visualViewport) {
 function showTouch(on) { if (isTouch && on) show('touch'); else hide('touch'); }
 document.querySelectorAll('.tbtn').forEach(el => {
   const k = el.dataset.k;
-  const down = e => { e.preventDefault(); audio(); if (k === 'jump' && !keys.jump) keys.jumpPressed = true; keys[k] = true; el.classList.add('on'); };
+  const down = e => {
+    e.preventDefault(); audio();
+    if (mode === 'race') raceSteer(k === 'left' ? -1 : k === 'right' ? 1 : 0);
+    if (k === 'jump' && !keys.jump) keys.jumpPressed = true; keys[k] = true; el.classList.add('on');
+  };
   const up = e => { e.preventDefault(); keys[k] = false; el.classList.remove('on'); };
   el.addEventListener('pointerdown', down);
   el.addEventListener('pointerup', up);
@@ -1821,7 +2843,12 @@ function frame(now) {
   acc += Math.min(100, now - last); last = now;
   while (acc >= STEP) {
     if (mode === 'pad') tickPad(STEP / 1000);
-    else if (mode !== 'pause' && mode !== 'intro') update();
+    else if (mode === 'race' || mode === 'racedone') { tick++; updateRace(STEP / 1000); }
+    else if (mode !== 'pause' && mode !== 'intro' && !RC) {
+      if (G && G.freeze > 0) G.freeze--;                          // a tiny hit-stop when a boss is struck
+      else if (G && G.slow > 0 && G.slow-- % 3) { /* slow motion after a boss falls */ }
+      else update();
+    }
     acc -= STEP;
   }
   render();
@@ -1844,6 +2871,7 @@ layout();
 document.body.classList.toggle('touch', isTouch);
 setEasy(prog.easy === null ? isTouch : prog.easy);   // touch devices start in easy mode
 setAllOpen(prog.allOpen);
+setMusic(prog.music !== false);
 toMenu();
 if (!prog.seenIntro) {
   prog.seenIntro = true; save();
