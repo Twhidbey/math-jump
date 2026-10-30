@@ -24,7 +24,7 @@
   .overlay > :first-child { margin-top: auto; }
   .overlay > :last-child { margin-bottom: auto; }
   .hidden { display: none !important; }
-  h1 { font-size: clamp(34px, 7vw, 72px); margin: 0 0 6px; color: #ffd23f; letter-spacing: 3px;
+  h1 { font-size: clamp(30px, 6vw, 56px); margin: 0 0 6px; color: #ffd23f; letter-spacing: 3px;
     text-shadow: 4px 4px 0 #d9452b, 8px 8px 0 #000; }
   .tag { margin: 4px 0 8px; font-size: clamp(14px, 2vw, 18px); max-width: 640px; }
   .rank { display: flex; align-items: center; gap: 10px; justify-content: center; flex-wrap: wrap;
@@ -34,20 +34,22 @@
     vertical-align: middle; position: relative; box-shadow: 0 0 0 1px rgba(255,255,255,.35); }
   .belt::after { content: ''; position: absolute; left: 50%; top: -5px; width: 12px; height: 18px; margin-left: -8px;
     background: inherit; border: 2px solid rgba(0,0,0,.55); border-radius: 3px; }
-  .worlds { width: min(780px, 100%); margin: 6px 0; }
-  .world { background: rgba(255,255,255,.07); border-radius: 14px; padding: 8px 10px 10px; margin: 8px 0; }
+  .worlds { width: min(720px, 100%); margin: 4px 0; }
+  .world { background: rgba(255,255,255,.07); border-radius: 14px; padding: 6px 8px 8px; margin: 6px 0; }
   .wname { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px; font-weight: 800;
     font-size: 16px; margin: 0 4px 6px; text-align: left; }
   .wname span { font-weight: 600; opacity: .8; font-size: 14px; }
   .stages { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
   .lvl { background: #ffd23f; color: #3a2200; border: none; border-bottom: 5px solid #b8860b;
-    border-radius: 12px; padding: 8px 4px 6px; font: inherit; font-weight: 800; cursor: pointer;
-    font-size: 15px; transition: transform .08s; }
+    border-radius: 12px; padding: 6px 4px 4px; font: inherit; font-weight: 800; cursor: pointer;
+    font-size: 14px; transition: transform .08s; }
   .lvl.boss { background: #e74c3c; color: #fff; border-bottom-color: #922b21; }
   .lvl:hover:not(:disabled) { transform: translateY(-2px); }
   .lvl:active:not(:disabled) { transform: translateY(2px); border-bottom-width: 2px; }
   .lvl .num { font-size: 12px; opacity: .75; }
   .lvl small { display: block; font-weight: 600; opacity: .85; }
+  .card .mathline { font-size: 20px; }
+  .card .mathline small { font-size: 15px; opacity: .85; }
   .lvl .dots { display: block; margin-top: 2px; letter-spacing: 2px; color: #a0522d; }
   .lvl.boss .dots { color: #ffd23f; }
   .lvl:disabled { background: #5a5a6e; color: #b8b8c8; border-bottom-color: #3c3c4a; cursor: not-allowed; }
@@ -84,6 +86,33 @@
   body.touch .keys { display: none; }
   body.racing .tbtn[data-k="jump"] { display: none; }
   .bigrow { margin: 4px 0 2px; }
+  .homebar { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; margin: 4px 0 2px; }
+  .mathchip { font: inherit; font-weight: 800; font-size: 18px; color: #3a2200; background: #ffd23f; border: none; border-bottom: 4px solid #b8860b;
+    border-radius: 999px; padding: 8px 18px; cursor: pointer; }
+  .mathchip .tier, .mathline .tier { color: #d35400; letter-spacing: 1px; }
+  .mathline .tier { color: #ffd23f; }
+  .iconrow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; width: min(560px, 100%); margin: 6px 0 4px; }
+  .ibtn { font: inherit; font-weight: 800; font-size: 13px; color: #fff; background: rgba(255,255,255,.1); border: none; border-radius: 14px;
+    padding: 8px 2px; cursor: pointer; display: grid; justify-items: center; gap: 2px; }
+  .ibtn span { font-size: 26px; line-height: 1; }
+  .ibtn b { color: #ffd23f; }
+  .ibtn:hover { background: rgba(255,255,255,.18); }
+  .setlist { display: grid; gap: 8px; margin: 10px 0 14px; }
+  .tabs { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 10px 0 6px; }
+  .tabs button { font: inherit; font-weight: 800; font-size: 15px; border: none; border-radius: 999px; padding: 6px 14px; cursor: pointer;
+    background: rgba(255,255,255,.1); color: #fff; }
+  .tabs button.on { background: #ffd23f; color: #3a2200; }
+  .skillgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 8px 0 14px; }
+  .skill { font: inherit; text-align: left; border: 2px solid transparent; border-radius: 12px; padding: 8px 10px; cursor: pointer;
+    background: rgba(255,255,255,.08); color: #fff; display: grid; gap: 1px; }
+  .skill.on { border-color: #ffd23f; background: rgba(255,210,63,.15); }
+  .skill .sn { font-weight: 800; font-size: 15px; }
+  .skill .se { font-size: 13px; opacity: .75; }
+  .skill .st { font-size: 13px; color: #ffd23f; letter-spacing: 1px; }
+  .skill .sm { font-size: 12px; opacity: .85; }
+  .howto { text-align: left; display: grid; gap: 8px; font-size: 16px; margin: 6px 0 14px; }
+  .howto div { display: grid; grid-template-columns: 34px 1fr; gap: 8px; align-items: start; }
+  .howto span { font-size: 24px; line-height: 1.1; }
   .badgegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin: 12px 0 14px; }
   .badge { background: rgba(255,255,255,.05); border-radius: 12px; padding: 10px 8px; opacity: .55; }
   .badge.got { background: rgba(255,210,63,.14); border: 2px solid #ffd23f; opacity: 1; }
@@ -143,24 +172,42 @@
 
 <div id="menu" class="overlay">
   <h1>MATH NINJA</h1>
-  <div class="tag">The Shadow Shogun stole Sensei's Magic Math Scrolls! Solve the math gates, find the torn scroll pieces, and beat the bosses to bring the scrolls home.</div>
-  <div class="rank" id="rank"></div>
-  <div class="row bigrow">
-    <button class="btn" id="raceBtn" type="button">🐎 Horse Race</button>
-    <button class="btn alt" id="shopBtn" type="button">🏯 Dojo Shop · <span id="bankMenu">0</span> 💎</button>
-    <button class="btn alt" id="badgeBtn" type="button">🏅 Badges · <span id="badgeMenu">0</span></button>
+  <div class="homebar">
+    <button class="mathchip" id="skillChip" type="button"></button>
+    <div class="rank" id="rank"></div>
+  </div>
+  <div class="iconrow">
+    <button class="ibtn" id="raceBtn" type="button"><span>🐎</span>Race</button>
+    <button class="ibtn" id="shopBtn" type="button"><span>🏯</span>Shop <b id="bankMenu">0</b></button>
+    <button class="ibtn" id="badgeBtn" type="button"><span>🏅</span>Badges <b id="badgeMenu"></b></button>
+    <button class="ibtn" id="settingsBtn" type="button"><span>⚙️</span>Settings</button>
+    <button class="ibtn" id="helpBtn" type="button"><span>❓</span>How to</button>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="help"><span class="keys">⬅ ➡ or A / D to move &nbsp;·&nbsp; Space / ⬆ / W to jump &nbsp;·&nbsp; P to pause &nbsp;·&nbsp; M for sound<br></span>
-    💎 Gems: green = 1, blue = 5, red = 10. Spend them in the Dojo Shop.<br>
-    🐣 Easy mode: no holes, fewer and slower enemies, gentler bosses, more time to answer, and 5 hearts.</div>
-  <div class="row">
-    <button class="btn ghost" id="storyBtn">📖 Story</button>
-    <button class="btn ghost" id="muteBtn">🔊 Sound on</button>
-    <button class="btn ghost" id="musicBtn">🎵 Music on</button>
-    <button class="btn ghost" id="easyBtn">🐣 Easy mode: off</button>
-    <button class="btn ghost" id="unlockBtn">🔓 Unlock all levels</button>
-    <button class="btn ghost" id="resetBtn">↺ Reset progress</button>
+</div>
+
+<div id="settings" class="overlay hidden">
+  <div class="card">
+    <h2>Settings</h2>
+    <div class="setlist">
+      <button class="btn alt" id="muteBtn" type="button">🔊 Sound on</button>
+      <button class="btn alt" id="musicBtn" type="button">🎵 Music on</button>
+      <button class="btn alt" id="easyBtn" type="button">🐣 Easy mode: off</button>
+      <button class="btn alt" id="unlockBtn" type="button">🔓 Unlock all levels</button>
+      <button class="btn alt" id="storyBtn" type="button">📖 Story</button>
+      <button class="btn alt" id="resetBtn" type="button">↺ Reset progress</button>
+    </div>
+    <div class="row"><button class="btn" id="settingsClose" type="button">Done</button></div>
+  </div>
+</div>
+
+<div id="skills" class="overlay hidden">
+  <div class="card shopcard">
+    <h2>Pick your math</h2>
+    <div class="shophint">Harder math ★ earns more gems and belt points!</div>
+    <div class="tabs" id="skillTabs"></div>
+    <div class="skillgrid" id="skillGrid"></div>
+    <div class="row"><button class="btn alt" id="skillsClose" type="button">Back</button></div>
   </div>
 </div>
 
@@ -272,52 +319,86 @@ const WORLDS = [
     boss: { kind: 'shogun', name: 'The Shadow Shogun', hp: 8, taunt: 'So, little ninja, you made it this far. Is your math strong enough?' } },
 ];
 
-const gens = {
-  add10: () => { const a = R(1, 9), b = R(1, 10 - a); return mk(a, '+', b, a + b); },
-  add20: () => { const a = R(2, 18), b = R(1, 20 - a); return mk(a, '+', b, a + b); },
-  sub20: () => { const a = R(5, 20), b = R(1, a - 1); return mk(a, '−', b, a - b); },
-  addsub100: () => {
-    if (R(0, 1)) { const a = R(10, 80), b = R(5, 100 - a); return mk(a, '+', b, a + b); }
-    const a = R(20, 99), b = R(5, a - 1); return mk(a, '−', b, a - b);
-  },
-  times2510: () => { const a = [2, 5, 10][R(0, 2)], b = R(1, 10); return R(0, 1) ? mk(a, '×', b, a * b) : mk(b, '×', a, a * b); },
-  times: () => { const a = R(2, 10), b = R(2, 10); return mk(a, '×', b, a * b); },
-  div: () => { const b = R(2, 10), q = R(1, 10); return mk(b * q, '÷', b, q); },
+// ---------------------------------------------------------------- math skills
+// Each skill is one consistent family of problems (like a times table). Any level can use any skill.
+const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+// Deals every problem in the family once, in a shuffled order, before repeating,
+// and never repeats one of the last few problems across a reshuffle.
+const deck = make => {
+  let pile = [], recent = [];
+  return () => {
+    if (!pile.length) pile = shuffle(make());
+    const size = make().length;
+    const key = q => (q.op === '×' ? [q.a, q.b].sort((x, y) => x - y).join('×') : q.text);   // 7 × 5 and 5 × 7 are the same fact
+    let i = pile.length - 1;
+    while (i > 0 && recent.includes(key(pile[i]))) i--;
+    const q = pile.splice(i, 1)[0];
+    recent = [key(q), ...recent].slice(0, Math.max(1, Math.min(8, size - 2)));
+    return { ...q };
+  };
 };
-gens.mixed = () => [gens.add20, gens.sub20, gens.addsub100, gens.times, gens.div][R(0, 4)]();
-const either = (f, g) => () => (R(0, 1) ? f : g)();
+const pairs = (as, bs, ok) => as.flatMap(a => bs.filter(b => ok(a, b)).map(b => [a, b]));
+const plus = (a, b) => mk(a, '+', b, a + b), minus = (a, b) => mk(a, '−', b, a - b);
+const tens = q => ({ ...q, step: 10 });
+const times = (n, k) => (R(0, 1) ? mk(n, '×', k, n * k) : mk(k, '×', n, n * k));
+const table = n => deck(() => range(1, n > 10 ? 12 : 10).map(k => times(n, k)));
+const divTable = n => deck(() => range(1, n > 10 ? 12 : 10).map(k => mk(n * k, '÷', n, k)));
+const SKILLS = [
+  { cat: 'add', id: 'add5', name: 'Add within 5', ex: '2 + 3', tier: 1, gen: deck(() => pairs(range(1, 4), range(1, 4), (a, b) => a + b <= 5).map(([a, b]) => plus(a, b))) },
+  { cat: 'add', id: 'add10', name: 'Add within 10', ex: '4 + 5', tier: 1, gen: deck(() => pairs(range(1, 9), range(1, 9), (a, b) => a + b <= 10 && a + b > 3).map(([a, b]) => plus(a, b))) },
+  { cat: 'add', id: 'make10', name: 'Make 10', ex: '7 + ? = 10', tier: 1, gen: deck(() => range(1, 9).map(a => ({ a, b: 10 - a, op: '+', ans: 10 - a, missing: true, text: `${a} + ? = 10` }))) },
+  { cat: 'add', id: 'add20', name: 'Add within 20', ex: '8 + 7', tier: 2, gen: deck(() => pairs(range(2, 12), range(2, 12), (a, b) => a + b > 10 && a + b <= 20).map(([a, b]) => plus(a, b))) },
+  { cat: 'add', id: 'addtens', name: 'Add tens', ex: '30 + 40', tier: 2, gen: deck(() => pairs(range(1, 8), range(1, 8), (a, b) => a + b <= 10).map(([a, b]) => tens(plus(a * 10, b * 10)))) },
+  { cat: 'add', id: 'add2d1d', name: '2-digit + 1-digit', ex: '47 + 5', tier: 3, gen: () => plus(R(11, 89), R(2, 9)) },
+  { cat: 'add', id: 'add2d', name: '2-digit + 2-digit', ex: '36 + 47', tier: 4, gen: () => { const a = R(11, 79); return plus(a, R(11, 99 - a)); } },
+  { cat: 'sub', id: 'sub10', name: 'Take away within 10', ex: '9 − 4', tier: 1, gen: deck(() => pairs(range(2, 10), range(1, 9), (a, b) => b < a).map(([a, b]) => minus(a, b))) },
+  { cat: 'sub', id: 'sub20', name: 'Take away within 20', ex: '15 − 7', tier: 2, gen: deck(() => pairs(range(11, 18), range(2, 9), (a, b) => a - b <= 10).map(([a, b]) => minus(a, b))) },
+  { cat: 'sub', id: 'subtens', name: 'Take away tens', ex: '70 − 30', tier: 2, gen: deck(() => pairs(range(2, 10), range(1, 9), (a, b) => b < a).map(([a, b]) => tens(minus(a * 10, b * 10)))) },
+  { cat: 'sub', id: 'sub2d1d', name: '2-digit − 1-digit', ex: '43 − 6', tier: 3, gen: () => minus(R(20, 99), R(2, 9)) },
+  { cat: 'sub', id: 'sub2d', name: '2-digit − 2-digit', ex: '72 − 38', tier: 4, gen: () => { const a = R(30, 99); return minus(a, R(11, a - 10)); } },
+  ...[2, 5, 10, 3, 4, 11, 6, 7, 8, 9, 12].map(n => ({ cat: 'mul', id: 'x' + n, name: `Times ${n}`, ex: `${n} × 4`, tier: [2, 5, 10].includes(n) ? 2 : [3, 4, 11].includes(n) ? 3 : 4, gen: table(n) })),
+  { cat: 'mul', id: 'xmix25', name: 'Times 2 to 5', ex: '4 × 7', tier: 3, gen: deck(() => pairs(range(2, 5), range(1, 10), () => true).map(([n, k]) => times(n, k))) },
+  { cat: 'mul', id: 'xmix69', name: 'Times 6 to 9', ex: '8 × 6', tier: 4, gen: deck(() => pairs(range(6, 9), range(2, 10), () => true).map(([n, k]) => times(n, k))) },
+  { cat: 'mul', id: 'xtens', name: 'Times tens', ex: '3 × 40', tier: 4, gen: deck(() => pairs(range(2, 9), range(2, 9), () => true).map(([a, b]) => tens(mk(a, '×', b * 10, a * b * 10)))) },
+  { cat: 'mul', id: 'xall', name: 'All times tables', ex: '7 × 12', tier: 5, gen: () => times(R(2, 12), R(2, 12)) },
+  ...[2, 5, 10, 3, 4, 6, 7, 8, 9].map(n => ({ cat: 'div', id: 'd' + n, name: `Divide by ${n}`, ex: `${n * 6} ÷ ${n}`, tier: [2, 5, 10, 3, 4].includes(n) ? 3 : 4, gen: divTable(n) })),
+  { cat: 'div', id: 'dmix', name: 'All division', ex: '56 ÷ 8', tier: 5, gen: () => { const n = R(2, 10); return mk(n * R(1, 10), '÷', n, 0); } },
+];
+SKILLS.find(k => k.id === 'dmix').gen = () => { const n = R(2, 10), k = R(1, 10); return mk(n * k, '÷', n, k); };
+const SKILL = Object.fromEntries(SKILLS.map(k => [k.id, k]));
+const SKILL_CATS = [['add', '➕ Add'], ['sub', '➖ Take away'], ['mul', '✖️ Times'], ['div', '➗ Divide']];
+const TIER_GEMS = [1, 1.5, 2, 2.5, 3];   // harder math pays more gems
+const stars = t => '★'.repeat(t) + '☆'.repeat(5 - t);
+function harderSkill(k) { return SKILLS.find(x => x.cat === k.cat && x.tier > k.tier) || k; }
+const qShow = q => (q.missing ? q.text : `${q.text} = ?`);
+const qSolved = q => (q.missing ? q.text.replace('?', q.ans) : `${q.text} = ${q.ans}`);
 
+// The adventure: levels are places now; the math comes from the chosen skill.
 const STAGES = [
-  { w: 0, name: 'Add to 10', ex: '3 + 4', n: 6, enemy: 0.15, pit: 2, gen: gens.add10 },
-  { w: 0, name: 'Add to 20', ex: '8 + 7', n: 7, enemy: 0.22, pit: 2, gen: gens.add20 },
-  { w: 0, boss: true, gen: either(gens.add10, gens.add20) },
-  { w: 1, name: 'Subtract to 20', ex: '15 − 6', n: 7, enemy: 0.25, pit: 3, gen: gens.sub20 },
-  { w: 1, name: 'Add & subtract to 100', ex: '47 + 25', n: 7, enemy: 0.3, pit: 3, gen: gens.addsub100 },
-  { w: 1, boss: true, gen: either(gens.sub20, gens.addsub100) },
-  { w: 2, name: 'Times 2, 5, 10', ex: '5 × 3', n: 7, enemy: 0.3, pit: 3, gen: gens.times2510 },
-  { w: 2, name: 'Times tables', ex: '7 × 8', n: 8, enemy: 0.35, pit: 3, gen: gens.times },
-  { w: 2, boss: true, gen: either(gens.times2510, gens.times) },
-  { w: 3, name: 'Division', ex: '24 ÷ 6', n: 8, enemy: 0.4, pit: 3, gen: gens.div },
-  { w: 3, name: 'Mixed challenge', ex: 'a bit of everything', n: 9, enemy: 0.45, pit: 3, gen: gens.mixed },
-  { w: 3, boss: true, gen: gens.mixed },
+  { w: 0, name: 'Cherry Path', n: 6, enemy: 0.15, pit: 2 }, { w: 0, name: 'Bamboo Grove', n: 7, enemy: 0.22, pit: 2 }, { w: 0, boss: true },
+  { w: 1, name: 'Ash Trail', n: 7, enemy: 0.25, pit: 3 }, { w: 1, name: 'Lava Falls', n: 7, enemy: 0.3, pit: 3 }, { w: 1, boss: true },
+  { w: 2, name: 'Gear Works', n: 7, enemy: 0.3, pit: 3 }, { w: 2, name: 'Conveyor Run', n: 8, enemy: 0.35, pit: 3 }, { w: 2, boss: true },
+  { w: 3, name: 'Lantern Roofs', n: 8, enemy: 0.4, pit: 3 }, { w: 3, name: 'Moon Tower', n: 9, enemy: 0.45, pit: 3 }, { w: 3, boss: true },
 ];
 STAGES.forEach((s, i) => { s.k = i % 3; s.label = s.boss ? 'BOSS' : `${s.w + 1}-${s.k + 1}`; });
 
+// Ninja points for a stage = accuracy (1-3) × math difficulty (1-5), so harder math climbs the belts faster.
 const BELTS = [
-  ['White', 0, '#f4f4f4'], ['Yellow', 2, '#ffd23f'], ['Orange', 5, '#ff8c1a'], ['Green', 9, '#2ecc71'],
-  ['Blue', 14, '#3498db'], ['Purple', 19, '#9b59b6'], ['Red', 24, '#e63946'], ['Brown', 29, '#8b5a2b'], ['Black', 34, '#151515'],
+  ['White', 0, '#f4f4f4'], ['Yellow', 6, '#ffd23f'], ['Orange', 15, '#ff8c1a'], ['Green', 30, '#2ecc71'],
+  ['Blue', 50, '#3498db'], ['Purple', 75, '#9b59b6'], ['Red', 100, '#e63946'], ['Brown', 130, '#8b5a2b'], ['Black', 160, '#151515'],
 ].map(([name, need, col], idx) => ({ name, need, col, idx }));
-const MAX_POINTS = STAGES.length * 3;
+const MAX_POINTS = STAGES.length * 15;
 
 // The right answer plus n-1 believable wrong ones, shuffled. Wrong ones favour the mistakes kids really
 // make: off by a little, the wrong operation, or swapped digits.
 function choices(q, n = 3) {
-  const a = q.ans, seen = new Set([a]), out = [a];
-  const near = [a + 1, a - 1, a + 2, a - 2];
-  const more = [a + 3, a - 3, a + 4, a - 4, a + 5, a - 5];
-  if (a >= 20) near.push(a + 10, a - 10);
-  if (a >= 10 && a % 10 !== a / 10 % 10) more.push(+String(a).split('').reverse().join(''));
-  if (q.op === '×') near.push(a + q.a, a - q.a, a + q.b, a - q.b), more.push(q.a + q.b);
+  const a = q.ans, st = q.step || 1, seen = new Set([a]), out = [a];
+  const near = [a + st, a - st, a + 2 * st, a - 2 * st];
+  const more = [a + 3 * st, a - 3 * st, a + 4 * st, a - 4 * st, a + 5 * st, a - 5 * st];
+  if (st === 1 && a >= 20) near.push(a + 10, a - 10);
+  if (st === 1 && a >= 10 && a % 10 !== a / 10 % 10) more.push(+String(a).split('').reverse().join(''));
+  if (q.op === '×' && st === 1) near.push(a + q.a, a - q.a, a + q.b, a - q.b), more.push(q.a + q.b);
+  if (q.op === '×' && st > 1) near.push(a + q.b, a - q.b);
   if (q.op === '+') more.push(Math.abs(q.a - q.b));
   if (q.op === '−') more.push(q.a + q.b);
   if (q.op === '÷') more.push(q.a - q.b);
@@ -325,7 +406,7 @@ function choices(q, n = 3) {
     if (out.length === n) break;
     if (c >= 0 && Number.isInteger(c) && !seen.has(c)) { seen.add(c); out.push(c); }
   }
-  for (let k = 0; out.length < n; k++) { const c = a + R(-12 - k, 12 + k); if (c >= 0 && !seen.has(c)) { seen.add(c); out.push(c); } }
+  for (let k = 0; out.length < n; k++) { const c = a + R(-12 - k, 12 + k) * st; if (c >= 0 && !seen.has(c)) { seen.add(c); out.push(c); } }
   return shuffle(out);
 }
 // Answers in a sorted row, with the right one at a random spot so "pick the middle" never works.
@@ -344,10 +425,10 @@ function walkerFor(kind, c, speed) {
   return { kind, x: c * T + 4, y: GR * T - size[1], w: size[0], h: size[1], vx: -speed, vy: 0, onGround: false, dead: null, t: R(0, 60) };
 }
 
-function buildLevel(idx, easy = false) {
+function buildLevel(idx, easy = false, skill = curSkill()) {
   const def = STAGES[idx], W = WORLDS[def.w], rng = mulberry32(1234 + idx * 7919);
   const map = newMap();
-  const L = { idx, def, world: W, sky: W.skies[def.k], map, w: 0, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [], flagC: 0, castleC: 0, boss: null, proj: [] };
+  const L = { idx, def, skill, gen: skill.gen, world: W, sky: W.skies[def.k], map, w: 0, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [], flagC: 0, castleC: 0, boss: null, proj: [] };
   const addCols = n => { for (let i = 0; i < n; i++) { for (let r = 0; r < ROWS; r++) map[r].push('.'); L.w++; } return L.w - n; };
   const flat = n => {
     const s = addCols(n);
@@ -405,7 +486,7 @@ function buildLevel(idx, easy = false) {
 
   // Number-stone bridge: stones float on the left, the altar sits at the edge of a pit too wide to jump.
   function bridgeChunk() {
-    const { target, stones } = bridgePuzzle(def.w), s = flat(15);
+    const { target, stones } = bridgePuzzle(Math.min(3, skill.tier - 1)), s = flat(15);
     const b = { target, total: 0, overs: 0, done: false, signC: s, startX: s * T, altarC: s + 14, c0: 0, w: 7, stones: [] };
     stones.forEach((v, i) => { const c = s + 4 + i * 2, r = GR - 4; map[r][c] = 'N'; b.stones.push({ c, r, val: v, state: 'home' }); });
     b.c0 = addCols(7);
@@ -423,7 +504,7 @@ function buildLevel(idx, easy = false) {
     if (i === 2 || (i === 5 && def.w >= 2)) bridgeChunk();
     if (i === doorAt) doorChunk();
     // Question station: sign, three answer blocks, and a locked gate.
-    const s = flat(16), q = def.gen();
+    const s = flat(16), q = skill.gen();
     const answers = choices(q).map((v, j) => ({ c: s + 4 + j * 3, r: GR - 4, val: v, state: 'idle', shake: 0 }));
     answers.forEach(a => { map[a.r][a.c] = 'A'; });
     for (let r = 0; r < GR; r++) { map[r][s + 13] = 'G'; map[r][s + 14] = 'G'; }
@@ -463,15 +544,15 @@ const BOSS_SPECS = {
 
 // Boss stage: one screen-wide arena, answer blocks on the left, the boss on the right.
 // Upright phones get a narrower arena so the boss stays on screen.
-function buildArena(idx, easy = false) {
+function buildArena(idx, easy = false, skill = curSkill()) {
   const def = STAGES[idx], W = WORLDS[def.w], map = newMap(), narrow = VW < 700, cols = narrow ? 18 : 27;
   for (let c = 0; c < cols; c++) { for (let r = 0; r < ROWS; r++) map[r].push('.'); map[GR][c] = '#'; map[GR + 1][c] = '#'; }
-  const L = { idx, def, world: W, sky: W.skies[2], map, w: cols, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [1, cols - 4], flagC: -99, castleC: -99, proj: [] };
+  const L = { idx, def, skill, gen: skill.gen, world: W, sky: W.skies[2], map, w: cols, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [1, cols - 4], flagC: -99, castleC: -99, proj: [] };
   // Bonking the keypad block opens the number pad.
   const padC = narrow ? 5 : 7;
   map[GR - 4][padC] = 'K';
   // Fights take turns: a 'dodge' phase where the boss attacks, then an 'open' phase where it is dizzy and you answer.
-  L.arena = { q: def.gen(), padC, wait: 0, phase: 'dodge', phaseT: 150 };
+  L.arena = { q: skill.gen(), padC, wait: 0, phase: 'dodge', phaseT: 150 };
   const sp = BOSS_SPECS[W.boss.kind];
   L.boss = {
     ...W.boss, spec: sp, max: W.boss.hp, x: (cols - 4) * T, y: GR * T - sp.h, w: sp.w, h: sp.h,
@@ -572,7 +653,7 @@ const SHOP = [
   { id: 'suit-white', slot: 'suit', name: 'Snow suit', price: 135, col: ['#c9d2de', '#f4f7fb'] },
   { id: 'trail-spark', slot: 'trail', name: 'Sparkle trail', price: 120 },
   { id: 'trail-fire', slot: 'trail', name: 'Flame trail', price: 180 },
-  { id: 'pet-cat', slot: 'pet', name: 'Lucky cat', price: 0 },
+  { id: 'pet-wolf', slot: 'pet', name: 'Wolf pup', price: 5 },
   { id: 'pet-fox', slot: 'pet', name: 'Kitsune pup', price: 225 },
   { id: 'pet-dragon', slot: 'pet', name: 'Baby dragon', price: 330 },
 ];
@@ -584,13 +665,13 @@ function heroPal(equip = prog.equip) {
 }
 // Pets follow the hero around. Two frames each; they face right.
 const PET_SPR = {
-  'pet-cat': bake(makeFrames(14, 12, { w: '#f4f4f4', g: '#c9cbd6', p: '#ffb3c1', e: '#16121f', r: '#e63946', y: '#ffd23f' }, ({ P, R, E }, f) => {
-    P(2, 4 - f, 'w'); P(2, 5 - f, 'w'); P(3, 6, 'w'); P(3, 7, 'w');
-    E(7, 8.2, 3.4, 2.4, 'w'); E(10, 5, 2.8, 2.6, 'w');
-    P(8, 2, 'w'); P(12, 2, 'w'); P(8, 3, 'p'); P(12, 3, 'p');
-    P(9, 5, 'e'); P(11, 5, 'e'); P(10, 6, 'p');
-    R(8, 7, 4, 1, 'r'); P(10, 8, 'y');
-    P(5, 10, 'g'); P(9, 10, 'g'); if (f) P(7, 10, 'g');
+  'pet-wolf': bake(makeFrames(16, 12, { g: '#8a8f9e', G: '#5b6070', w: '#e8eaf0', y: '#ffb627', n: '#16121f' }, ({ P, R, E }, f) => {
+    E(2.6, 6 - f * 0.6, 2.3, 1.6, 'g'); P(1, 5 - f, 'w');
+    E(7.5, 8, 3.8, 2.4, 'g'); E(7.5, 9.2, 2.6, 0.9, 'w');
+    E(11.5, 5.5, 2.6, 2.3, 'g');
+    P(10, 2, 'g'); P(10, 3, 'G'); P(12, 2, 'g'); P(12, 3, 'G');
+    R(13, 6, 2, 1, 'w'); P(14, 5, 'g'); P(15, 6, 'n'); P(12, 5, 'y');
+    if (f) { P(6, 10, 'G'); P(10, 10, 'G'); } else { P(5, 10, 'G'); P(9, 10, 'G'); }
   }, 2), ['a', 'b']),
   'pet-fox': bake(makeFrames(14, 12, { o: '#f28c28', O: '#c8691a', w: '#fff4e6', e: '#16121f', P: '#ffb3c1' }, ({ P, R, E }, f) => {
     E(3, 6 - f, 2.2, 2.6, 'o'); E(2.4, 4 - f, 1.3, 1.3, 'w');
@@ -783,14 +864,19 @@ setInterval(() => {
 
 // ---------------------------------------------------------------- progress
 const SAVE_KEY = 'mathninja-v2';
-let prog = { best: {}, easy: null, allOpen: false, seenIntro: false, seenWorld: {}, bank: 0, music: true,
+let prog = { best: {}, skill: 'add10', mastery: {}, easy: null, allOpen: false, seenIntro: false, seenWorld: {}, bank: 0, music: true,
   badges: {}, golden: {}, stats: { bridges: 0, gems: 0 },
-  owned: ['band-red', 'suit-navy', 'pet-cat'], equip: { band: 'band-red', suit: 'suit-navy', trail: null, pet: 'pet-cat' }, raceBest: {} };
+  owned: ['band-red', 'suit-navy'], equip: { band: 'band-red', suit: 'suit-navy', trail: null, pet: null }, raceBest: {} };
 try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s) prog = Object.assign(prog, s); } catch (e) { /* no storage */ }
-// Older saves get the free lucky cat too.
-if (!prog.owned.includes('pet-cat')) { prog.owned.push('pet-cat'); if (!prog.equip.pet) prog.equip.pet = 'pet-cat'; }
+// Older saves stored stage points as plain numbers.
+for (const k in prog.best) if (typeof prog.best[k] === 'number') prog.best[k] = { pts: prog.best[k], dots: prog.best[k], tier: 1 };
+if (!SKILL[prog.skill]) prog.skill = 'add10';
+// The lucky cat was retired: the wolf pup is the cheap starter pet now.
+prog.owned = prog.owned.filter(id => id !== 'pet-cat');
+if (prog.equip.pet === 'pet-cat') prog.equip.pet = null;
 function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(prog)); } catch (e) { /* no storage */ } }
-const totalPoints = () => Object.values(prog.best).reduce((a, b) => a + b, 0);
+const totalPoints = () => Object.values(prog.best).reduce((a, b) => a + b.pts, 0);
+const curSkill = () => SKILL[prog.skill] || SKILL.add10;
 const beltFor = pts => BELTS.filter(b => b.need <= pts).pop();
 const currentBelt = () => beltFor(totalPoints());
 
@@ -882,8 +968,8 @@ function findAnswer(c, r) {
 }
 // A brand-new question that isn't the one just asked.
 function freshQ(avoid) {
-  let q = L.def.gen();
-  for (let i = 0; i < 6 && q.text === avoid; i++) q = L.def.gen();
+  let q = L.gen();
+  for (let i = 0; i < 6 && q.text === avoid; i++) q = L.gen();
   return q;
 }
 // Missed facts are asked again later in the same stage before any new question.
@@ -970,7 +1056,7 @@ function askQuestion(o) {
   mode = 'pad'; keys.left = keys.right = keys.jump = false;
   ask = { ...o, opts: rowChoices(o.q, o.n), left: o.time, tick: 3 };
   padSel = 0;
-  $('padQ').innerHTML = `${o.q.text} = <span class="padin">?</span>`;
+  $('padQ').innerHTML = o.q.missing ? o.q.text.replace('?', '<span class="padin">?</span>') : `${o.q.text} = <span class="padin">?</span>`;
   $('padMsg').textContent = o.msg;
   const box = $('padKeys'); box.innerHTML = '';
   ask.opts.forEach((v, i) => {
@@ -1047,6 +1133,8 @@ const BADGES = [
   { id: 'shopper', icon: '🛍️', name: 'Shopper', text: 'Buy something in the Dojo Shop.' },
   { id: 'gems500', icon: '💎', name: 'Gem Collector', text: 'Collect 500 gems in total.' },
   { id: 'black-belt', icon: '🥋', name: 'Black Belt', text: 'Reach the Black Belt rank.' },
+  { id: 'gold-medal', icon: '🥇', name: 'Gold Medal', text: 'Win a gold medal in a math skill (no mistakes).' },
+  { id: 'brave', icon: '🧠', name: 'Brave Brain', text: 'Finish a level with ★★★★ math or harder.' },
 ];
 let toastTimer = null;
 function award(id) {
@@ -1071,10 +1159,10 @@ function openBadges() {
 // ---------------------------------------------------------------- pet reactions and Sensei's tips
 // The pet cheers right answers, looks worried after mistakes and dances at the flag.
 const PET_LINES = {
-  happy: ['Yay!', 'Hi-yah!', 'You rock!', 'Nice one!', 'Woo!', 'Brainy!'],
+  happy: ['Yay!', 'Hi-yah!', 'You rock!', 'Nice one!', 'Awoo!', 'Brainy!'],
   sad: ['Hmm...', "You've got this!", 'So close!', 'Try again!'],
   hurt: ['Ouch!', 'Careful!', 'Yikes!'],
-  dance: ['We did it!', 'Hooray!', 'Party time!'],
+  dance: ['We did it!', 'Awooo!', 'Party time!'],
   wow: ['Whoa, power!', 'So cool!'],
 };
 function petSay(mood) {
@@ -1094,6 +1182,10 @@ function petTick() {
 // Two misses in a row brings Sensei with a tip for the fact that was missed.
 function tipFor(q) {
   const { a, b, op, ans } = q;
+  if (q.missing) return `Count up from ${a} to ${a + ans}. That's ${ans}.`;
+  if (q.step && op === '+') return `Think in tens: ${a / 10} tens + ${b / 10} tens = ${ans / 10} tens, which is ${ans}.`;
+  if (q.step && op === '−') return `Think in tens: ${a / 10} tens − ${b / 10} tens = ${ans / 10} tens, which is ${ans}.`;
+  if (q.step && op === '×') return `Do ${a} × ${b / 10} = ${a * b / 10} first, then put a zero on the end: ${ans}.`;
   if (op === '+') {
     if (a === b) return `Doubles! ${a} + ${a} is double ${a}, which is ${ans}.`;
     if (Math.abs(a - b) === 1) { const m = Math.min(a, b); return `Near double: ${m} + ${m} = ${m * 2}, plus 1 more is ${ans}.`; }
@@ -1144,10 +1236,10 @@ function grantPower() {
 }
 
 // ---------------------------------------------------------------- number-stone bridges
-// A pit too wide to jump. Bonk number stones to pick them up and carry them to the altar;
+// A pit too wide to jump. The target follows the math difficulty: 10, 20, 50 or 100. Bonk number stones to pick them up and carry them to the altar;
 // the stones have to add up to exactly the target or the bridge cracks.
-function bridgePuzzle(w) {
-  const unit = w >= 2 ? 5 : 1, target = [10, 20, 50, 100][w], k = w === 0 ? 2 : 3, units = target / unit;
+function bridgePuzzle(band) {
+  const w = band, unit = w >= 2 ? 5 : 1, target = [10, 20, 50, 100][w], k = w === 0 ? 2 : 3, units = target / unit;
   const cuts = new Set();
   while (cuts.size < k - 1) cuts.add(R(1, units - 1));
   const marks = [0, ...[...cuts].sort((a, b) => a - b), units];
@@ -1194,7 +1286,7 @@ const activeBridge = () => L.bridges.find(b => !b.done && P.x > b.startX - 3 * T
 
 // ---------------------------------------------------------------- secret doors and the vault
 const doorBox = c => ({ x: c * T, y: GR * T - 2.5 * T, w: 1.4 * T, h: 2.5 * T });
-function harderGen() { const nxt = STAGES.slice(L.idx + 1).find(t => !t.boss); return nxt ? nxt.gen : gens.mixed; }
+function harderGen() { return harderSkill(L.skill).gen; }
 function openDoor(d) {
   d.used = true;
   const locked = () => { sfx.wrong(); floatText(P.x + P.w / 2, P.y - 20, 'The door stays locked', '#ff9a3c', 24); };
@@ -1469,8 +1561,7 @@ function updateWin() {
     return;
   }
   if (G.winT < 50) {
-    p.x = L.flagC * T + T / 2 - p.w; p.vx = 0;
-    p.y = Math.min(p.y + 5, GR * T - p.h);
+    p.vx *= 0.8; p.vy = Math.min(p.vy + 0.55, 12); moveX(p); moveY(p);   // stop and catch the scroll
   } else {
     p.face = 1; p.vx = 2.6; p.vy = Math.min(p.vy + 0.55, 12);
     moveX(p); moveY(p); p.anim += 0.16;
@@ -1495,35 +1586,41 @@ function updateAmbient() {
 function finishLevel() {
   mode = 'done';
   const i = G.idx, st = STAGES[i], W = WORLDS[st.w];
-  const pts = G.mistakes === 0 ? 3 : G.mistakes <= 2 ? 2 : 1;
+  const dots = G.mistakes === 0 ? 3 : G.mistakes <= 2 ? 2 : 1, sk = G.skill, pts = dots * sk.tier;
   const before = currentBelt();
-  prog.best[i] = Math.max(prog.best[i] || 0, pts);
+  if (!prog.best[i] || pts > prog.best[i].pts) prog.best[i] = { pts, dots, tier: sk.tier };
+  prog.mastery[sk.id] = Math.max(prog.mastery[sk.id] || 0, dots);
   save();
   const after = currentBelt(), last = i === STAGES.length - 1;
-  const dots = '●'.repeat(pts) + '○'.repeat(3 - pts);
   let title = 'Level complete!', body = '';
   if (st.boss) { title = `You got the ${W.scroll} back!`; body = `<div class="bigicon">📜</div><p>${W.boss.name} is beaten!</p>`; }
   else {
     const found = [0, 1].filter(k => prog.best[st.w * 3 + k]).length;
     body = `<div class="bigicon">🧩</div><p>You found a torn piece of the <b>${W.scroll}</b> (${found} of 2). Beat the boss to win back the whole scroll!</p>`;
   }
-  body += `<p><span class="dots">${dots}</span><br>Score <b>${G.score}</b> &nbsp;·&nbsp; Gems <b>${G.coins}</b><br>
+  body += `<p><span class="dots">${'●'.repeat(dots) + '○'.repeat(3 - dots)}</span> ${['', '🥉', '🥈', '🥇'][dots]} ${sk.name}<br>
+    +${pts} ninja points (${dots} × ${stars(sk.tier)})<br>Score <b>${G.score}</b> &nbsp;·&nbsp; Gems <b>${G.coins}</b><br>
     ${G.mistakes === 0 ? 'Perfect: no mistakes!' : `Wrong answers: <b>${G.mistakes}</b>`} &nbsp;·&nbsp; Best streak <b>${G.bestStreak}</b></p>`;
-  const earned = G.coins + (st.boss ? 20 : 0);
+  const earned = Math.round((G.coins + (st.boss ? 20 : 0)) * TIER_GEMS[sk.tier - 1]);
   prog.bank += earned; prog.stats.gems += earned; save();
   if (G.mistakes === 0) award('perfect');
   if (st.boss && !G.hit) award('boss-nohit');
   if ([2, 5, 8, 11].every(k => prog.best[k])) award('boss-all');
   if (prog.stats.gems >= 500) award('gems500');
   if (currentBelt().name === 'Black') award('black-belt');
-  body += `<p>💎 +${earned} gems for the Dojo Shop (you have <b>${prog.bank}</b>)</p>`;
-  if (G.practice.size) body += `<p>Facts to practice: <b>${[...G.practice.values()].map(q => `${q.text} = ${q.ans}`).join(' &nbsp;·&nbsp; ')}</b></p>`;
+  body += `<p>💎 +${earned} gems for the Dojo Shop${sk.tier > 1 ? ` (×${TIER_GEMS[sk.tier - 1]} for ${stars(sk.tier)} math)` : ''} · you have <b>${prog.bank}</b></p>`;
+  if (dots === 3) award('gold-medal');
+  if (sk.tier >= 4) award('brave');
+  if (G.practice.size) body += `<p>Facts to practice: <b>${[...G.practice.values()].map(qSolved).join(' &nbsp;·&nbsp; ')}</b></p>`;
   if (after.idx > before.idx) body += `<div class="promo">${beltHTML(after)} &nbsp;New belt! You earned the <b>${after.name} Belt</b>!</div>`;
   const btns = [];
+  const wolfOffer = i === 0 && !prog.owned.includes('pet-wolf');
+  if (wolfOffer) body += `<div class="promo">🐺 A wolf pup wants to join you! Adopt it in the Dojo Shop for just <b>5 gems</b>.</div>`;
   if (last) btns.push({ label: 'The end ▶', fn: showEnding, primary: true });
   else btns.push({ label: (st.boss ? 'Next world' : 'Next') + ' ▶', fn: () => startStage(i + 1), primary: true });
   btns.push({ label: 'Replay', fn: () => startStage(i), alt: true });
   btns.push({ label: 'Levels', fn: toMenu, alt: true });
+  if (wolfOffer) btns.push({ label: '🐺 Adopt the wolf', fn: () => { hide('msg'); openShop(); } });
   showMsg(title, body, btns);
 }
 
@@ -1564,13 +1661,6 @@ function update() {
 // ---------------------------------------------------------------- horse race side quest
 // A behind-the-rider road with three lanes. Each gate hangs three answers over the lanes:
 // steer into the right one for a speed boost; a wrong one makes the horse stumble.
-const RACE_TOPICS = [
-  { id: 'add', name: 'Adding', ex: '8 + 7', gen: gens.add20 },
-  { id: 'sub', name: 'Taking away', ex: '15 − 6', gen: gens.sub20 },
-  { id: 'times', name: 'Times tables', ex: '7 × 8', gen: gens.times },
-  { id: 'div', name: 'Division', ex: '24 ÷ 6', gen: gens.div },
-  { id: 'mixed', name: 'Mixed', ex: 'a bit of everything', gen: gens.mixed },
-];
 const SEG = 200, ROAD_W = 1600, CAM_H = 1500, PLAYER_Z = 1200, DRAW = 150, DEPTH = 0.84;
 const GATES = 12, GATE_GAP = 26000, START_Z = 9000, RIDER_H = 300;
 const LANES = [-2 / 3, 0, 2 / 3];   // lane centres, as a fraction of half the road width
@@ -1600,15 +1690,15 @@ let RC = null;
 function showRaceSetup() {
   RC = null; document.body.classList.remove('racing');
   hide('menu'); hide('pauseBtn'); showTouch(false);
-  const best = RACE_TOPICS.filter(t => prog.raceBest[t.id]).map(t => `${t.name}: <b>${prog.raceBest[t.id].toFixed(1)} s</b>`).join(' · ');
+  const k = curSkill(), best = prog.raceBest[k.id];
   showMsg('Horse Race', `<div class="bigicon">🐎</div>
-    <p>Race the Red Bandit, the Gray Wolf and the Shadow Rider! Steer into the lane with the right answer for a speed boost.
-    Use ◀ ▶ (or the arrow keys) to change lanes.</p>${best ? `<p>Best times: ${best}</p>` : ''}<p>Pick what to practice:</p>`,
-    [...RACE_TOPICS.map(t => ({ label: `${t.name} (${t.ex})`, fn: () => startRace(t.id) })), { label: 'Back', fn: toMenu, alt: true }]);
+    <p>Steer into the lane with the right answer for a speed boost!</p>
+    <p class="mathline">Math: <b>${k.name}</b> <span class="tier">${stars(k.tier)}</span><br><small>💎 ×${TIER_GEMS[k.tier - 1]}${best ? ` · best time ${best.toFixed(1)} s` : ''}</small></p>`,
+    [{ label: 'Start ▶', fn: startRace, primary: true }, { label: 'Change math', fn: () => openSkills(showRaceSetup), alt: true }, { label: 'Back', fn: toMenu, alt: true }]);
 }
 
-function startRace(id) {
-  const topic = RACE_TOPICS.find(t => t.id === id), length = START_Z + GATES * GATE_GAP + 6000;
+function startRace() {
+  const topic = curSkill(), length = START_Z + GATES * GATE_GAP + 6000;
   const curves = [];
   for (let i = 0; i < Math.ceil(length / SEG) + DRAW + 10; i++) curves.push(Math.sin(i / 45) * 2.4 + Math.sin(i / 113) * 1.8);
   const gates = [];
@@ -1641,7 +1731,7 @@ function judgeGate(g) {
     raceText(r.streak >= 3 ? `Hyah! ${r.streak} in a row!` : ['Hyah! Boost!', 'Zoom!', 'Speed up!'][R(0, 2)], '#3ae374');
   } else {
     r.wrong++; r.streak = 0; r.speed = Math.min(r.speed, 1700); r.missed.set(g.q.text, g.q);
-    sfx.wrong(); raceText(`Stumble! ${g.q.text} = ${g.q.ans}`, '#ff6b6b');
+    sfx.wrong(); raceText(`Stumble! ${qSolved(g.q)}`, '#ff6b6b');
   }
 }
 
@@ -1677,7 +1767,7 @@ function racePlace() { return 1 + RC.rivals.filter(v => (v.finishT !== undefined
 function finishRace() {
   const r = RC; r.finished = true; r.place = racePlace(); stopMusic();
   sfx.win(); raceText(['1st place!', '2nd place!', '3rd place!', '4th place'][r.place - 1], '#ffd23f');
-  const reward = [15, 10, 6, 3][r.place - 1] + r.right, prev = prog.raceBest[r.topic.id];
+  const reward = Math.round(([15, 10, 6, 3][r.place - 1] + r.right) * TIER_GEMS[r.topic.tier - 1]), prev = prog.raceBest[r.topic.id];
   const best = !prev || r.time < prev;
   if (best) prog.raceBest[r.topic.id] = r.time;
   prog.bank += reward; prog.stats.gems += reward; save();
@@ -1690,10 +1780,10 @@ function finishRace() {
     const medal = ['🥇', '🥈', '🥉', '🐎'][r.place - 1];
     let body = `<div class="bigicon">${medal}</div><p>Time <b>${r.time.toFixed(1)} s</b>${best ? ' · <b>New best!</b>' : ` · Best ${prev.toFixed(1)} s`}<br>
       Right answers <b>${r.right} / ${GATES}</b></p><p>💎 +${reward} gems for the Dojo Shop (you have <b>${prog.bank}</b>)</p>`;
-    if (r.missed.size) body += `<p>Facts to practice: <b>${[...r.missed.values()].map(q => `${q.text} = ${q.ans}`).join(' &nbsp;·&nbsp; ')}</b></p>`;
+    if (r.missed.size) body += `<p>Facts to practice: <b>${[...r.missed.values()].map(qSolved).join(' &nbsp;·&nbsp; ')}</b></p>`;
     showMsg(['1st place!', '2nd place!', '3rd place!', '4th place'][r.place - 1], body, [
-      { label: 'Race again', fn: () => startRace(r.topic.id), primary: true },
-      { label: 'New topic', fn: showRaceSetup, alt: true },
+      { label: 'Race again', fn: startRace, primary: true },
+      { label: 'Change math', fn: () => openSkills(showRaceSetup), alt: true },
       { label: 'Menu', fn: toMenu, alt: true },
     ]);
   }, 2200);
@@ -1823,7 +1913,7 @@ function drawRaceHUD() {
   ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(bx, bY, bw, 6);
   for (const v of r.rivals) { ctx.fillStyle = v.col; ctx.beginPath(); ctx.arc(bx + bw * clamp(v.z / r.length, 0, 1), bY + 3, 5, 0, 7); ctx.fill(); }
   ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(bx + bw * clamp(r.z / r.length, 0, 1), bY + 3, 7, 0, 7); ctx.fill();
-  const txt = next ? `${next.q.text} = ?` : r.finished ? 'Finish!' : 'Sprint to the finish!';
+  const txt = next ? qShow(next.q) : r.finished ? 'Finish!' : 'Sprint to the finish!';
   ctx.font = 'bold 38px "Trebuchet MS", sans-serif';
   const w = Math.max(240, ctx.measureText(txt).width + 50);
   ctx.fillStyle = 'rgba(20,20,50,.75)'; rrect(VW / 2 - w / 2, by, w, 64, 14); ctx.fill();
@@ -1943,25 +2033,58 @@ function bgJapan() {
   repeat(0.65, 330, (x, i) => cherryTree(x, GR * T, 0.8 + hash(i) * 0.4), 9);
 }
 function bgLava() {
-  repeat(0.1, 820, (x, i) => {
-    const h = 230 + hash(i) * 70, base = GR * T - 10;
-    poly([[x - 320, base], [x - 50, base - h], [x + 50, base - h], [x + 320, base]], '#2b0f0c');
-    ctx.fillStyle = '#ff6a00'; ctx.beginPath(); ctx.ellipse(x, base - h, 50, 10, 0, 0, 7); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,106,0,.75)'; ctx.lineWidth = 6;
-    ctx.beginPath(); ctx.moveTo(x - 20, base - h + 5); ctx.quadraticCurveTo(x - 60, base - h / 2, x - 90, base); ctx.stroke();
-    ctx.fillStyle = 'rgba(90,80,80,.45)';
-    for (let k = 0; k < 4; k++) {
-      const yy = base - h - 30 - k * 34 - (tick * 0.4 % 34);
-      ctx.beginPath(); ctx.arc(x + Math.sin(k + tick * 0.01) * 20, yy, 22 + k * 8, 0, 7); ctx.fill();
-    }
-  }, 4);
+  const base = GR * T - 10;
+  // a far-off volcano range in the haze
+  repeat(0.05, 360, (x, i) => {
+    const h = 120 + hash(i + 40) * 80;
+    poly([[x - 260, base], [x - 40, base - h], [x + 40, base - h * 0.92], [x + 260, base]], '#3a1016');
+  }, 40);
+  repeat(0.12, 820, (x, i) => volcano(x, base, 240 + hash(i) * 70, i), 4);
+  // jagged rock spires in front
   repeat(0.35, 240, (x, i) => {
     const w = 40 + hash(i) * 30, h = 110 + hash(i + 1) * 110;
-    poly([[x - w, GR * T], [x - w * 0.3, GR * T - h * 0.6], [x - w * 0.1, GR * T - h], [x + w * 0.4, GR * T - h * 0.5], [x + w, GR * T]], '#3d1610');
+    poly([[x - w, GR * T], [x - w * 0.3, GR * T - h * 0.6], [x - w * 0.1, GR * T - h], [x + w * 0.4, GR * T - h * 0.5], [x + w, GR * T]], '#2e110c');
+    poly([[x - w, GR * T], [x - w * 0.3, GR * T - h * 0.6], [x - w * 0.1, GR * T - h], [x - w * 0.15, GR * T]], '#4a1c12');
   }, 8);
-  const glow = ctx.createLinearGradient(0, GR * T - 120, 0, GR * T);
-  glow.addColorStop(0, 'rgba(255,90,0,0)'); glow.addColorStop(1, 'rgba(255,90,0,.3)');
-  ctx.fillStyle = glow; ctx.fillRect(0, GR * T - 120, VW, 120);
+  const glow = ctx.createLinearGradient(0, GR * T - 140, 0, GR * T);
+  glow.addColorStop(0, 'rgba(255,90,0,0)'); glow.addColorStop(1, 'rgba(255,90,0,.35)');
+  ctx.fillStyle = glow; ctx.fillRect(0, GR * T - 140, VW, 140);
+}
+// A shaded cone with a glowing crater, lava rivers that flow, smoke, and an eruption now and then.
+function volcano(x, base, h, i) {
+  const top = base - h, tw = 46;
+  ctx.fillStyle = 'rgba(80,60,60,.4)';
+  for (let k = 0; k < 6; k++) {
+    const t = (tick * 0.3 + k * 40 + i * 13) % 240;
+    blob(x + Math.sin(k * 2 + i) * 10 + t * 0.35, top - 20 - t * 0.9, 18 + t * 0.18, `rgba(70,55,55,${0.45 * (1 - t / 240)})`);
+  }
+  const g = ctx.createLinearGradient(0, top, 0, base);
+  g.addColorStop(0, '#6a2012'); g.addColorStop(0.3, '#3f150d'); g.addColorStop(1, '#1c0907');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x - 340, base);
+  ctx.quadraticCurveTo(x - 150, base - h * 0.42, x - tw, top); ctx.lineTo(x + tw, top);
+  ctx.quadraticCurveTo(x + 150, base - h * 0.42, x + 340, base); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 3;
+  for (const dx of [-120, -40, 60, 150]) { ctx.beginPath(); ctx.moveTo(x + dx * 0.25, top + 10); ctx.quadraticCurveTo(x + dx * 0.7, base - h * 0.4, x + dx * 1.6, base); ctx.stroke(); }
+  glowAt(x, top, 110, 'rgba(255,170,40,.75)');
+  ctx.fillStyle = '#ffb300'; ctx.beginPath(); ctx.ellipse(x, top, tw, 9, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#fff2a0'; ctx.beginPath(); ctx.ellipse(x, top, tw * 0.5, 4, 0, 0, 7); ctx.fill();
+  // lava rivers: a dark channel, then a dashed glowing flow that moves downhill
+  ctx.save(); ctx.lineCap = 'round';
+  for (const [sx, cx2, ex] of [[-14, -70, -150], [18, 60, 120]]) {
+    const path = () => { ctx.beginPath(); ctx.moveTo(x + sx, top + 4); ctx.quadraticCurveTo(x + cx2, base - h * 0.45, x + ex, base); };
+    path(); ctx.strokeStyle = '#5a0f00'; ctx.lineWidth = 11; ctx.stroke();
+    path(); ctx.strokeStyle = '#ff6a00'; ctx.lineWidth = 6; ctx.setLineDash([20, 12]); ctx.lineDashOffset = -tick * 0.8; ctx.stroke();
+    path(); ctx.strokeStyle = '#ffe066'; ctx.lineWidth = 2; ctx.setLineDash([8, 24]); ctx.lineDashOffset = -tick * 0.8; ctx.stroke();
+  }
+  ctx.restore();
+  // eruption: a burst of lava blobs every few seconds
+  const t = (tick + i * 97) % 260;
+  if (t < 90) {
+    for (let k = 0; k < 7; k++) {
+      const vx = (k - 3) * 1.1, vy = 7 + (k % 3), px = x + vx * t, py = top - (vy * t - 0.12 * t * t);
+      if (py < top + 6) { blob(px, py, 5, '#ff7a00'); blob(px, py, 2.5, '#ffe066'); }
+    }
+  }
 }
 function bgRobot() {
   repeat(0.12, 460, (x, i) => gear(x, 150 + hash(i) * 170, 70 + hash(i + 2) * 60, tick * 0.006 * (i % 2 ? 1 : -1), '#2a3647'), 2);
@@ -2247,7 +2370,7 @@ function drawSigns() {
     ctx.fillStyle = '#6e4627'; ctx.fillRect(x + w / 2 - 4, y + h, 8, GR * T - y - h);
     ctx.fillStyle = '#5e3a1c'; rrect(x - 3, y - 3, w + 6, h + 6, 6); ctx.fill();
     ctx.fillStyle = st.solved ? '#c8f7d4' : '#f6e1b5'; rrect(x, y, w, h, 5); ctx.fill();
-    const txt = st.q.text + ' = ' + (st.solved ? st.q.ans : '?');
+    const txt = st.solved ? qSolved(st.q) : qShow(st.q);
     let size = 21; ctx.font = `bold ${size}px "Trebuchet MS", sans-serif`;
     while (ctx.measureText(txt).width > w - 10 && size > 12) { size--; ctx.font = `bold ${size}px "Trebuchet MS", sans-serif`; }
     ctx.fillStyle = '#3a2200'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -2281,27 +2404,194 @@ function drawDecor(c) {
   }
 }
 
-function drawFlagDojo() {
-  const W = L.world, px = L.flagC * T + T / 2;
+// ---------------------------------------------------------------- end of a level: scroll holder and home
+// Each level hangs its scroll piece from something of its own; each world ends at a fitting home.
+const SCROLL_AT = { japan: [[-34, -4.1], [-30, -4.4]], lava: [[0, -3.7], [0, -3.2]], robot: [[-36, -3.1], [0, -3.4]], castle: [[-30, -3.2], [-28, -3.1]] };
+function scrollSpot() {
+  const [dx, dy] = SCROLL_AT[L.world.key][L.def.k] || [0, -3];
+  const bob = L.world.key === 'robot' && L.def.k === 1 ? Math.sin(tick * 0.06) * 6 : 0;
+  return { x: L.flagC * T + T / 2 + dx, y: GR * T + dy * T + bob };
+}
+function line(x0, y0, x1, y1, col, w) { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); }
+function blob(x, y, r, col) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); }
+function glowAt(x, y, r, col) { const g = ctx.createRadialGradient(x, y, 2, x, y, r); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2); }
+function paperLantern(x, y, s = 1) {
+  glowAt(x, y, 34 * s, 'rgba(255,90,60,.45)');
+  ctx.fillStyle = '#e63946'; ctx.beginPath(); ctx.ellipse(x, y, 11 * s, 15 * s, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#222'; ctx.fillRect(x - 7 * s, y - 16 * s, 14 * s, 3 * s); ctx.fillRect(x - 7 * s, y + 13 * s, 14 * s, 3 * s);
+}
+// A Japanese roof with upturned eaves.
+function roof(x, y, w, h, col, trim) {
+  ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x - 12, y - 14); ctx.lineTo(x + 8, y); ctx.lineTo(x + w - 8, y); ctx.lineTo(x + w + 12, y - 14);
+  ctx.quadraticCurveTo(x + w * 0.78, y - h * 0.35, x + w * 0.68, y - h); ctx.lineTo(x + w * 0.32, y - h);
+  ctx.quadraticCurveTo(x + w * 0.22, y - h * 0.35, x - 12, y - 14); ctx.fill();
+  ctx.fillStyle = trim; ctx.fillRect(x + 8, y - 3, w - 16, 4);
+}
+const HOLDERS = {
+  japan: [
+    (px, b) => {   // cherry tree, scroll on a red cord
+      ctx.fillStyle = '#6b3e2a'; ctx.fillRect(px - 7, b - 4.6 * T, 14, 4.6 * T);
+      line(px, b - 4.2 * T, px - 48, b - 4.85 * T, '#6b3e2a', 7);
+      [[-44, -5.1, 26, '#ffb7d5'], [0, -5.5, 34, '#ffc8df'], [32, -5.0, 28, '#ffb7d5'], [-14, -4.85, 22, '#ff9cc4'], [16, -5.9, 20, '#ff9cc4']].forEach(([dx, dy, r, c]) => blob(px + dx, b + dy * T, r, c));
+      line(px - 34, b - 4.75 * T, px - 34, b - 4.1 * T - 12, '#e63946', 2);
+    },
+    (px, b) => {   // bamboo pole with a crossbar and a wind chime
+      ctx.fillStyle = '#6aaa3a'; ctx.fillRect(px - 5, b - 5.6 * T, 10, 5.6 * T);
+      ctx.fillStyle = '#3f7a22'; for (let k = 1; k < 7; k++) ctx.fillRect(px - 5, b - k * 0.8 * T, 10, 3);
+      ctx.fillStyle = '#8a5a2b'; ctx.fillRect(px - 46, b - 5.3 * T, 58, 6);
+      line(px - 30, b - 5.3 * T, px - 30, b - 4.4 * T - 12, '#e63946', 2);
+      const sw = Math.sin(tick * 0.08) * 0.3;
+      ctx.save(); ctx.translate(px + 8, b - 5.2 * T); ctx.rotate(sw); line(0, 0, 0, 22, '#ddd', 1.5);
+      ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(0, 26, 6, Math.PI, 0); ctx.fill(); ctx.fillRect(-6, 26, 12, 3); ctx.restore();
+    }],
+  lava: [
+    (px, b) => {   // obsidian spire with glowing cracks and a rune ring
+      poly([[px - 34, b], [px - 22, b - 2.6 * T], [px - 12, b - 4.6 * T], [px, b - 5.7 * T], [px + 10, b - 4.3 * T], [px + 22, b - 2.4 * T], [px + 34, b]], '#1a1220');
+      poly([[px - 34, b], [px - 22, b - 2.6 * T], [px - 12, b - 4.6 * T], [px, b - 5.7 * T], [px - 4, b - 3 * T], [px - 14, b]], '#3a2c4a');
+      const glow = 0.5 + 0.5 * Math.sin(tick * 0.1);
+      line(px - 6, b - 0.5 * T, px + 6, b - 2.2 * T, `rgba(255,${100 + glow * 90 | 0},0,1)`, 3);
+      line(px + 6, b - 2.2 * T, px - 2, b - 4.4 * T, `rgba(255,${100 + glow * 90 | 0},0,1)`, 2);
+      ctx.strokeStyle = `rgba(255,140,0,${0.4 + glow * 0.4})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(px, b - 3.7 * T, 28, 0, 7); ctx.stroke();
+    },
+    (px, b) => {   // rock arch with a chain hanging over the path
+      for (const sx of [-1, 1]) poly([[px + sx * 64, b], [px + sx * 62, b - 4.4 * T], [px + sx * 50, b - 4.9 * T], [px + sx * 38, b - 4.2 * T], [px + sx * 40, b]], '#3a2622');
+      ctx.strokeStyle = '#3a2622'; ctx.lineWidth = 22; ctx.beginPath(); ctx.moveTo(px - 52, b - 4.4 * T); ctx.quadraticCurveTo(px, b - 6.3 * T, px + 52, b - 4.4 * T); ctx.stroke();
+      ctx.strokeStyle = '#52352e'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(px - 52, b - 4.55 * T); ctx.quadraticCurveTo(px, b - 6.45 * T, px + 52, b - 4.55 * T); ctx.stroke();
+      ctx.strokeStyle = '#9aa0ad'; ctx.lineWidth = 2;
+      for (let y = b - 5.3 * T; y < b - 3.2 * T - 14; y += 9) { ctx.beginPath(); ctx.ellipse(px, y, 3, 5, 0, 0, 7); ctx.stroke(); }
+      glowAt(px, b - 0.2 * T, 60, 'rgba(255,90,0,.35)');
+    }],
+  robot: [
+    (px, b) => {   // crane arm with a claw
+      ctx.fillStyle = '#5d6d82'; ctx.fillRect(px + 34, b - 5.8 * T, 12, 5.8 * T);
+      ctx.fillStyle = '#ffd23f'; for (let k = 0; k < 4; k++) ctx.fillRect(px + 34, b - 5.8 * T + k * 10, 12, 5);
+      ctx.fillStyle = '#8395a7'; ctx.fillRect(px - 50, b - 5.7 * T, 100, 10);
+      ctx.strokeStyle = '#5d6d82'; ctx.lineWidth = 2; ctx.beginPath();
+      for (let x = px - 50; x < px + 46; x += 12) { ctx.moveTo(x, b - 5.7 * T + 10); ctx.lineTo(x + 6, b - 5.7 * T + 20); ctx.lineTo(x + 12, b - 5.7 * T + 10); }
+      ctx.stroke();
+      line(px - 36, b - 5.4 * T, px - 36, b - 3.1 * T - 26, '#222', 2);
+      line(px - 36, b - 3.1 * T - 26, px - 48, b - 3.1 * T - 10, '#8395a7', 4); line(px - 36, b - 3.1 * T - 26, px - 24, b - 3.1 * T - 10, '#8395a7', 4);
+      blob(px + 40, b - 5.9 * T, 4, Math.floor(tick / 20) % 2 ? '#ff3355' : '#661020');
+    },
+    (px, b) => {   // hovering drone on a cable
+      const y = b - 5 * T + Math.sin(tick * 0.06) * 6;
+      line(px, y + 6, px, y + 1.6 * T - 14, '#222', 2);
+      ctx.fillStyle = '#5d6d82'; rrect(px - 22, y - 6, 44, 14, 5); ctx.fill();
+      ctx.fillStyle = '#4cc9f0'; ctx.fillRect(px - 6, y - 2, 12, 5);
+      for (const sx of [-1, 1]) {
+        line(px + sx * 20, y - 2, px + sx * 34, y - 10, '#8395a7', 3);
+        ctx.fillStyle = 'rgba(220,230,240,.7)'; ctx.beginPath(); ctx.ellipse(px + sx * 34, y - 12, 16 * Math.abs(Math.sin(tick * 0.9 + sx)), 3, 0, 0, 7); ctx.fill();
+      }
+      blob(px, y + 8, 3, Math.floor(tick / 15) % 2 ? '#3ae374' : '#1a6a3a');
+    }],
+  castle: [
+    (px, b) => {   // wooden post with a big paper lantern
+      ctx.fillStyle = '#5a3d2b'; ctx.fillRect(px - 5, b - 5 * T, 10, 5 * T);
+      ctx.fillRect(px - 36, b - 5 * T, 40, 6);
+      line(px - 30, b - 5 * T, px - 30, b - 4.75 * T, '#555', 2);
+      paperLantern(px - 30, b - 4.35 * T, 1.1);
+      line(px - 30, b - 3.85 * T, px - 30, b - 3.2 * T - 12, '#ffd23f', 2);
+    },
+    (px, b) => {   // tall banner pole topped with a golden crescent moon
+      ctx.fillStyle = '#5a3d2b'; ctx.fillRect(px - 4, b - 6 * T, 8, 6 * T);
+      ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(px, b - 6.15 * T, 13, Math.PI * 0.15, Math.PI * 1.25); ctx.stroke();
+      const wave = Math.sin(tick * 0.05) * 3;
+      poly([[px - 4, b - 5.7 * T], [px - 54, b - 5.7 * T + wave], [px - 54, b - 4.3 * T + wave], [px - 4, b - 4.3 * T]], '#4b2a6b');
+      ctx.fillStyle = '#ffd23f'; ctx.fillRect(px - 54, b - 5.05 * T + wave, 50, 3);
+      line(px - 28, b - 4.3 * T + wave, px - 28, b - 3.1 * T - 12, '#ffd23f', 2);
+    }],
+};
+const HOMES = {
+  japan(cx, b) {   // a red pagoda temple
+    ctx.fillStyle = '#9a9aa8'; ctx.fillRect(cx - 8, b - 14, 5 * T + 16, 14);
+    ctx.fillStyle = '#f1e6d0'; ctx.fillRect(cx + 10, b - 3 * T, 5 * T - 20, 3 * T - 14);
+    ctx.fillStyle = '#c0392b'; for (const k of [0, 1.55, 3.45, 5]) ctx.fillRect(cx + 10 + k * (5 * T - 28) / 5, b - 3 * T, 8, 3 * T - 14);
+    ctx.fillStyle = '#2a1408'; ctx.fillRect(cx + 2 * T, b - 1.9 * T, T, 1.9 * T - 14);
+    roof(cx - 14, b - 3 * T, 5 * T + 28, 0.85 * T, '#2f2f3a', '#ffd23f');
+    ctx.fillStyle = '#c0392b'; ctx.fillRect(cx + 1.2 * T, b - 4.7 * T, 2.6 * T, 1.75 * T);
+    ctx.fillStyle = '#f1e6d0'; ctx.fillRect(cx + 1.45 * T, b - 4.45 * T, 2.1 * T, 1.2 * T);
+    roof(cx + 0.7 * T, b - 4.7 * T, 3.6 * T, 0.75 * T, '#2f2f3a', '#ffd23f');
+    ctx.fillStyle = '#ffd23f'; ctx.fillRect(cx + 2.5 * T - 3, b - 6.1 * T, 6, 0.75 * T); blob(cx + 2.5 * T, b - 6.15 * T, 6, '#ffd23f');
+    paperLantern(cx + 1.6 * T, b - 2.2 * T, 0.8); paperLantern(cx + 3.4 * T, b - 2.2 * T, 0.8);
+  },
+  lava(cx, b) {    // a glowing cave in a rock mound, lit by torches
+    poly([[cx - 30, b], [cx - 6, b - 2.6 * T], [cx + 0.9 * T, b - 4.4 * T], [cx + 2.1 * T, b - 5.3 * T], [cx + 3.5 * T, b - 4.8 * T], [cx + 4.6 * T, b - 3.3 * T], [cx + 5 * T + 30, b]], '#3a2622');
+    poly([[cx - 30, b], [cx - 6, b - 2.6 * T], [cx + 0.9 * T, b - 4.4 * T], [cx + 2.1 * T, b - 5.3 * T], [cx + 1.6 * T, b - 3.2 * T], [cx + 0.8 * T, b]], '#52352e');
+    const g = ctx.createRadialGradient(cx + 2.5 * T, b - 0.6 * T, 6, cx + 2.5 * T, b - 0.9 * T, 2.3 * T);
+    g.addColorStop(0, '#ffe066'); g.addColorStop(0.35, '#ff7a00'); g.addColorStop(1, '#3a0a00');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(cx + 1.5 * T, b); ctx.lineTo(cx + 1.5 * T, b - 1.6 * T);
+    ctx.quadraticCurveTo(cx + 2.5 * T, b - 3.2 * T, cx + 3.5 * T, b - 1.6 * T); ctx.lineTo(cx + 3.5 * T, b); ctx.fill();
+    for (let k = 0; k < 5; k++) poly([[cx + 1.7 * T + k * 14, b - 1.85 * T - (k % 2) * 10], [cx + 1.7 * T + k * 14 + 10, b - 1.85 * T - (k % 2) * 10], [cx + 1.7 * T + k * 14 + 5, b - 1.45 * T]], '#3a2622');
+    for (const tx of [cx + 1.1 * T, cx + 3.9 * T]) {
+      ctx.fillStyle = '#5a3d2b'; ctx.fillRect(tx - 3, b - 1.9 * T, 6, 1.9 * T);
+      const fl = 1 + Math.sin(tick * 0.4 + tx) * 0.15;
+      glowAt(tx, b - 2.1 * T, 36, 'rgba(255,140,0,.5)');
+      ctx.fillStyle = '#ff6a00'; ctx.beginPath(); ctx.ellipse(tx, b - 2.1 * T, 7, 12 * fl, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#ffe066'; ctx.beginPath(); ctx.ellipse(tx, b - 2.0 * T, 3, 6 * fl, 0, 0, 7); ctx.fill();
+    }
+    ctx.strokeStyle = '#ff6a00'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(cx + 4.3 * T, b - 3.4 * T);
+    for (let k = 1; k <= 6; k++) ctx.lineTo(cx + 4.3 * T + Math.sin(k + tick * 0.05) * 4, b - 3.4 * T + k * 0.55 * T);
+    ctx.stroke();
+  },
+  robot(cx, b) {   // a control room with screens, a satellite dish and an antenna
+    ctx.fillStyle = '#4a5668'; ctx.fillRect(cx, b - 3.5 * T, 5 * T, 3.5 * T);
+    ctx.fillStyle = '#6c7a8c'; ctx.fillRect(cx, b - 3.5 * T, 5 * T, 6);
+    ctx.fillStyle = '#0d1b2a'; ctx.fillRect(cx + 0.35 * T, b - 3.1 * T, 4.3 * T, 1.1 * T);
+    for (let k = 0; k < 4; k++) {
+      const sx = cx + 0.5 * T + k * 1.05 * T, sy = b - 3 * T;
+      ctx.fillStyle = '#123'; ctx.fillRect(sx, sy, 0.9 * T, 0.85 * T);
+      ctx.strokeStyle = ['#3ae374', '#4cc9f0', '#ffd23f', '#ff6b81'][k]; ctx.lineWidth = 2; ctx.beginPath();
+      for (let x = 0; x <= 30; x += 3) ctx.lineTo(sx + 2 + x, sy + 15 + Math.sin(x * 0.4 + tick * 0.1 + k) * 7);
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#2c3a4e'; ctx.fillRect(cx + 2 * T, b - 1.7 * T, T, 1.7 * T);
+    ctx.fillStyle = Math.floor(tick / 25) % 2 ? '#3ae374' : '#1a6a3a'; ctx.fillRect(cx + 2 * T, b - 1.75 * T, T, 4);
+    ctx.save(); ctx.beginPath(); ctx.rect(cx, b - 10, 5 * T, 10); ctx.clip();
+    ctx.fillStyle = '#ffd23f'; ctx.fillRect(cx, b - 10, 5 * T, 10);
+    for (let x = cx - 10; x < cx + 5 * T; x += 16) poly([[x, b - 10], [x + 8, b - 10], [x + 16, b], [x + 8, b]], '#222');
+    ctx.restore();
+    ctx.fillStyle = '#5d6d82'; ctx.fillRect(cx + 0.9 * T, b - 3.9 * T, 10, 0.45 * T);
+    const tilt = Math.sin(tick * 0.02) * 0.4;
+    ctx.save(); ctx.translate(cx + 0.9 * T + 5, b - 4 * T); ctx.rotate(-0.6 + tilt);
+    ctx.fillStyle = '#c3cfdd'; ctx.beginPath(); ctx.ellipse(0, 0, 24, 9, 0, Math.PI, 0); ctx.fill(); line(0, 0, 0, -16, '#c3cfdd', 2); ctx.restore();
+    line(cx + 4.3 * T, b - 3.5 * T, cx + 4.3 * T, b - 5 * T, '#8395a7', 3);
+    blob(cx + 4.3 * T, b - 5.05 * T, 5, Math.floor(tick / 18) % 2 ? '#ff3355' : '#661020');
+  },
+  castle(cx, b) {  // a castle keep with a big wooden gate
+    poly([[cx - 22, b], [cx, b - 2.2 * T], [cx + 5 * T, b - 2.2 * T], [cx + 5 * T + 22, b]], '#4a4f6a');
+    ctx.fillStyle = '#3a3f58'; for (let k = 1; k < 4; k++) ctx.fillRect(cx - 22 + k * 5, b - k * 0.55 * T, 5 * T + 44 - k * 10, 2);
+    ctx.fillStyle = '#d8dbe6'; ctx.fillRect(cx + 0.4 * T, b - 3.7 * T, 4.2 * T, 1.5 * T);
+    ctx.fillStyle = `rgba(255,210,63,${0.7 + 0.2 * Math.sin(tick * 0.08)})`; for (let k = 0; k < 4; k++) ctx.fillRect(cx + 0.75 * T + k * T, b - 3.3 * T, 12, 16);
+    roof(cx - 0.2 * T, b - 3.7 * T, 5.4 * T, 0.8 * T, '#1c2346', '#ffd23f');
+    ctx.fillStyle = '#d8dbe6'; ctx.fillRect(cx + 1.25 * T, b - 5.05 * T, 2.5 * T, 1.2 * T);
+    roof(cx + 0.85 * T, b - 5.05 * T, 3.3 * T, 0.7 * T, '#1c2346', '#ffd23f');
+    for (const sx of [cx + 1.1 * T, cx + 3.9 * T]) poly([[sx - 6, b - 5.7 * T], [sx, b - 6.1 * T], [sx + 6, b - 5.7 * T]], '#ffd23f');
+    ctx.fillStyle = '#3a2410'; ctx.fillRect(cx + 1.9 * T, b - 1.9 * T, 1.2 * T, 1.9 * T);
+    ctx.fillStyle = '#8a8f9e'; for (let r = 0; r < 4; r++) for (let k = 0; k < 3; k++) ctx.fillRect(cx + 2 * T + k * 13, b - 1.7 * T + r * 15, 4, 4);
+    paperLantern(cx + 1.4 * T, b - 1.5 * T, 0.7); paperLantern(cx + 3.6 * T, b - 1.5 * T, 0.7);
+    for (const sx of [cx + 0.1 * T, cx + 4.9 * T]) {
+      ctx.fillStyle = '#5a3d2b'; ctx.fillRect(sx - 2, b - 3.2 * T, 4, 3.2 * T);
+      ctx.fillStyle = '#6b2fa3'; ctx.fillRect(sx + 2, b - 3.1 * T, 12, 1.6 * T);
+    }
+  },
+};
+function drawGoal() {
+  const px = L.flagC * T + T / 2, b = GR * T;
+  const inside = G && (mode === 'win' || mode === 'done') && P.x > (L.castleC + 2.2) * T;
   if (px > cam - 300 && px < cam + VW + 300) {
-    ctx.fillStyle = '#ddd'; ctx.fillRect(px - 3, 2.5 * T, 6, GR * T - 2.5 * T);
-    ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(px, 2.5 * T, 8, 0, 7); ctx.fill();
-    let fy = 3 * T;
-    if (G && (mode === 'win' || mode === 'done')) fy = Math.min(3 * T + G.winT * 5, (GR - 2) * T);
-    ctx.fillStyle = W.flag; ctx.beginPath(); ctx.moveTo(px - 3, fy); ctx.lineTo(px - 3 - 52, fy + 18); ctx.lineTo(px - 3, fy + 36); ctx.fill();
-    drawScroll(px - 22, fy + 18, 0.7);
-    ctx.fillStyle = '#6e4627'; ctx.fillRect(px - T / 2, (GR - 1) * T + 18, T, 18);
+    HOLDERS[L.world.key][L.def.k](px, b);
+    if (!inside) {
+      let { x, y } = scrollSpot();
+      if (G && (mode === 'win' || mode === 'done')) {   // the scroll flies into the ninja's hands
+        const t = Math.min(1, G.winT / 40), hx = P.x + P.w / 2, hy = P.y - 16;
+        x += (hx - x) * t; y += (hy - y) * t - Math.sin(t * Math.PI) * 50;
+      }
+      glowAt(x, y, 34, 'rgba(255,230,120,.5)');
+      drawScroll(x, y, 1.3);
+    }
   }
-  const cx = L.castleC * T, cy = GR * T, [wall, roof, trim] = W.dojo;
-  if (cx < cam + VW && cx + 5 * T > cam - 40) {
-    ctx.fillStyle = wall; ctx.fillRect(cx + 10, cy - 3 * T, 5 * T - 20, 3 * T);
-    ctx.fillStyle = 'rgba(0,0,0,.25)'; for (let k = 1; k < 5; k++) ctx.fillRect(cx + k * T, cy - 3 * T, 4, 3 * T);
-    poly([[cx - 20, cy - 3 * T + 6], [cx + 30, cy - 4.3 * T], [cx + 5 * T - 30, cy - 4.3 * T], [cx + 5 * T + 20, cy - 3 * T + 6]], roof);
-    poly([[cx + 30, cy - 4.3 * T], [cx + 60, cy - 5.6 * T], [cx + 5 * T - 60, cy - 5.6 * T], [cx + 5 * T - 30, cy - 4.3 * T]], roof);
-    ctx.fillStyle = trim; ctx.fillRect(cx - 20, cy - 3 * T + 2, 5 * T + 40, 5);
-    ctx.fillStyle = '#1a0a05'; ctx.fillRect(cx + 1.9 * T, cy - 1.7 * T, 1.2 * T, 1.7 * T);
-    ctx.fillStyle = trim; ctx.fillRect(cx + 2.48 * T, cy - 1.7 * T, 2, 1.7 * T);
-  }
+  const cx = L.castleC * T;
+  if (cx < cam + VW + 60 && cx + 5 * T > cam - 60) HOMES[L.world.key](cx, b);
 }
 
 // ---------------------------------------------------------------- drawing: characters
@@ -2514,7 +2804,7 @@ function drawHUD() {
   let txt;
   if (L.vault) txt = 'Secret vault!';
   else if (br) txt = `Make ${br.target}!`;
-  else if (cur) txt = cur.q.text + ' = ?';
+  else if (cur) txt = qShow(cur.q);
   else if (L.boss) txt = L.boss.dead || L.boss.dying ? 'Grab the scroll!' : L.arena.wait ? 'Nice hit!' : `Dodge! ${Math.ceil(L.arena.phaseT / 60)}`;
   else txt = 'Get the scroll piece!';
   ctx.font = 'bold 38px "Trebuchet MS", sans-serif';
@@ -2556,7 +2846,7 @@ function render() {
   for (const d of L.decor) if (d * T > cam - 80 && d * T < cam + VW + 40) drawDecor(d);
   drawSigns();
   drawPuzzles();
-  if (!L.boss && !L.vault) drawFlagDojo();
+  if (!L.boss && !L.vault) drawGoal();
   const c0 = Math.max(0, Math.floor(cam / T)), c1 = Math.min(L.w - 1, c0 + Math.ceil(VW / T) + 1);
   drawTiles();
   for (const c of L.coins) if (!c.taken && c.x > cam - 20 && c.x < cam + VW + 20) drawGem(c.x, c.y + Math.sin(tick * 0.08 + c.x) * 3, c.v, tick * 0.08 + c.x);
@@ -2605,7 +2895,7 @@ function startStage(i) {
   L = st.boss ? buildArena(i, prog.easy) : buildLevel(i, prog.easy);
   P = { x: 1.5 * T, y: GR * T - 44, w: 24, h: 44, vx: 0, vy: 0, onGround: false, face: 1, inv: 0, anim: 0, coyote: 0, jbuf: 0, throwT: 0 };
   const hearts = prog.easy ? 5 : 3;
-  G = { idx: i, hearts, maxHearts: hearts, coins: 0, score: 0, shake: 0, shakeAmp: 0, freeze: 0, slow: 0, flash: 0, flyers: [], pulse: 0, chain: 0, lastGem: -99, mistakes: 0, streak: 0, bestStreak: 0, missed: [], practice: new Map(), power: null, powerN: 0, carry: null, saved: null,
+  G = { idx: i, skill: L.skill, hearts, maxHearts: hearts, coins: 0, score: 0, shake: 0, shakeAmp: 0, freeze: 0, slow: 0, flash: 0, flyers: [], pulse: 0, chain: 0, lastGem: -99, mistakes: 0, streak: 0, bestStreak: 0, missed: [], practice: new Map(), power: null, powerN: 0, carry: null, saved: null,
     pet: prog.equip.pet ? { x: P.x, y: P.y, mood: null, moodT: 0 } : null, bubble: null, tip: null, wrongRun: 0, checkpoint: 1.5 * T, time: 0, parts: [], shots: [], bumps: new Map(), winT: 0 };
   SPR = bakeNinja(heroPal());   // equipped headband and suit, plus the belt you've earned
   cam = 0; ambient.length = 0;
@@ -2629,34 +2919,76 @@ function unlockedCount() {
 }
 
 function buildMenu() {
-  const pts = totalPoints(), b = beltFor(pts), next = BELTS[b.idx + 1];
-  $('rank').innerHTML = `${beltHTML(b)} <span>Rank: <b>${b.name} Belt</b></span>
-    <span>${pts} / ${MAX_POINTS} ninja points${next ? ` · ${next.name} Belt at ${next.need}` : ' · Grand Master!'}</span>`;
-  $('bankMenu').textContent = prog.bank;
-  $('badgeMenu').textContent = `${BADGES.filter(b => prog.badges[b.id]).length}/${BADGES.length}`;
+  const pts = totalPoints(), b = beltFor(pts), k = curSkill();
+  $('rank').innerHTML = `${beltHTML(b)} <span><b>${b.name} Belt</b> · ${pts} pts</span>`;
+  $('skillChip').innerHTML = `🧮 ${k.name} <span class="tier">${stars(k.tier)}</span> ✎`;
+  $('bankMenu').textContent = `${prog.bank}💎`;
+  $('badgeMenu').textContent = `${BADGES.filter(x => prog.badges[x.id]).length}/${BADGES.length}`;
   const box = $('worlds'); box.innerHTML = '';
   const open = unlockedCount();
   WORLDS.forEach((W, w) => {
-    const won = !!prog.best[w * 3 + 2];
+    const won = !!prog.best[w * 3 + 2], found = [0, 1].filter(j => prog.best[w * 3 + j]).length;
     const div = document.createElement('div'); div.className = 'world';
-    const found = [0, 1].filter(k => prog.best[w * 3 + k]).length;
-    div.innerHTML = `<div class="wname">World ${w + 1} · ${W.name}<span>📜 ${W.scroll}: ${won ? 'won back ✔' : `${found} of 2 pieces`}</span></div><div class="stages"></div>`;
+    div.innerHTML = `<div class="wname">${w + 1} · ${W.name}<span>📜 ${won ? '✔' : `${found}/2`}</span></div><div class="stages"></div>`;
     const row = div.querySelector('.stages');
     STAGES.forEach((st, i) => {
       if (st.w !== w) return;
-      const el = document.createElement('button'), locked = i >= open, p = prog.best[i] || 0;
+      const el = document.createElement('button'), locked = i >= open, best = prog.best[i];
       el.className = 'lvl' + (st.boss ? ' boss' : ''); el.disabled = locked;
-      const title = st.boss ? W.boss.name : st.name, sub = locked ? '🔒 locked' : st.boss ? '👹 boss fight' : st.ex;
-      el.innerHTML = `<span class="num">${st.boss ? 'BOSS' : 'LEVEL ' + st.label}</span><br>${title}<small>${sub}</small>` +
-        `<span class="dots">${locked ? '&nbsp;' : '●'.repeat(p) + '○'.repeat(3 - p) + (st.boss ? '' : prog.golden[i] ? ' 🌟' : ' ☆')}</span>`;
-      el.onclick = () => { audio(); startStage(i); };
+      const d = best ? best.dots : 0;
+      el.innerHTML = `<span class="num">${st.boss ? 'BOSS' : st.label}</span><br>${st.boss ? W.boss.name : st.name}` +
+        `<span class="dots">${locked ? '🔒' : '●'.repeat(d) + '○'.repeat(3 - d) + (st.boss ? '' : prog.golden[i] ? ' 🌟' : ' ☆')}</span>`;
+      el.onclick = () => { audio(); confirmStage(i); };
       row.appendChild(el);
     });
     box.appendChild(div);
   });
 }
 
-// ---------------------------------------------------------------- dojo shop
+// Tapping a level shows which math it will use, with a quick way to change it.
+function confirmStage(i) {
+  const st = STAGES[i], W = WORLDS[st.w], k = curSkill();
+  hide('menu');
+  showMsg(st.boss ? W.boss.name : `${st.label} · ${st.name}`, `<p class="mathline">Math: <b>${k.name}</b> <span class="tier">${stars(k.tier)}</span><br>
+    <small>like ${k.ex} · 💎 ×${TIER_GEMS[k.tier - 1]}</small></p>`,
+    [{ label: 'Start ▶', fn: () => startStage(i), primary: true }, { label: 'Change math', fn: () => openSkills(() => confirmStage(i)), alt: true }, { label: 'Back', fn: toMenu, alt: true }]);
+}
+
+// The skill picker: tabs for each kind of math, every skill showing its stars, gem bonus and best medal.
+let skillsThen = null, skillTab = null;
+function openSkills(then) {
+  skillsThen = then; skillTab = curSkill().cat;
+  hide('menu'); hide('msg'); renderSkills(); show('skills');
+}
+function renderSkills() {
+  $('skillTabs').innerHTML = '';
+  for (const [cat, label] of SKILL_CATS) {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.className = cat === skillTab ? 'on' : '';
+    b.onclick = () => { skillTab = cat; renderSkills(); };
+    $('skillTabs').appendChild(b);
+  }
+  $('skillGrid').innerHTML = '';
+  for (const k of SKILLS.filter(x => x.cat === skillTab)) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'skill' + (k.id === prog.skill ? ' on' : '');
+    const medal = ['', '🥉', '🥈', '🥇'][prog.mastery[k.id] || 0];
+    b.innerHTML = `<span class="sn">${k.name} ${medal}</span><span class="se">like ${k.ex}</span><span class="st">${stars(k.tier)}</span><span class="sm">💎 ×${TIER_GEMS[k.tier - 1]}</span>`;
+    b.onclick = () => { audio(); prog.skill = k.id; save(); hide('skills'); (skillsThen || toMenu)(); };
+    $('skillGrid').appendChild(b);
+  }
+}
+function showHowTo() {
+  hide('menu');
+  const row = (icon, txt) => `<div><span>${icon}</span><p style="margin:0">${txt}</p></div>`;
+  showMsg('How to play', `<div class="howto">
+    ${row('🕹️', isTouch ? 'Use ◀ ▶ to run and ▲ to jump.' : 'Arrow keys or A / D to run, Space or ↑ to jump, P to pause.')}
+    ${row('⛩️', 'Jump up and bonk the block with the right answer to open each gate.')}
+    ${row('💎', 'Grab gems: green = 1, blue = 5, red = 10. Spend them in the Dojo Shop.')}
+    ${row('🌉', 'Bridges: bonk number stones and carry them to the altar to make the exact number.')}
+    ${row('👹', 'Bosses: dodge first. When the boss is dizzy, bonk the keypad block and pick the answer.')}
+    ${row('🧮', 'Pick any math for any level. Harder math ★ earns more gems and belt points.')}
+    ${row('🐣', 'Easy mode (in Settings): no holes, slower enemies, more time and 5 hearts.')}</div>`,
+    [{ label: 'Got it!', fn: () => { hide('msg'); show('menu'); }, primary: true }]);
+}// ---------------------------------------------------------------- dojo shop
 // Buying asks for the change: "you have 52, it costs 35, how many will you have left?"
 function drawNinjaPreview(cv, equip, scale) {
   const c = cv.getContext('2d'); c.clearRect(0, 0, cv.width, cv.height); c.imageSmoothingEnabled = false;
@@ -2725,7 +3057,7 @@ function toMenu() {
   const newest = Math.min(unlockedCount() - 1, STAGES.length - 1);
   L = buildLevel(STAGES[newest].w * 3);   // menu backdrop shows the newest world
   ambient.length = 0;
-  hide('msg'); hide('shop'); hide('pauseBtn'); showTouch(false); buildMenu(); show('menu');
+  hide('msg'); hide('shop'); hide('skills'); hide('settings'); hide('badges'); hide('pauseBtn'); showTouch(false); buildMenu(); show('menu');
 }
 
 function showStory(then) {
@@ -2738,7 +3070,7 @@ function togglePause() {
     pausedMode = mode; mode = 'pause'; showTouch(false);
     showMsg('Paused', '<p>Take a breath, ninja!</p>', [
       { label: 'Resume', fn: togglePause, primary: true },
-      { label: 'Restart', fn: () => (pausedMode === 'race' ? startRace(RC.topic.id) : startStage(G.idx)), alt: true },
+      { label: 'Restart', fn: () => (pausedMode === 'race' ? startRace() : startStage(G.idx)), alt: true },
       { label: pausedMode === 'race' ? 'Menu' : 'Levels', fn: toMenu, alt: true },
     ]);
   } else if (mode === 'pause') { mode = pausedMode; hide('msg'); showTouch(true); }
@@ -2757,9 +3089,14 @@ $('muteBtn').onclick = () => setMuted(!muted);
 $('musicBtn').onclick = () => { audio(); setMusic(!musicOn); };
 $('easyBtn').onclick = () => setEasy(!prog.easy);
 $('unlockBtn').onclick = () => setAllOpen(!prog.allOpen);
-$('storyBtn').onclick = () => { hide('menu'); showStory(() => { hide('msg'); show('menu'); }); };
+$('storyBtn').onclick = () => { hide('settings'); showStory(() => { hide('msg'); show('menu'); }); };
+$('skillChip').onclick = () => { audio(); openSkills(toMenu); };
+$('skillsClose').onclick = () => { hide('skills'); (skillsThen || toMenu)(); };
+$('settingsBtn').onclick = () => { audio(); hide('menu'); show('settings'); };
+$('settingsClose').onclick = () => { hide('settings'); buildMenu(); show('menu'); };
+$('helpBtn').onclick = () => { audio(); showHowTo(); };
 $('resetBtn').onclick = () => {
-  if (confirm('Reset all belts, points and unlocked levels?')) { prog.best = {}; prog.seenWorld = {}; setAllOpen(false); }
+  if (confirm('Reset all belts, points and unlocked levels?')) { prog.best = {}; prog.mastery = {}; prog.seenWorld = {}; setAllOpen(false); }
 };
 $('pauseBtn').onclick = togglePause;
 $('shopBtn').onclick = () => { audio(); openShop(); };
