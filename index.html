@@ -98,7 +98,8 @@
   .bigrow { margin: 4px 0 2px; }
   .pickh { margin: 12px 0 6px; font-size: 16px; color: #ffd23f; }
   .pickgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-  #trackGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #trackGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .pick.track b .pix { margin: 0 auto; }
   .pick { font: inherit; font-weight: 800; color: #fff; background: rgba(255,255,255,.08); border: 3px solid transparent; border-radius: 12px;
     padding: 6px 4px; cursor: pointer; display: grid; justify-items: center; gap: 2px; }
   .pick canvas { image-rendering: pixelated; width: 100%; max-width: 108px; height: auto; }
@@ -165,12 +166,13 @@
   .z-japan { background: linear-gradient(#ffb3d1, #8fd27a); color: #3a1a2a; }
   .z-lava { background: linear-gradient(#3a0d05, #c2410c); color: #fff; }
   .z-robot { background: linear-gradient(#24364d, #4f7ea8); color: #fff; }
+  .z-snow { background: linear-gradient(#e6f5ff, #8cc4e8); color: #12324a; }
   .z-castle { background: linear-gradient(#0d1033, #4b2a8a); color: #fff; }
   .zone .wname { position: relative; z-index: 2; margin: 0 2px; }
   .zmap { position: relative; height: 160px; }
   .zmap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
   .zmap path { fill: none; stroke: rgba(255,255,255,.75); stroke-width: 7; stroke-dasharray: 2 12; stroke-linecap: round; vector-effect: non-scaling-stroke; }
-  .z-japan .zmap path { stroke: rgba(120,60,20,.6); }
+  .z-japan .zmap path, .z-snow .zmap path { stroke: rgba(40,70,110,.5); }
   .deco { position: absolute; transform: translate(-50%, -50%); font-size: 30px; opacity: .45; font-style: normal; pointer-events: none; }
   .node { position: absolute; transform: translate(-50%, -50%); width: 58px; height: 58px; border-radius: 50%; border: 4px solid #fff;
     background: #ffd23f; color: #3a2200; font: inherit; cursor: pointer; padding: 0; box-shadow: 0 5px 0 rgba(0,0,0,.35); transition: transform .12s; z-index: 1; }
@@ -180,6 +182,7 @@
   .z-japan .node:not(.boss) { background: #ff7eb6; color: #fff; }
   .z-lava .node:not(.boss) { background: #ff8c1a; color: #fff; }
   .z-robot .node:not(.boss) { background: #4cc9f0; color: #0d2a3a; }
+  .z-snow .node:not(.boss) { background: #3aa0dc; color: #fff; }
   .z-castle .node:not(.boss) { background: #a678ff; color: #fff; }
   .node.won { border-color: #ffd23f; }
   .node:disabled { background: #5a5a6e !important; color: #ccc; border-color: #8a8a9a; cursor: not-allowed; box-shadow: 0 4px 0 rgba(0,0,0,.3); }
@@ -207,12 +210,24 @@
       radial-gradient(circle at 82% 68%, #e2e2ec 0 18%, transparent 19%), rgba(230,230,240,.85); }
   #wipe.go { animation: smoke .55s ease-out; }
   @keyframes smoke { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.4); } }
-  .homebar { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; margin: 4px 0 2px; }
+  .pix { image-rendering: pixelated; width: 36px; height: 36px; display: block; }
+  .pix.big { width: 64px; height: 64px; display: inline-block; margin: 0 2px; }
+  .bigicon .bossimg { width: 104px; height: 104px; display: inline-block; }
+  .pix.sm { width: 22px; height: 22px; display: inline-block; vertical-align: -4px; }
+  .dojotop .pix { width: 22px; height: 22px; display: inline-block; vertical-align: -4px; }
+  .ibtn > span { display: flex; justify-content: center; }
+  .deco .pix { width: 34px; height: 34px; }
+  .node .pix.lk { width: 30px; height: 30px; margin: 0 auto; }
+  .node .bossimg { width: 60px; height: 60px; margin: -8px auto 0; }
+  .freed { font-style: italic; color: #ffe9a8; margin: 0 0 10px; }
+  .homebar { display: grid; grid-template-columns: auto 1fr auto; grid-template-areas: "player rank rank" "skill skill dojo"; gap: 8px; align-items: center; margin: 4px 0 2px; width: min(720px, 100%); }
+  #playerChip { grid-area: player; justify-self: start; } #skillChip { grid-area: skill; } #dojoBtn { grid-area: dojo; } .homebar .rank { grid-area: rank; justify-self: end; margin: 0; }
+  @media (max-width: 560px) { .homebar { grid-template-columns: 1fr auto; grid-template-areas: "player dojo" "skill skill" "rank rank"; } .homebar .rank { justify-self: center; } }
   .mathchip { font: inherit; font-weight: 800; font-size: 18px; color: #3a2200; background: #ffd23f; border: none; border-bottom: 4px solid #b8860b;
     border-radius: 999px; padding: 8px 18px; cursor: pointer; }
   .mathchip .tier, .mathline .tier { color: #d35400; letter-spacing: 1px; }
   .mathline .tier { color: #ffd23f; }
-  .iconrow { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; width: min(620px, 100%); margin: 6px 0 4px; }
+  .iconrow { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; width: min(720px, 100%); margin: 6px 0 4px; }
   .ibtn { font: inherit; font-weight: 800; font-size: 13px; color: #fff; background: rgba(255,255,255,.1); border: none; border-radius: 14px;
     padding: 8px 2px; cursor: pointer; display: grid; justify-items: center; gap: 2px; }
   .ibtn span { font-size: 26px; line-height: 1; }
@@ -300,12 +315,12 @@
     <div class="rank" id="rank"></div>
   </div>
   <div class="iconrow">
-    <button class="ibtn" id="raceBtn" type="button"><span>🐎</span>Race</button>
-    <button class="ibtn" id="shopBtn" type="button"><span>🏯</span>Shop <b id="bankMenu">0</b></button>
-    <button class="ibtn" id="factBtn" type="button"><span>📒</span>Facts</button>
-    <button class="ibtn" id="badgeBtn" type="button"><span>🏅</span>Badges <b id="badgeMenu"></b></button>
-    <button class="ibtn" id="settingsBtn" type="button"><span>⚙️</span>Settings</button>
-    <button class="ibtn" id="helpBtn" type="button"><span>❓</span>How to</button>
+    <button class="ibtn" id="raceBtn" type="button"><span data-pix="race"></span>Race</button>
+    <button class="ibtn" id="shopBtn" type="button"><span data-pix="pagoda"></span>Shop <b id="bankMenu">0</b></button>
+    <button class="ibtn" id="factBtn" type="button"><span data-pix="book"></span>Facts</button>
+    <button class="ibtn" id="badgeBtn" type="button"><span data-pix="medal"></span>Badges <b id="badgeMenu"></b></button>
+    <button class="ibtn" id="settingsBtn" type="button"><span data-pix="gear"></span>Settings</button>
+    <button class="ibtn" id="helpBtn" type="button"><span data-pix="help"></span>How to</button>
   </div>
   <div class="worlds" id="worlds"></div>
 </div>
@@ -408,7 +423,7 @@
 
 <div id="dojo" class="overlay hidden">
   <div class="card padcard dojocard">
-    <div class="dojotop"><b>🔥 Daily Dojo</b><span id="djProg"></span></div>
+    <div class="dojotop"><b><span data-pix="flame"></span> Daily Dojo</b><span id="djProg"></span></div>
     <div class="fusebar"><i id="djFuse"></i></div>
     <div class="padq" id="djQ"></div>
     <div class="padkeys" id="djKeys"></div>
@@ -460,38 +475,50 @@ const hash = i => { const s = Math.sin(i * 127.1) * 43758.5453; return s - Math.
 const mk = (a, op, b, ans) => ({ a, op, b, ans, text: `${a} ${op} ${b}` });
 
 // ---------------------------------------------------------------- story & worlds
-const STORY = `Long ago, Sensei guarded four Magic Math Scrolls at the mountain dojo. One stormy night,
-  the evil <b>Shadow Shogun</b> crept in and stole them all! He gave each scroll to one of his bosses to guard.
-  <br><br>You are Sensei's bravest young ninja. Run through four worlds, collect the torn scroll pieces,
-  solve the math gates, and beat the bosses to bring the scrolls home!`;
-const ENDING = `The Shadow Shogun is beaten, and all four Magic Math Scrolls are back at the dojo!
-  <br><br>Sensei bows low: <i>"You are a true Math Ninja."</i>`;
+const STORY = `Sensei loves every one of his students, even the one who ran away. Long ago, his oldest student Kuro wanted the
+  five Magic Math Scrolls all for himself. He put on a dark mask, became the <b>Shadow Shogun</b>, stole the scrolls, and his shadow spread over the land.
+  <br><br>Sensei sends you, his youngest ninja. His eyes look sad whenever he says Kuro's name. "You don't have to earn my love," he says. "You already have it. Go and bring the
+  scrolls home. And if you can, bring Kuro home too, whatever it costs."`;
+const MORNING = `When the sun comes up, you open your eyes. The Shogun is kneeling beside you, crying, and his dark mask has cracked and fallen away.
+  In his hand is a little wooden ninja, and around his wrist is a red headband just like yours.
+  <br><br>Now you know the face. It's from the old picture on the dojo wall. It's <b>Kuro, your big brother</b>, the one who ran away before you were old enough to remember.
+  <br><br>"I was your enemy," he whispers. "Why would you save me?" "Because you're my brother," you say. "And because Father never stopped loving you."
+  <br><br>Back at the dojo, Sensei runs down the path to meet his two sons and throws his arms around them both. "Welcome home."
+  The five scrolls shine again. They were never meant to be kept. They were meant to be shared.`;
+const ENDING = `The Shogun is beaten, and his dark castle begins to crumble. A huge beam falls toward him.
+  He tried to stop you the whole way here. But you don't stop to think: you push him out of the way, and the beam falls on you instead.
+  <br><br>Everything goes dark.`;
 
 const WORLDS = [
   { key: 'japan', name: 'Japan Village', scroll: 'Scroll of Adding', walker: 'ninja', pit: 'water', flag: '#e63946',
     skies: [['#7cc6ff', '#ffe3ef'], ['#ff9a8b', '#ffe0b5'], ['#6fb4f0', '#ffd6e8']],
     brick: ['#c0392b', '#7b1f16'], pipe: ['#7cb342', '#33691e', '#c5e1a5'], stair: ['#b0794a', '#6e4627', '#d8a679'],
     gate: ['#d63a2f', '#7b1610', '#ff8a7a', '#ffd23f'], dojo: ['#f1e0c5', '#7b1610', '#3a2a20'],
-    intro: `The Shogun's bandit ninjas are hiding in the cherry blossom village. Their leader, <b>Kage the Shadow Blade</b>, is guarding the Scroll of Adding.`,
+    intro: `The village children chased the bandits into the bamboo forest and got lost. Sensei says: <i>"Go and find them. Every single one matters."</i> <b>Kage the Shadow Blade</b> guards the Scroll of Adding.`,
     boss: { kind: 'kage', name: 'Kage the Shadow Blade', hp: 5, taunt: 'No one gets past my blade... unless they can add!' } },
   { key: 'lava', name: 'Lava Volcano', scroll: 'Scroll of Taking Away', walker: 'rock', pit: 'lava', flag: '#ff8c1a',
     skies: [['#1a0505', '#7a1f0a'], ['#2a0707', '#9a3a0a'], ['#150303', '#6b1a0a']],
     brick: ['#5a3a34', '#2a1a16'], pipe: ['#4a3530', '#241815', '#7a5a50'], stair: ['#4b3a36', '#221816', '#6e5a54'],
     gate: ['#2a1a1a', '#0d0606', '#ff6a00', '#ff8c1a'], dojo: ['#3a2a26', '#1a0d0a', '#ff6a00'],
-    intro: `Deep inside the volcano, rock monsters stomp around and lava blobs leap out of the fire. The <b>Magma Golem</b> is guarding the Scroll of Taking Away.`,
+    intro: `A rumbling cry comes from the volcano. The <b>Magma Golem</b> was once the gentle keeper of the mountain, until the shadow filled him with anger. Sensei says: <i>"No one is too far gone. Carry your light into the fire."</i>`,
     boss: { kind: 'golem', name: 'Magma Golem', hp: 6, taunt: 'ROCK SMASH! You will never take away my scroll!' } },
   { key: 'robot', name: 'Robot Factory', scroll: 'Scroll of Times', walker: 'robot', pit: 'void', flag: '#4cc9f0',
     skies: [['#1c2533', '#3b4a5e'], ['#2a1c24', '#5e3b46'], ['#16202c', '#334255']],
     brick: ['#6c7a89', '#3b4552'], pipe: ['#8395a7', '#4a5868', '#c8d3de'], stair: ['#5d6d7e', '#2f3846', '#95a5b6'],
     gate: ['#2c3e50', '#141d26', '#4cc9f0', '#4cc9f0'], dojo: ['#5d6d7e', '#2f3846', '#4cc9f0'],
-    intro: `The Shogun built a giant factory full of marching robots. <b>Mega-Bot 3000</b> is guarding the Scroll of Times.`,
+    intro: `In the factory, robots are made to work day and night with no rest. Sensei says: <i>"They were made for more than work. Set them free."</i> <b>Mega-Bot 3000</b> guards the Scroll of Times.`,
     boss: { kind: 'bot', name: 'Mega-Bot 3000', hp: 7, taunt: 'BEEP BOOP. CALCULATING... YOUR DEFEAT.' } },
+  { key: 'snow', name: 'Frozen Peaks', scroll: 'Scroll of Patterns', walker: 'penguin', pit: 'ice', flag: '#7df9ff',
+    skies: [['#9fd4ff', '#eaf6ff'], ['#0b1a3a', '#2a5a7a'], ['#c9b6e8', '#ffe2d0']],
+    brick: ['#a8d8f0', '#5a8ab0'], pipe: ['#cfefff', '#7ab8d8', '#ffffff'], stair: ['#dbe9f5', '#8aa4c0', '#ffffff'],
+    gate: ['#8fd3f4', '#3a7aa8', '#e8fbff', '#ffd23f'], dojo: ['#eaf6ff', '#5a8ab0', '#7df9ff'],
+    intro: `High on the frozen peaks lives a lonely giant. Everyone ran away from him, so his heart froze as cold as the snow. Sensei says: <i>"Cold hearts melt with kindness."</i> The <b>Abominable Snowman</b> guards the Scroll of Patterns.`, boss: { kind: 'yeti', name: 'The Abominable Snowman', hp: 7, taunt: 'ROOOAR! Everyone runs from me. You will too!' } },
   { key: 'castle', name: 'Night Castle', scroll: 'Scroll of Sharing', walker: 'shadow', pit: 'void', flag: '#b388ff',
     skies: [['#070b24', '#1f2a5a'], ['#0a0820', '#2a1f5a'], ['#05071a', '#1a1f48']],
     brick: ['#4a4f7a', '#252845'], pipe: ['#6b4a35', '#3a2618', '#9a7050'], stair: ['#3c4470', '#1c2140', '#5a64a0'],
     gate: ['#4b2a6b', '#22113a', '#a678ff', '#ffd23f'], dojo: ['#2a3152', '#141830', '#ffd23f'],
-    intro: `This is it: the Shadow Shogun's castle! Shadow ninjas guard the rooftops, and the <b>Shogun</b> has the last scroll, the Scroll of Sharing.`,
-    boss: { kind: 'shogun', name: 'The Shadow Shogun', hp: 8, taunt: 'So, little ninja, you made it this far. Is your math strong enough?' } },
+    intro: `This is it: the Shadow Shogun's castle. Sensei holds you close for a long time. <i>"There's something I should have told you long ago,"</i> he starts, then stops. <i>"He was very dear to me. He will not thank you. Love him anyway."</i>`,
+    boss: { kind: 'shogun', name: 'The Shadow Shogun', hp: 8, taunt: 'So the old man sent the little one after all. Have you come to punish me?' } },
 ];
 
 // ---------------------------------------------------------------- math skills
@@ -672,10 +699,10 @@ function pathRound(skill) {
   const pr = skillProgress(skill), next = PATH[PATH.indexOf(skill.id) + 1];
   if (pr.done && next) {
     prog.skill = next; save(); sfx.win();
-    return `<div class="promo levelup">🎉 New math: <b>${SKILL[next].name}</b></div>`;
+    return `<div class="promo levelup">${pixImg('star', 'pix sm')} New math: <b>${SKILL[next].name}</b></div>`;
   }
   save();
-  return pr.done ? '' : `<span title="Facts learned">📒 ${pr.learned}/${pr.n}</span>`;
+  return pr.done ? '' : `<span title="Facts learned">${pixImg('book', 'pix sm')} ${pr.learned}/${pr.n}</span>`;
 }
 
 const SKILL_CATS = [['add', '➕ Add'], ['sub', '➖ Take away'], ['mul', '✖️ Times'], ['div', '➗ Divide'], ['think', '🧩 Think']];
@@ -690,15 +717,16 @@ const STAGES = [
   { w: 0, name: 'Cherry Path', n: 6, enemy: 0.15, pit: 2 }, { w: 0, name: 'Bamboo Grove', n: 7, enemy: 0.22, pit: 2 }, { w: 0, name: 'Koi Pond', n: 7, enemy: 0.26, pit: 3 }, { w: 0, boss: true },
   { w: 1, name: 'Ash Trail', n: 7, enemy: 0.25, pit: 3 }, { w: 1, name: 'Lava Falls', n: 7, enemy: 0.3, pit: 3 }, { w: 1, name: 'Obsidian Caves', n: 8, enemy: 0.32, pit: 3 }, { w: 1, boss: true },
   { w: 2, name: 'Gear Works', n: 7, enemy: 0.3, pit: 3 }, { w: 2, name: 'Conveyor Run', n: 8, enemy: 0.35, pit: 3 }, { w: 2, name: 'Laser Lab', n: 8, enemy: 0.38, pit: 3 }, { w: 2, boss: true },
-  { w: 3, name: 'Lantern Roofs', n: 8, enemy: 0.4, pit: 3 }, { w: 3, name: 'Moon Tower', n: 9, enemy: 0.45, pit: 3 }, { w: 3, name: 'Shadow Walls', n: 9, enemy: 0.48, pit: 3 }, { w: 3, boss: true },
+  { w: 3, name: 'Frosty Slopes', n: 8, enemy: 0.38, pit: 3 }, { w: 3, name: 'Icicle Caves', n: 8, enemy: 0.4, pit: 3 }, { w: 3, name: 'Blizzard Peak', n: 9, enemy: 0.42, pit: 3 }, { w: 3, boss: true },
+  { w: 4, name: 'Lantern Roofs', n: 8, enemy: 0.4, pit: 3 }, { w: 4, name: 'Moon Tower', n: 9, enemy: 0.45, pit: 3 }, { w: 4, name: 'Shadow Walls', n: 9, enemy: 0.48, pit: 3 }, { w: 4, boss: true },
 ];
 const PER_WORLD = 4, bossOf = w => w * PER_WORLD + 3;
 STAGES.forEach((s, i) => { s.k = i % PER_WORLD; s.label = s.boss ? 'BOSS' : `${s.w + 1}-${s.k + 1}`; });
 
 // Ninja points for a stage = accuracy (1-3) × math difficulty (1-5), so harder math climbs the belts faster.
 const BELTS = [
-  ['White', 0, '#f4f4f4'], ['Yellow', 8, '#ffd23f'], ['Orange', 20, '#ff8c1a'], ['Green', 40, '#2ecc71'],
-  ['Blue', 66, '#3498db'], ['Purple', 100, '#9b59b6'], ['Red', 133, '#e63946'], ['Brown', 173, '#8b5a2b'], ['Black', 213, '#151515'],
+  ['White', 0, '#f4f4f4'], ['Yellow', 10, '#ffd23f'], ['Orange', 25, '#ff8c1a'], ['Green', 50, '#2ecc71'],
+  ['Blue', 83, '#3498db'], ['Purple', 125, '#9b59b6'], ['Red', 166, '#e63946'], ['Brown', 216, '#8b5a2b'], ['Black', 266, '#151515'],
 ].map(([name, need, col], idx) => ({ name, need, col, idx }));
 const MAX_POINTS = STAGES.length * 15;
 
@@ -730,18 +758,21 @@ function rowChoices(q, n) {
   return [...lows.slice(0, below), a, ...highs.slice(0, n - 1 - below)].sort((x, y) => x - y);
 }
 
+// Each level has its own twist (bosses don't).
+const TWISTS = ['kite', 'spring', 'koi', 'rocks', 'chase', 'dark', 'gears', 'conveyor', 'lasers', 'ice', 'icicles', 'avalanche', 'walljump', 'ladders', 'sneak'];
 // ---------------------------------------------------------------- level builders
 function newMap() { const m = []; for (let r = 0; r < ROWS; r++) m.push([]); return m; }
 
 function walkerFor(kind, c, speed) {
-  const size = { ninja: [24, 44], shadow: [24, 44], rock: [34, 30], robot: [30, 36] }[kind];
+  const size = { ninja: [24, 44], shadow: [24, 44], rock: [34, 30], robot: [30, 36], penguin: [28, 32] }[kind];
   return { kind, x: c * T + 4, y: GR * T - size[1], w: size[0], h: size[1], vx: -speed, vy: 0, onGround: false, dead: null, t: R(0, 60) };
 }
 
 function buildLevel(idx, easy = false, skill = curSkill()) {
   const def = STAGES[idx], W = WORLDS[def.w], rng = mulberry32(1234 + idx * 7919);
   const map = newMap();
-  const L = { idx, def, skill, gen: genFor(skill), expert: skillProgress(skill).mature, world: W, sky: W.skies[def.k], map, w: 0, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [], flagC: 0, castleC: 0, boss: null, proj: [] };
+  const twist = def.boss ? null : TWISTS[def.w * 3 + def.k];
+  const L = { idx, def, skill, twist, fx: [], plats: [], chaseX: -8 * T, gen: genFor(skill), expert: skillProgress(skill).mature, world: W, sky: W.skies[def.k], map, w: 0, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [], flagC: 0, castleC: 0, boss: null, proj: [] };
   const addCols = n => { for (let i = 0; i < n; i++) { for (let r = 0; r < ROWS; r++) map[r].push('.'); L.w++; } return L.w - n; };
   const flat = n => {
     const s = addCols(n);
@@ -773,12 +804,9 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
         }
         maybeEnemy(s + 6); break;
       }
-      case 'pipe': {
+      case 'pipe': {   // a pillar that fits the world: stone lantern, basalt, crates, ice, castle stone
         const s = flat(6), h = ri(rng, 2, 3);
-        for (let k = 0; k < h; k++) {
-          const r = GR - 1 - k, top = k === h - 1;
-          map[r][s + 2] = top ? 'P' : 'p'; map[r][s + 3] = top ? 'Q' : 'q';
-        }
+        for (let k = 0; k < h; k++) { map[GR - 1 - k][s + 2] = 'O'; map[GR - 1 - k][s + 3] = 'O'; }
         coin(s + 2, GR - h - 2); coin(s + 3, GR - h - 2);
         maybeEnemy(s + 5); break;
       }
@@ -807,8 +835,79 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     L.bridges.push(b);
   }
   function doorChunk() { const s = flat(7); L.doors.push({ c: s + 3, used: false }); }
+  // The level's own feature, placed every couple of gates.
+  function twistChunk() {
+    const fx = (o) => L.fx.push(o);
+    switch (twist) {
+      case 'kite': {   // a koi kite before a trail of sky gems
+        const s = flat(4); fx({ k: 'kite', x: (s + 2) * T, y: GR * T - 2.4 * T });
+        const g = flat(12); for (let i = 0; i < 10; i++) coin(g + 1 + i, GR - 6 - Math.round(Math.sin(i * 0.6) * 2), i % 3 ? 1 : 5);
+        break;
+      }
+      case 'spring': {   // springy bamboo is the only way over a tall wall; a panda watches
+        const s = flat(10); map[GR - 1][s + 2] = 'J';
+        for (let k = 0; k < 6; k++) { map[GR - 1 - k][s + 5] = 'S'; map[GR - 1 - k][s + 6] = 'S'; }
+        coin(s + 5, GR - 8, 5); coin(s + 6, GR - 8, 5); fx({ k: 'panda', x: (s + 8) * T, y: GR * T });
+        break;
+      }
+      case 'koi': {   // a wide pond: a sinking lily pad and a leaping koi to bounce on
+        flat(2); const pw = easy ? 4 : 6, s = addCols(pw);
+        L.plats.push({ k: 'lily', x: (s + pw / 2 - 0.7) * T, y0: GR * T - 6, y: GR * T - 6, w: 1.5 * T, dx: 0, dy: 0, sink: 0, gone: 0 });
+        fx({ k: 'koi', x0: (s + 0.5) * T, x1: (s + pw - 0.5) * T, t: R(0, 120) });
+        coin(s + pw / 2, GR - 6, 5); flat(2);
+        break;
+      }
+      case 'dark': { const s = flat(6); fx({ k: 'crystal', x: (s + 3) * T, y: GR * T - 2.2 * T, lit: false }); break; }
+      case 'gears': {   // two platforms turning around a big gear over a gap
+        flat(2); const s = addCols(7), hx = (s + 3.5) * T, hy = GR * T - 2.6 * T;
+        fx({ k: 'gear', x: hx, y: hy });
+        [0, Math.PI].forEach(a0 => L.plats.push({ k: 'gear', hx, hy, a0, x: hx, y: hy, w: 2 * T, dx: 0, dy: 0 }));
+        coin(s + 3, GR - 7, 5); coin(s + 4, GR - 7, 5); flat(2);
+        break;
+      }
+      case 'conveyor': {
+        const s = flat(12), dir = rng() < 0.5 ? 'C' : 'c';
+        for (let c = s + 1; c <= s + 10; c++) map[GR][c] = dir;
+        fx({ k: 'crusher', x: (s + 6) * T, t: R(0, 100) });
+        break;
+      }
+      case 'lasers': { const s = flat(10); fx({ k: 'laser', x: (s + 3.5) * T, ph: 0 }); fx({ k: 'laser', x: (s + 7.5) * T, ph: 60 }); break; }
+      case 'walljump': {   // a chimney gap you climb by bouncing wall to wall
+        const s = flat(9);
+        for (let r = GR - 10; r <= GR - 3; r++) { map[r][s + 2] = 'S'; map[r][s + 6] = 'S'; }
+        for (let r = GR - 9; r <= GR - 5; r += 2) { coin(s + 4, r); }
+        coin(s + 4, GR - 11, 10); fx({ k: 'hint', x: (s + 4.5) * T, y: GR * T - 2 * T, txt: 'Wall jump ⇧' });
+        break;
+      }
+      case 'ice': {   // a frozen pond of slippery ice with gems to slide through
+        const s = flat(12); for (let c = s + 1; c <= s + 10; c++) map[GR][c] = 'I';
+        for (let c = s + 2; c <= s + 9; c += 2) coin(c, GR - 1);
+        break;
+      }
+      case 'icicles': {   // an ice ledge overhead with icicles that drop
+        const s = flat(10); for (let c = s + 1; c <= s + 8; c++) map[GR - 8][c] = 'I';
+        [s + 2, s + 4.5, s + 7].forEach(c => fx({ k: 'icicle', x: c * T + T / 2, y: (GR - 7) * T, vy: 0, state: 'hang', t: 0 }));
+        coin(s + 4, GR - 9, 5);
+        break;
+      }
+      case 'ladders': {   // a ladder up to a high ledge full of gems
+        const s = flat(9);
+        for (let r = GR - 9; r <= GR - 1; r++) map[r][s + 2] = 'L';
+        for (let c = s + 3; c <= s + 7; c++) map[GR - 9][c] = 'S';
+        for (let c = s + 3; c <= s + 7; c++) coin(c, GR - 10, c === s + 5 ? 10 : 1);
+        break;
+      }
+      case 'sneak': {   // a guard with a flashlight; barrels to hide in
+        const s = flat(14);
+        fx({ k: 'guard', x: (s + 10) * T, min: (s + 3) * T, max: (s + 12) * T, dir: -1, seen: false });
+        fx({ k: 'barrel', x: (s + 5) * T }); fx({ k: 'barrel', x: (s + 9) * T });
+        break;
+      }
+    }
+  }
 
   const kinds = easy ? ['coins', 'bricks', 'pipe', 'stairs'] : ['coins', 'pit', 'bricks', 'pipe', 'stairs', 'float'];
+  if (twist === 'koi' && !easy) kinds.push('pit', 'pit');
   const doorAt = def.n > 6 ? 4 : 3, goldAt = 1 + idx % Math.max(1, def.n - 2);
   flat(10);
   for (let i = 0; i < def.n; i++) {
@@ -816,6 +915,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     for (let k = 0; k < n; k++) chunk(kinds[ri(rng, 0, kinds.length - 1)]);
     if (i === 2 || (i === 5 && def.w >= 2)) bridgeChunk();
     if (i === doorAt) doorChunk();
+    if (twist && i % 2 === 0) twistChunk();
     // Question station: sign, three answer blocks, and a locked gate.
     const s = flat(16), q = L.gen(), five = L.expert;
     const answers = gateChoices(q, five ? 5 : 3).map((v, j) => ({ c: five ? s + 3 + j * 2 : s + 4 + j * 3, r: GR - 4, val: v, state: 'idle', shake: 0 }));
@@ -936,6 +1036,7 @@ const BOSS_SPECS = {
   kage:   { w: 54, h: 88, speed: 1.6, hop: 140, every: 110, attack: 'star' },
   golem:  { w: 86, h: 88, speed: 0.8, hop: 0,   every: 125, attack: 'rock' },
   bot:    { w: 88, h: 98, speed: 1.1, hop: 0,   every: 100, attack: 'laser' },
+  yeti:   { w: 88, h: 92, speed: 1.0, hop: 110, every: 105, attack: 'snow' },
   shogun: { w: 74, h: 94, speed: 1.4, hop: 170, every: 90,  attack: 'mix' },
 };
 
@@ -945,9 +1046,7 @@ function buildArena(idx, easy = false, skill = curSkill()) {
   const def = STAGES[idx], W = WORLDS[def.w], map = newMap(), narrow = VW < 700, cols = narrow ? 18 : 27;
   for (let c = 0; c < cols; c++) { for (let r = 0; r < ROWS; r++) map[r].push('.'); map[GR][c] = '#'; map[GR + 1][c] = '#'; }
   const L = { idx, def, skill, gen: genFor(skill), expert: skillProgress(skill).mature, world: W, sky: W.skies[2], map, w: cols, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [1, cols - 4], flagC: -99, castleC: -99, proj: [] };
-  // Bonking the keypad block opens the number pad.
   const padC = narrow ? 5 : 7;
-  map[GR - 4][padC] = 'K';
   // Fights take turns: a 'dodge' phase where the boss attacks, then an 'open' phase where it is dizzy and you answer.
   L.arena = { q: skill.gen(), padC, wait: 0, phase: 'dodge', phaseT: 150 };
   const sp = BOSS_SPECS[W.boss.kind];
@@ -1121,6 +1220,17 @@ const BOSS_SPR = {
     R(10, 8, 6, 1, 'S');
     L(13, 0, 13, 1, 'S'); P(13, 0, f ? 'y' : 'r');
   }, 2), ['a', 'b'], 4),
+  yeti: bake(makeFrames(26, 26, { w: '#f4f8ff', W: '#cfe0ee', s: '#9fb8d0', b: '#5aa0d8', B: '#2a5a8a', k2: '#1a2a3a', t: '#ffffff', r: '#e63946', h: '#d9e6f2' }, ({ P, R, E, L }, f) => {
+    const s = f ? 1 : 0;
+    R(7 - s, 20, 5, 4, 'W'); R(14 + s, 20, 5, 4, 'W'); R(6 - s, 23, 6, 2, 's'); R(14 + s, 23, 6, 2, 's');
+    E(13, 15, 9, 7.5, 'w'); E(10, 13, 4, 3, 'h'); for (let k = 0; k < 5; k++) P(7 + k * 3, 21, 'W');
+    E(4, 13 - s, 3, 5, 'w'); E(22, 13 + s, 3, 5, 'w'); R(2, 17 - s, 4, 2, 'b'); R(20, 17 + s, 4, 2, 'b');
+    E(13, 6, 7, 5.4, 'w'); [[7, 1], [9, 0], [12, 0], [15, 0], [18, 1]].forEach(([x, y]) => P(x, y, 'W'));
+    E(12, 7, 5, 3.6, 'b'); R(8, 5, 8, 1, 'B');
+    P(10, 6, 't'); P(14, 6, 't'); P(10, 7, 'B'); P(14, 7, 'B');
+    R(9, 9, 6, 2, 'B'); P(10, 9, 't'); P(13, 9, 't');
+    if (f) { R(11, 10, 2, 1, 'r'); }
+  }, 2), ['a', 'b'], 4),
   shogun: bake(makeFrames(26, 26, { a: '#3d2466', A: '#5a3a8f', y: '#ffd23f', Y: '#c99a1a', m: '#c0182f', M: '#7a0a18', g: '#ffe14a', w: '#f4f4f4', h: '#1d1033', s: '#dfe6ee' }, ({ P, R, E, L }, f) => {
     L(19, 23, 24, 12, 's'); P(19, 22, 'Y');
     const s = f ? 1 : 0;
@@ -1198,6 +1308,11 @@ const SONGS = {
               Bb4 D5 F5 Bb5 F5 D5 Bb4 D5 Bb4 D5 F5 Bb5 F5 D5 Bb4 D5   G4 B4 D5 G5 D5 B4 G4 B4 G4 B4 D5 G5 D5 B4 G4 B4`),
     bass: seq(`C3 . . . C3 . . . C3 . . . C3 . C3 .   Ab2 . . . Ab2 . . . Ab2 . . . Ab2 . Ab2 .
                Bb2 . . . Bb2 . . . Bb2 . . . Bb2 . Bb2 .   G2 . . . G2 . . . G2 . . . G2 . G2 .`) },
+  snow: { bpm: 100, lead: 'triangle', vol: 0.05, drum: 'k.....h.s.....h.',
+    mel: seq(`A5 . E5 . C5 . E5 . A5 . B5 . C6 . B5 .   A5 . E5 . C5 . E5 . G5 . . . . . . .
+              F5 . A5 . C6 . A5 . G5 . E5 . C5 . E5 .   D5 . F5 . E5 . B4 . A4 . . . . . . .`),
+    bass: seq(`A2 . . . E3 . . . A2 . . . E3 . . .   F2 . . . C3 . . . G2 . . . D3 . . .
+               F2 . . . C3 . . . C2 . . . G2 . . .   D2 . . . E2 . . . A1 . . . . . . .`) },
   castle: { bpm: 92, lead: 'triangle', vol: 0.05, drum: 'k.......s...h...',
     mel: seq(`D5 . . . F5 . E5 . D5 . . . A4 . . .   Bb4 . . . D5 . C5 . A4 . . . . . . .
               D5 . . . F5 . G5 . A5 . . . G5 . F5 .   E5 . . . C#5 . . . D5 . . . . . . .`),
@@ -1277,7 +1392,7 @@ try { const s = JSON.parse(localStorage.getItem(PLAYERS_KEY)); if (s && s.list &
 const keyFor = id => (id === 'p1' ? SAVE_KEY : `${SAVE_KEY}:${id}`);
 const curPlayer = () => players.list.find(x => x.id === players.cur) || players.list[0];
 function savePlayers() { try { localStorage.setItem(PLAYERS_KEY, JSON.stringify(players)); } catch (e) { /* no storage */ } }
-const freshProg = () => ({ best: {}, skill: 'add10', ride: 'panda', track: 'cherry', mastery: {}, easy: null, allOpen: false, seenIntro: false, seenWorld: {}, bank: 0, music: true, layout: 4, auto: true, facts: {}, win: {}, trophies: {}, daily: { last: 0, streak: 0, best: 0 },
+const freshProg = () => ({ best: {}, skill: 'add10', ride: 'panda', track: 'cherry', mastery: {}, easy: null, allOpen: false, seenIntro: false, seenWorld: {}, bank: 0, music: true, layout: 5, auto: true, facts: {}, win: {}, trophies: {}, daily: { last: 0, streak: 0, best: 0 },
   badges: {}, golden: {}, stats: { bridges: 0, gems: 0 },
   owned: ['band-red', 'suit-navy'], equip: { band: 'band-red', suit: 'suit-navy', trail: null, pet: null }, raceBest: {} });
 let prog;
@@ -1292,10 +1407,14 @@ function loadProg(id) {
   prog.owned = prog.owned.filter(id => id !== 'pet-cat');
   if (prog.equip.pet === 'pet-cat') prog.equip.pet = null;
   if (prog.ride === 'dragon') prog.ride = 'panda';
-  if (saved && saved.layout !== 4) {
-    const move = o => Object.fromEntries(Object.entries(o).map(([i, v]) => [Math.floor(i / 3) * 4 + (i % 3 === 2 ? 3 : i % 3), v]));
-    prog.best = move(prog.best); prog.golden = move(prog.golden); prog.layout = 4;
+  const lay = saved ? saved.layout || 3 : 5;
+  const remap = (o, f) => Object.fromEntries(Object.entries(o).map(([i, v]) => [f(Number(i)), v]));
+  if (lay === 3) { const f = i => Math.floor(i / 3) * 4 + (i % 3 === 2 ? 3 : i % 3); prog.best = remap(prog.best, f); prog.golden = remap(prog.golden, f); }
+  if (lay < 5) {   // the snow world was added before the castle
+    const f = i => (i >= 12 ? i + 4 : i); prog.best = remap(prog.best, f); prog.golden = remap(prog.golden, f);
+    if (prog.seenWorld[3]) { prog.seenWorld[4] = true; delete prog.seenWorld[3]; }
   }
+  prog.layout = 5;
 }
 if (!players.list.some(x => x.id === players.cur)) players.cur = players.list[0].id;
 loadProg(players.cur);
@@ -1313,7 +1432,7 @@ const keys = { left: false, right: false, jump: false, jumpPressed: false };
 const ambient = [];         // falling petals / rising embers, in screen space
 
 // ---------------------------------------------------------------- physics
-const SOLID = new Set(['#', 'B', '?', 'U', 'S', 'P', 'Q', 'p', 'q', 'G', 'A', 'K', 'N', 'b', 'R']);
+const SOLID = new Set(['#', 'B', '?', 'U', 'S', 'P', 'Q', 'p', 'q', 'G', 'A', 'K', 'N', 'b', 'R', 'J', 'C', 'c', 'I', 'O']);
 function solid(c, r) {
   if (c < 0 || c >= L.w) return true;
   if (r >= ROWS) return false;
@@ -1430,7 +1549,7 @@ function bump(c, r) {
       e.dead = 'flip'; e.vy = -7; G.score += 200; floatText(e.x + 15, e.y, '+200');
     }
   }
-  if (t === '?') { L.map[r][c] = 'U'; coinPop(c, r); }
+  if (t === '?') boxPrize(c, r);
   else if (t === 'B') {
     L.map[r][c] = '.'; G.score += 50; sfx.brick();
     burst(c * T + T / 2, r * T + T / 2, L.world.brick[0], 8);
@@ -1444,7 +1563,7 @@ function bump(c, r) {
     G.parts.push({ k: 'coin', x: c * T + T / 2, y: r * T, vx: 0, vy: -9, life: 40, v: 25 });
     G.coins += 25; G.score += 2500; sfx.win(); confetti(c * T + T / 2, r * T); shake(8, 3); petSay('wow');
     floatText(c * T + T / 2, r * T - 50, 'Golden gem! +25', '#ffd23f', 28);
-    award('golden'); if (Object.keys(prog.golden).length >= 12) award('golden-all');
+    award('golden'); if (Object.keys(prog.golden).length >= 15) award('golden-all');
   }
   else sfx.bump();
 }
@@ -1465,7 +1584,7 @@ function answer(c, r) {
   a.state = 'right';
   st.answers.forEach(o => { if (o !== a) o.state = 'done'; });
   sfx.correct(); confetti(cx, cy); streakUp(cx, cy); gotIt(); award('first-gate');
-  st.solved = true; st.opening = GR - 1; shake(6, 2);
+  st.solved = true; openGate(st); shake(6, 2);
   G.checkpoint = (st.s + 15) * T;
   setTimeout(sfx.gate, 350);
   const praise = st.q.retry ? 'You remembered it!' : ['Correct!', 'Great job!', 'Awesome!', 'You got it!', 'Super!', 'Hi-yah!'][R(0, 5)];
@@ -1535,7 +1654,7 @@ function padType(k) {
 }
 
 // Boss fights: two rows of answers for the harder bosses. A timeout isn't a mistake, but the boss attacks.
-const PAD_TIME = [12, 10, 10, 9];   // seconds, per world
+const PAD_TIME = [12, 10, 10, 9, 9];   // seconds, per world
 function openBossPad() {
   const ar = L.arena, w = STAGES[L.idx].w;
   const here = () => [P.x + P.w / 2, P.y];
@@ -1578,9 +1697,9 @@ const BADGES = [
   { id: 'dojo7', icon: '🔥', name: 'Dedicated', text: 'Do the Daily Dojo 7 days in a row.' },
   { id: 'vault', icon: '🚪', name: 'Secret Finder', text: 'Solve a secret room puzzle.' },
   { id: 'golden', icon: '🌟', name: 'Golden Gem', text: 'Find a hidden golden gem.' },
-  { id: 'golden-all', icon: '👑', name: 'Golden Hunter', text: 'Find all 12 golden gems. Unlocks the Golden suit!' },
+  { id: 'golden-all', icon: '👑', name: 'Golden Hunter', text: 'Find all 15 golden gems. Unlocks the Golden suit!' },
   { id: 'boss-nohit', icon: '🛡️', name: 'Untouchable', text: 'Beat a boss without getting hit.' },
-  { id: 'boss-all', icon: '📜', name: 'Scroll Keeper', text: 'Win back all four scrolls.' },
+  { id: 'boss-all', icon: '📜', name: 'Scroll Keeper', text: 'Win back all five scrolls.' },
   { id: 'race-win', icon: '🥇', name: 'Champion Rider', text: 'Win a race.' },
   { id: 'race-perfect', icon: '🐎', name: 'Perfect Ride', text: 'Get every gate right in a race.' },
   { id: 'shopper', icon: '🛍️', name: 'Shopper', text: 'Buy something in the Dojo Shop.' },
@@ -1603,7 +1722,7 @@ function award(id) {
 function openBadges() {
   hide('menu');
   const got = BADGES.filter(b => prog.badges[b.id]).length;
-  $('badgeCount').textContent = `${got} of ${BADGES.length} badges · 🌟 ${Object.keys(prog.golden).length} of 12 golden gems`;
+  $('badgeCount').textContent = `${got} of ${BADGES.length} badges · 🌟 ${Object.keys(prog.golden).length} of 15 golden gems`;
   $('badgeGrid').innerHTML = BADGES.map(b => `<div class="badge ${prog.badges[b.id] ? 'got' : ''}"><div class="bi">${prog.badges[b.id] ? b.icon : '❔'}</div>
     <div class="bn">${b.name}</div><div class="bt">${b.text}</div></div>`).join('');
   show('badges');
@@ -1690,13 +1809,32 @@ function gotIt() { petSay('happy'); G.wrongRun = 0; }
 // ---------------------------------------------------------------- streak power-ups
 // Every 5 answers in a row grants a power for a while: double jump, a shield, or a fire aura.
 const POWERS = {
-  double: { name: 'Double jump', icon: '🪽', time: 1200 },
-  shield: { name: 'Shield', icon: '🛡️', time: 1500 },
-  fire: { name: 'Fire aura', icon: '🔥', time: 600 },
+  double: { name: 'Double jump', pix: 'feather', time: 1200 },
+  shield: { name: 'Shield', pix: 'shield', time: 1500 },
+  fire: { name: 'Fire aura', pix: 'flame', time: 600 },
+  speed: { name: 'Speed boots', pix: 'boot', time: 900 },
+  magnet: { name: 'Gem magnet', pix: 'magnet', time: 1200 },
+  star: { name: 'Super star', pix: 'star', time: 480 },
 };
+// Fire and the star both knock out enemies and attacks on touch.
+const fiery = () => hasPower('fire') || hasPower('star');
+// About a third of ? boxes hold a surprise instead of a gem.
+const BOX_PRIZES = ['shield', 'double', 'speed', 'magnet', 'star', 'fire', 'heart'];
+function boxPrize(c, r) {
+  L.map[r][c] = 'U';
+  if (Math.random() > 0.34 || L.vault) { coinPop(c, r); return; }
+  const k = BOX_PRIZES[R(0, BOX_PRIZES.length - 1)], x = c * T + T / 2, y = r * T;
+  G.parts.push({ k: 'prize', x, y, vx: 0, vy: -5, life: 50, pix: k === 'heart' ? 'heart' : POWERS[k].pix });
+  if (k === 'heart') {
+    if (G.hearts < G.maxHearts) { G.hearts++; floatText(x, y - 50, '+1 heart!', '#ff5a8a', 26); } else { G.coins += 10; floatText(x, y - 50, 'Full hearts! +10', '#ff5a8a', 24); }
+    sfx.power(); petSay('wow'); return;
+  }
+  G.power = { kind: k, t: POWERS[k].time }; sfx.power(); petSay('wow');
+  floatText(x, y - 50, `${POWERS[k].name}!`, '#7df9ff', 26);
+}
 const hasPower = k => !!(G && G.power && G.power.kind === k);
 function grantPower() {
-  const kinds = Object.keys(POWERS), kind = kinds[G.powerN++ % kinds.length];
+  const kinds = ['double', 'shield', 'fire'], kind = kinds[G.powerN++ % kinds.length];
   G.power = { kind, t: POWERS[kind].time };
   floatText(P.x + P.w / 2, P.y - 110, `Power up: ${POWERS[kind].name}!`, '#7df9ff', 26);
   sfx.power(); petSay('wow'); award('power');
@@ -1778,7 +1916,7 @@ function leaveVault() {
 }
 
 function hurt() {
-  if (P.inv > 0 || mode !== 'play') return;
+  if (P.inv > 0 || mode !== 'play' || hasPower('star')) return;
   if (hasPower('shield')) {
     G.power = null; P.inv = 60; sfx.stomp();
     burst(P.x + P.w / 2, P.y + P.h / 2, '#7df9ff', 16, 5); floatText(P.x + P.w / 2, P.y - 20, 'Shield blocked it!', '#7df9ff', 24);
@@ -1803,13 +1941,145 @@ function gameOver() {
   ]), 900);
 }
 
+// ---------------------------------------------------------------- level twists
+const TWIST_HINT = {
+  kite: '🎏 Grab the koi kite to fly!', spring: '🎋 Land on springy bamboo to jump super high!', koi: '🐟 Bounce on the jumping koi! Lily pads sink...',
+  rocks: '🪨 Watch out for falling rocks!', chase: '🌋 The lava is coming! Keep moving!', dark: '🔦 Dark cave! Touch crystals to light them',
+  gears: '⚙️ Ride the spinning gears', conveyor: '🏭 Conveyor belts and crushers!', lasers: '⚡ Lasers blink on and off. Time your run!',
+  ice: '⛸️ Slippery ice! Slide carefully', icicles: '🧊 Icicles fall when you run under them!', avalanche: '☃️ Giant snowballs! Jump over them',
+  walljump: '🧗 Wall jump: jump again while touching a wall', ladders: '🪜 Hold jump to climb ladders', sneak: '🔦 Sneak past the guards. Hide in barrels!',
+};
+// no rolling snowballs while the ninja is working out a gate
+function currentStationNear() { const cs = currentStation(); return cs && cs.s && Math.abs(P.x - (cs.s + 6) * T) < 9 * T; }
+function groundTop(c) { for (let r = 0; r < ROWS; r++) if (solid(c, r)) return r * T; return null; }
+function updateTwist() {
+  const p = P, tw = L.twist; if (!tw) return;
+  if (G.glide > 0) G.glide--;
+  // moving platforms
+  for (const pl of L.plats) {
+    const ox = pl.x, oy = pl.y;
+    if (pl.k === 'gear') { const a = pl.a0 + tick * 0.018; pl.x = pl.hx + Math.cos(a) * 1.9 * T - pl.w / 2; pl.y = pl.hy + Math.sin(a) * 1.9 * T; }
+    if (pl.k === 'lily') {
+      if (pl.gone > 0) { if (--pl.gone === 0) { pl.y = pl.y0; pl.sink = 0; } else pl.y = 9999; }
+      else { pl.y = pl.y0 + Math.max(0, pl.sink - 30) * 0.7; if (pl.sink > 85) { pl.gone = 180; splash(pl.x + pl.w / 2); } if (!pl.on) pl.sink = Math.max(0, pl.sink - 1); }
+    }
+    pl.dx = pl.x - ox; pl.dy = pl.y - oy; pl.on = false;
+  }
+  for (const f of L.fx) {
+    if (f.k === 'kite' && !f.taken && overlap(p, { x: f.x - 22, y: f.y - 30, w: 44, h: 110 })) {
+      f.taken = true; G.glide = 420; sfx.streak(); floatText(f.x, f.y - 30, 'Fly! Tap jump to flap', '#ffd23f', 24);
+    }
+    if (f.k === 'koi') {
+      f.t = (f.t + 1) % 160;
+      const u = f.t / 70; f.on = u <= 1;
+      if (f.on) { f.x = f.x0 + (f.x1 - f.x0) * u; f.y = GR * T + 10 - Math.sin(u * Math.PI) * 4.2 * T; }
+      if (f.on && p.vy > 0 && overlap(p, { x: f.x - 20, y: f.y - 14, w: 40, h: 20 })) { p.vy = -15.5; p.bounce = true; sfx.stomp(); floatText(f.x, f.y - 20, 'Boing!', '#ff8a5a', 22); }
+    }
+    if (f.k === 'crystal' && !f.lit && overlap(p, { x: f.x - 16, y: f.y - 24, w: 32, h: 48 })) {
+      f.lit = true; tone(880, 0.3, 'triangle', 0.05, 1320); G.coins += 1; flyGem(f.x, f.y, 1);
+    }
+    if (f.k === 'crusher') {
+      f.t = (f.t + 1) % 150;   // waits up, slams down, holds, rises
+      const t = f.t, top = GR * T - 4.6 * T;
+      f.bottom = t < 80 ? top : t < 88 ? top + (t - 80) / 8 * 4.6 * T : t < 118 ? GR * T : GR * T - (t - 118) / 32 * 4.6 * T;
+      if (t === 88 && Math.abs(f.x - p.x) < VW) { shake(5, 2); sfx.stomp(); }
+      if (overlap(p, { x: f.x - 0.8 * T, y: 0, w: 1.6 * T, h: f.bottom })) hurt();
+    }
+    if (f.k === 'laser') {
+      const t = (tick + f.ph) % 120; f.on = t >= 60; f.warn = t >= 40 && t < 60;
+      if (f.on && overlap(p, { x: f.x - 5, y: 0, w: 10, h: GR * T })) hurt();
+    }
+    if (f.k === 'icicle') {
+      if (f.state === 'hang' && Math.abs(p.x + p.w / 2 - f.x) < 1.6 * T && p.y > f.y) { f.state = 'shake'; f.t = 26; }
+      else if (f.state === 'shake' && --f.t <= 0) { f.state = 'fall'; tone(1200, 0.15, 'triangle', 0.04, 600); }
+      else if (f.state === 'fall') {
+        f.vy += 0.7; f.y += f.vy;
+        if (overlap(p, { x: f.x - 8, y: f.y, w: 16, h: 30 })) hurt();
+        const gy = groundTop(Math.floor(f.x / T));
+        if (gy === null || f.y + 30 >= gy) { f.done = true; burst(f.x, gy ?? VH, '#e8fbff', 10, 3); }
+      }
+    }
+    if (f.k === 'roll') {   // a giant snowball rolling along the ground
+      f.x += f.vx; f.a += f.vx / f.r;
+      const gy = groundTop(Math.floor(f.x / T));
+      if (gy === null) { f.y += 8; if (f.y > VH + 40) f.done = true; } else f.y = gy - f.r;
+      if (p.vy > 0 && overlap(p, { x: f.x - f.r, y: f.y - f.r - 6, w: f.r * 2, h: 14 })) { p.vy = -11; p.bounce = true; f.done = true; burst(f.x, f.y, '#ffffff', 14, 4); G.coins += 1; flyGem(f.x, f.y, 1); sfx.stomp(); }
+      else if (circleHits(f.x, f.y, f.r - 4, p)) hurt();
+      if (f.x < cam - 100) f.done = true;
+    }
+    if (f.k === 'guard') {
+      f.x += f.dir * 0.8; if (f.x < f.min || f.x > f.max) f.dir *= -1;
+      const dx = (p.x + p.w / 2 - f.x) * f.dir, dy = Math.abs(p.y + p.h / 2 - (GR * T - 30));
+      const hidden = L.fx.some(b => b.k === 'barrel' && Math.abs(p.x + p.w / 2 - b.x) < 20 && Math.abs(p.vx) < 0.6 && p.onGround);
+      G.hidden = hidden;
+      if (!f.seen && !hidden && dx > 0 && dx < 4.5 * T && dy < dx * 0.45 + 24) {
+        f.seen = true; G.alarm = 120; sfx.wrong(); floatText(f.x, GR * T - 80, '❗ Spotted!', '#ff4d4d', 26);
+        for (const k of [7, 9]) L.enemies.push(walkerFor('shadow', Math.floor(p.x / T) + k * (p.face || 1), 1.4));
+      }
+    }
+  }
+  if (tw === 'avalanche' && tick % (prog.easy ? 260 : 170) === 0 && p.x > 12 * T && !currentStationNear()) {
+    L.fx.push({ k: 'roll', x: cam + VW + 40, y: 0, r: 22, vx: prog.easy ? -2.6 : -3.4, a: 0 });
+  }
+  if (tw === 'avalanche' && tick % 4 === 0) G.parts.push({ k: 'bit', x: cam + VW + 10, y: R(40, GR * T), vx: -6 - Math.random() * 3, vy: 0.6, life: 70, col: 'rgba(255,255,255,.8)', s: 3 });
+  if (tw === 'rocks' && !L.vault && tick % (prog.easy ? 150 : 95) === 0) {
+    const x = p.x + p.w / 2 + R(60, 320) * (p.face || 1), gy = groundTop(Math.floor(x / T));
+    if (gy !== null) L.fx.push({ k: 'rock', x, gy, t: 60, y: -40, vy: 0 });
+  }
+  for (const f of L.fx) if (f.k === 'rock' && !f.done) {
+    if (f.t > 0) f.t--;
+    else { f.vy += 0.6; f.y += f.vy; if (overlap(p, { x: f.x - 16, y: f.y - 16, w: 32, h: 32 })) hurt(); if (f.y >= f.gy) { f.done = true; burst(f.x, f.gy, '#ff6a00', 10); shake(3, 2); } }
+  }
+  L.fx = L.fx.filter(f => !f.done);
+  if (tw === 'chase' && p.x > 10 * T) {   // the lava wall waits behind each unopened gate
+    const cur = currentStation(), stop = cur ? cur.s * T - 6 * T : 1e9;
+    if (p.x < L.chaseX - 60) L.chaseX = p.x - 7 * T;   // came back after a fall
+    L.chaseX = Math.min(L.chaseX + (prog.easy ? 1.0 : 1.45), stop);
+    if (p.x < L.chaseX + 4 && P.inv === 0) { hurt(); p.x = L.chaseX + 30; p.vx = 4; }
+  }
+  if (G.alarm > 0) G.alarm--;
+}
+function splash(x) { for (let i = 0; i < 8; i++) G.parts.push({ k: 'bit', x, y: GR * T, vx: (Math.random() - 0.5) * 5, vy: -3 - Math.random() * 3, life: 30, col: '#9be7ff', s: 4 }); }
+// Riding platforms, springs, conveyors, ladders and wall jumps happen after the normal move.
+function twistMove(p, feetBefore, fallSpeed) {
+  const tw = L.twist; if (!tw) return;
+  for (const pl of L.plats) {
+    if (p.vy >= 0 && p.x + p.w > pl.x && p.x < pl.x + pl.w && feetBefore <= pl.y + 6 && p.y + p.h >= pl.y - 1) {
+      p.y = pl.y - p.h; p.vy = 0; p.onGround = true; p.x += pl.dx; pl.on = true; if (pl.k === 'lily') pl.sink++;
+    }
+  }
+  const under = c => { const r = Math.floor((p.y + p.h + 2) / T); return r < ROWS && c >= 0 && c < L.w ? L.map[r][c] : '.'; };
+  const cl = Math.floor(p.x / T), cr = Math.floor((p.x + p.w - 1) / T);
+  if (p.onGround) {
+    if (under(cl) === 'J' || under(cr) === 'J') { p.vy = -19; p.bounce = true; p.onGround = false; tone(200, 0.3, 'triangle', 0.06, 900); p.squash = -10; }
+    const conv = [under(cl), under(cr)].find(t => t === 'C' || t === 'c');
+    if (conv) { const v = p.vx; p.vx = conv === 'C' ? 2 : -2; moveX(p); p.vx = v; }
+  }
+  if (tw === 'ladders') {
+    const mid = L.map[Math.floor((p.y + p.h / 2) / T)]?.[Math.floor((p.x + p.w / 2) / T)];
+    G.climb = mid === 'L';
+    if (G.climb) p.vy = keys.jump ? -3.5 : Math.min(p.vy, 1.2);
+  }
+  if (tw === 'walljump' && !p.onGround && p.jbuf > 0) {
+    const row = Math.floor((p.y + p.h / 2) / T), lw = solid(Math.floor((p.x - 3) / T), row), rw = solid(Math.floor((p.x + p.w + 3) / T), row);
+    if (lw || rw) { p.vy = -12; p.bounce = true; p.vx = lw ? 4.6 : -4.6; p.face = lw ? 1 : -1; p.jbuf = 0; sfx.jump(); burst(p.x + (lw ? 0 : p.w), p.y + p.h / 2, '#ffffff', 6, 2); }
+  }
+}
+
 function updatePlayer() {
   const p = P;
-  const acc = p.onGround ? 0.55 : 0.38;
+  updateTwist();
+  const onIce = p.onGround && L.map[Math.floor((p.y + p.h + 2) / T)]?.[Math.floor((p.x + p.w / 2) / T)] === 'I';
+  const acc = onIce ? 0.18 : p.onGround ? 0.55 : 0.38;
   if (keys.left && !keys.right) { p.vx -= acc; p.face = -1; }
   else if (keys.right && !keys.left) { p.vx += acc; p.face = 1; }
-  else { p.vx *= p.onGround ? 0.78 : 0.95; if (Math.abs(p.vx) < 0.1) p.vx = 0; }
-  p.vx = clamp(p.vx, -4.6, 4.6);
+  else { p.vx *= onIce ? 0.985 : p.onGround ? 0.78 : 0.95; if (Math.abs(p.vx) < 0.1) p.vx = 0; }
+  if (onIce && Math.abs(p.vx) > 2 && tick % 4 === 0) G.parts.push({ k: 'bit', x: p.x + p.w / 2, y: p.y + p.h, vx: -p.vx * 0.2, vy: -1, life: 18, col: '#e8fbff', s: 3 });
+  const vmax = hasPower('speed') ? 6.6 : 4.6;
+  p.vx = clamp(p.vx, -vmax, vmax);
+  if (hasPower('speed') && p.onGround && Math.abs(p.vx) > 4 && tick % 3 === 0) burst(p.x + p.w / 2, p.y + p.h, '#ffffff', 2, 1);
+  if (hasPower('star') && tick % 3 === 0) G.parts.push({ k: 'bit', x: p.x + Math.random() * p.w, y: p.y + Math.random() * p.h, vx: 0, vy: -1, life: 20, col: ['#ff5a8a', '#ffd23f', '#7df9ff', '#3ae374'][R(0, 3)], s: 4 });
+  if (hasPower('magnet')) for (const c of L.coins) if (!c.taken) { const dx = p.x + p.w / 2 - c.x, dy = p.y + p.h / 2 - c.y, d = Math.hypot(dx, dy); if (d < 200) { c.x += dx / d * 6; c.y += dy / d * 6; } }
 
   if (keys.jumpPressed) { p.jbuf = 8; keys.jumpPressed = false; }
   if (p.jbuf > 0) p.jbuf--;
@@ -1819,12 +2089,19 @@ function updatePlayer() {
   else if (p.jbuf > 0 && p.coyote === 0 && hasPower('double') && !p.usedDouble) {
     p.vy = -12; p.usedDouble = true; p.jbuf = 0; sfx.jump(); burst(p.x + p.w / 2, p.y + p.h, '#ffffff', 8, 2);
   }
-  if (!keys.jump && p.vy < -4.5) p.vy = -4.5;   // short hop when jump is released early
-  p.vy = Math.min(p.vy + 0.55, 12);
+  if (G.glide > 0) {   // flying with the koi kite: slow fall, tap jump to flap
+    if (p.jbuf > 0 && !p.onGround) { p.vy = -6; p.jbuf = 0; tone(500, 0.08, 'triangle', 0.03); }
+    p.vy = Math.min(p.vy + 0.2, 2.4);
+  } else {
+    if (p.vy >= 0) p.bounce = false;
+    if (!keys.jump && p.vy < -4.5 && !G.climb && !p.bounce) p.vy = -4.5;   // short hop when jump is released early
+    p.vy = Math.min(p.vy + 0.55, 12);
+  }
 
   moveX(p);
-  const wasAir = !p.onGround, fallSpeed = p.vy;
+  const wasAir = !p.onGround, fallSpeed = p.vy, feetBefore = p.y + p.h;
   const hit = moveY(p);
+  twistMove(p, feetBefore, fallSpeed);
   if (hit) bump(hit.c, hit.r);
   if (wasAir && p.onGround && fallSpeed > 6) { p.squash = 8; burst(p.x + p.w / 2, p.y + p.h, '#e8e0d0', 4, 1.5); }
   if (p.squash > 0) p.squash--; else if (p.squash < 0) p.squash++;
@@ -1886,7 +2163,7 @@ function updateEnemies() {
         if (e.y >= e.home) { e.y = e.home; e.up = false; e.t = 0; e.delay = R(70, 140); }
       }
       if (mode === 'play' && e.up && overlap(P, e)) {
-        if (hasPower('fire')) { e.up = false; e.y = e.home; burst(e.x + 13, e.y - 40, '#ffd23f', 6); } else hurt();
+        if (fiery()) { e.up = false; e.y = e.home; burst(e.x + 13, e.y - 40, '#ffd23f', 6); } else hurt();
       }
       continue;
     }
@@ -1901,7 +2178,7 @@ function updateEnemies() {
     }
     if (e.y > VH + 100) e.dead = 'gone';
     if (mode === 'play' && overlap(P, e)) {
-      if (hasPower('fire')) {
+      if (fiery()) {
         e.dead = 'flip'; e.vy = -7; G.score += 200; sfx.stomp();
         burst(e.x + e.w / 2, e.y + e.h / 2, '#ff6a00', 10); floatText(e.x + e.w / 2, e.y, '+200');
       } else if (P.vy > 0 && P.y + P.h - e.y < 18) {
@@ -1925,6 +2202,7 @@ function bossAttack(b) {
   if (kind === 'star') low('star', 4.5, 11);
   else if (kind === 'laser') low('laser', 5.5, 9);
   else if (kind === 'rock') lob('rock');
+  else if (kind === 'snow') { b.flip ^= 1; if (b.flip) lob('snow'); else low('snowroll', 3.8, 16); }
   else { b.flip ^= 1; if (b.flip) low('star', 5, 11); else lob('orb'); }
   sfx.attack();
 }
@@ -1943,10 +2221,55 @@ function updateArena() {
     ar.phase = 'open'; ar.phaseT = OPEN_FRAMES();
     for (const p of L.proj) burst(p.x, p.y, '#ffffff', 5, 2);
     L.proj = [];
+    spawnOrbs();
     floatText(b.x + b.w / 2, b.y - 16, 'Dizzy!', '#ffd23f', 28); sfx.gate();
   } else {
     floatText(b.x + b.w / 2, b.y - 16, 'Back on guard!', '#ff9a3c', 24);
-    startDodge();
+    ar.orbs = []; startDodge();
+  }
+}
+// When the boss is dizzy, giant shuriken with answers float in the air. Jump and grab the right one,
+// and Kai throws it straight at the boss.
+function spawnOrbs() {
+  const ar = L.arena, w = STAGES[L.idx].w, n = L.expert || w >= 2 ? 5 : 3, vals = n === 5 ? rowChoices(ar.q, 5) : choices(ar.q, 3);
+  const x0 = 2 * T, x1 = L.boss.minX - 1.2 * T;
+  ar.orbs = vals.map((v, i) => ({ val: v, x: x0 + (x1 - x0) * (n === 1 ? 0.5 : i / (n - 1)), y: GR * T - 2.4 * T, ph: i, state: 'idle', t: 0 }));
+  ar.askedAt = G.time;
+}
+function updateOrbs() {
+  const ar = L.arena; if (!ar || !ar.orbs) return;
+  for (const o of ar.orbs) {
+    o.ph += 0.05; o.t++;
+    if (o.state !== 'idle' || ar.phase !== 'open' || ar.wait) continue;
+    const oy = o.y + Math.sin(o.ph) * 6;
+    if (!circleHits(o.x, oy, 20, P)) continue;
+    if (o.val === ar.q.ans) {
+      o.state = 'thrown'; ar.orbs.forEach(q => { if (q !== o) q.state = 'gone'; });
+      noteFact(ar.q, true, G.time - ar.askedAt <= 480, L.skill);
+      ar.wait = 1; G.shots.push({ x: o.x, y: oy, spin: 0 });
+      P.throwT = 14; sfx.correct(); sfx.throw(); streakUp(o.x, oy); gotIt();
+      floatText(o.x, oy - 30, ar.q.retry ? 'You remembered it!' : 'Shuriken!', '#ffd23f', 28);
+      setTimeout(() => { if (L.arena === ar) ar.orbs = []; }, 300);
+    } else {
+      o.state = 'gone'; burst(o.x, oy, '#ff6b6b', 12, 4);
+      noteFact(ar.q, false, false, L.skill);
+      G.mistakes++; G.streak = 0; remember(ar.q); missed(ar.q);
+      ar.q = freshQ(ar.q.text); ar.orbs = []; startDodge(); L.boss.atk = 1;
+      sfx.wrong(); floatText(P.x + P.w / 2, P.y - 20, 'Oops! New question...', '#ff6b6b', 26);
+    }
+  }
+}
+function drawOrbs() {
+  const ar = L.arena; if (!ar || !ar.orbs || ar.phase !== 'open') return;
+  for (const o of ar.orbs) {
+    if (o.state !== 'idle') continue;
+    const oy = o.y + Math.sin(o.ph) * 6;
+    glowAt(o.x, oy, 34, 'rgba(255,230,120,.35)');
+    drawShuriken(o.x, oy, o.ph * 0.6, '#d8dfe8', '#5a6472', 24);
+    ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(o.x, oy, 14, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#8a5a00'; ctx.lineWidth = 2; ctx.stroke();
+    const v = String(o.val); ctx.fillStyle = '#3a2200'; ctx.font = `${v.length >= 3 ? 12 : 16}px "Lilita One", "Trebuchet MS", sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(v, o.x, oy + 1);
   }
 }
 
@@ -1975,7 +2298,7 @@ function updateBoss() {
     bossAttack(b);
     b.atk = b.spec.every * 0.8 * (prog.easy ? 1.6 : 1) * (0.8 + Math.random() * 0.4);
   }
-  if (mode === 'play' && overlap(P, b) && !hasPower('fire')) hurt();
+  if (mode === 'play' && overlap(P, b) && !fiery()) hurt();
 }
 
 function updateShotsAndProjectiles() {
@@ -1995,9 +2318,9 @@ function updateShotsAndProjectiles() {
 
   for (const p of L.proj) {
     p.x += p.vx; p.vy += p.g; p.y += p.vy;
-    if (p.g && p.y > GR * T - p.r) { p.done = true; burst(p.x, GR * T - 4, p.k === 'rock' ? '#ff6a00' : '#b388ff', 8); }
+    if (p.g && p.y > GR * T - p.r) { p.done = true; burst(p.x, GR * T - 4, p.k === 'rock' ? '#ff6a00' : p.k === 'snow' ? '#ffffff' : '#b388ff', 8); }
     if (p.x < -40 || p.x > L.w * T + 40) p.done = true;
-    if (!p.done && mode === 'play' && circleHits(p.x, p.y, p.r - 2, P)) { p.done = true; if (hasPower('fire')) burst(p.x, p.y, '#ff6a00', 8); else hurt(); }
+    if (!p.done && mode === 'play' && circleHits(p.x, p.y, p.r - 2, P)) { p.done = true; if (fiery()) burst(p.x, p.y, '#ff6a00', 8); else hurt(); }
   }
   L.proj = L.proj.filter(p => !p.done);
 
@@ -2008,16 +2331,33 @@ function updateShotsAndProjectiles() {
   }
 }
 
+// Gates don't just lift: Japan's paper screens slide open in a shower of petals, lava rock crumbles,
+// the factory's force field shorts out, ice shatters, and the castle's shadow wall turns into doves.
+function openGate(st) {
+  for (let r = 0; r < GR; r++) for (const gc of st.gate) if (L.map[r][gc] === 'G') L.map[r][gc] = '.';
+  const x0 = st.gate[0] * T, w = 2 * T, k = L.world.key, bits = [];
+  if (k === 'snow') for (let i = 0; i < 30; i++) bits.push({ x: x0 + Math.random() * w, y: Math.random() * GR * T, vx: 6 + Math.random() * 6, vy: -0.5 - Math.random(), s: 8 + Math.random() * 12, a: Math.random() * 6, va: (Math.random() - 0.5) * 0.3 });
+  const right = st.answers.find(a => a.state === 'right');
+  if (k === 'lava' && right) { bits.push({ x: right.c * T + T / 2, y: right.r * T + T / 2, vx: 0, vy: 0, va: 0, tx: x0 + w / 2, ty: 10 }); L.map[right.r][right.c] = '.'; }
+  if (k === 'japan') for (let i = 0; i < 30; i++) bits.push({ x: x0 + w / 2, y: Math.random() * GR * T, vx: (Math.random() - 0.2) * 5, vy: -Math.random() * 2, a: Math.random() * 6 });
+  if (k === 'castle') for (let i = 0; i < 9; i++) bits.push({ x: x0 + Math.random() * w, y: 80 + Math.random() * (GR * T - 140), vx: 1 + Math.random() * 2, vy: -1.5 - Math.random() * 1.5, a: Math.random() * 6 });
+  st.gfx = { t: 0, x0, w, k, bits };
+  if (k === 'robot') sfx.attack();
+}
 function updateGates() {
   for (const st of L.stations) {
-    if (st.opening === null || st.opening < 0) continue;
-    st.openT++;
-    if (st.openT % 3 !== 0) continue;
-    const r = st.opening;
-    for (const gc of st.gate) if (L.map[r][gc] === 'G') { L.map[r][gc] = '.'; burst(gc * T + T / 2, r * T + T / 2, L.world.gate[2], 3, 3); }
-    st.opening--;
-  }
-  for (const st of L.stations) {
+    const g = st.gfx;
+    if (g && g.t < 120) {
+      g.t++;
+      for (const b of g.bits) {
+        b.x += b.vx; b.y += b.vy; b.a += b.va || 0.15;
+        if (g.k === 'snow') { b.vx *= 0.99; b.vy += 0.05; }
+        if (g.k === 'lava' && b.tx !== undefined) { const f = Math.min(1, g.t / 24); b.x += (b.tx - b.x) * f * 0.25; b.y += (b.ty - b.y) * f * 0.25; }
+        if (g.k === 'japan') { b.vy += 0.03; b.vx *= 0.99; }
+        if (g.k === 'castle') b.vy -= 0.01;
+      }
+      if (g.k === 'robot' && g.t < 40 && g.t % 6 === 0) burst(g.x0 + Math.random() * g.w, Math.random() * GR * T, '#7df9ff', 4, 3);
+    }
     for (const a of st.answers) if (a.shake > 0) a.shake--;
     if (st.swap && --st.swap === 0) setStationQ(st, freshQ(st.q.text));
   }
@@ -2041,6 +2381,7 @@ function updateWin() {
 
 function updateAmbient() {
   const k = L.world.key;
+  if (k === 'snow' && ambient.length < 40 && tick % 4 === 0) ambient.push({ k: 'flake', x: Math.random() * (VW + 200), y: -10, vx: -0.3 - Math.random() * 0.6, vy: 0.6 + Math.random() * 0.8, a: Math.random() * 6 });
   if ((k === 'japan' || k === 'lava') && ambient.length < 28 && tick % 6 === 0) {
     ambient.push(k === 'japan'
       ? { k: 'petal', x: Math.random() * (VW + 200), y: -10, vx: -0.6 - Math.random() * 0.8, vy: 0.7 + Math.random() * 0.6, a: Math.random() * 6 }
@@ -2049,7 +2390,7 @@ function updateAmbient() {
   for (const p of ambient) { p.a += 0.05; p.x += p.vx + Math.sin(p.a) * 0.4; p.y += p.vy; }
   for (let i = ambient.length - 1; i >= 0; i--) {
     const p = ambient[i];
-    if (p.y > VH + 20 || p.y < -20 || p.x < -20 || (p.k === 'petal') !== (k === 'japan')) ambient.splice(i, 1);
+    if (p.y > VH + 20 || p.y < -20 || p.x < -20 || (p.k === 'petal') !== (k === 'japan') || (p.k === 'flake') !== (k === 'snow')) ambient.splice(i, 1);
   }
 }
 
@@ -2065,38 +2406,51 @@ function finishLevel() {
   // Kept short for kids: a big picture, the medal, two numbers, and at most a couple of highlights.
   const found = [0, 1, 2].filter(k => prog.best[st.w * PER_WORLD + k]).length;
   const title = st.boss ? 'Scroll won!' : G.mistakes === 0 ? 'Perfect!' : 'Level complete!';
-  let body = st.boss ? '<div class="bigicon">📜</div>' : `<div class="bigicon">🧩<small>${found}/3</small></div>`;
-  body += `<div class="medalrow"><span class="dots">${'●'.repeat(dots) + '○'.repeat(3 - dots)}</span> ${['', '🥉', '🥈', '🥇'][dots]}</div>`;
+  let body = st.boss ? `<div class="bigicon">${pixImg('scroll', 'pix big')}</div>` : `<div class="bigicon">${pixImg('piece', 'pix big')}<small>${found}/3</small></div>`;
+  // Each boss leaves a clue about who the Shogun really is; the last one is revealed in the ending.
+  const FREED = {
+    kage: "Kage won't take your hand. As he fades into the shadows he laughs: <i>\"You fight just like him. Same moves, same little hop.\"</i>",
+    golem: "The Golem's fire cools. He is gentle again. <i>\"The Shogun once cried here,\"</i> he rumbles. <i>\"He was holding a little wooden ninja, carved for someone he left behind.\"</i>",
+    bot: "Mega-Bot 3000 sparks and falls to pieces. Its screen flickers one last time: <b>KURO · FAMILY: 1 FATHER, 1 LITTLE BROTHER</b>.",
+    yeti: "The snowman's frozen heart melts. Now he has a friend. He hands you a red headband the Shogun dropped. It looks exactly like yours.",
+    shogun: '',
+  };
+  if (st.boss && FREED[W.boss.kind]) body += `<p class="freed">${FREED[W.boss.kind]}</p>`;
+  body += `<div class="medalrow"><span class="dots">${'●'.repeat(dots) + '○'.repeat(3 - dots)}</span> ${medalImg(dots, 'pix sm')}</div>`;
   const earned = Math.round((G.coins + (st.boss ? 20 : 0)) * TIER_GEMS[sk.tier - 1]);
   prog.bank += earned; prog.stats.gems += earned; save();
   if (G.mistakes === 0) award('perfect');
   if (st.boss && !G.hit) award('boss-nohit');
-  if ([0, 1, 2, 3].every(w => prog.best[bossOf(w)])) award('boss-all');
+  if (WORLDS.every((_, w) => prog.best[bossOf(w)])) award('boss-all');
   if (prog.stats.gems >= 500) award('gems500');
   if (currentBelt().name === 'Black') award('black-belt');
   if (dots === 3) award('gold-medal');
   if (sk.tier >= 4) award('brave');
   const path = pathRound(sk, G.mistakes), up = path.startsWith('<div');
-  body += `<div class="statrow"><span>💎 +${earned}</span><span>🥋 +${pts}</span>${up ? '' : path}</div>`;
+  body += `<div class="statrow"><span>${pixImg('gem', 'pix sm')} +${earned}</span><span>${pixImg('belt', 'pix sm')} +${pts}</span>${up ? '' : path}</div>`;
   if (up) body += path;
   if (after.idx > before.idx) body += `<div class="promo">${beltHTML(after)} &nbsp;<b>${after.name} Belt!</b></div>`;
   if (G.practice.size) body += `<div class="practice">🔁 ${[...G.practice.values()].slice(0, 3).map(q => `<span>${qSolved(q)}</span>`).join('')}</div>`;
   const btns = [];
   const wolfOffer = i === 0 && !prog.owned.includes('pet-wolf');
-  if (wolfOffer) body += `<div class="promo">🐺 Wolf pup: just <b>5 💎</b></div>`;
+  if (wolfOffer) body += `<div class="promo">${petImg('pet-wolf')} Wolf pup: just <b>5</b> ${pixImg('gem', 'pix sm')}</div>`;
   if (last) btns.push({ label: 'The end ▶', fn: showEnding, primary: true });
-  else btns.push({ label: (st.boss ? 'Next world' : 'Next') + ' ▶', fn: () => startStage(i + 1), primary: true });
+  else if (st.boss) btns.push({ label: `Ride to ${WORLDS[st.w + 1].name} ▶`, fn: () => travelRace(st.w + 1), primary: true });
+  else btns.push({ label: 'Next ▶', fn: () => startStage(i + 1), primary: true });
   btns.push({ label: 'Replay', fn: () => startStage(i), alt: true });
   btns.push({ label: 'Levels', fn: toMenu, alt: true });
   if (wolfOffer) btns.push({ label: '🐺 Adopt the wolf', fn: () => { hide('msg'); openShop(); } });
   showMsg(title, body, btns);
 }
 
+// The ending comes in two pages: the castle falls, then morning.
 function showEnding() {
+  showMsg('The Castle Falls', `<div class="bigicon">${bossImg('shogun')}</div><p>${ENDING}</p>`, [{ label: 'Next ▶', fn: showMorning, primary: true }]);
+}
+function showMorning() {
   const b = currentBelt();
-  showMsg('Sensei is proud!', `<div class="bigicon">📜📜📜📜</div><p>${ENDING}</p>
-    <div class="promo">${beltHTML(b)} &nbsp;Your rank: <b>${b.name} Belt</b> (${totalPoints()} / ${MAX_POINTS} points)</div>
-    <p>Replay levels with no mistakes to earn more points and reach the Black Belt!</p>`,
+  showMsg('Morning', `<div class="bigicon">${kaiImg()}${[0, 1, 2, 3, 4].map(() => pixImg('scroll', 'pix big')).join('')}</div><p>${MORNING}</p>
+    <div class="promo">${beltHTML(b)} &nbsp;Your rank: <b>${b.name} Belt</b> (${totalPoints()} / ${MAX_POINTS} points)</div>`,
     [{ label: 'Levels', fn: toMenu, primary: true }]);
 }
 
@@ -2108,11 +2462,12 @@ function update() {
   { const cs = currentStation(); if (cs && cs.answers && cs.shownAt == null) cs.shownAt = G.time; }
   if (mode === 'play') { updatePlayer(); updateEnemies(); }
   else if (mode === 'win') { updateWin(); updateEnemies(); }
-  if (mode === 'play' || mode === 'win') { updateBoss(); if (L.boss) { updateArena(); updateShotsAndProjectiles(); } }
+  if (mode === 'play' || mode === 'win') { updateBoss(); if (L.boss) { updateArena(); updateOrbs(); updateShotsAndProjectiles(); } }
   updateGates();
   for (const [k, v] of G.bumps) { if (v <= 1) G.bumps.delete(k); else G.bumps.set(k, v - 1); }
   for (const p of G.parts) {
     p.life--; p.x += p.vx; p.y += p.vy;
+    if (p.k === 'prize') p.vy *= 0.92;
     if (p.k === 'bit') p.vy += 0.4;
     if (p.k === 'coin') p.vy += 0.6;
   }
@@ -2186,9 +2541,10 @@ const RIVALS = [
 ].map(v => ({ ...v, spr: bakeRide(v.ride, v.pal) }));
 // Tracks: each has its own sky, scenery, ground and roadside things.
 const TRACKS = {
-  cherry: { name: 'Cherry Valley', icon: '🌸', sky: ['#6fb4f0', '#ffd6e8'], ground: ['#5fbf4a', '#54ad41'], rumble: ['#e63946', '#f4f4f4'], road: ['#c9a77a', '#bf9d70'], lane: '#f4ead5' },
-  lava: { name: 'Lava Run', icon: '🌋', sky: ['#1a0505', '#8a2a0a'], ground: ['#ff5a00', '#e84a00'], rumble: ['#1a1414', '#ff8c1a'], road: ['#2b2422', '#332b28'], lane: '#ff8c1a' },
-  city: { name: 'Night City', icon: '🌃', sky: ['#05071a', '#2a1f5a'], ground: ['#1b1f3a', '#171a33'], rumble: ['#ff3d9a', '#3ae0ff'], road: ['#22232e', '#272837'], lane: '#ffd23f' },
+  cherry: { name: 'Cherry Valley', icon: 'blossom', sky: ['#6fb4f0', '#ffd6e8'], ground: ['#5fbf4a', '#54ad41'], rumble: ['#e63946', '#f4f4f4'], road: ['#c9a77a', '#bf9d70'], lane: '#f4ead5' },
+  lava: { name: 'Lava Run', icon: 'volcano', sky: ['#1a0505', '#8a2a0a'], ground: ['#ff5a00', '#e84a00'], rumble: ['#1a1414', '#ff8c1a'], road: ['#2b2422', '#332b28'], lane: '#ff8c1a' },
+  snow: { name: 'Snowy Pass', icon: 'flake', sky: ['#9fd4ff', '#eaf6ff'], ground: ['#f4f9ff', '#e4f0fa'], rumble: ['#e63946', '#ffffff'], road: ['#b9c7d6', '#aebdcd'], lane: '#ffffff' },
+  city: { name: 'Night City', icon: 'moon', sky: ['#05071a', '#2a1f5a'], ground: ['#1b1f3a', '#171a33'], rumble: ['#ff3d9a', '#3ae0ff'], road: ['#22232e', '#272837'], lane: '#ffd23f' },
 };
 let RC = null;
 
@@ -2213,14 +2569,22 @@ function showRaceSetup() {
   for (const [id, tr] of Object.entries(TRACKS)) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'pick track' + (prog.track === id ? ' on' : '');
     b.style.background = `linear-gradient(${tr.sky[0]}, ${tr.sky[1]} 55%, ${tr.ground[0]} 55%)`;
-    b.innerHTML = `<b>${tr.icon}</b><span>${tr.name}</span>`;
+    b.innerHTML = `<b>${pixImg(tr.icon, 'pix')}</b><span>${tr.name}</span>`;
     b.onclick = () => { audio(); prog.track = id; save(); showRaceSetup(); };
     $('trackGrid').appendChild(b);
   }
   show('raceSetup');
 }
 
-function startRace() {
+// Between worlds you ride to the next one. The track matches where you're going.
+const TRAVEL_TRACK = [null, 'lava', 'city', 'snow', 'city'];
+function travelRace(w) {
+  hide('msg');
+  const tr = TRAVEL_TRACK[w], save = prog.track;
+  prog.track = tr; startRace(bossOf(w - 1) + 1); prog.track = save;
+  raceText(`Ride to ${WORLDS[w].name}!`, '#ffd23f');
+}
+function startRace(travel = null) {
   puff();
   hide('raceSetup');
   const topic = curSkill(), length = START_Z + GATES * GATE_GAP + 6000;
@@ -2233,7 +2597,7 @@ function startRace() {
   RC = {
     topic, length, curves, gates, z: 0, speed: 0, cruise: 4600 * slow, maxSpeed: 8200 * slow, boost: 3000 * slow,
     lane: 1, laneX: 0, time: 0, count: 3.99, goT: 0, anim: 0, bg: 0, right: 0, wrong: 0, streak: 0, finished: false, place: 0,
-    missed: new Map(), texts: [], spr: bakeRide(prog.ride, pickRiderPal()), ride: prog.ride, track: TRACKS[prog.track] ? prog.track : 'cherry',
+    travel: typeof travel === 'number' ? travel : null, missed: new Map(), texts: [], spr: bakeRide(prog.ride, pickRiderPal()), ride: prog.ride, track: TRACKS[prog.track] ? prog.track : 'cherry',
     rivals: RIVALS.map((v, k) => ({ ...v, z: 0, speed: 0, base: v.speed * slow, lane: k === 0 ? 0 : k === 1 ? 2 : 1, laneX: LANES[k === 0 ? 0 : k === 1 ? 2 : 1], switchT: R(3, 6) })),
   };
   RC.rivals[2].z = -500;   // the third rival starts just behind you
@@ -2304,13 +2668,18 @@ function finishRace() {
   setTimeout(() => {
     if (RC !== r) return;
     mode = 'racedone'; hide('pauseBtn'); showTouch(false);
-    const medal = ['🥇', '🥈', '🥉', '🐎'][r.place - 1];
+    const medal = r.place === 4 ? pixImg('race', 'pix big') : medalImg(4 - r.place);
     const path = pathRound(r.topic, GATES - r.right), up = path.startsWith('<div');
-    let body = `<div class="bigicon">${medal}</div><div class="statrow"><span>⏱ ${r.time.toFixed(1)}s${best ? ' 🆕' : ''}</span><span>✔ ${r.right}/${GATES}</span><span>💎 +${reward}</span>${up ? '' : path}</div>`;
+    let body = `<div class="bigicon">${medal}</div><div class="statrow"><span>${pixImg('clock', 'pix sm')} ${r.time.toFixed(1)}s${best ? ' NEW!' : ''}</span><span>✔ ${r.right}/${GATES}</span><span>💎 +${reward}</span>${up ? '' : path}</div>`;
     if (up) body += path;
     if (r.missed.size) body += `<div class="practice">🔁 ${[...r.missed.values()].slice(0, 3).map(q => `<span>${qSolved(q)}</span>`).join('')}</div>`;
-    showMsg(['1st place!', '2nd place!', '3rd place!', '4th place'][r.place - 1], body, [
-      { label: 'Race again', fn: startRace, primary: true },
+    const title = ['1st place!', '2nd place!', '3rd place!', '4th place'][r.place - 1];
+    if (r.travel !== null) showMsg(title, body, [   // a ride between worlds: on to the next world, whatever your place
+      { label: `On to ${WORLDS[STAGES[r.travel].w].name} ▶`, fn: () => startStage(r.travel), primary: true },
+      { label: 'Race again', fn: () => travelRace(STAGES[r.travel].w), alt: true },
+    ]);
+    else showMsg(title, body, [
+      { label: 'Race again', fn: () => startRace(), primary: true },
       { label: 'Change math', fn: () => openSkills(showRaceSetup), alt: true },
       { label: 'Menu', fn: toMenu, alt: true },
     ]);
@@ -2377,6 +2746,7 @@ function renderRace() {
 
 // Far-off scenery for each track.
 function raceScenery(r, W, hz) {
+  const H = VH;
   const off = k => ((r.bg * k) % (W * 1.5) + W * 1.5) % (W * 1.5);
   if (r.track === 'lava') {
     for (let k = -1; k <= 1; k++) {
@@ -2403,6 +2773,13 @@ function raceScenery(r, W, hz) {
         for (let wy = hz - h + 8; wy < hz - 6; wy += 12) for (let wx = x + 6; wx < x + w - 6; wx += 10) if (hash(wx * 3 + wy) > 0.55) ctx.fillRect(wx, wy, 4, 5);
       }
     }
+  } else if (r.track === 'snow') {
+    for (let k = -1; k <= 1; k++) {
+      const x = W * 0.5 + k * W * 1.5 - off(300);
+      poly([[x - 300, hz], [x, hz - 190], [x + 300, hz]], '#9db8d6');
+      poly([[x - 90, hz - 133], [x, hz - 190], [x + 90, hz - 133], [x + 40, hz - 145], [x, hz - 128], [x - 40, hz - 145]], '#ffffff');
+    }
+    ctx.fillStyle = 'rgba(255,255,255,.85)'; for (let k = 0; k < 60; k++) ctx.fillRect((hash(k) * W + tick * (1 + hash(k + 3))) % W, (hash(k + 7) * H * 0.9 + tick * 1.5 * (0.5 + hash(k))) % (H * 0.95), 3, 3);
   } else {
     for (let k = -1; k <= 1; k++) {
       const x = W * 0.6 + k * W * 1.5 - off(300);
@@ -2424,6 +2801,19 @@ function roadside(p, sxOf, side, tree, track, i) {
       glowAt(x, y - hgt * u * 0.5, 320 * u, 'rgba(255,120,0,.55)');
       ctx.fillStyle = '#ff6a00'; ctx.beginPath(); ctx.ellipse(x, y - 90 * u - hgt * u / 2, 70 * u, hgt * u / 2, 0, 0, 7); ctx.fill();
       ctx.fillStyle = '#ffe066'; ctx.beginPath(); ctx.ellipse(x, y - 90 * u - hgt * u * 0.4, 30 * u, hgt * u * 0.38, 0, 0, 7); ctx.fill();
+    }
+    return;
+  }
+  if (track === 'snow') {
+    const x = sxOf(p, side * ROAD_W * 1.7);
+    if (tree) {   // a snowy pine
+      ctx.fillStyle = '#5a3d2b'; ctx.fillRect(x - 30 * u, y - 200 * u, 60 * u, 200 * u);
+      for (let k = 0; k < 3; k++) { const yy = y - 200 * u - k * 240 * u, w = (360 - k * 90) * u; poly([[x - w, yy], [x, yy - 360 * u], [x + w, yy]], '#2f6b4f'); poly([[x - w * 0.45, yy - 200 * u], [x, yy - 360 * u], [x + w * 0.45, yy - 200 * u]], '#ffffff'); }
+    } else {      // a snowman cheering you on
+      blob(x, y - 140 * u, 140 * u, '#ffffff'); blob(x, y - 360 * u, 100 * u, '#ffffff');
+      ctx.fillStyle = '#111'; ctx.fillRect(x - 40 * u, y - 390 * u, 20 * u, 20 * u); ctx.fillRect(x + 20 * u, y - 390 * u, 20 * u, 20 * u);
+      ctx.fillStyle = '#e63946'; ctx.fillRect(x - 100 * u, y - 290 * u, 200 * u, 30 * u);
+      poly([[x, y - 360 * u], [x + 80 * u, y - 350 * u], [x, y - 340 * u]], '#ff9a1a');
     }
     return;
   }
@@ -2493,7 +2883,7 @@ function rider(set, p, x, anim, isPlayer, ride = 'horse') {
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(set[Math.floor(anim) % 2 ? 'b' : 'a'][0], x - size / 2, y - size, size, size);
   if (isPlayer && RC.speed > RC.cruise + 500) {
-    ctx.fillStyle = RC.track === 'lava' ? 'rgba(255,140,40,.6)' : RC.track === 'city' ? 'rgba(125,249,255,.5)' : 'rgba(210,180,140,.6)';
+    ctx.fillStyle = RC.track === 'lava' ? 'rgba(255,140,40,.6)' : RC.track === 'snow' ? 'rgba(255,255,255,.8)' : RC.track === 'city' ? 'rgba(125,249,255,.5)' : 'rgba(210,180,140,.6)';
     for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.arc(x + (k - 1.5) * size * 0.18, p.Y - 4 + (k % 2) * 4, size * 0.05 * (1 + (tick + k * 7) % 10 / 10), 0, 7); ctx.fill(); }
   }
 }
@@ -2599,8 +2989,9 @@ function drawBackground() {
   const g = ctx.createLinearGradient(0, 0, 0, VH);
   g.addColorStop(0, L.sky[0]); g.addColorStop(1, L.sky[1]);
   ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
-  ({ japan: bgJapan, lava: bgLava, robot: bgRobot, castle: bgCastle })[L.world.key]();
+  ({ japan: bgJapan, lava: bgLava, robot: bgRobot, snow: bgSnow, castle: bgCastle })[L.world.key]();
   for (const p of ambient) {
+    if (p.k === 'flake') { ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fillRect(p.x, p.y, 3, 3); continue; }
     if (p.k === 'petal') {
       ctx.fillStyle = '#ffc1dc'; ctx.beginPath(); ctx.ellipse(p.x, p.y, 4, 2.5, p.a, 0, 7); ctx.fill();
     } else {
@@ -2625,6 +3016,31 @@ function bgJapan() {
   repeat(0.35, 640, (x, i) => { if (hash(i + 5) < 0.65) pagoda(x, GR * T - 10, '#9a6a86', 0.9); }, 7);
   hills(0.5, 300, '#7fc56f', 100, 23);
   repeat(0.65, 330, (x, i) => cherryTree(x, GR * T, 0.8 + hash(i) * 0.4), 9);
+}
+function bgSnow() {
+  if (L.def && L.def.k === 1) {   // northern lights
+    for (let i = 0; i < 3; i++) {
+      ctx.fillStyle = ['rgba(80,255,170,.18)', 'rgba(120,200,255,.16)', 'rgba(200,120,255,.14)'][i];
+      ctx.beginPath(); ctx.moveTo(0, 80 + i * 30);
+      for (let x = 0; x <= VW; x += 40) ctx.lineTo(x, 70 + i * 30 + Math.sin(x * 0.01 + tick * 0.01 + i) * 30);
+      ctx.lineTo(VW, 160 + i * 30); ctx.lineTo(0, 160 + i * 30); ctx.fill();
+    }
+  } else clouds('rgba(255,255,255,.7)');
+  repeat(0.06, 700, x => {
+    poly([[x - 330, GR * T], [x, GR * T - 330], [x + 330, GR * T]], '#9db8d6');
+    poly([[x - 95, GR * T - 235], [x, GR * T - 330], [x + 95, GR * T - 235], [x + 45, GR * T - 250], [x, GR * T - 225], [x - 45, GR * T - 250]], '#ffffff');
+  }, 13);
+  hills(0.25, 380, '#dcecf8', 160, 17);
+  repeat(0.4, 170, (x, i) => { if (hash(i + 3) < 0.7) pineTree(x, GR * T, 0.7 + hash(i) * 0.5); }, 19);
+  hills(0.55, 300, '#f2f8fd', 90, 29);
+}
+function pineTree(x, b, s) {
+  ctx.fillStyle = '#5a3d2b'; ctx.fillRect(x - 4 * s, b - 18 * s, 8 * s, 18 * s);
+  for (let k = 0; k < 3; k++) {
+    const y = b - 18 * s - k * 26 * s, w = (40 - k * 10) * s;
+    poly([[x - w, y], [x, y - 40 * s], [x + w, y]], '#2f6b4f');
+    poly([[x - w * 0.5, y - 20 * s], [x, y - 40 * s], [x + w * 0.5, y - 20 * s]], '#ffffff');
+  }
 }
 function bgLava() {
   const base = GR * T - 10;
@@ -2758,6 +3174,125 @@ function block(x, y, fill, dark, light) {
   [[5, 5], [T - 8, 5], [5, T - 8], [T - 8, T - 8]].forEach(([a, b]) => ctx.fillRect(x + a, y + b, 3, 3));
 }
 
+// ---------------------------------------------------------------- level twist art
+function drawTwist() {
+  for (const pl of L.plats) {
+    if (pl.y > VH + 50) continue;
+    if (pl.k === 'lily') {
+      ctx.fillStyle = '#2f8a3a'; ctx.beginPath(); ctx.ellipse(pl.x + pl.w / 2, pl.y + 6, pl.w / 2 + 4, 9, 0, 0.25, Math.PI * 2 - 0.25); ctx.lineTo(pl.x + pl.w / 2, pl.y + 6); ctx.fill();
+      ctx.fillStyle = '#5cc463'; ctx.beginPath(); ctx.ellipse(pl.x + pl.w / 2, pl.y + 4, pl.w / 2, 6, 0, 0.3, Math.PI * 2 - 0.3); ctx.lineTo(pl.x + pl.w / 2, pl.y + 4); ctx.fill();
+      ctx.fillStyle = '#ff9cc4'; ctx.beginPath(); ctx.arc(pl.x + pl.w * 0.7, pl.y, 5, 0, 7); ctx.fill();
+    } else {
+      ctx.fillStyle = '#5d6d7e'; ctx.fillRect(pl.x, pl.y, pl.w, 14); ctx.fillStyle = '#ffd23f'; ctx.fillRect(pl.x, pl.y, pl.w, 4);
+    }
+  }
+  for (const f of L.fx) {
+    if (f.k === 'kite' && !f.taken) drawKite(f.x, f.y + Math.sin(tick * 0.06) * 6);
+    else if (f.k === 'koi' && f.on) {
+      ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(Math.cos((f.t / 70) * Math.PI) * -0.8);
+      ctx.fillStyle = '#ff7a2a'; ctx.beginPath(); ctx.ellipse(0, 0, 22, 10, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(-4, -2, 7, 5, 0, 0, 7); ctx.fill();
+      poly([[-20, 0], [-32, -9], [-30, 9]], '#ff7a2a'); ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(14, -2, 2, 0, 7); ctx.fill();
+      ctx.restore();
+    } else if (f.k === 'panda') {   // a panda peeking from the bamboo
+      const py = f.y - 30 + Math.max(0, Math.sin(tick * 0.03)) * -10;
+      ctx.fillStyle = '#1f1f26'; ctx.beginPath(); ctx.arc(f.x - 11, py - 12, 7, 0, 7); ctx.arc(f.x + 11, py - 12, 7, 0, 7); ctx.fill();
+      ctx.fillStyle = '#f4f4f4'; ctx.beginPath(); ctx.arc(f.x, py, 17, 0, 7); ctx.fill();
+      ctx.fillStyle = '#1f1f26'; ctx.beginPath(); ctx.ellipse(f.x - 7, py - 2, 5, 6, 0.4, 0, 7); ctx.ellipse(f.x + 7, py - 2, 5, 6, -0.4, 0, 7); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.fillRect(f.x - 8, py - 4, 2, 2); ctx.fillRect(f.x + 6, py - 4, 2, 2);
+      ctx.fillStyle = '#3f7a22'; for (let k = -2; k <= 2; k++) ctx.fillRect(f.x + k * 9 - 3, f.y - 26, 6, 26);
+    } else if (f.k === 'crystal') {
+      const y = f.y + Math.sin(tick * 0.05 + f.x) * 3, s = 14;
+      if (f.lit) glowAt(f.x, y, 60, 'rgba(120,220,255,.5)');
+      poly([[f.x, y - s * 1.7], [f.x + s * 0.7, y], [f.x, y + s * 0.6], [f.x - s * 0.7, y]], f.lit ? '#7df9ff' : '#3a6a80');
+      poly([[f.x, y - s * 1.2], [f.x + s * 0.3, y - s * 0.1], [f.x, y + s * 0.2]], f.lit ? '#ffffff' : '#5a8aa0');
+    } else if (f.k === 'gear') {
+      ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(tick * 0.018);
+      ctx.fillStyle = '#4a5868';
+      for (let k = 0; k < 10; k++) { ctx.save(); ctx.rotate(k * Math.PI / 5); ctx.fillRect(-8, -50, 16, 14); ctx.restore(); }
+      ctx.beginPath(); ctx.arc(0, 0, 40, 0, 7); ctx.fill(); ctx.fillStyle = '#8395a7'; ctx.beginPath(); ctx.arc(0, 0, 14, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#8395a7'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(-1.9 * T, 0); ctx.lineTo(1.9 * T, 0); ctx.stroke();
+      ctx.restore();
+    } else if (f.k === 'crusher') {
+      const w = 1.6 * T, x = f.x - w / 2;
+      ctx.fillStyle = '#3b4552'; ctx.fillRect(f.x - 8, 0, 16, f.bottom - 40);
+      ctx.fillStyle = '#6c7a89'; ctx.fillRect(x, f.bottom - 44, w, 44);
+      ctx.save(); ctx.beginPath(); ctx.rect(x, f.bottom - 12, w, 12); ctx.clip(); ctx.fillStyle = '#ffd23f'; ctx.fillRect(x, f.bottom - 12, w, 12);
+      for (let k = -1; k < 6; k++) poly([[x + k * 14, f.bottom - 12], [x + k * 14 + 7, f.bottom - 12], [x + k * 14 + 19, f.bottom], [x + k * 14 + 12, f.bottom]], '#222'); ctx.restore();
+    } else if (f.k === 'laser') {
+      ctx.fillStyle = '#3b4552'; ctx.fillRect(f.x - 12, GR * T - 14, 24, 14); ctx.fillRect(f.x - 12, 26, 24, 14);
+      if (f.on) { glowAt(f.x, GR * T / 2, 40, 'rgba(255,40,80,.35)'); ctx.fillStyle = '#ff2850'; ctx.fillRect(f.x - 4, 40, 8, GR * T - 54); ctx.fillStyle = '#fff'; ctx.fillRect(f.x - 1, 40, 2, GR * T - 54); }
+      else if (f.warn && tick % 8 < 4) { ctx.fillStyle = 'rgba(255,40,80,.5)'; ctx.fillRect(f.x - 1, 40, 2, GR * T - 54); }
+    } else if (f.k === 'icicle') {
+      const sx = f.state === 'shake' ? Math.sin(tick * 2) * 2 : 0;
+      poly([[f.x - 8 + sx, f.y], [f.x + 8 + sx, f.y], [f.x + sx, f.y + 30]], '#bfeaff'); poly([[f.x - 3 + sx, f.y], [f.x + 2 + sx, f.y], [f.x - 1 + sx, f.y + 18]], '#ffffff');
+    } else if (f.k === 'roll') {
+      ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.beginPath(); ctx.ellipse(f.x, f.y + f.r, f.r, 5, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#f4fbff'; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, 7); ctx.fill();
+      ctx.fillStyle = '#cfe6f5'; for (let k = 0; k < 3; k++) { const a = f.a + k * 2.1; ctx.beginPath(); ctx.arc(f.x + Math.cos(a) * f.r * 0.5, f.y + Math.sin(a) * f.r * 0.5, 5, 0, 7); ctx.fill(); }
+    } else if (f.k === 'hint') hudText(f.txt, f.x, f.y - 3 * T + Math.sin(tick * 0.1) * 3, 15, '#ffd23f', 'center');
+    else if (f.k === 'guard') {
+      const gx = f.x, gy = GR * T;
+      ctx.fillStyle = f.seen ? 'rgba(255,60,60,.25)' : 'rgba(255,240,150,.28)';
+      ctx.beginPath(); ctx.moveTo(gx + f.dir * 10, gy - 34); ctx.lineTo(gx + f.dir * 4.5 * T, gy - 34 - 2 * T); ctx.lineTo(gx + f.dir * 4.5 * T, gy); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#3a2a5a'; ctx.fillRect(gx - 12, gy - 46, 24, 46); ctx.fillStyle = '#c9a24f'; ctx.fillRect(gx - 14, gy - 52, 28, 8);
+      ctx.fillStyle = '#ffe9c8'; ctx.fillRect(gx - 6 + f.dir * 3, gy - 40, 12, 6); ctx.fillStyle = '#ffd23f'; ctx.fillRect(gx + f.dir * 10 - 3, gy - 36, 8, 5);
+      if (f.seen) hudText('!', gx, gy - 66, 26, '#ff4d4d', 'center');
+    }
+  }
+  for (const f of L.fx) if (f.k === 'rock') {
+    if (f.t > 0) { ctx.strokeStyle = `rgba(255,60,40,${0.5 + 0.5 * Math.sin(tick * 0.4)})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(f.x, f.gy - 3, 22 * (1 - f.t / 90), 6, 0, 0, 7); ctx.stroke(); }
+    else { ctx.fillStyle = '#4a2a20'; ctx.beginPath(); ctx.arc(f.x, f.y, 16, 0, 7); ctx.fill(); ctx.fillStyle = '#ff6a00'; ctx.fillRect(f.x - 8, f.y - 3, 10, 3); glowAt(f.x, f.y - 20, 26, 'rgba(255,120,0,.4)'); }
+  }
+  if (L.twist === 'chase') {   // a wall of lava creeping from the left
+    const x = L.chaseX;
+    if (x > cam - 40) {
+      glowAt(x, GR * T / 2, 160, 'rgba(255,90,0,.45)');
+      ctx.fillStyle = '#ff5a00'; ctx.beginPath(); ctx.moveTo(cam - 10, 0); ctx.lineTo(cam - 10, VH);
+      for (let y = VH; y >= 0; y -= 30) ctx.lineTo(x + Math.sin(y * 0.05 + tick * 0.15) * 14, y);
+      ctx.fill();
+      ctx.fillStyle = '#ffd23f'; for (let y = 20; y < VH; y += 60) { ctx.beginPath(); ctx.arc(x - 20 + Math.sin(y + tick * 0.1) * 8, y + Math.sin(tick * 0.05 + y) * 10, 6, 0, 7); ctx.fill(); }
+    }
+  }
+}
+function drawTwistFront() {
+  for (const f of L.fx) if (f.k === 'barrel') {
+    const x = f.x - 18, y = GR * T - 44;
+    ctx.fillStyle = '#6b4a2e'; rrect(x, y, 36, 44, 8); ctx.fill(); ctx.fillStyle = '#3a2614'; ctx.fillRect(x, y + 10, 36, 4); ctx.fillRect(x, y + 30, 36, 4);
+    if (G.hidden && Math.abs(P.x + P.w / 2 - f.x) < 20) hudText('Hidden!', f.x, y - 14, 14, '#7df9ff', 'center');
+  }
+  if (G && G.glide > 0) { line(P.x + P.w / 2, P.y + 10, P.x + P.w / 2 - 20, P.y - 46, '#fff', 1); drawKite(P.x + P.w / 2 - 22, P.y - 60); }
+}
+function drawKite(x, y) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(Math.sin(tick * 0.08) * 0.15);
+  ctx.fillStyle = '#e63946'; ctx.beginPath(); ctx.ellipse(0, 0, 12, 22, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(0, -6, 7, 7, 0, 0, 7); ctx.fill(); ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0, -8, 2.5, 0, 7); ctx.fill();
+  ctx.strokeStyle = '#e63946'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0, 20); ctx.quadraticCurveTo(10 * Math.sin(tick * 0.2), 34, 0, 46); ctx.stroke();
+  ctx.restore();
+}
+let darkCv = null;
+function drawDarkness() {
+  if (!darkCv) darkCv = document.createElement('canvas');
+  if (darkCv.width !== VW) { darkCv.width = VW; darkCv.height = VH; }
+  const d = darkCv.getContext('2d');
+  d.globalCompositeOperation = 'source-over'; d.clearRect(0, 0, VW, VH); d.fillStyle = 'rgba(6,2,10,.93)'; d.fillRect(0, 0, VW, VH);
+  d.globalCompositeOperation = 'destination-out';
+  const hole = (x, y, r) => { const g = d.createRadialGradient(x - cam, y, r * 0.3, x - cam, y, r); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); d.fillStyle = g; d.fillRect(x - cam - r, y - r, r * 2, r * 2); };
+  hole(P.x + P.w / 2, P.y + P.h / 2, 170 + Math.sin(tick * 0.1) * 4);
+  for (const f of L.fx) if (f.k === 'crystal') hole(f.x, f.y, f.lit ? 190 : 46);
+  const cs = currentStation(); if (cs && cs.answers) cs.answers.forEach(a => hole(a.c * T + T / 2, a.r * T + T / 2, 50));
+  for (let c = Math.floor(cam / T); c < cam / T + VW / T + 1; c++) if (c >= 0 && c < L.w && L.map[GR][c] === '.') hole(c * T + T / 2, GR * T + 10, 60);
+  hole(L.flagC * T, GR * T - 3 * T, 140);
+  ctx.drawImage(darkCv, 0, 0);
+}
+const fireworks = [];
+function drawFireworks() {
+  if (tick % 55 === 0) { const x = R(60, VW - 60), y = R(50, 200), col = ['#ff5a8a', '#ffd23f', '#7df9ff', '#b388ff', '#3ae374'][R(0, 4)]; for (let i = 0; i < 28; i++) { const a = i / 28 * Math.PI * 2; fireworks.push({ x, y, vx: Math.cos(a) * 2.6, vy: Math.sin(a) * 2.6, life: 50, col }); } }
+  for (const f of fireworks) { f.x += f.vx; f.y += f.vy; f.vy += 0.04; f.vx *= 0.98; f.life--; ctx.globalAlpha = Math.max(0, f.life / 50); ctx.fillStyle = f.col; ctx.fillRect(f.x, f.y, 3, 3); }
+  ctx.globalAlpha = 1;
+  for (let i = fireworks.length - 1; i >= 0; i--) if (fireworks[i].life <= 0) fireworks.splice(i, 1);
+}
+
 // ---------------------------------------------------------------- secret room art
 // Inside walls for each world: a paper-screen dojo, a lava cave, a robot control room and a castle hall.
 function drawRoomBg() {
@@ -2820,6 +3355,13 @@ function drawRoomBg() {
       for (let i = 0; i <= 100; i += 5) ctx.lineTo(px + 10 + i, py + 27 + Math.sin(i * 0.2 + tick * 0.1) * 8); ctx.stroke();
       ['#ff5a5a', '#ffd23f', '#3ae374', '#4cc9f0'].forEach((col, i) => { ctx.fillStyle = (tick >> 4) % 4 === i ? col : '#2a3340'; ctx.beginPath(); ctx.arc(px + 22 + i * 25, py + 60, 6, 0, 7); ctx.fill(); });
     }
+  } else if (k === 'snow') {
+    const g = ctx.createLinearGradient(0, 0, 0, floorY); g.addColorStop(0, '#2a5a7a'); g.addColorStop(1, '#8fc3e0');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, floorY);
+    for (let i = 0; i < 30; i++) { ctx.fillStyle = i % 2 ? 'rgba(255,255,255,.12)' : 'rgba(160,220,255,.15)'; ctx.beginPath(); ctx.ellipse(hash(i) * W, hash(i + 9) * floorY, 40 + hash(i + 4) * 50, 20 + hash(i + 2) * 20, hash(i + 7), 0, 7); ctx.fill(); }
+    for (let x = 10; x < W; x += 34) { const h = 18 + hash(x) * 40; poly([[x - 9, 20], [x + 9, 20], [x, 20 + h]], '#d8f2ff'); }
+    ctx.fillStyle = '#e8fbff'; ctx.fillRect(0, 0, W, 22);
+    for (const fx of [90, W - 90]) { glowAt(fx, floorY - 40, 70, 'rgba(255,170,60,.4)'); ctx.fillStyle = '#5a3d2b'; ctx.fillRect(fx - 16, floorY - 14, 32, 8); ctx.fillStyle = '#ff8c1a'; ctx.beginPath(); ctx.ellipse(fx, floorY - 30, 9, 16 + Math.sin(tick * 0.3) * 3, 0, 0, 7); ctx.fill(); ctx.fillStyle = '#ffe066'; ctx.beginPath(); ctx.ellipse(fx, floorY - 24, 4, 8, 0, 0, 7); ctx.fill(); }
   } else {
     ctx.fillStyle = '#232846'; ctx.fillRect(0, 0, W, floorY);
     for (let y = 0; y < floorY; y += 26) for (let x = (y / 26) % 2 ? -30 : 0; x < W; x += 60) {
@@ -2859,6 +3401,9 @@ function drawRoomFloor(x, y, c, r, top) {
     for (let i = 0; i < T; i += 9) ctx.fillRect(x, y + i, T, 3);
     if (top) { ctx.save(); ctx.beginPath(); ctx.rect(x, y, T, 7); ctx.clip(); ctx.fillStyle = '#ffd23f'; ctx.fillRect(x, y, T, 7);
       for (let k2 = -1; k2 < 4; k2++) poly([[x + k2 * 12, y], [x + k2 * 12 + 6, y], [x + k2 * 12 + 13, y + 7], [x + k2 * 12 + 7, y + 7]], '#222'); ctx.restore(); }
+  } else if (k === 'snow') {   // packed snow
+    ctx.fillStyle = '#e4f1fa'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#cfe2ef'; ctx.fillRect(x + ((c * 7) % 20), y + 12, 10, 4); ctx.fillRect(x + ((c * 13) % 22), y + 26, 8, 3);
+    if (top) { ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y, T, 5); }
   } else {   // wooden planks
     ctx.fillStyle = '#6b4a2e'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#5a3d25'; ctx.fillRect(x, y + T / 2, T, 2);
     ctx.fillRect(x + ((c + r) % 2 ? 10 : 26), y, 2, T / 2); ctx.fillRect(x + ((c + r) % 2 ? 22 : 4), y + T / 2, 2, T / 2);
@@ -2959,6 +3504,12 @@ function drawGround(x, y, c, r, top) {
       if (top) { ctx.fillStyle = '#6fd36f'; ctx.fillRect(x, y, T, 9); ctx.fillStyle = 'rgba(0,0,0,.15)'; ctx.fillRect(x, y + 9, T, 3); }
       break;
     }
+    case 'snow': {
+      ctx.fillStyle = '#7a8ea8'; ctx.fillRect(x, y, T, T);
+      ctx.fillStyle = '#62758e'; const h = (c * 53 + r * 17) % 8; ctx.fillRect(x + 5 + h, y + 16, 6, 5); ctx.fillRect(x + 22 - h, y + 27, 5, 4);
+      if (top) { ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y, T, 10); ctx.beginPath(); ctx.arc(x + 9, y + 10, 5, 0, Math.PI); ctx.arc(x + 26, y + 10, 4, 0, Math.PI); ctx.fill(); ctx.fillStyle = '#d6e8f5'; ctx.fillRect(x, y + 8, T, 2); }
+      break;
+    }
     case 'lava': {
       ctx.fillStyle = '#241a18'; ctx.fillRect(x, y, T, T);
       const h = (c * 37 + r * 11) % 7, glow = 0.5 + 0.5 * Math.sin(tick * 0.05 + c);
@@ -2995,11 +3546,134 @@ function drawGround(x, y, c, r, top) {
   }
 }
 
+function drawPillar(k, x, y, c, r) {
+  const top = L.map[r - 1][c] !== 'O', left = L.map[r][c - 1] !== 'O', cx = left ? x + T : x;
+  if (k === 'japan') {   // a stone lantern
+    ctx.fillStyle = '#8f8a84'; ctx.fillRect(x + (left ? 6 : 0), y, T - 6, T); ctx.fillStyle = '#a8a39c'; ctx.fillRect(x + (left ? 8 : 2), y + 3, 6, T - 6);
+    ctx.fillStyle = '#6e6a65'; ctx.fillRect(x, y + T - 4, T, 4);
+    if (top) { poly(left ? [[x - 4, y + 6], [x + 10, y - 10], [x + T, y - 10], [x + T, y + 6]] : [[x, y + 6], [x, y - 10], [x + T - 10, y - 10], [x + T + 4, y + 6]], '#5e5a55');
+      if (left) { glowAt(cx, y + 18, 26, 'rgba(255,200,90,.5)'); ctx.fillStyle = '#ffd27a'; ctx.fillRect(cx - 9, y + 12, 18, 12); } }
+  } else if (k === 'lava') {   // basalt columns with glowing seams
+    ctx.fillStyle = '#2a2020'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#3d2f2c'; ctx.fillRect(x + 3, y, T / 2 - 4, T); ctx.fillRect(x + T / 2 + 1, y, T / 2 - 4, T);
+    ctx.fillStyle = `rgba(255,${100 + 50 * Math.sin(tick * 0.06 + r) | 0},0,.8)`; ctx.fillRect(x + T / 2 - 1, y, 2, T);
+    if (top) { ctx.fillStyle = '#4a3a36'; ctx.fillRect(x, y, T, 6); }
+  } else if (k === 'robot') {   // steel crates
+    ctx.fillStyle = '#5d6d7e'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#7d8da0'; ctx.fillRect(x + 3, y + 3, T - 6, T - 6);
+    ctx.strokeStyle = '#4a5868'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x + 4, y + 4); ctx.lineTo(x + T - 4, y + T - 4); ctx.moveTo(x + T - 4, y + 4); ctx.lineTo(x + 4, y + T - 4); ctx.stroke();
+    if (top) { ctx.fillStyle = '#ffd23f'; ctx.fillRect(x, y, T, 4); }
+  } else if (k === 'snow') {   // stacked ice blocks under a snow cap
+    ctx.fillStyle = '#7ab8d8'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#bfe6fa'; ctx.fillRect(x + 2, y + 2, T - 4, T - 4); ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(x + 6, y + 6, 4, 12);
+    if (top) { ctx.fillStyle = '#ffffff'; ctx.fillRect(x - 2, y - 6, T + 4, 9); ctx.beginPath(); ctx.arc(x + 10, y + 3, 5, 0, Math.PI); ctx.fill(); }
+  } else {   // castle stone with a gold cap
+    ctx.fillStyle = '#3c4470'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#2a3058'; ctx.fillRect(x, y + T / 2, T, 2); ctx.fillRect(x + (r % 2 ? 8 : 24), y, 2, T / 2); ctx.fillRect(x + (r % 2 ? 24 : 8), y + T / 2, 2, T / 2);
+    if (top) { ctx.fillStyle = '#c9a24f'; ctx.fillRect(x - 2, y, T + 4, 6); }
+  }
+}
+function drawGateTile(k, x, y, r, c) {
+  const left = L.map[r][c - 1] !== 'G';
+  if (k === 'japan') {   // shoji paper screen in a red frame
+    ctx.fillStyle = '#b3261e'; ctx.fillRect(x, y, T, T);
+    ctx.fillStyle = '#fbf3e0'; ctx.fillRect(x + (left ? 5 : 1), y + 1, T - 6, T - 2);
+    ctx.fillStyle = '#c9a77a'; ctx.fillRect(x + T / 2 - 1, y, 2, T); ctx.fillRect(x, y + T / 2 - 1, T, 2);
+    return true;
+  }
+  if (k === 'lava') {   // a pouring lavafall, with a rock spout at the top
+    const g = ctx.createLinearGradient(x, 0, x + T, 0); g.addColorStop(0, '#ff4500'); g.addColorStop(0.5, '#ffb300'); g.addColorStop(1, '#ff4500');
+    ctx.fillStyle = g; ctx.fillRect(x + (left ? 6 : 0), y, T - 6, T);
+    ctx.fillStyle = 'rgba(255,240,150,.7)'; ctx.fillRect(x + (left ? 12 : 8), y + ((tick * 5 + r * 13) % T), 4, 10);
+    if (r === 0) { ctx.fillStyle = '#2b1d18'; ctx.fillRect(x - 8, 0, T + 16, 22); }
+    if (r === GR - 1) glowAt(x + T / 2, GR * T, 40, 'rgba(255,120,0,.6)');
+    return true;
+  }
+  if (k === 'robot') {   // a humming force field
+    ctx.fillStyle = `rgba(76,201,240,${0.35 + 0.15 * Math.sin(tick * 0.2 + r)})`; ctx.fillRect(x, y, T, T);
+    ctx.fillStyle = 'rgba(200,250,255,.5)'; ctx.fillRect(x, y + ((tick * 2 + r * 7) % T), T, 2);
+    if (left) { ctx.fillStyle = '#3b4552'; ctx.fillRect(x - 4, y, 6, T); }
+    return true;
+  }
+  if (k === 'snow') {   // thick blocks of ice
+    ctx.fillStyle = '#7ab8d8'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#bfe6fa'; ctx.fillRect(x + 2, y + 2, T - 4, T - 4);
+    ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fillRect(x + 6, y + 6, 4, 14); ctx.fillRect(x + 12, y + 6, 10, 3);
+    return true;
+  }
+  if (k === 'castle') {   // a wall of swirling shadow
+    ctx.fillStyle = '#1d1033'; ctx.fillRect(x, y, T, T);
+    ctx.fillStyle = `rgba(166,120,255,${0.25 + 0.2 * Math.sin(tick * 0.1 + r * 0.7)})`; ctx.beginPath(); ctx.arc(x + T / 2 + Math.sin(tick * 0.05 + r) * 6, y + T / 2, 12, 0, 7); ctx.fill();
+    return true;
+  }
+  return false;
+}
+function drawGateFx(st) {
+  const g = st.gfx, t = g.t, fade = Math.max(0, 1 - t / 120), H = GR * T;
+  if (g.k === 'japan') {   // the two screens slide apart
+    const off = Math.min(1, t / 30) * 1.4 * T;
+    ctx.globalAlpha = fade;
+    for (const [dx, sx] of [[-off, 0], [off, T]]) {
+      const x = g.x0 + sx + dx; ctx.fillStyle = '#b3261e'; ctx.fillRect(x, 0, T, H); ctx.fillStyle = '#fbf3e0'; ctx.fillRect(x + 4, 0, T - 8, H);
+      ctx.fillStyle = '#c9a77a'; for (let y = 0; y < H; y += T / 2) ctx.fillRect(x, y, T, 2); ctx.fillRect(x + T / 2 - 1, 0, 2, H);
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#ffb7d5'; for (const b of g.bits) { ctx.beginPath(); ctx.ellipse(b.x, b.y, 4, 2.5, b.a, 0, 7); ctx.fill(); }
+  } else if (g.k === 'lava') {   // the answer block flies up and plugs the spout; the last lava drains away
+    const plug = g.bits[0];
+    const tail = Math.max(0, (t - 24) * 12), top = Math.min(H, tail);
+    if (t < 60) {
+      const gr = ctx.createLinearGradient(g.x0, 0, g.x0 + g.w, 0); gr.addColorStop(0, '#ff4500'); gr.addColorStop(0.5, '#ffb300'); gr.addColorStop(1, '#ff4500');
+      ctx.fillStyle = gr; ctx.fillRect(g.x0 + 6, top, g.w - 6, H - top);
+    }
+    if (t > 24) for (let i = 0; i < 3; i++) { ctx.fillStyle = `rgba(220,220,230,${0.5 * fade})`; ctx.beginPath(); ctx.arc(g.x0 + g.w / 2 + Math.sin(t * 0.1 + i * 2) * 20, H - (t - 24) * 1.5 - i * 30, 16 + i * 4, 0, 7); ctx.fill(); }
+    ctx.fillStyle = '#2b1d18'; ctx.fillRect(g.x0 - 8, 0, g.w + 16, 22);
+    if (plug) block(plug.x - T / 2, plug.y - T / 2, '#2ecc71', '#1e8449', '#8ff0b5');
+  } else if (g.k === 'snow') {   // a gust of wind blows the ice away
+    ctx.strokeStyle = `rgba(255,255,255,${0.7 * fade})`; ctx.lineWidth = 3;
+    for (let i = 0; i < 6; i++) { const yy = 40 + i * (H / 6), xx = g.x0 - 160 + ((t * 14 + i * 50) % 420); ctx.beginPath(); ctx.moveTo(xx, yy); ctx.quadraticCurveTo(xx + 40, yy - 10, xx + 90, yy); ctx.stroke(); }
+    for (const b of g.bits) { ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.a); ctx.globalAlpha = fade; ctx.fillStyle = '#bfe6fa'; ctx.fillRect(-b.s / 2, -b.s / 2, b.s, b.s); ctx.fillStyle = '#ffffff'; ctx.fillRect(-b.s / 2, -b.s / 2, b.s / 2, 3); ctx.restore(); }
+    ctx.globalAlpha = 1;
+  } else if (g.k === 'robot') {   // the field flickers and shorts out
+    if (t < 40 && t % 8 < 4) { ctx.fillStyle = 'rgba(76,201,240,.4)'; ctx.fillRect(g.x0, 0, g.w, H); }
+    if (t < 30) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath(); let y = 0; ctx.moveTo(g.x0 + g.w / 2, 0); while (y < H) { y += 24; ctx.lineTo(g.x0 + g.w / 2 + (Math.random() - 0.5) * 30, y); } ctx.stroke(); }
+  } else if (g.k === 'castle') {   // the shadow fades into white doves
+    if (t < 40) { ctx.fillStyle = `rgba(29,16,51,${1 - t / 40})`; ctx.fillRect(g.x0, 0, g.w, H); }
+    for (const b of g.bits) {
+      const flap = Math.sin(t * 0.4 + b.a) * 6;
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.ellipse(b.x, b.y, 7, 4, 0, 0, 7); ctx.fill();
+      poly([[b.x - 2, b.y], [b.x - 12, b.y - 6 - flap], [b.x + 2, b.y - 2]], '#ffffff'); poly([[b.x + 2, b.y], [b.x + 10, b.y - 5 - flap], [b.x + 4, b.y - 1]], '#f0f0ff');
+      poly([[b.x + 6, b.y - 1], [b.x + 10, b.y], [b.x + 6, b.y + 1]], '#ffb627');
+    }
+  }
+}
 function drawTile(t, x, y, c, r) {
   const W = L.world;
   switch (t) {
     case '#': if (L.room) drawRoomFloor(x, y, c, r, L.map[r - 1][c] !== '#'); else drawGround(x, y, c, r, L.map[r - 1][c] !== '#'); break;
     case 'R': drawRoomBlock(x, y, c); break;
+    case 'J': {   // springy bamboo
+      const sq = Math.sin(tick * 0.2) * 1.5;
+      ctx.fillStyle = '#3f7a22'; ctx.fillRect(x + 4, y + 10 + sq, T - 8, T - 10 - sq);
+      ctx.fillStyle = '#7cc142'; ctx.fillRect(x + 7, y + 12 + sq, T - 14, T - 14 - sq);
+      ctx.fillStyle = '#c5e1a5'; ctx.fillRect(x + 2, y + 6 + sq, T - 4, 6);
+      ctx.strokeStyle = '#2e5a16'; ctx.lineWidth = 2; for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.moveTo(x + 8, y + 18 + k * 6); ctx.lineTo(x + T - 8, y + 21 + k * 6); ctx.stroke(); }
+      break;
+    }
+    case 'C': case 'c': {   // conveyor belt with moving chevrons
+      ctx.fillStyle = '#2a3442'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#4a5868'; ctx.fillRect(x, y, T, 12);
+      const d = t === 'C' ? 1 : -1, off = ((tick * 2 * d) % 18 + 18) % 18;
+      ctx.fillStyle = '#ffd23f';
+      for (let k = -1; k < 3; k++) { const cx = x + k * 18 + off; poly(d > 0 ? [[cx, y + 2], [cx + 6, y + 6], [cx, y + 10]] : [[cx + 6, y + 2], [cx, y + 6], [cx + 6, y + 10]], '#ffd23f'); }
+      ctx.fillStyle = '#1b2430'; ctx.beginPath(); ctx.arc(x + T / 2, y + 22, 6, 0, 7); ctx.fill();
+      break;
+    }
+    case 'O': drawPillar(W.key, x, y, c, r); break;
+    case 'I': {   // glassy ice
+      ctx.fillStyle = '#9fd8f5'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#c9ecff'; ctx.fillRect(x + 2, y + 2, T - 4, T - 4);
+      ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.fillRect(x + 6, y + 5, 12, 3); ctx.fillRect(x + 22, y + 18, 6, 2);
+      ctx.fillStyle = '#7ab8d8'; ctx.fillRect(x, y + T - 3, T, 3);
+      break;
+    }
+    case 'L':   // rope ladder
+      ctx.fillStyle = '#8b5a2b'; ctx.fillRect(x + 7, y, 4, T); ctx.fillRect(x + T - 11, y, 4, T);
+      ctx.fillStyle = '#c9a24f'; for (let k = 4; k < T; k += 11) ctx.fillRect(x + 7, y + k, T - 14, 4);
+      break;
     case 'B':
       ctx.fillStyle = W.brick[1]; ctx.fillRect(x, y, T, T);
       ctx.fillStyle = W.brick[0];
@@ -3034,6 +3708,15 @@ function drawTile(t, x, y, c, r) {
     }
     case 'G': {
       const [fill, dark, light, lock] = W.gate;
+      if (drawGateTile(W.key, x, y, r, c)) {
+        if (r === GR - 3 || r === GR - 8) {   // padlock
+          ctx.strokeStyle = lock; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(x + T / 2, y + 15, 6, Math.PI, 0); ctx.stroke();
+          ctx.fillStyle = lock; ctx.fillRect(x + T / 2 - 9, y + 15, 18, 13);
+          ctx.fillStyle = dark; ctx.fillRect(x + T / 2 - 1.5, y + 19, 3, 5);
+        }
+        break;
+      }
       ctx.fillStyle = dark; ctx.fillRect(x, y, T, T);
       ctx.fillStyle = fill; ctx.fillRect(x + 2, y + 2, T - 4, T - 4);
       ctx.fillStyle = light; ctx.fillRect(x + 2, y + 2, T - 4, 3);
@@ -3105,9 +3788,10 @@ function drawPits(c0, c1) {
   for (let c = c0; c <= c1; c++) {
     if (L.map[GR][c] !== '.' && L.map[GR][c] !== 'b') continue;
     const x = c * T, y = GR * T + 14 + Math.sin(tick * 0.08 + c) * 3;
-    if (kind === 'water') {
-      ctx.fillStyle = '#3a8fd6'; ctx.fillRect(x, y, T, VH - y);
+    if (kind === 'water' || kind === 'ice') {
+      ctx.fillStyle = kind === 'ice' ? '#2a6a9a' : '#3a8fd6'; ctx.fillRect(x, y, T, VH - y);
       ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.fillRect(x + 4, y, T - 14, 3);
+      if (kind === 'ice' && c % 2) { ctx.fillStyle = '#e8fbff'; ctx.fillRect(x + 6, y - 4, 18, 6); }
     } else {
       const g = ctx.createLinearGradient(0, y, 0, VH);
       g.addColorStop(0, '#ffd23f'); g.addColorStop(0.25, '#ff6a00'); g.addColorStop(1, '#b3200a');
@@ -3164,6 +3848,7 @@ function drawPuzzles() {
 }
 
 function drawSigns() {
+  for (const st of L.stations) if (st.gfx && st.gfx.t < 120 && Math.abs(st.gfx.x0 - cam - VW / 2) < VW) drawGateFx(st);
   for (const st of L.stations) {
     const x = st.s * T + 4, y = (GR - 3.1) * T, w = 3.5 * T, h = 1.25 * T;
     if (x > cam + VW || x + w < cam) continue;
@@ -3191,6 +3876,11 @@ function drawDecor(c) {
       poly([[x - 22, y], [x - 12, y - 22], [x + 4, y - 28], [x + 20, y - 12], [x + 24, y]], '#4b3a36');
       ctx.fillStyle = 'rgba(255,106,0,.8)'; ctx.fillRect(x - 4, y - 16, 3, 10);
       break;
+    case 'snow':   // a little snowman
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(x, y - 12, 13, 0, 7); ctx.arc(x, y - 32, 9, 0, 7); ctx.fill();
+      ctx.fillStyle = '#111'; ctx.fillRect(x - 4, y - 35, 2, 2); ctx.fillRect(x + 2, y - 35, 2, 2);
+      poly([[x, y - 32], [x + 9, y - 31], [x, y - 30]], '#ff9a1a'); ctx.fillStyle = '#e63946'; ctx.fillRect(x - 9, y - 25, 18, 3);
+      break;
     case 'robot':
       ctx.fillStyle = '#8b6b3e'; ctx.fillRect(x - 18, y - 34, 34, 34);
       ctx.strokeStyle = '#5e4526'; ctx.lineWidth = 3; ctx.strokeRect(x - 16, y - 32, 30, 30);
@@ -3206,7 +3896,7 @@ function drawDecor(c) {
 
 // ---------------------------------------------------------------- end of a level: scroll holder and home
 // Each level hangs its scroll piece from something of its own; each world ends at a fitting home.
-const SCROLL_AT = { japan: [[-34, -4.1], [-30, -4.4]], lava: [[0, -3.7], [0, -3.2]], robot: [[-36, -3.1], [0, -3.4]], castle: [[-30, -3.2], [-28, -3.1]] };
+const SCROLL_AT = { snow: [[-30, -4.2], [-34, -4.0]], japan: [[-34, -4.1], [-30, -4.4]], lava: [[0, -3.7], [0, -3.2]], robot: [[-36, -3.1], [0, -3.4]], castle: [[-30, -3.2], [-28, -3.1]] };
 function scrollSpot() {
   const [dx, dy] = SCROLL_AT[L.world.key][L.def.k % 2] || [0, -3];
   const bob = L.world.key === 'robot' && L.def.k % 2 === 1 ? Math.sin(tick * 0.06) * 6 : 0;
@@ -3284,6 +3974,18 @@ const HOLDERS = {
       }
       blob(px, y + 8, 3, Math.floor(tick / 15) % 2 ? '#3ae374' : '#1a6a3a');
     }],
+  snow: [
+    (px, b) => {   // a tall ice crystal, scroll on a blue cord
+      poly([[px - 16, b], [px - 10, b - 4.6 * T], [px, b - 5.4 * T], [px + 10, b - 4.6 * T], [px + 16, b]], '#9fd8f5');
+      poly([[px - 4, b - 0.5 * T], [px - 3, b - 4.6 * T], [px, b - 5.2 * T], [px + 2, b - 4.4 * T]], '#e8fbff');
+      glowAt(px, b - 4.8 * T, 40, 'rgba(160,230,255,.4)');
+      ctx.fillStyle = '#7ab8d8'; ctx.fillRect(px - 38, b - 4.5 * T, 30, 4);
+      line(px - 30, b - 4.45 * T, px - 30, b - 4.2 * T - 12, '#3a7aa8', 2);
+    },
+    (px, b) => {   // a snowy pine with the scroll hanging from a branch
+      pineTree(px, b, 1.5);
+      line(px - 34, b - 4.3 * T, px - 34, b - 4.0 * T - 12, '#e63946', 2);
+    }],
   castle: [
     (px, b) => {   // wooden post with a big paper lantern
       ctx.fillStyle = '#5a3d2b'; ctx.fillRect(px - 5, b - 5 * T, 10, 5 * T);
@@ -3357,6 +4059,16 @@ const HOMES = {
     line(cx + 4.3 * T, b - 3.5 * T, cx + 4.3 * T, b - 5 * T, '#8395a7', 3);
     blob(cx + 4.3 * T, b - 5.05 * T, 5, Math.floor(tick / 18) % 2 ? '#ff3355' : '#661020');
   },
+  snow(cx, b) {  // an igloo with a warm glow inside
+    ctx.fillStyle = '#f4fbff'; ctx.beginPath(); ctx.arc(cx + 2.5 * T, b, 2.5 * T, Math.PI, 0); ctx.fill();
+    ctx.strokeStyle = '#c9dcea'; ctx.lineWidth = 2;
+    for (let k = 1; k < 4; k++) { ctx.beginPath(); ctx.arc(cx + 2.5 * T, b, 2.5 * T, Math.PI + k * 0.15, -k * 0.15); ctx.stroke(); }
+    for (let r = 1; r < 4; r++) { ctx.beginPath(); ctx.moveTo(cx + 2.5 * T - Math.sqrt(6.25 - r * r * 0.36) * T, b - r * 0.6 * T); ctx.lineTo(cx + 2.5 * T + Math.sqrt(6.25 - r * r * 0.36) * T, b - r * 0.6 * T); ctx.stroke(); }
+    ctx.fillStyle = '#f4fbff'; ctx.fillRect(cx + 1.6 * T, b - 1.4 * T, 1.8 * T, 1.4 * T); ctx.beginPath(); ctx.arc(cx + 2.5 * T, b - 1.4 * T, 0.9 * T, Math.PI, 0); ctx.fill();
+    glowAt(cx + 2.5 * T, b - 0.8 * T, 50, 'rgba(255,190,90,.5)');
+    ctx.fillStyle = '#3a2a1a'; ctx.beginPath(); ctx.arc(cx + 2.5 * T, b - 0.9 * T, 0.6 * T, Math.PI, 0); ctx.fillRect(cx + 1.9 * T, b - 0.9 * T, 1.2 * T, 0.9 * T); ctx.fill();
+    ctx.fillStyle = 'rgba(255,170,60,.6)'; ctx.fillRect(cx + 2.1 * T, b - 0.7 * T, 0.8 * T, 0.7 * T);
+  },
   castle(cx, b) {  // a castle keep with a big wooden gate
     poly([[cx - 22, b], [cx, b - 2.2 * T], [cx + 5 * T, b - 2.2 * T], [cx + 5 * T + 22, b]], '#4a4f6a');
     ctx.fillStyle = '#3a3f58'; for (let k = 1; k < 4; k++) ctx.fillRect(cx - 22 + k * 5, b - k * 0.55 * T, 5 * T + 44 - k * 10, 2);
@@ -3428,6 +4140,17 @@ function drawEnemy(e) {
       ctx.beginPath(); ctx.moveTo(x + 7, y + 8); ctx.lineTo(x + 15, y + 11); ctx.moveTo(x + 28, y + 8); ctx.lineTo(x + 20, y + 11); ctx.stroke();
       break;
     }
+    case 'penguin': {   // a grumpy penguin in a scarf
+      const wob = step ? 2 : -2, f = e.vx > 0 ? 1 : -1;
+      ctx.fillStyle = '#ff9a1a'; ctx.fillRect(x + 6, y + 29, 7, 3); ctx.fillRect(x + 15, y + 29, 7, 3);
+      ctx.fillStyle = '#1f2533'; ctx.beginPath(); ctx.ellipse(x + 14, y + 17, 13, 15, wob * 0.03, 0, 7); ctx.fill();
+      ctx.fillStyle = '#f4f8ff'; ctx.beginPath(); ctx.ellipse(x + 14 + f * 2, y + 20, 8, 10, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#e63946'; ctx.fillRect(x + 4, y + 11, 20, 4); ctx.fillRect(x + (f > 0 ? 4 : 20), y + 13, 4, 8);
+      ctx.fillStyle = '#fff'; ctx.fillRect(x + 10 + f * 3, y + 5, 3, 3); ctx.fillRect(x + 16 + f * 3, y + 5, 3, 3);
+      ctx.fillStyle = '#111'; ctx.fillRect(x + 11 + f * 3, y + 6, 2, 2); ctx.fillRect(x + 17 + f * 3, y + 6, 2, 2);
+      ctx.fillStyle = '#ff9a1a'; poly([[x + 14 + f * 3, y + 9], [x + 14 + f * 9, y + 10], [x + 14 + f * 3, y + 12]], '#ff9a1a');
+      break;
+    }
     case 'robot': {
       ctx.fillStyle = '#333'; ctx.fillRect(x + 5, y + 28 + (step ? 0 : 2), 7, 8); ctx.fillRect(x + 18, y + 28 + (step ? 2 : 0), 7, 8);
       ctx.fillStyle = '#5a6778'; ctx.fillRect(x + 2, y + 12, 26, 18);
@@ -3459,6 +4182,10 @@ function drawBoss() {
 function drawProjectiles() {
   for (const p of L.proj) {
     if (p.k === 'star') drawShuriken(p.x, p.y, tick * 0.4, '#b388ff', '#4b2a6b', 11);
+    else if (p.k === 'snow' || p.k === 'snowroll') {
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+      ctx.fillStyle = '#cfe6f5'; ctx.beginPath(); ctx.arc(p.x + Math.cos(tick * 0.3) * p.r * 0.4, p.y + Math.sin(tick * 0.3) * p.r * 0.4, p.r * 0.3, 0, 7); ctx.fill();
+    }
     else if (p.k === 'laser') {
       ctx.fillStyle = 'rgba(255,51,85,.35)'; rrect(p.x - 18, p.y - 8, 36, 16, 8); ctx.fill();
       ctx.fillStyle = '#ff6b81'; rrect(p.x - 14, p.y - 4, 28, 8, 4); ctx.fill();
@@ -3538,6 +4265,7 @@ function drawParticles() {
     const a = Math.min(1, p.life / 20);
     if (p.k === 'bit') { ctx.globalAlpha = a; ctx.fillStyle = p.col; ctx.fillRect(p.x, p.y, p.s, p.s); }
     else if (p.k === 'coin') { ctx.globalAlpha = a; drawGem(p.x, p.y, p.v || 5, p.life * 0.4); }
+    else if (p.k === 'prize') { glowAt(p.x, p.y - 14, 26, 'rgba(255,255,200,.6)'); drawPix(p.pix, p.x - 14, p.y - 30, 2); }
     else if (p.k === 'text') {
       ctx.globalAlpha = a; ctx.font = `${p.size}px "Lilita One", "Trebuchet MS", sans-serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -3656,11 +4384,12 @@ function hudText(txt, x, y, size, col = '#fff', align = 'left') {
 
 function drawHUD() {
   const narrow = VW < 700, st = STAGES[G.idx];
+  if (L.twist && G.time < 300 && !L.vault) hudText(TWIST_HINT[L.twist], VW / 2, (narrow ? 92 : 10) + 104, narrow ? 15 : 19, '#ffd23f', 'center');
   for (let i = 0; i < G.maxHearts; i++) heart(30 + i * 36, 16, 13, i < G.hearts ? '#ff4d6d' : 'rgba(0,0,0,.35)');
   drawGem(34, 64, 1, tick * 0.06);
   hudText('× ' + G.coins, 54, 65, 22 + G.pulse);
   if (G.streak >= 2) hudText(`🔥 ${G.streak} in a row`, 20, 100, 18, '#ffb627');
-  if (G.power) { const pw = POWERS[G.power.kind]; hudText(`${pw.icon} ${pw.name} ${Math.ceil(G.power.t / 60)}s`, 20, 126, 17, '#7df9ff'); }
+  if (G.power) { const pw = POWERS[G.power.kind]; drawPix(pw.pix, 18, 112, 2); hudText(`${pw.name} ${Math.ceil(G.power.t / 60)}s`, 50, 126, 17, '#7df9ff'); }
   const label = st.boss ? `World ${st.w + 1}: Boss` : `Level ${st.label}: ${st.name}`;
   if (narrow) hudText('Score ' + G.score, VW - 72, 64, 20, '#ffd23f', 'right');
   else {
@@ -3692,7 +4421,7 @@ function drawHUD() {
       ctx.fillRect(bx + i * segW + 1, by + 94, segW - 2, 10);
     }
     if (currentStation()) {
-      hudText('Attack now! Bonk the keypad block', VW / 2, by + 124, 15, '#ffd23f', 'center');
+      hudText('Jump and grab the right shuriken!', VW / 2, by + 124, 15, '#ffd23f', 'center');
       const f = L.arena.phaseT / OPEN_FRAMES(), ww = 160;
       ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(VW / 2 - ww / 2, by + 136, ww, 5);
       ctx.fillStyle = '#ffd23f'; ctx.fillRect(VW / 2 - ww / 2, by + 136, ww * f, 5);
@@ -3712,6 +4441,7 @@ function drawHUD() {
 function render() {
   if (RC) { renderRace(); return; }
   if (L.room) drawRoomBg(); else drawBackground();
+  if (L.twist === 'walljump') drawFireworks();
   const shk = G && G.shake > 0 ? G.shakeAmp : 0;
   ctx.save(); ctx.translate(-Math.round(cam) + (Math.random() - 0.5) * 2 * shk, (Math.random() - 0.5) * 2 * shk);
   for (const d of L.decor) if (d * T > cam - 80 && d * T < cam + VW + 40) drawDecor(d);
@@ -3721,12 +4451,17 @@ function render() {
   if (!L.boss && !L.vault) drawGoal();
   const c0 = Math.max(0, Math.floor(cam / T)), c1 = Math.min(L.w - 1, c0 + Math.ceil(VW / T) + 1);
   drawTiles();
+  if (L.twist) drawTwist();
   for (const c of L.coins) if (!c.taken && c.x > cam - 20 && c.x < cam + VW + 20) drawGem(c.x, c.y + Math.sin(tick * 0.08 + c.x) * 3, c.v, tick * 0.08 + c.x);
   for (const e of L.enemies) drawEnemy(e);
   drawPits(c0, c1);   // after enemies, so lava blobs rise out of the lava
   drawBoss();
+  if (L.boss) drawOrbs();
   if (G) { drawPet(); drawPlayer(); drawProjectiles(); drawParticles(); }
+  if (L.twist && G) drawTwistFront();
   ctx.restore();
+  if (L.twist === 'dark' && G) drawDarkness();
+  if (G && G.alarm > 0) { ctx.fillStyle = `rgba(255,0,0,${0.18 * Math.abs(Math.sin(G.alarm * 0.2))})`; ctx.fillRect(0, 0, VW, VH); }
   if (G) {
     drawHUD();
     // gems fly up into the counter
@@ -3769,16 +4504,16 @@ function startStage(i) {
   P = { x: 1.5 * T, y: GR * T - 44, w: 24, h: 44, vx: 0, vy: 0, onGround: false, face: 1, inv: 0, anim: 0, coyote: 0, jbuf: 0, throwT: 0 };
   const hearts = prog.easy ? 5 : 3;
   G = { idx: i, skill: L.skill, hearts, maxHearts: hearts, coins: 0, score: 0, shake: 0, shakeAmp: 0, freeze: 0, slow: 0, flash: 0, flyers: [], pulse: 0, chain: 0, lastGem: -99, mistakes: 0, streak: 0, bestStreak: 0, missed: [], practice: new Map(), power: null, powerN: 0, carry: null, saved: null,
-    pet: prog.equip.pet ? { x: P.x, y: P.y, mood: null, moodT: 0 } : null, bubble: null, tip: null, wrongRun: 0, checkpoint: 1.5 * T, time: 0, parts: [], shots: [], bumps: new Map(), winT: 0 };
+    pet: prog.equip.pet ? { x: P.x, y: P.y, mood: null, moodT: 0 } : null, glide: 0, alarm: 0, climb: false, hidden: false, bubble: null, tip: null, wrongRun: 0, checkpoint: 1.5 * T, time: 0, parts: [], shots: [], bumps: new Map(), winT: 0 };
   SPR = bakeNinja(heroPal());   // equipped headband and suit, plus the belt you've earned
   cam = 0; ambient.length = 0;
   hide('menu');
   if (st.boss) {
     intro(`BOSS: ${W.boss.name}`, `<p class="taunt">“${W.boss.taunt}”</p>
-      <p>First <b>dodge</b> the attacks. When the boss gets dizzy, bonk the keypad block and pick the right answer to throw a shuriken!</p>`, 'Fight!');
+      <p>First <b>dodge</b> the attacks. When the boss gets dizzy, jump and grab the shuriken with the right answer to throw it!</p>`, 'Fight!');
   } else if (!prog.seenWorld[st.w]) {
     prog.seenWorld[st.w] = true; save();
-    intro(`World ${st.w + 1}: ${W.name}`, `<p>${W.intro}</p>`, "Let's go!");
+    intro(`World ${st.w + 1}: ${W.name}`, `<div class="bigicon">${bossImg(W.boss.kind)}</div><p>${W.intro}</p>`, "Let's go!");
   } else begin();
 }
 function intro(title, body, label) { mode = 'intro'; hide('pauseBtn'); showTouch(false); showMsg(title, body, [{ label, fn: begin, primary: true }]); }
@@ -3809,9 +4544,9 @@ function buildMenu() {
   $('rank').innerHTML = `${beltHTML(b)} <span><b>${b.name} Belt</b> · ${pts} pts</span>`;
   const me = curPlayer(); $('playerChip').textContent = `${me.icon} ${me.name} ▾`;
   const pr = skillProgress(k);
-  $('skillChip').innerHTML = `${prog.auto && PATH.includes(k.id) ? '🧭' : '🧮'} ${k.name} <span class="tier">${stars(k.tier)}</span> <span class="dots">${pr.learned}/${pr.n}</span> ✎`;
+  $('skillChip').innerHTML = `${pixImg('compass', 'pix sm')} ${k.name} <span class="tier">${stars(k.tier)}</span> <span class="dots">${pr.learned}/${pr.n}</span> ✎`;
   const dl = prog.daily, live = dl.last >= today() - 1 ? dl.streak : 0;
-  $('dojoBtn').innerHTML = dl.last === today() ? `🔥 ${live} ✔` : `🔥 Daily Dojo${live ? ` · ${live}` : ''}`;
+  $('dojoBtn').innerHTML = dl.last === today() ? `${pixImg('flame', 'pix sm')} ${live} ✔` : `${pixImg('flame', 'pix sm')} Daily Dojo${live ? ` · ${live}` : ''}`;
   $('dojoBtn').classList.toggle('done', dl.last === today());
   $('bankMenu').textContent = `${prog.bank}💎`;
   $('badgeMenu').textContent = `${BADGES.filter(x => prog.badges[x.id]).length}/${BADGES.length}`;
@@ -3819,22 +4554,22 @@ function buildMenu() {
   // The world map: four coloured zones with a winding path; Kai stands on the newest level.
   const box = $('worlds'); box.innerHTML = '';
   const open = unlockedCount(), here = Math.min(open - 1, STAGES.length - 1);
-  const BOSS_ICON = { kage: '🥷', golem: '🪨', bot: '🤖', shogun: '👹' }, DECOR = [['🌸', '⛩️', '🌸'], ['🌋', '🔥', '🌋'], ['⚙️', '🔩', '⚙️'], ['🌙', '🏯', '⭐']];
+  const DECOR = [['blossom', 'torii', 'blossom'], ['volcano', 'flame', 'volcano'], ['gear', 'bolt', 'gear'], ['flake', 'pine', 'flake'], ['moon', 'pagoda', 'star']];
   WORLDS.forEach((W, w) => {
     const won = !!prog.best[bossOf(w)], found = [0, 1, 2].filter(j => prog.best[w * PER_WORLD + j]).length;
     const xs = [13, 37, 62, 87], ys = [48, 48, 48, 48];
     const zone = document.createElement('div'); zone.className = `zone z-${W.key}`;
     const pathD = `M ${xs[0]} ${ys[0]} L ${xs[3]} ${ys[3]}`;
-    zone.innerHTML = `<div class="wname">${w + 1} · ${W.name}<span>📜 ${won ? '✔' : `${found}/3`}</span></div>
+    zone.innerHTML = `<div class="wname">${w + 1} · ${W.name}<span>${pixImg('scroll', 'pix sm')} ${won ? '✔' : `${found}/3`}</span></div>
       <div class="zmap"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="${pathD}" /></svg>
-      ${DECOR[w].map((e, k) => `<i class="deco" style="left:${[25, 50, 75][k]}%;top:${[18, 16, 20][k]}%">${e}</i>`).join('')}</div>`;
+      ${DECOR[w].map((e, k) => `<i class="deco" style="left:${[25, 50, 75][k]}%;top:${[18, 16, 20][k]}%">${pixImg(e, 'pix')}</i>`).join('')}</div>`;
     const map = zone.querySelector('.zmap');
     STAGES.forEach((st, i) => {
       if (st.w !== w) return;
       const k = st.k, el = document.createElement('button'), locked = i >= open, best = prog.best[i], d = best ? best.dots : 0;
       el.className = 'node' + (st.boss ? ' boss' : '') + (i === here ? ' here' : '') + (best ? ' won' : '');
       el.disabled = locked; el.style.left = xs[k] + '%'; el.style.top = ys[k] + '%';
-      el.innerHTML = `<b>${locked ? '🔒' : st.boss ? BOSS_ICON[W.boss.kind] : st.label}</b>${locked ? '' : `<em>${'●'.repeat(d) + '○'.repeat(3 - d)}</em>`}
+      el.innerHTML = `<b>${locked ? pixImg('lock', 'pix lk') : st.boss ? bossImg(W.boss.kind) : st.label}</b>${locked ? '' : `<em>${'●'.repeat(d) + '○'.repeat(3 - d)}</em>`}
         <span class="nl">${!st.boss && prog.golden[i] ? '🌟 ' : ''}${st.boss ? W.boss.name : st.name}</span>`;
       if (i === here) { const cv = document.createElement('canvas'); cv.width = 40; cv.height = 40; cv.className = 'kai'; drawNinjaPreview(cv, { ...prog.equip, pet: null }, 2); el.appendChild(cv); }
       el.onclick = () => { audio(); confirmStage(i); };
@@ -3889,7 +4624,7 @@ function showHowTo() {
     ${row('⛩️', 'Jump up and bonk the block with the right answer to open each gate.')}
     ${row('💎', 'Grab gems: green = 1, blue = 5, red = 10. Spend them in the Dojo Shop.')}
     ${row('🌉', 'Bridges: bonk number stones to pick them up (you can carry up to 4) and take them to the altar to make the exact number. Bonk a stone again to put it back.')}
-    ${row('👹', 'Bosses: dodge first. When the boss is dizzy, bonk the keypad block and pick the answer.')}
+    ${row('👹', 'Bosses: dodge first. When the boss is dizzy, jump and grab the shuriken with the right answer.')}
     ${row('🧮', 'Pick any math for any level. Harder math ★ earns more gems and belt points.')}
     ${row('🔥', 'Daily Dojo: 10 quick questions a day. Keep your streak going and your pet grows!')}
     ${row('📒', 'Fact Book: answer a fact right and fast to make it silver, then again on another day to make it gold.')}
@@ -3969,7 +4704,7 @@ function toMenu() {
 }
 
 function showStory(then) {
-  showMsg('The Stolen Scrolls', `<div class="bigicon">🥷📜</div><p>${STORY}</p>`, [{ label: "Let's go!", fn: then, primary: true }]);
+  showMsg('The Stolen Scrolls', `<div class="bigicon">${kaiImg()}${pixImg('scroll', 'pix big')}</div><p>${STORY}</p>`, [{ label: "Let's go!", fn: then, primary: true }]);
 }
 
 let pausedMode = 'play';
@@ -3978,7 +4713,7 @@ function togglePause() {
     pausedMode = mode; mode = 'pause'; showTouch(false);
     showMsg('Paused', '<p>Take a breath, ninja!</p>', [
       { label: 'Resume', fn: togglePause, primary: true },
-      { label: 'Restart', fn: () => (pausedMode === 'race' ? startRace() : startStage(G.idx)), alt: true },
+      { label: 'Restart', fn: () => (pausedMode === 'race' ? (RC && RC.travel !== null ? travelRace(STAGES[RC.travel].w) : startRace()) : startStage(G.idx)), alt: true },
       { label: pausedMode === 'race' ? 'Menu' : 'Levels', fn: toMenu, alt: true },
     ]);
   } else if (mode === 'pause') { mode = pausedMode; hide('msg'); showTouch(true); }
@@ -4000,6 +4735,66 @@ $('unlockBtn').onclick = () => setAllOpen(!prog.allOpen);
 $('storyBtn').onclick = () => { hide('settings'); showStory(() => { hide('msg'); show('menu'); }); };
 $('skillChip').onclick = () => { audio(); openSkills(toMenu); };
 $('autoBtn').onclick = () => { audio(); prog.auto = !prog.auto; save(); renderSkills(); };
+
+// ---------------------------------------------------------------- pixel icons for the menus
+// 12×12 pixel pictures (with the same dark outline as the game's sprites) instead of emoji.
+const PIX_COL = { w: '#f4f4f4', d: '#3a3a4a', r: '#e63946', y: '#ffd23f', Y: '#c9961a', b: '#5b6bd6', g: '#9aa7b8', G: '#2f8a4a', p: '#ff9cc4', P: '#ffd6e8', o: '#c9a24f', W: '#fff6c8', q: '#8b5a2b', c: '#7df9ff' };
+const PIX = {
+  race: ['qdddwwwddd', 'qdddwwwddd', 'qwwwdddwww', 'qwwwdddwww', 'qdddwwwddd', 'qdddwwwddd', 'q', 'q', 'q', 'q', 'q', 'qq'],
+  pagoda: ['.....yy', '....rrrr', '..rrrrrrrr', '.r..wwww..r', '....wddw', '...rrrrrr', '.rrrrrrrrrr', 'r..wwwwww..r', '...wdwwdw', '...wdwwdw', '...wwwwww', '.GGGGGGGGGG'],
+  book: ['', '.bbbbb.bbbbb', '.bwwwwbwwwwb', '.bwddwbwddwb', '.bwwwwbwwwwb', '.bwddwbwddwb', '.bwwwwbwwwwb', '.bwddwbwddwb', '.bwwwwbwwwwb', '.bbbbbbbbbbb', '......b'],
+  medal: ['.rr......bb', '..rr....bb', '...rr..bb', '....rrbb', '....yyyy', '...yYYYYy', '..yYyyyyYy', '..yYyyyyYy', '..yYyyyyYy', '...yYYYYy', '....yyyy'],
+  gear: ['.....gg', '..gg.gg.gg', '..gggggggg', '...gg..gg', '.ggg....ggg', '.gg......gg', '.gg......gg', '.ggg....ggg', '...gg..gg', '..gggggggg', '..gg.gg.gg', '.....gg'],
+  help: ['..wwwwwwww', '.wwwwwwwwww', '.wwwbbbbwww', '.wwwwwwbwww', '.wwwwwbbwww', '.wwwwbbwwww', '.wwwwbwwwww', '.wwwwwwwwww', '.wwwwbwwwww', '..wwwwwwww', '....ww', '...w'],
+  flame: ['.....r', '....rr', '....rrr.r', '...rryrrrr', '..rryyyrrr', '..ryyyyyrr', '.rryyWyyyr', '.ryyWWWyyr', '.ryyWWWyyrr', '.rryyWyyyr', '..rryyyyr', '...rrrrr'],
+  compass: ['....oooo', '..oowwwwoo', '.owwwwrwwwo', '.owwwwrrwwo', 'owwwwrrwwwwo', 'owwwwrwwwwwo', 'owwwwwbwwwwo', 'owwwwbbwwwwo', '.owwbbwwwwo', '.owwwbwwwwo', '..oowwwwoo', '....oooo'],
+  lock: ['....gggg', '...g....g', '...g....g', '...g....g', '..yyyyyyyy', '..yYYYYYYy', '..yYYddYYy', '..yYYddYYy', '..yYYYdYYy', '..yYYYYYYy', '..yyyyyyyy'],
+  blossom: ['.....pp', '....pPPp', '..pp.pp.pp', '.pPPp..pPPp', '.pPPpyypPPp', '..pp.yy.pp', '....pppp', '...pPPPPp', '...pPPPPp', '....pppp'],
+  torii: ['rrrrrrrrrrrr', '.rrrrrrrrrr', '..r......r', '.rrrrrrrrrr', '..r......r', '..r......r', '..r......r', '..r......r', '..r......r', '..r......r', '.dd......dd'],
+  volcano: ['....ryyr', '....ryyr', '.....rr', '....dddd', '...dddrdd', '...ddrrdd', '..dddrrddd', '..ddrrddddd', '.dddrddddddd', '.ddddddddddd', 'dddddddddddd'],
+  bolt: ['......yyy', '.....yyy', '....yyy', '...yyy', '..yyyyyyy', '......yyy', '.....yyy', '....yyy', '...yy', '..y'],
+  flake: ['.....c', '...c.c.c', '....ccc', '.c..ccc..c', '..c.ccc.c', 'ccccccccccc', '..c.ccc.c', '.c..ccc..c', '....ccc', '...c.c.c', '.....c'],
+  pine: ['.....G', '....GGG', '...GwGGG', '..GGGGGwG', '....GGG', '...GGGGGG', '..GwGGGGwG', '.GGGGGGGGGG', '....GGG', '...GGGGGG', '..GGGGGGGG', '.....qq'],
+  moon: ['....yyyy', '..yyyy', '.yyyy', '.yyy', 'yyyy', 'yyyy', 'yyyy', 'yyyyy', '.yyyyy....y', '.yyyyyyyyy', '..yyyyyyy', '....yyyy'],
+  scroll: ['.qWWWWWWWWq', 'qqWWWWWWWWqq', '.qWddddddWq', '.qWWWWWWWWq', '.qWddddddWq', '.qWWWWWWWWq', '.qWdddddWWq', '.qWWWWWWWWq', '.qWddddddWq', '.qWWWWWWWWq', 'qqWWWWWWWWqq', '.qWWWWWWWWq'],
+  piece: ['', '...WWWWWWW', '..WWdddWWW', '.WWWWWWWWW', '.WWddddWWWW', '..WWWWWWWWW', '..WWdddWWW', '.WWWWWWWWW', '.WWWddWWW', '..WWWWWW', '...WWW'],
+  gem: ['', '...cccccc', '..cwwccccc', '.cwccccccbc', 'ccccccccccbb', '.cccccccbbb', '..ccccccbb', '...ccccbb', '....ccbb', '.....cb'],
+  belt: ['', '', '', 'bbbbbbbbbbbb', 'bbbbbyybbbbb', 'bbbbyyyybbbb', '.....yy', '....b..b', '...bb..bb', '..bb....bb'],
+  trophy: ['.yyyyyyyyyy', 'yyYyyyyyyYyy', 'y.yyyyyyyy.y', 'y.yyyyyyyy.y', '.yyyyyyyyyy', '..yyyyyyyy', '....yyyy', '.....yy', '.....yy', '...YYYYYY', '..YYYYYYYY'],
+  clock: ['...wwwwww', '..wwwwwwww', '.wwwwdwwwww', '.wwwwdwwwww', 'wwwwwdwwwwww', 'wwwwwddddwww', 'wwwwwwwwwwww', '.wwwwwwwwww', '.wwwwwwwwww', '..wwwwwwww', '...wwwwww'],
+  feather: ['.........ww', '.......wwww', '......wwwww', '.....wwwwww', '....wwwwwc', '...wwwwwc', '..wwwwwc', '..wwwwc', '.wwwc', '.wc', 'q', 'q'],
+  shield: ['.bbbbbbbbbb', 'bbwwbbbbbbbb', 'bwwbbbbyybbb', 'bwbbbbyyyybb', 'bbbbbyyyyybb', 'bbbbbbyyybbb', '.bbbbbbybbb', '.bbbbbbbbbb', '..bbbbbbbb', '...bbbbbb', '....bbbb', '.....bb'],
+  boot: ['', '..rrrrr', '..rwwrr', '..rrrrr', '..rwwrr', '..rrrrr', '..rrrrrr', '..rrrrrrrr', '.rrrrrrrrrr', '.rrrrrrrrrrr', '.wwwwwwwwwww', '.ddddddddddd'],
+  magnet: ['', '.rrr....rrr', '.rrr....rrr', '.rrr....rrr', '.rrr....rrr', '.rrr....rrr', '.rrr....rrr', '.rrrr..rrrr', '..rrrrrrrr', '...rrrrrr', '.www....www', '.www....www'],
+  heart: ['', '.rrr...rrr', 'rrwrr.rrrrr', 'rwrrrrrrrrr', 'rrrrrrrrrrr', 'rrrrrrrrrrr', '.rrrrrrrrr', '..rrrrrrr', '...rrrrr', '....rrr', '.....r'],
+  star: ['.....y', '.....y', '....yyy', 'yyyyyyyyyy', '.yyyyyyyy', '..yyyyyy', '..yyyyyy', '.yyy..yyy', '.yy....yy', 'y........y'],
+};
+const pixCache = {};
+function pixURL(name, scale = 3, swap = null) {
+  const key = name + scale + (swap ? JSON.stringify(swap) : ''); if (pixCache[key]) return pixCache[key];
+  const rows = PIX[name], n = 14, cv = document.createElement('canvas'); cv.width = cv.height = n * scale;
+  const c = cv.getContext('2d'), at = (x, y) => (rows[y] || '')[x] || '.';
+  const filled = (x, y) => x >= 0 && y >= 0 && x < 12 && y < 12 && at(x, y) !== '.';
+  for (let y = -1; y <= 12; y++) for (let x = -1; x <= 12; x++) {
+    if (filled(x, y)) { const ch = at(x, y); c.fillStyle = (swap && swap[ch]) || PIX_COL[ch] || '#fff'; c.fillRect((x + 1) * scale, (y + 1) * scale, scale, scale); }
+    else if (filled(x - 1, y) || filled(x + 1, y) || filled(x, y - 1) || filled(x, y + 1)) { c.fillStyle = '#1a1426'; c.fillRect((x + 1) * scale, (y + 1) * scale, scale, scale); }
+  }
+  return (pixCache[key] = cv.toDataURL());
+}
+// The same pixel icons drawn on the game canvas.
+const pixImgs = {};
+function drawPix(name, x, y, sc = 2) {
+  if (!pixImgs[name]) { const im = new Image(); im.src = pixURL(name, 3); pixImgs[name] = im; }
+  const im = pixImgs[name]; if (im.complete && im.naturalWidth) { ctx.imageSmoothingEnabled = false; ctx.drawImage(im, x, y, 14 * sc, 14 * sc); }
+}
+const pixImg = (name, cls = 'pix', swap = null) => `<img class="${cls}" src="${pixURL(name, 3, swap)}" alt="">`;
+const MEDAL_SWAP = [null, { y: '#e0e6ee', Y: '#9aa7b8' }, { y: '#e09a5a', Y: '#a0602a' }, { y: '#ffd23f', Y: '#c9961a' }];   // bronze, silver, gold
+const medalImg = (n, cls = 'pix big') => pixImg('medal', cls, n === 3 ? null : n === 2 ? MEDAL_SWAP[1] : MEDAL_SWAP[2]);
+function kaiImg() { const cv = document.createElement('canvas'); cv.width = 40; cv.height = 40; drawNinjaPreview(cv, { ...prog.equip, pet: null }, 2); return `<img class="pix big" src="${cv.toDataURL()}" alt="">`; }
+function petImg(id) { return `<img class="pix big" src="${PET_SPR[id].a[0].toDataURL()}" alt="">`; }
+const bossURL = {};
+function bossImg(kind) { if (!bossURL[kind]) bossURL[kind] = BOSS_SPR[kind].a[0].toDataURL(); return `<img class="pix bossimg" src="${bossURL[kind]}" alt="">`; }
+
 // ---------------------------------------------------------------- fact book
 let fbAt = 0;
 function openFacts() { fbAt = Math.max(0, PATH.indexOf(prog.skill)); hide('menu'); renderFacts(); show('facts'); }
@@ -4106,7 +4901,7 @@ function finishDojo() {
   const golds = Object.keys(prog.facts).filter(k => factStatus(k) === 'gold' && dojo.before.get(k) !== 'gold').length;
   save(); checkTrophies();
   const right = dojo.right, n = dojo.qs.length; dojo = null; hide('dojo');
-  let body = `<div class="bigicon">🔥<small>${dl.streak}</small></div><div class="statrow"><span>✔ ${right}/${n}</span>${gems ? `<span>💎 +${gems}</span>` : ''}${golds ? `<span>🥇 +${golds}</span>` : ''}</div>`;
+  let body = `<div class="bigicon">${pixImg('flame', 'pix big')}<small>${dl.streak}</small></div><div class="statrow"><span>✔ ${right}/${n}</span>${gems ? `<span>${pixImg('gem', 'pix sm')} +${gems}</span>` : ''}${golds ? `<span>🥇 +${golds}</span>` : ''}</div>`;
   body += first ? `<div class="promo">${dl.streak > 1 ? `${dl.streak} days in a row!` : 'Come back tomorrow to grow your streak!'}</div>` : '<p>Extra practice! Your streak counts once a day.</p>';
   showMsg(first ? 'Dojo done!' : 'Nice practice!', body, [{ label: 'Play ▶', fn: toMenu, primary: true }, { label: '📒 Facts', fn: () => { hide('msg'); openFacts(); }, alt: true }]);
 }
@@ -4329,6 +5124,7 @@ function layout() {
 window.addEventListener('resize', layout);
 layout();
 document.body.classList.toggle('touch', isTouch);
+document.querySelectorAll('[data-pix]').forEach(el => { el.innerHTML = pixImg(el.dataset.pix); });
 applyProg();
 toMenu();
 if (players.list.length > 1) showPlayers();   // shared device: ask who's playing first
