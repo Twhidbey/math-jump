@@ -16,7 +16,8 @@
     -webkit-tap-highlight-color: transparent; }
   #wrap { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
   #stage { position: relative; width: min(100vw, calc(100vh * 16 / 9)); aspect-ratio: 16 / 9; }
-  canvas { width: 100%; height: 100%; display: block; }
+  #game { width: 100%; height: 100%; display: block; }
+  canvas { display: block; }
   .overlay { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
     justify-content: flex-start; background: rgba(12, 12, 35, .78); color: #fff; text-align: center;
     padding: 16px; box-sizing: border-box; overflow-y: auto; z-index: 10; touch-action: pan-y; }
@@ -86,6 +87,17 @@
   body.touch .keys { display: none; }
   body.racing .tbtn[data-k="jump"] { display: none; }
   .bigrow { margin: 4px 0 2px; }
+  .pickh { margin: 12px 0 6px; font-size: 16px; color: #ffd23f; }
+  .pickgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  #trackGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pick { font: inherit; font-weight: 800; color: #fff; background: rgba(255,255,255,.08); border: 3px solid transparent; border-radius: 12px;
+    padding: 6px 4px; cursor: pointer; display: grid; justify-items: center; gap: 2px; }
+  .pick canvas { image-rendering: pixelated; width: 100%; max-width: 108px; height: auto; }
+  .pick small { font-size: 11px; opacity: .8; }
+  .pick.on { border-color: #ffd23f; }
+  .pick:disabled { opacity: .5; cursor: default; }
+  .pick.track { min-height: 84px; align-content: center; text-shadow: 0 2px 3px rgba(0,0,0,.8); }
+  .pick.track b { font-size: 30px; }
   .homebar { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; margin: 4px 0 2px; }
   .mathchip { font: inherit; font-weight: 800; font-size: 18px; color: #3a2200; background: #ffd23f; border: none; border-bottom: 4px solid #b8860b;
     border-radius: 999px; padding: 8px 18px; cursor: pointer; }
@@ -201,6 +213,19 @@
   </div>
 </div>
 
+<div id="raceSetup" class="overlay hidden">
+  <div class="card shopcard">
+    <h2>Race</h2>
+    <p class="mathline" id="raceMath"></p>
+    <div class="row"><button class="btn ghost" id="raceMathBtn" type="button">Change math</button></div>
+    <h3 class="pickh">Pick your ride</h3>
+    <div class="pickgrid" id="rideGrid"></div>
+    <h3 class="pickh">Pick a track</h3>
+    <div class="pickgrid" id="trackGrid"></div>
+    <div class="row" style="margin-top:12px"><button class="btn" id="raceGo" type="button">Start ▶</button><button class="btn alt" id="raceBack" type="button">Back</button></div>
+  </div>
+</div>
+
 <div id="skills" class="overlay hidden">
   <div class="card shopcard">
     <h2>Pick your math</h2>
@@ -222,8 +247,8 @@
 <div id="shop" class="overlay hidden">
   <div class="card shopcard">
     <h2>Dojo Shop</h2>
-    <div class="shoptop"><canvas id="shopPreview" width="140" height="88"></canvas>
-      <div><div class="bankline">💎 <b id="bank">0</b> gems</div><div class="shophint">Collect gems in levels and horse races.</div></div></div>
+    <div class="shoptop"><canvas id="shopPreview" width="110" height="56"></canvas>
+      <div><div class="bankline">💎 <b id="bank">0</b> gems</div><div class="shophint">Collect gems in levels and races.</div></div></div>
     <div class="buybox hidden" id="buyBox"></div>
     <div class="shopgrid" id="shopGrid"></div>
     <div class="row"><button class="btn alt" id="shopClose" type="button">Back</button></div>
@@ -864,7 +889,7 @@ setInterval(() => {
 
 // ---------------------------------------------------------------- progress
 const SAVE_KEY = 'mathninja-v2';
-let prog = { best: {}, skill: 'add10', mastery: {}, easy: null, allOpen: false, seenIntro: false, seenWorld: {}, bank: 0, music: true,
+let prog = { best: {}, skill: 'add10', ride: 'panda', track: 'cherry', mastery: {}, easy: null, allOpen: false, seenIntro: false, seenWorld: {}, bank: 0, music: true,
   badges: {}, golden: {}, stats: { bridges: 0, gems: 0 },
   owned: ['band-red', 'suit-navy'], equip: { band: 'band-red', suit: 'suit-navy', trail: null, pet: null }, raceBest: {} };
 try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s) prog = Object.assign(prog, s); } catch (e) { /* no storage */ }
@@ -1128,8 +1153,8 @@ const BADGES = [
   { id: 'golden-all', icon: '👑', name: 'Golden Hunter', text: 'Find all 8 golden gems. Unlocks the Golden suit!' },
   { id: 'boss-nohit', icon: '🛡️', name: 'Untouchable', text: 'Beat a boss without getting hit.' },
   { id: 'boss-all', icon: '📜', name: 'Scroll Keeper', text: 'Win back all four scrolls.' },
-  { id: 'race-win', icon: '🥇', name: 'Champion Rider', text: 'Win a horse race.' },
-  { id: 'race-perfect', icon: '🐎', name: 'Perfect Ride', text: 'Get every gate right in a horse race.' },
+  { id: 'race-win', icon: '🥇', name: 'Champion Rider', text: 'Win a race (unlocks the dragon ride).' },
+  { id: 'race-perfect', icon: '🐎', name: 'Perfect Ride', text: 'Get every gate right in a race.' },
   { id: 'shopper', icon: '🛍️', name: 'Shopper', text: 'Buy something in the Dojo Shop.' },
   { id: 'gems500', icon: '💎', name: 'Gem Collector', text: 'Collect 500 gems in total.' },
   { id: 'black-belt', icon: '🥋', name: 'Black Belt', text: 'Reach the Black Belt rank.' },
@@ -1658,46 +1683,110 @@ function update() {
 }
 
 
-// ---------------------------------------------------------------- horse race side quest
+// ---------------------------------------------------------------- race side quest
 // A behind-the-rider road with three lanes. Each gate hangs three answers over the lanes:
-// steer into the right one for a speed boost; a wrong one makes the horse stumble.
+// steer into the right one for a speed boost; a wrong one makes the ride stumble.
 const SEG = 200, ROAD_W = 1600, CAM_H = 1500, PLAYER_Z = 1200, DRAW = 150, DEPTH = 0.84;
-const GATES = 12, GATE_GAP = 26000, START_Z = 9000, RIDER_H = 300;
+const GATES = 12, GATE_GAP = 26000, START_Z = 9000, RIDER_H = 380;
 const LANES = [-2 / 3, 0, 2 / 3];   // lane centres, as a fraction of half the road width
-const RIDER_BASE = { h: '#8b5a2b', H: '#5e3a1c', l: '#a8743f', m: '#2a1a10', s: '#c0392b', f: '#2a2a2a', n: '#2c3a6b', N: '#5a72c2', R: '#e63946', b: '#f4f4f4' };
-// Seen from behind: the ninja on a galloping horse, headband tails flying.
-function drawRider({ P, R, E }, f) {
-  const up = f ? 1 : 0;
-  R(7, 18 + up, 3, 4, 'H'); R(14, 19 - up, 3, 4, 'H'); R(7, 22 + up, 3, 1, 'f'); R(14, 23 - up, 3, 1, 'f');
-  E(12, 15, 7, 5, 'h'); E(9.5, 13.5, 2.5, 1.6, 'l');
-  R(11, 17, 2, 4, 'm'); P(f ? 13 : 10, 21, 'm');
-  P(9, 3, 'h'); P(15, 3, 'h'); P(9, 4, 'm'); P(15, 4, 'm');
-  R(8, 11, 8, 2, 's');
-  R(9, 7, 6, 4, 'n'); P(8, 8, 'n'); P(15, 8, 'n'); P(7, 9, 'n'); P(16, 9, 'n'); P(10, 8, 'N');
-  R(9, 10, 6, 1, 'b');
-  E(12, 5, 2.6, 2.6, 'n'); P(11, 4, 'N');
-  R(9, 4, 7, 1, 'R');
-  if (f) { P(16, 4, 'R'); P(17, 3, 'R'); P(18, 3, 'R'); } else { P(16, 4, 'R'); P(17, 5, 'R'); P(18, 5, 'R'); }
+// Rides, seen from behind with the ninja on top. 32×32 pixel grids, two gallop frames each.
+function riderTop({ P, R, E }, f) {
+  R(9, 15, 2, 4, 'n'); R(21, 15, 2, 4, 'n');
+  R(12, 9, 8, 6, 'n'); P(11, 11, 'n'); P(10, 12, 'n'); P(20, 11, 'n'); P(21, 12, 'n'); P(14, 10, 'N'); P(13, 11, 'N');
+  R(12, 13, 8, 1, 'b');
+  E(16, 6.5, 3.4, 3.4, 'n'); P(15, 4, 'N');
+  R(12, 6, 9, 1, 'R');
+  if (f) { P(21, 6, 'R'); P(22, 5, 'R'); P(23, 5, 'R'); P(24, 4, 'R'); } else { P(21, 6, 'R'); P(22, 7, 'R'); P(23, 7, 'R'); P(24, 8, 'R'); }
 }
-const bakeRider = pal => bake(makeFrames(24, 24, { ...RIDER_BASE, ...pal }, drawRider, 2), ['a', 'b'], 4);
+const RIDES = {
+  panda: { name: 'Panda', icon: '🐼', pal: { w: '#f4f4f4', W: '#ffffff', g: '#c9ccd6', B: '#1f1f26', s: '#c0392b' }, draw(api, f) {
+    const { R, E } = api, a = f ? 1 : 0;
+    E(10.5, 4, 2.4, 2.4, 'B'); E(21.5, 4, 2.4, 2.4, 'B'); E(16, 8, 5.6, 4, 'w');
+    R(6, 22 + a, 6, 8, 'B'); R(20, 23 - a, 6, 8, 'B');
+    E(16, 19.5 - a * 0.5, 11, 8, 'w'); E(16, 24, 8.5, 2.4, 'g'); E(11.5, 16, 3.6, 2, 'W');
+    R(5, 12, 22, 4, 'B'); E(16, 24.6, 1.8, 1.3, 'W');
+    R(10, 14, 12, 2, 's');
+    riderTop(api, f);
+  } },
+  horse: { name: 'Horse', icon: '🐴', pal: { h: '#8b5a2b', H: '#5e3a1c', l: '#b07a45', m: '#2a1a10', s: '#c0392b', S: '#ffd23f', f: '#2a2a2a' }, draw(api, f) {
+    const { P, R, E, L } = api, a = f ? 1 : 0;
+    P(12, 2, 'h'); P(12, 3, 'H'); P(20, 2, 'h'); P(20, 3, 'H'); E(16, 8, 4.5, 3, 'h');
+    P(11, 8, 'm'); P(11, 9, 'm'); P(21, 8, 'm'); P(21, 9, 'm');
+    R(9, 23 + a, 4, 6, 'H'); R(19, 24 - a, 4, 6, 'H'); R(9, 29 + a, 4, 1, 'f'); R(19, 30 - a, 4, 1, 'f');
+    E(16, 20, 9, 6.5, 'h'); E(12, 17.5, 3.5, 2, 'l'); E(20.5, 18, 2.2, 1.4, 'l'); L(16, 15, 16, 23, 'H');
+    R(15, 22, 3, 6, 'm'); if (f) { P(14, 28, 'm'); P(13, 29, 'm'); } else { P(18, 28, 'm'); P(19, 29, 'm'); }
+    R(10, 14, 12, 3, 's'); R(10, 16, 12, 1, 'S');
+    riderTop(api, f);
+  } },
+  tiger: { name: 'Tiger', icon: '🐯', pal: { o: '#f28c28', O: '#c8691a', w: '#fff4e6', k: '#1f1410', s: '#2c3a6b', f: '#1f1410' }, draw(api, f) {
+    const { P, R, E, L } = api, a = f ? 1 : 0;
+    E(11.5, 3.5, 1.8, 1.8, 'o'); E(20.5, 3.5, 1.8, 1.8, 'o'); P(11, 3, 'w'); P(20, 3, 'w'); E(16, 8, 5, 3.4, 'o');
+    R(9, 23 + a, 4, 6, 'o'); R(19, 24 - a, 4, 6, 'o'); R(9, 25 + a, 4, 1, 'k'); R(19, 26 - a, 4, 1, 'k'); R(9, 29 + a, 4, 1, 'w'); R(19, 30 - a, 4, 1, 'w');
+    E(16, 20, 9, 6.5, 'o'); E(12, 17.5, 3.2, 1.8, 'O');
+    L(8, 17, 11, 19, 'k'); L(24, 17, 21, 19, 'k'); L(8, 21, 12, 22, 'k'); L(24, 21, 20, 22, 'k'); L(13, 24, 15, 25, 'k'); L(19, 24, 17, 25, 'k');
+    R(15, 23, 2, 6, 'o'); P(15, 25, 'k'); P(16, 27, 'k');
+    if (f) { P(17, 29, 'o'); P(18, 29, 'k'); P(19, 28, 'o'); } else { P(14, 29, 'o'); P(13, 29, 'k'); P(12, 28, 'o'); }
+    R(10, 14, 12, 2, 's');
+    riderTop(api, f);
+  } },
+  dragon: { name: 'Dragon', icon: '🐉', lock: 'race-win', pal: { g: '#3fbf6a', G: '#2a8a4a', d: '#1e6a3a', y: '#ffd23f', s: '#c0392b' }, draw(api, f) {
+    const { P, R, E, L } = api;
+    if (f) { E(5, 9, 5, 3, 'G'); E(27, 9, 5, 3, 'G'); L(10, 12, 2, 7, 'd'); L(22, 12, 30, 7, 'd'); }
+    else { E(5, 15, 5, 2, 'G'); E(27, 15, 5, 2, 'G'); L(10, 14, 1, 16, 'd'); L(22, 14, 31, 16, 'd'); }
+    P(12, 2, 'y'); P(12, 3, 'y'); P(20, 2, 'y'); P(20, 3, 'y'); E(16, 7.5, 4.5, 3, 'g');
+    R(10, 23, 3, 4, 'd'); R(19, 23, 3, 4, 'd');
+    E(16, 19, 8.5, 6.5, 'g'); E(13, 16.5, 3, 1.8, 'G');
+    for (let y = 15; y <= 22; y += 3) P(16, y, 'y');
+    R(15, 24, 3, 5, 'g'); P(14, 29, 'y'); P(15, 30, 'y'); P(16, 31, 'y'); P(17, 30, 'y'); P(18, 29, 'y'); P(16, 29, 'y');
+    R(10, 14, 12, 2, 's');
+    riderTop(api, f);
+  } },
+};
+const RIDER_PAL = { n: '#2c3a6b', N: '#5a72c2', R: '#e63946', b: '#f4f4f4' };
+const bakeRide = (id, pal = {}) => bake(makeFrames(32, 32, { ...RIDES[id].pal, ...RIDER_PAL, ...pal }, RIDES[id].draw, 2), ['a', 'b'], 3);
 const RIVALS = [
-  { name: 'Red Bandit', col: '#e63946', pal: { n: '#a3242f', N: '#d0485a', R: '#1a1a1a', b: '#1a1a1a', h: '#5e3a1c', H: '#3d2410', l: '#7a4f2a' }, speed: 5250 },
-  { name: 'Gray Wolf', col: '#c9c4b8', pal: { n: '#5a5f6e', N: '#8a90a0', R: '#ffd23f', b: '#ffd23f', h: '#d8d2c4', H: '#a59d8c', l: '#f0ece2', m: '#8a8478' }, speed: 4900 },
-  { name: 'Shadow Rider', col: '#b388ff', pal: { n: '#3d2466', N: '#6b44a8', R: '#b388ff', b: '#b388ff', h: '#2a2730', H: '#16141c', l: '#45405a' }, speed: 4500 },
-].map(v => ({ ...v, spr: bakeRider(v.pal) }));
+  { name: 'Red Bandit', col: '#e63946', ride: 'horse', pal: { n: '#a3242f', N: '#d0485a', R: '#1a1a1a', b: '#1a1a1a', h: '#5e3a1c', H: '#3d2410', l: '#7a4f2a' }, speed: 5250 },
+  { name: 'Gray Wolf', col: '#c9c4b8', ride: 'tiger', pal: { n: '#5a5f6e', N: '#8a90a0', R: '#ffd23f', b: '#ffd23f', o: '#d8d2c4', O: '#a59d8c' }, speed: 4900 },
+  { name: 'Shadow Rider', col: '#b388ff', ride: 'dragon', pal: { n: '#3d2466', N: '#6b44a8', R: '#b388ff', b: '#b388ff', g: '#5a3a8f', G: '#3d2466', d: '#22113a' }, speed: 4500 },
+].map(v => ({ ...v, spr: bakeRide(v.ride, v.pal) }));
+// Tracks: each has its own sky, scenery, ground and roadside things.
+const TRACKS = {
+  cherry: { name: 'Cherry Valley', icon: '🌸', sky: ['#6fb4f0', '#ffd6e8'], ground: ['#5fbf4a', '#54ad41'], rumble: ['#e63946', '#f4f4f4'], road: ['#c9a77a', '#bf9d70'], lane: '#f4ead5' },
+  lava: { name: 'Lava Run', icon: '🌋', sky: ['#1a0505', '#8a2a0a'], ground: ['#ff5a00', '#e84a00'], rumble: ['#1a1414', '#ff8c1a'], road: ['#2b2422', '#332b28'], lane: '#ff8c1a' },
+  city: { name: 'Night City', icon: '🌃', sky: ['#05071a', '#2a1f5a'], ground: ['#1b1f3a', '#171a33'], rumble: ['#ff3d9a', '#3ae0ff'], road: ['#22232e', '#272837'], lane: '#ffd23f' },
+};
 let RC = null;
 
 function showRaceSetup() {
   RC = null; document.body.classList.remove('racing');
-  hide('menu'); hide('pauseBtn'); showTouch(false);
+  hide('menu'); hide('msg'); hide('pauseBtn'); showTouch(false);
   const k = curSkill(), best = prog.raceBest[k.id];
-  showMsg('Horse Race', `<div class="bigicon">🐎</div>
-    <p>Steer into the lane with the right answer for a speed boost!</p>
-    <p class="mathline">Math: <b>${k.name}</b> <span class="tier">${stars(k.tier)}</span><br><small>💎 ×${TIER_GEMS[k.tier - 1]}${best ? ` · best time ${best.toFixed(1)} s` : ''}</small></p>`,
-    [{ label: 'Start ▶', fn: startRace, primary: true }, { label: 'Change math', fn: () => openSkills(showRaceSetup), alt: true }, { label: 'Back', fn: toMenu, alt: true }]);
+  $('raceMath').innerHTML = `Math: <b>${k.name}</b> <span class="tier">${stars(k.tier)}</span> · 💎 ×${TIER_GEMS[k.tier - 1]}${best ? ` · best ${best.toFixed(1)} s` : ''}`;
+  if (!RIDES[prog.ride] || (RIDES[prog.ride].lock && !prog.badges[RIDES[prog.ride].lock])) prog.ride = 'panda';
+  if (!TRACKS[prog.track]) prog.track = 'cherry';
+  $('rideGrid').innerHTML = '';
+  for (const [id, ride] of Object.entries(RIDES)) {
+    const locked = ride.lock && !prog.badges[ride.lock];
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'pick' + (prog.ride === id ? ' on' : ''); b.disabled = locked;
+    b.innerHTML = `<canvas width="72" height="72"></canvas><span>${ride.name}</span>${locked ? '<small>🔒 Win a race</small>' : ''}`;
+    const c = b.querySelector('canvas').getContext('2d'); c.imageSmoothingEnabled = false;
+    c.drawImage(bakeRide(id, pickRiderPal()).a[0], -12, -12, 96, 96);
+    b.onclick = () => { audio(); prog.ride = id; save(); showRaceSetup(); };
+    $('rideGrid').appendChild(b);
+  }
+  $('trackGrid').innerHTML = '';
+  for (const [id, tr] of Object.entries(TRACKS)) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'pick track' + (prog.track === id ? ' on' : '');
+    b.style.background = `linear-gradient(${tr.sky[0]}, ${tr.sky[1]} 55%, ${tr.ground[0]} 55%)`;
+    b.innerHTML = `<b>${tr.icon}</b><span>${tr.name}</span>`;
+    b.onclick = () => { audio(); prog.track = id; save(); showRaceSetup(); };
+    $('trackGrid').appendChild(b);
+  }
+  show('raceSetup');
 }
 
 function startRace() {
+  hide('raceSetup');
   const topic = curSkill(), length = START_Z + GATES * GATE_GAP + 6000;
   const curves = [];
   for (let i = 0; i < Math.ceil(length / SEG) + DRAW + 10; i++) curves.push(Math.sin(i / 45) * 2.4 + Math.sin(i / 113) * 1.8);
@@ -1707,7 +1796,7 @@ function startRace() {
   RC = {
     topic, length, curves, gates, z: 0, speed: 0, cruise: 4600 * slow, maxSpeed: 8200 * slow, boost: 3000 * slow,
     lane: 1, laneX: 0, time: 0, count: 3.99, goT: 0, anim: 0, bg: 0, right: 0, wrong: 0, streak: 0, finished: false, place: 0,
-    missed: new Map(), texts: [], spr: bakeRider({ ...pickRiderPal() }),
+    missed: new Map(), texts: [], spr: bakeRide(prog.ride, pickRiderPal()), ride: prog.ride, track: TRACKS[prog.track] ? prog.track : 'cherry',
     rivals: RIVALS.map((v, k) => ({ ...v, z: 0, speed: 0, base: v.speed * slow, lane: k === 0 ? 0 : k === 1 ? 2 : 1, laneX: LANES[k === 0 ? 0 : k === 1 ? 2 : 1], switchT: R(3, 6) })),
   };
   RC.rivals[2].z = -500;   // the third rival starts just behind you
@@ -1792,20 +1881,11 @@ function finishRace() {
 function quad(x1, y1, w1, x2, y2, w2, col) { poly([[x1 - w1, y1], [x1 + w1, y1], [x2 + w2, y2], [x2 - w2, y2]], col); }
 
 function renderRace() {
-  const r = RC, W = VW, H = VH, hz = H * 0.4, camZ = r.z - PLAYER_Z, camX = r.laneX * ROAD_W * 0.5;
-  // sky, Mount Fuji and hills slide sideways on bends
-  const sky = ctx.createLinearGradient(0, 0, 0, hz); sky.addColorStop(0, '#6fb4f0'); sky.addColorStop(1, '#ffd6e8');
+  const r = RC, W = VW, H = VH, hz = H * 0.4, camZ = r.z - PLAYER_Z, camX = r.laneX * ROAD_W * 0.5, TR = TRACKS[r.track];
+  const sky = ctx.createLinearGradient(0, 0, 0, hz); sky.addColorStop(0, TR.sky[0]); sky.addColorStop(1, TR.sky[1]);
   ctx.fillStyle = sky; ctx.fillRect(0, 0, W, hz);
-  const off = ((r.bg * 300) % (W * 1.5) + W * 1.5) % (W * 1.5);
-  for (let k = -1; k <= 1; k++) {
-    const x = W * 0.6 + k * W * 1.5 - off;
-    poly([[x - 260, hz], [x - 50, hz - 150], [x + 50, hz - 150], [x + 260, hz]], '#8e9fd6');
-    poly([[x - 78, hz - 112], [x - 50, hz - 150], [x + 50, hz - 150], [x + 78, hz - 112], [x + 30, hz - 122], [x - 20, hz - 110]], '#fff');
-  }
-  ctx.fillStyle = '#9ad37a';
-  const hoff = ((r.bg * 700) % 400 + 400) % 400;
-  for (let x = -hoff - 200; x < W + 200; x += 400) { ctx.beginPath(); ctx.ellipse(x, hz, 230, 46, 0, Math.PI, 0); ctx.fill(); }
-  ctx.fillStyle = '#5fbf4a'; ctx.fillRect(0, hz, W, H - hz);
+  raceScenery(r, W, hz);   // distant scenery slides sideways on bends
+  ctx.fillStyle = TR.ground[0]; ctx.fillRect(0, hz, W, H - hz);
 
   // road, from far to near
   const first = Math.floor(camZ / SEG) + 1, pts = [];
@@ -1819,10 +1899,10 @@ function renderRace() {
     const a = pts[n], b = pts[n + 1];
     if (b.Y >= a.Y) continue;
     const alt = Math.floor(a.i / 3) % 2;
-    ctx.fillStyle = alt ? '#5fbf4a' : '#54ad41'; ctx.fillRect(0, b.Y, W, a.Y - b.Y + 1);
-    quad(a.X, a.Y, a.w * 1.12, b.X, b.Y, b.w * 1.12, alt ? '#e63946' : '#f4f4f4');
-    quad(a.X, a.Y, a.w, b.X, b.Y, b.w, alt ? '#c9a77a' : '#bf9d70');
-    if (alt) for (const lx of [-1 / 3, 1 / 3]) quad(a.X + a.w * lx, a.Y, a.w * 0.02, b.X + b.w * lx, b.Y, b.w * 0.02, '#f4ead5');
+    ctx.fillStyle = TR.ground[alt]; ctx.fillRect(0, b.Y, W, a.Y - b.Y + 1);
+    quad(a.X, a.Y, a.w * 1.12, b.X, b.Y, b.w * 1.12, TR.rumble[alt]);
+    quad(a.X, a.Y, a.w, b.X, b.Y, b.w, TR.road[alt]);
+    if (alt) for (const lx of [-1 / 3, 1 / 3]) quad(a.X + a.w * lx, a.Y, a.w * 0.02, b.X + b.w * lx, b.Y, b.w * 0.02, TR.lane);
   }
 
   // things along the road, drawn far to near
@@ -1835,16 +1915,16 @@ function renderRace() {
   const items = [];
   for (let i = first - first % 4; i < first + DRAW; i += 4) {
     const p = proj(i * SEG); if (!p) continue;
-    items.push({ p, draw: () => roadside(p, sxOf, (i / 4) % 2 ? 1 : -1, (i / 8) % 4 < 2) });
+    items.push({ p, draw: () => roadside(p, sxOf, (i / 4) % 2 ? 1 : -1, (i / 8) % 4 < 2, r.track, i) });
   }
   for (const g of r.gates) { const p = proj(g.z); if (p && !g.done) items.push({ p, draw: () => raceGate(p, sxOf, g) }); }
-  for (const v of r.rivals) { const p = proj(v.z); if (p) items.push({ p, draw: () => rider(v.spr, p, sxOf(p, v.laneX * ROAD_W), r.anim + v.base) }); }
+  for (const v of r.rivals) { const p = proj(v.z); if (p) items.push({ p, draw: () => rider(v.spr, p, sxOf(p, v.laneX * ROAD_W), r.anim + v.base, false, v.ride) }); }
   { const p = proj(r.length); if (p) items.push({ p, draw: () => finishBanner(p, sxOf) }); }
   items.sort((a, b) => b.p.zRel - a.p.zRel).forEach(it => it.draw());
 
   // the player's rider
   const pp = proj(r.z);
-  if (pp) rider(r.spr, pp, sxOf(pp, r.laneX * ROAD_W), r.anim, true);
+  if (pp) rider(r.spr, pp, sxOf(pp, r.laneX * ROAD_W), r.anim, true, r.ride);
   // speed lines while boosted
   if (r.speed > r.cruise + 500) {
     ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 2;
@@ -1856,8 +1936,86 @@ function renderRace() {
   drawRaceHUD();
 }
 
-function roadside(p, sxOf, side, tree) {
-  const x = sxOf(p, side * ROAD_W * 1.7), u = p.u, y = p.Y;
+// Far-off scenery for each track.
+function raceScenery(r, W, hz) {
+  const off = k => ((r.bg * k) % (W * 1.5) + W * 1.5) % (W * 1.5);
+  if (r.track === 'lava') {
+    for (let k = -1; k <= 1; k++) {
+      const x = W * 0.55 + k * W * 1.5 - off(260);
+      poly([[x - 300, hz], [x - 46, hz - 170], [x + 46, hz - 170], [x + 300, hz]], '#2b0f0c');
+      glowAt(x, hz - 170, 90, 'rgba(255,160,40,.7)');
+      ctx.fillStyle = '#ffb300'; ctx.beginPath(); ctx.ellipse(x, hz - 170, 46, 8, 0, 0, 7); ctx.fill();
+      for (let j = 0; j < 4; j++) { const t = (tick * 0.4 + j * 30) % 120; blob(x + t * 0.3, hz - 190 - t, 16 + t * 0.2, `rgba(70,55,55,${0.5 * (1 - t / 120)})`); }
+    }
+    ctx.fillStyle = '#3a1016'; const hoff = off(500) % 300;
+    for (let x = -hoff - 150; x < W + 150; x += 300) poly([[x - 150, hz], [x - 40, hz - 50], [x + 30, hz - 36], [x + 150, hz]], '#3a1016');
+    const g = ctx.createLinearGradient(0, hz - 60, 0, hz); g.addColorStop(0, 'rgba(255,90,0,0)'); g.addColorStop(1, 'rgba(255,90,0,.45)');
+    ctx.fillStyle = g; ctx.fillRect(0, hz - 60, W, 60);
+  } else if (r.track === 'city') {
+    ctx.fillStyle = 'rgba(255,255,255,.8)';
+    for (let k = 0; k < 40; k++) ctx.fillRect((hash(k) * W * 1.3 - off(40) * 0.2 + W) % W, hash(k + 9) * hz * 0.6, 2, 2);
+    blob(W * 0.8, hz * 0.3, 34, '#fff6d5'); glowAt(W * 0.8, hz * 0.3, 90, 'rgba(255,246,213,.3)');
+    for (const [k, col, hMax] of [[200, '#141a3d', 170], [420, '#1d2452', 120]]) {
+      const o = off(k) % 1000;
+      for (let x = -o - 60, n = 0; x < W + 60; x += 60, n++) {
+        const id = Math.floor((x + o) / 60) + k, h = 50 + hash(id) * hMax, w = 50 + hash(id + 3) * 10;
+        ctx.fillStyle = col; ctx.fillRect(x, hz - h, w, h);
+        ctx.fillStyle = 'rgba(255,214,90,.75)';
+        for (let wy = hz - h + 8; wy < hz - 6; wy += 12) for (let wx = x + 6; wx < x + w - 6; wx += 10) if (hash(wx * 3 + wy) > 0.55) ctx.fillRect(wx, wy, 4, 5);
+      }
+    }
+  } else {
+    for (let k = -1; k <= 1; k++) {
+      const x = W * 0.6 + k * W * 1.5 - off(300);
+      poly([[x - 260, hz], [x - 50, hz - 150], [x + 50, hz - 150], [x + 260, hz]], '#8e9fd6');
+      poly([[x - 78, hz - 112], [x - 50, hz - 150], [x + 50, hz - 150], [x + 78, hz - 112], [x + 30, hz - 122], [x - 20, hz - 110]], '#fff');
+    }
+    ctx.fillStyle = '#9ad37a';
+    const hoff = ((r.bg * 700) % 400 + 400) % 400;
+    for (let x = -hoff - 200; x < W + 200; x += 400) { ctx.beginPath(); ctx.ellipse(x, hz, 230, 46, 0, Math.PI, 0); ctx.fill(); }
+  }
+}
+function roadside(p, sxOf, side, tree, track, i) {
+  const u = p.u, y = p.Y;
+  if (track === 'lava') {
+    const x = sxOf(p, side * ROAD_W * 1.6);
+    if (tree) {   // obsidian rock with a glowing crack
+      poly([[x - 220 * u, y], [x - 120 * u, y - 520 * u], [x + 20 * u, y - 760 * u], [x + 160 * u, y - 420 * u], [x + 230 * u, y]], '#1a1220');
+      line(x - 20 * u, y - 80 * u, x + 40 * u, y - 520 * u, '#ff7a00', Math.max(1, 14 * u));
+    } else {      // a fire geyser that roars up and down
+      const hgt = (0.6 + 0.4 * Math.abs(Math.sin(tick * 0.08 + i))) * 900;
+      poly([[x - 140 * u, y], [x - 60 * u, y - 90 * u], [x + 60 * u, y - 90 * u], [x + 140 * u, y]], '#2b1a16');
+      glowAt(x, y - hgt * u * 0.5, 320 * u, 'rgba(255,120,0,.55)');
+      ctx.fillStyle = '#ff6a00'; ctx.beginPath(); ctx.ellipse(x, y - 90 * u - hgt * u / 2, 70 * u, hgt * u / 2, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#ffe066'; ctx.beginPath(); ctx.ellipse(x, y - 90 * u - hgt * u * 0.4, 30 * u, hgt * u * 0.38, 0, 0, 7); ctx.fill();
+    }
+    return;
+  }
+  if (track === 'city') {
+    if (tree) {   // a tall building with lit windows and a neon sign
+      const x = sxOf(p, side * ROAD_W * 2.4), w = 900 * u, h = (1800 + hash(i) * 1400) * u;
+      ctx.fillStyle = '#1b2148'; ctx.fillRect(x - w / 2, y - h, w, h);
+      ctx.fillStyle = '#252d5e'; ctx.fillRect(x - w / 2, y - h, w * 0.12, h);
+      if (w > 6) {
+        for (let wy = 0; wy < 14; wy++) for (let wx = 0; wx < 5; wx++) {
+          if (hash(i * 31 + wy * 7 + wx) < 0.45) continue;
+          ctx.fillStyle = hash(i + wy + wx * 3) > 0.8 ? '#7df9ff' : '#ffd65a';
+          ctx.fillRect(x - w / 2 + w * (0.18 + wx * 0.16), y - h + h * (0.05 + wy * 0.065), w * 0.08, h * 0.035);
+        }
+      }
+      const neon = ['#ff3d9a', '#3ae0ff', '#ffd23f', '#3ae374'][i % 4];
+      glowAt(x, y - h * 0.62, 260 * u, neon + '66');
+      ctx.fillStyle = neon; ctx.fillRect(x - w * 0.3, y - h * 0.66, w * 0.6, h * 0.06);
+    } else {      // a street lamp
+      const x = sxOf(p, side * ROAD_W * 1.25);
+      ctx.fillStyle = '#5a6078'; ctx.fillRect(x - 18 * u, y - 900 * u, 36 * u, 900 * u);
+      ctx.fillRect(x - side * 160 * u - (side > 0 ? 0 : 0), y - 900 * u, side * 160 * u, 24 * u);
+      glowAt(x - side * 150 * u, y - 860 * u, 300 * u, 'rgba(255,220,120,.6)');
+      blob(x - side * 150 * u, y - 870 * u, 30 * u, '#fff3c4');
+    }
+    return;
+  }
+  const x = sxOf(p, side * ROAD_W * 1.7);
   if (tree) {
     ctx.fillStyle = '#6b3e2a'; ctx.fillRect(x - 40 * u, y - 520 * u, 80 * u, 520 * u);
     [[-220, -560, 230, '#ffb7d5'], [200, -600, 240, '#ffb7d5'], [0, -760, 280, '#ffc8df'], [-60, -500, 180, '#ff9cc4']].forEach(([dx, dy, rr, c]) => {
@@ -1893,13 +2051,13 @@ function finishBanner(p, sxOf) {
   }
   for (let k = 0; xl + k * sq < xr; k++) { ctx.fillStyle = k % 2 ? '#111' : '#fff'; ctx.fillRect(xl + k * sq, y - 30 * u, Math.min(sq, xr - xl - k * sq), 30 * u); }
 }
-function rider(set, p, x, anim, isPlayer) {
-  const size = RIDER_H * p.u, y = p.Y + (Math.floor(anim * 2) % 2 ? -size * 0.02 : 0);
+function rider(set, p, x, anim, isPlayer, ride = 'horse') {
+  const size = RIDER_H * p.u, y = ride === 'dragon' ? p.Y - size * (0.12 + Math.sin(anim) * 0.03) : p.Y + (Math.floor(anim * 2) % 2 ? -size * 0.02 : 0);
   ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(x, p.Y, size * 0.32, size * 0.07, 0, 0, 7); ctx.fill();
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(set[Math.floor(anim) % 2 ? 'b' : 'a'][0], x - size / 2, y - size, size, size);
-  if (isPlayer && RC.speed > RC.cruise + 500) {
-    ctx.fillStyle = 'rgba(210,180,140,.6)';
+  if (isPlayer && RC.speed > RC.cruise + 500 && ride !== 'dragon') {
+    ctx.fillStyle = RC.track === 'lava' ? 'rgba(255,140,40,.6)' : RC.track === 'city' ? 'rgba(125,249,255,.5)' : 'rgba(210,180,140,.6)';
     for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.arc(x + (k - 1.5) * size * 0.18, p.Y - 4 + (k % 2) * 4, size * 0.05 * (1 + (tick + k * 7) % 10 / 10), 0, 7); ctx.fill(); }
   }
 }
@@ -2068,15 +2226,28 @@ function volcano(x, base, h, i) {
   glowAt(x, top, 110, 'rgba(255,170,40,.75)');
   ctx.fillStyle = '#ffb300'; ctx.beginPath(); ctx.ellipse(x, top, tw, 9, 0, 0, 7); ctx.fill();
   ctx.fillStyle = '#fff2a0'; ctx.beginPath(); ctx.ellipse(x, top, tw * 0.5, 4, 0, 0, 7); ctx.fill();
-  // lava rivers: a dark channel, then a dashed glowing flow that moves downhill
-  ctx.save(); ctx.lineCap = 'round';
+  // lava rivers: solid streams that widen downhill, a bright core, and hot spots drifting down
   for (const [sx, cx2, ex] of [[-14, -70, -150], [18, 60, 120]]) {
-    const path = () => { ctx.beginPath(); ctx.moveTo(x + sx, top + 4); ctx.quadraticCurveTo(x + cx2, base - h * 0.45, x + ex, base); };
-    path(); ctx.strokeStyle = '#5a0f00'; ctx.lineWidth = 11; ctx.stroke();
-    path(); ctx.strokeStyle = '#ff6a00'; ctx.lineWidth = 6; ctx.setLineDash([20, 12]); ctx.lineDashOffset = -tick * 0.8; ctx.stroke();
-    path(); ctx.strokeStyle = '#ffe066'; ctx.lineWidth = 2; ctx.setLineDash([8, 24]); ctx.lineDashOffset = -tick * 0.8; ctx.stroke();
+    const at = t => {   // point and direction on the river's curve, t from 0 (crater) to 1 (foot)
+      const x0 = x + sx, y0 = top + 4, x2 = x + ex, y2 = base, x1 = x + cx2, y1 = base - h * 0.45, u = 1 - t;
+      return [u * u * x0 + 2 * u * t * x1 + t * t * x2, u * u * y0 + 2 * u * t * y1 + t * t * y2];
+    };
+    const band = (wTop, wBot, col) => {
+      const left = [], right = [];
+      for (let k = 0; k <= 16; k++) {
+        const t = k / 16, [px, py] = at(t), w = wTop + (wBot - wTop) * t + Math.sin(t * 9 + i) * 1.2;
+        left.push([px - w, py]); right.push([px + w, py]);
+      }
+      poly([...left, ...right.reverse()], col);
+    };
+    band(5, 13, '#4a0d00'); band(3.5, 9, '#d33a00'); band(2, 5, '#ff8c1a'); band(0.8, 1.8, '#ffe066');
+    for (let k = 0; k < 3; k++) {
+      const t = ((tick * 0.0025 + k / 3 + i * 0.13) % 1), [px, py] = at(t);
+      blob(px, py, 2.5 + t * 3, `rgba(255,240,170,${0.8 * (1 - t)})`);
+    }
   }
-  ctx.restore();
+  const pulse = 0.5 + 0.5 * Math.sin(tick * 0.05 + i);
+  glowAt(x, top + 6, 70, `rgba(255,120,0,${0.25 + pulse * 0.2})`);
   // eruption: a burst of lava blobs every few seconds
   const t = (tick + i * 97) % 260;
   if (t < 90) {
@@ -2993,8 +3164,8 @@ function showHowTo() {
 function drawNinjaPreview(cv, equip, scale) {
   const c = cv.getContext('2d'); c.clearRect(0, 0, cv.width, cv.height); c.imageSmoothingEnabled = false;
   const set = bake(makeFrames(16, 16, { ...KAI_PAL, ...heroPal(equip) }, drawKai, 1), ['stand'], scale);
-  c.drawImage(set.stand[0], 4, cv.height - 16 * scale);
-  if (equip.pet) c.drawImage(PET_SPR[equip.pet].a[0], 16 * scale + 6, cv.height - 12 * 3 - 4);
+  c.drawImage(set.stand[0], equip.pet ? 4 : (cv.width - 16 * scale) / 2, cv.height - 16 * scale - 2);
+  if (equip.pet) c.drawImage(PET_SPR[equip.pet].a[0], 16 * scale + 8, cv.height - 12 * 3 - 2);
 }
 function drawItemPreview(cv, it) {
   const c = cv.getContext('2d'); c.clearRect(0, 0, cv.width, cv.height); c.imageSmoothingEnabled = false;
@@ -3010,7 +3181,7 @@ function drawItemPreview(cv, it) {
 function openShop() { hide('menu'); hide('buyBox'); renderShop(); show('shop'); }
 function renderShop() {
   $('bank').textContent = prog.bank;
-  drawNinjaPreview($('shopPreview'), prog.equip, 5);
+  drawNinjaPreview($('shopPreview'), prog.equip, 3);
   const grid = $('shopGrid'); grid.innerHTML = '';
   for (const it of SHOP) {
     const owned = prog.owned.includes(it.id), on = prog.equip[it.slot] === it.id;
@@ -3057,7 +3228,7 @@ function toMenu() {
   const newest = Math.min(unlockedCount() - 1, STAGES.length - 1);
   L = buildLevel(STAGES[newest].w * 3);   // menu backdrop shows the newest world
   ambient.length = 0;
-  hide('msg'); hide('shop'); hide('skills'); hide('settings'); hide('badges'); hide('pauseBtn'); showTouch(false); buildMenu(); show('menu');
+  hide('msg'); hide('shop'); hide('skills'); hide('settings'); hide('badges'); hide('raceSetup'); hide('pauseBtn'); showTouch(false); buildMenu(); show('menu');
 }
 
 function showStory(then) {
@@ -3092,6 +3263,9 @@ $('unlockBtn').onclick = () => setAllOpen(!prog.allOpen);
 $('storyBtn').onclick = () => { hide('settings'); showStory(() => { hide('msg'); show('menu'); }); };
 $('skillChip').onclick = () => { audio(); openSkills(toMenu); };
 $('skillsClose').onclick = () => { hide('skills'); (skillsThen || toMenu)(); };
+$('raceGo').onclick = () => { audio(); startRace(); };
+$('raceBack').onclick = () => { hide('raceSetup'); toMenu(); };
+$('raceMathBtn').onclick = () => { hide('raceSetup'); openSkills(showRaceSetup); };
 $('settingsBtn').onclick = () => { audio(); hide('menu'); show('settings'); };
 $('settingsClose').onclick = () => { hide('settings'); buildMenu(); show('menu'); };
 $('helpBtn').onclick = () => { audio(); showHowTo(); };
