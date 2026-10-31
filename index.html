@@ -838,6 +838,7 @@ function rowChoices(q, n) {
 }
 
 // Each level has its own twist (bosses don't).
+const FLAVORS = ['sakura', 'grove', 'frogs', 'vents', 'bubbles', 'shrooms', 'steam', 'boxes', 'lab', 'snowmen', 'chimes', 'wind', 'lanterns', 'owls', 'bats'];   // addFlavor
 const TWISTS = ['kite', 'spring', 'koi', 'rocks', 'chase', 'dark', 'gears', 'conveyor', 'lasers', 'ice', 'icicles', 'avalanche', 'walljump', 'ladders', 'sneak'];
 // ---------------------------------------------------------------- level builders
 function newMap() { const m = []; for (let r = 0; r < ROWS; r++) m.push([]); return m; }
@@ -1039,6 +1040,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
   [1, 2, 3, 4, 5, 6, 6].forEach((h, i) => { for (let k = 0; k < h; k++) map[GR - 1 - k][s + 2 + i] = 'S'; });
   coin(s + 8, GR - 8, 10);   // a red gem for climbing to the top
   L.flagC = s + 13; L.castleC = s + 17;
+  addFlavor(L);
   return L;
 }
 
@@ -1614,7 +1616,8 @@ function confetti(x, y) {
   const cols = ['#ff4d6d', '#ffd23f', '#3ae374', '#4cc9f0', '#b388ff'];
   for (let i = 0; i < 40; i++) G.parts.push({ k: 'bit', x, y, vx: (Math.random() - 0.5) * 10, vy: -Math.random() * 9 - 3, life: 70, col: cols[i % 5], s: 5 });
 }
-function floatText(x, y, txt, col = '#fff', size = 22) { G.parts.push({ k: 'text', x, y, vx: 0, vy: -1.2, life: 60, txt, col, size }); }
+// Longer messages stay up longer (about 1 second plus a bit per letter) and rise slowly so kids can read them.
+function floatText(x, y, txt, col = '#fff', size = 22) { const life = Math.min(220, 60 + String(txt).length * 4); G.parts.push({ k: 'text', x, y, vx: 0, vy: -0.6, life, txt, col, size }); }
 // ?-blocks hold a blue gem worth 5.
 function coinPop(c, r, v = 5) {
   G.parts.push({ k: 'coin', x: c * T + T / 2, y: r * T, vx: 0, vy: -9, life: 30, v });
@@ -1946,7 +1949,7 @@ const PET_LINES = {
 function petSay(mood) {
   if (!G || !G.pet) return;
   const lines = PET_LINES[mood];
-  G.bubble = { txt: lines[R(0, lines.length - 1)], t: 80 };
+  G.bubble = { txt: lines[R(0, lines.length - 1)], t: 160 };
   G.pet.mood = mood; G.pet.moodT = mood === 'dance' ? 150 : 40;
 }
 function petTick() {
@@ -2147,10 +2150,14 @@ function hurt() {
 }
 function fell() {
   // In Easy mode a fall (only possible at a bridge) costs no heart.
-  if (prog.easy) sfx.bump();
+  // The first fall at each bridge is free too, with a hint that this pit needs a bridge.
+  const b = activeBridge(), first = b && !b.fell;
+  if (b) b.fell = true;
+  if (prog.easy || first) sfx.bump();
   else { G.hearts--; G.hit = true; sfx.hurt(); if (G.hearts <= 0) { gameOver(); return; } }
-  dropCarry();
+  // Keep any stones Kai is carrying, so a missed jump doesn't undo the work.
   P.x = G.checkpoint; P.y = GR * T - P.h; P.vx = P.vy = 0; P.inv = 100;
+  if (first) floatText(P.x + P.w / 2, P.y - 30, `Too far to jump! Build a bridge: ${b.target}`, '#ffd23f', 24);
 }
 function gameOver() {
   mode = 'over'; stopMusic(); sfx.over(); showTouch(false); hide('pauseBtn');
@@ -2158,6 +2165,289 @@ function gameOver() {
     { label: 'Try again', fn: () => startStage(G.idx), primary: true },
     { label: 'Levels', fn: toMenu, alt: true },
   ]), 900);
+}
+
+// ---------------------------------------------------------------- level flavour
+// One extra thing per level that fits its name (on top of the level twist). Mostly scenery; a few you can touch.
+// Kept apart from the twists: buildLevel calls addFlavor at the end with its own random seed, so level layouts don't change.
+const CHIME_TUNE = [293.7, 392, 493.9, 392, 493.9, 440, 392, 329.6, 293.7, 293.7, 392, 493.9, 392, 493.9, 440, 587.3];   // Amazing Grace
+function addFlavor(L) {
+  L.flavor = L.def.boss ? null : FLAVORS[L.def.w * 3 + L.def.k]; L.fl = []; L.chimeN = 0; L.windT = 0;
+  if (!L.flavor) return;
+  const rng = mulberry32(777 + L.idx * 131), map = L.map, end = L.flagC - 14, Y = GR * T;
+  const busy = c => L.stations.some(st => c >= st.s - 1 && c <= st.gate[1] + 1) || L.bridges.some(b => c >= b.signC - 1 && c <= b.c0 + b.w + 1) || L.doors.some(d => Math.abs(c - d.c) <= 2);
+  const clear = (c, h) => { if (c < 1 || c >= L.w - 1 || map[GR][c] !== '#') return false; for (let r = GR - h; r < GR; r++) if (map[r][c] !== '.') return false; return true; };
+  const spots = (gap, h, wide = 0) => {
+    const out = []; let last = -99;
+    for (let c = 12; c < end; c++) {
+      if (c - last < gap || busy(c) || rng() > 0.5) continue;
+      let ok = true; for (let d = 0; d <= wide; d++) if (!clear(c + d, h) || busy(c + d)) ok = false;
+      if (ok) { out.push(c); last = c; }
+    }
+    return out;
+  };
+  const add = o => L.fl.push(o), X = c => c * T + T / 2;
+  switch (L.flavor) {
+    case 'sakura': spots(13, 7, 1).forEach(c => add({ k: 'tree', x: X(c) + T / 2, shook: false })); break;
+    case 'grove':
+      for (let c = 2; c < L.flagC; c++) if (map[GR][c] !== '.' && rng() < 0.55) add({ k: 'stalk', x: c * T + rng() * T, h: (4 + rng() * 6) * T, w: 7 + rng() * 6, back: true, kick: 0 });
+      break;
+    case 'frogs': spots(11, 3).forEach(c => { add({ k: 'frog', x: X(c), y: Y, vx: 0, vy: 0, hops: 0, air: false }); add({ k: 'fly', x: X(c) + T, y: Y - 3 * T, t: rng() * 100 }); }); break;
+    case 'vents': spots(14, 7).forEach(c => add({ k: 'vent', x: X(c), t: Math.floor(rng() * 150) })); break;
+    case 'bubbles': break;   // bubbles from the lava pits; this level's gates are the only lavafalls (gateKey)
+    case 'shrooms': spots(7, 3).forEach(c => add({ k: 'shroom', x: X(c) + (rng() - 0.5) * 12, s: 0.8 + rng() * 0.5, lit: false })); break;
+    case 'steam':
+      spots(10, 7).forEach((c, i) => add(i % 2 ? { k: 'cog', x: X(c), y: Y - (3 + rng() * 3) * T, r: 16 + rng() * 14, dir: rng() < 0.5 ? 1 : -1 } : { k: 'pipe', x: X(c), t: Math.floor(rng() * 200) }));
+      break;
+    case 'boxes': spots(12, 3, 2).forEach(c => add({ k: 'belt', x: c * T - T / 2, w: 4 * T, t: Math.floor(rng() * 300) })); break;
+    case 'lab': spots(10, 5, 1).forEach((c, i) => add({ k: ['beaker', 'screen'][i % 2], x: X(c) + T / 2, t: Math.floor(rng() * 100) })); break;
+    case 'snowmen': spots(13, 4).forEach(c => add({ k: 'snowman', x: X(c), hat: null })); break;
+    case 'chimes': spots(7, 3).forEach(c => add({ k: 'chime', x: X(c), cool: 0, flash: 0 })); break;
+    case 'wind': break;
+    case 'lanterns':
+      spots(16, 7, 1).filter((c, i, a) => i % Math.ceil(a.length / 4) === 0).forEach(c => {
+        L.plats.push({ k: 'lantern', x: c * T + 6, y0: Y - 2.6 * T, y: Y - 2.6 * T, w: 1.6 * T, dx: 0, dy: 0 });
+        L.coins.push({ x: c * T + T, y: Y - 4.4 * T, v: 5, taken: false });
+      });
+      break;
+    case 'owls': {
+      let last = -99;
+      for (let c = 12; c < end; c++) {
+        const top = (() => { for (let r = 2; r < GR; r++) if (map[r][c] !== '.') return r; return -1; })();
+        if (top < 3 || c - last < 10 || busy(c) || !['S', 'O', 'B', 'U'].includes(map[top][c]) || map[top - 1][c] !== '.' || map[top - 2][c] !== '.') continue;
+        add({ k: 'owl', x: X(c), y: top * T, fly: false, vx: 0, vy: 0 }); last = c;
+      }
+      break;
+    }
+    case 'bats':
+      spots(9, 4).forEach(c => add({ k: 'torch', x: X(c) }));
+      spots(14, 7).forEach(c => [-14, 0, 14].forEach((d, i) => add({ k: 'bat', x: X(c) + d, y: Y - 5.2 * T + (i % 2) * 8, fly: false, vx: 0, vy: 0, t: i * 20 })));
+      break;
+  }
+}
+function updateFlavor() {
+  if (!L.flavor || !L.fl) return;
+  const p = P, cx = p.x + p.w / 2, feet = p.y + p.h, Y = GR * T, near = (x, d) => Math.abs(cx - x) < d && Math.abs(x - cam - VW / 2) < VW;
+  for (const f of L.fl) {
+    if (f.k === 'tree' && !f.shook && Math.abs(cx - f.x) < 22 && feet > Y - 4 * T) {   // run into the trunk: a shower of petals and a few gems
+      f.shook = true; tone(660, 0.2, 'triangle', 0.04, 990);
+      for (let i = 0; i < 24; i++) G.parts.push({ k: 'bit', x: f.x + (Math.random() - 0.5) * 110, y: Y - 3.6 * T + Math.random() * 40, vx: (Math.random() - 0.5) * 2, vy: -1 - Math.random() * 2, life: 60, col: ['#ffc1dc', '#ff9cc4', '#fff'][R(0, 2)], s: 5 });
+      payGems(f.x, Y - 3 * T, 3);
+    }
+    if (f.k === 'stalk' && Math.abs(cx - f.x) < 18 && Math.abs(p.vx) > 1) f.kick = clamp(f.kick + p.vx * 0.004, -0.08, 0.08);
+    if (f.k === 'stalk') f.kick *= 0.96;
+    if (f.k === 'frog') {
+      if (!f.air && f.hops < 4 && near(f.x, 2.5 * T) && cx < f.x + 10) { f.air = true; f.vx = 3.2; f.vy = -7; f.hops++; tone(180, 0.12, 'square', 0.03, 120); }
+      if (f.air) {
+        f.x += f.vx; f.vy += 0.5; f.y += f.vy;
+        const gy = groundTop(Math.floor(f.x / T));
+        if (gy === null || gy < f.y - 20) { if (f.y > Y + 10) { f.done = true; splash(f.x); } }
+        else if (f.y >= gy) { f.y = gy; f.air = false; }
+      }
+    }
+    if (f.k === 'fly') f.t++;
+    if (f.k === 'shroom' && !f.lit && Math.abs(cx - f.x) < 20 && feet > Y - 30) { f.lit = true; tone(660 + Math.random() * 220, 0.3, 'sine', 0.05, 990); burst(f.x, Y - 16, '#5effd0', 8, 2); }   // touch to light up
+    if (f.k === 'vent') {
+      f.t = (f.t + 1) % 150; f.on = f.t > 100;
+      if (f.on && tick % 3 === 0) G.parts.push({ k: 'bit', x: f.x + (Math.random() - 0.5) * 18, y: Y - 8, vx: (Math.random() - 0.5), vy: -6 - Math.random() * 3, life: 30, col: ['#8a8a8a', '#bbb', '#ff8a3a'][R(0, 2)], s: 6 });
+      if (f.on && Math.abs(cx - f.x) < 0.7 * T && feet > Y - T && p.vy >= 0) { p.vy = -14; p.onGround = false; p.bounce = true; tone(150, 0.3, 'sawtooth', 0.03, 500); }
+    }
+    if (f.k === 'pipe') { f.t = (f.t + 1) % 200; if (f.t > 160 && tick % 3 === 0 && near(f.x, VW)) G.parts.push({ k: 'bit', x: f.x + 14, y: Y - 3 * T, vx: 2 + Math.random() * 2, vy: -1.2 - Math.random(), life: 28, col: 'rgba(255,255,255,.7)', s: 7 }); }
+    if (f.k === 'belt' || f.k === 'beaker' || f.k === 'screen' || f.k === 'mirror') f.t++;
+    if (f.k === 'snowman' && !f.hat && Math.abs(cx - f.x) < 20 && feet > Y - 60) {   // bump it: the hat pops off and out comes a gem
+      f.hat = { x: f.x, y: Y - 56, vx: (p.vx >= 0 ? 1 : -1) * 2, vy: -8, a: 0 }; tone(520, 0.15, 'triangle', 0.05, 780);
+      burst(f.x, Y - 40, '#ffffff', 10, 3); payGems(f.x, Y - 70, 1);
+    }
+    if (f.k === 'snowman' && f.hat) { const h = f.hat; if (h.y < Y - 4) { h.x += h.vx; h.vy += 0.4; h.y += h.vy; h.a += 0.2; } else { h.y = Y - 4; h.a = 0; } }
+    if (f.k === 'chime') {
+      if (f.cool > 0) f.cool--; if (f.flash > 0) f.flash--;
+      if (!f.cool && Math.abs(cx - f.x) < 18 && feet > Y - 26) {   // each crystal plays the next note of the tune
+        f.cool = 40; f.flash = 30; const n = CHIME_TUNE[L.chimeN++ % CHIME_TUNE.length];
+        tone(n * 2, 0.6, 'sine', 0.06); tone(n * 4, 0.4, 'sine', 0.015);
+        burst(f.x, Y - 16, '#bfeaff', 8, 2);
+      }
+    }
+    if ((f.k === 'owl' || f.k === 'bat') && !f.fly && near(f.x, f.k === 'owl' ? 2.2 * T : 3 * T)) {
+      f.fly = true; f.vx = (f.k === 'owl' ? 2.5 : 2 + Math.random() * 2) * (cx < f.x ? 1 : -1); f.vy = -1.5 - Math.random();
+      if (f.k === 'owl') { tone(330, 0.25, 'sine', 0.06); tone(294, 0.4, 'sine', 0.06, null, 0.3); } else if (f.t === 0) tone(1800, 0.08, 'square', 0.02, 2400);
+    }
+    if ((f.k === 'owl' || f.k === 'bat') && f.fly) { f.x += f.vx; f.y += f.vy; f.vy -= 0.03; if (f.y < -60) f.done = true; }
+  }
+  // Lava Falls: bubbles pop up out of the lava pits
+  if (L.flavor === 'bubbles' && tick % 12 === 0) {
+    const c = Math.floor((cam + Math.random() * VW) / T);
+    if (c > 0 && c < L.w && L.map[GR][c] === '.') L.fl.push({ k: 'bubble', x: c * T + Math.random() * T, y: Y + 24, r: 3, t: 0 });
+  }
+  for (const f of L.fl) if (f.k === 'bubble' && ++f.t > 40) { f.done = true; for (let i = 0; i < 4; i++) G.parts.push({ k: 'bit', x: f.x, y: f.y - 6, vx: (Math.random() - 0.5) * 3, vy: -3 - Math.random() * 3, life: 26, col: '#ffd23f', s: 4 }); }
+  // Blizzard Peak: wind gusts now and then gently push Kai back while he's on the ground (never in the air, never at a gate)
+  if (L.flavor === 'wind') {
+    L.windT = (L.windT + 1) % 480;
+    L.gust = L.windT < 160 && !currentStationNear() && !activeBridge() ? Math.sin(L.windT / 160 * Math.PI) : 0;
+    if (L.windT === 1 && L.gust >= 0 && !L.windSaid && p.x > 12 * T) { L.windSaid = true; floatText(cx, p.y - 40, 'Whoosh! Windy!', '#e8fbff', 22); }
+    if (L.gust > 0 && p.onGround && !G.climb) { const v = p.vx; p.vx = -L.gust * (prog.easy ? 0.5 : 0.9); moveX(p); p.vx = v; }
+  }
+  L.fl = L.fl.filter(f => !f.done);
+}
+// Screen-space layer right after the sky: things far away.
+function drawFlavorSky() {
+  const fl = L.flavor, n = i => hash(i * 3.7 + 11);
+  if (fl === 'vents') for (let i = 0; i < 50; i++) {   // falling ash
+    const x = ((n(i) * (VW + 200) - tick * (0.3 + n(i + 1) * 0.5)) % (VW + 200) + VW + 200) % (VW + 200) - 100, y = (n(i + 2) * VH + tick * (0.5 + n(i + 3) * 0.7)) % VH;
+    ctx.fillStyle = i % 5 ? 'rgba(205,195,190,.75)' : 'rgba(255,150,70,.9)'; ctx.fillRect(x, y, 4, 4);
+  }
+  if (fl === 'lanterns') for (let i = 0; i < 6; i++) {   // paper lanterns drifting up into the night
+    const x = ((n(i) * (VW + 300) - cam * 0.15 + Math.sin(tick * 0.01 + i) * 20) % (VW + 300) + VW + 300) % (VW + 300) - 150, y = VH - ((tick * (0.25 + n(i + 5) * 0.3) + n(i + 6) * VH) % (VH + 60)), s = 0.6 + n(i + 7) * 0.6;
+    glowAt(x, y, 30 * s, 'rgba(255,170,60,.45)');
+    ctx.fillStyle = '#ffb347'; rrect(x - 8 * s, y - 11 * s, 16 * s, 22 * s, 5 * s); ctx.fill(); ctx.fillStyle = '#ffe9a8'; ctx.fillRect(x - 3 * s, y - 6 * s, 6 * s, 12 * s);
+  }
+  if (fl === 'owls') for (let i = 0; i < 12; i++) {   // a few big twinkling stars
+    const x = ((n(i) * 2000 - cam * 0.05) % 2000 + 2000) % 2000, y = 20 + n(i + 1) * 200, a = 0.5 + 0.5 * Math.sin(tick * 0.05 + i * 2);
+    if (x > VW || Math.hypot(x - VW * 0.78, y - 150) < 140) continue;
+    ctx.fillStyle = `rgba(255,255,220,${a})`; ctx.fillRect(x - 1, y - 6, 2, 12); ctx.fillRect(x - 6, y - 1, 12, 2);
+  }
+  if (fl === 'wind' && L.gust > 0) for (let i = 0; i < 40; i++) {   // gust streaks
+    const x = ((n(i) * (VW + 300) - tick * (14 + n(i + 1) * 8)) % (VW + 300) + VW + 300) % (VW + 300) - 150, y = n(i + 2) * GR * T;
+    ctx.fillStyle = `rgba(255,255,255,${0.6 * L.gust})`; ctx.fillRect(x, y, 30 + n(i + 3) * 40, 2);
+  }
+}
+// World space, behind the tiles.
+function drawFlavorBack() {
+  const Y = GR * T, vis = (x, m = 120) => x > cam - m && x < cam + VW + m;
+  for (const f of L.fl) {
+    if (!vis(f.x, f.k === 'belt' ? 260 : 140)) continue;
+    if (f.k === 'tree') {
+      ctx.fillStyle = '#6b4226'; ctx.fillRect(f.x - 9, Y - 3 * T, 18, 3 * T); ctx.fillRect(f.x - 9, Y - 2.6 * T, 40, 8); ctx.fillRect(f.x - 30, Y - 2.2 * T, 30, 7);
+      const sw = Math.sin(tick * 0.02 + f.x) * 3;
+      [[0, -3.6, 52], [-46, -3.1, 38], [46, -3.2, 40], [-20, -4.2, 36], [24, -4.1, 34]].forEach(([dx, dy, r], k) => {
+        ctx.fillStyle = k % 2 ? '#ffb3d1' : '#ff9cc4'; ctx.beginPath(); ctx.arc(f.x + dx + sw, Y + dy * T, r * (f.shook ? 0.85 : 1), 0, 7); ctx.fill();
+      });
+      ctx.fillStyle = '#fff0f6'; for (let k = 0; k < 8; k++) ctx.fillRect(f.x - 50 + hash(f.x + k) * 100 + sw, Y - 4.4 * T + hash(k + f.x * 2) * 60, 4, 4);
+    } else if (f.k === 'stalk' && f.back) drawStalk(f, '#4d8a3a', '#3b6e2c');
+    else if (f.k === 'pipe') {
+      ctx.fillStyle = '#56606c'; ctx.fillRect(f.x - 10, 0, 20, Y); ctx.fillStyle = '#6f7b88'; ctx.fillRect(f.x - 10, 0, 6, Y);
+      for (let y = 40; y < Y; y += 90) { ctx.fillStyle = '#3e4650'; ctx.fillRect(f.x - 14, y, 28, 8); }
+      ctx.fillStyle = '#3e4650'; ctx.fillRect(f.x + 10, Y - 3 * T - 6, 10, 12);
+      ctx.fillStyle = f.t > 150 ? '#ff4d4d' : '#7a2020'; ctx.beginPath(); ctx.arc(f.x, Y - 3 * T + 30, 6, 0, 7); ctx.fill();
+    } else if (f.k === 'cog') {
+      ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(tick * 0.03 * f.dir); ctx.fillStyle = '#5a6878';
+      for (let k = 0; k < 8; k++) { ctx.save(); ctx.rotate(k * Math.PI / 4); ctx.fillRect(-5, -f.r - 7, 10, 10); ctx.restore(); }
+      ctx.beginPath(); ctx.arc(0, 0, f.r, 0, 7); ctx.fill(); ctx.fillStyle = '#2b333d'; ctx.beginPath(); ctx.arc(0, 0, f.r * 0.35, 0, 7); ctx.fill(); ctx.restore();
+    } else if (f.k === 'belt') {   // a belt at the back with crates riding along and an arm that picks them up
+      const by = Y - 30;
+      ctx.fillStyle = '#3b4552'; ctx.fillRect(f.x, by, f.w, 12); ctx.fillStyle = '#ffd23f'; for (let x = (tick % 20); x < f.w; x += 20) ctx.fillRect(f.x + x, by + 4, 8, 3);
+      ctx.fillStyle = '#2b333d'; ctx.fillRect(f.x + 10, by + 12, 8, 18); ctx.fillRect(f.x + f.w - 18, by + 12, 8, 18);
+      const cyc = f.t % 300, ax = f.x + f.w - 50;
+      for (let k = 0; k < 3; k++) { const bx = f.x + ((cyc * 0.7 + k * 70) % (f.w - 40)); if (bx > ax - 30 && cyc > 200) continue; crate(bx, by - 22); }
+      const reach = cyc > 200 ? Math.sin((cyc - 200) / 100 * Math.PI) : 0;
+      ctx.fillStyle = '#6c7a89'; ctx.fillRect(ax + 6, Y - 4 * T, 12, 4 * T - 30); line(ax + 12, Y - 4 * T + 10, ax - 20, Y - 4 * T + 30 + reach * 60, '#ff8a1a', 8);
+      ctx.fillStyle = '#ff8a1a'; ctx.fillRect(ax - 30, Y - 4 * T + 26 + reach * 60, 20, 8);
+      if (reach > 0.6) crate(ax - 32, Y - 4 * T + 34 + reach * 60);
+    } else if (f.k === 'beaker') {   // a lab table of bubbling flasks
+      ctx.fillStyle = '#4a5562'; ctx.fillRect(f.x - 46, Y - 40, 92, 8); ctx.fillRect(f.x - 42, Y - 32, 6, 32); ctx.fillRect(f.x + 36, Y - 32, 6, 32);
+      ['#3ae374', '#7df9ff', '#ff5ad1'].forEach((col, k) => {
+        const bx = f.x - 26 + k * 26;
+        ctx.fillStyle = 'rgba(220,240,255,.35)'; ctx.fillRect(bx - 8, Y - 72, 16, 32); ctx.fillStyle = col; ctx.fillRect(bx - 8, Y - 58, 16, 18);
+        glowAt(bx, Y - 52, 22, col + '55');
+        ctx.fillStyle = 'rgba(255,255,255,.8)'; for (let b = 0; b < 2; b++) { const yy = (f.t * 0.6 + b * 14 + k * 9) % 30; ctx.beginPath(); ctx.arc(bx - 3 + b * 6, Y - 44 - yy, 2, 0, 7); ctx.fill(); }
+      });
+    } else if (f.k === 'screen') {   // a wall screen with a wiggly graph and blinking lights
+      const sx = f.x - 40, sy = Y - 4.2 * T;
+      ctx.fillStyle = '#2b333d'; ctx.fillRect(sx - 6, sy - 6, 92, 66); ctx.fillStyle = '#062b1a'; ctx.fillRect(sx, sy, 80, 54);
+      ctx.strokeStyle = '#3ae374'; ctx.lineWidth = 2; ctx.beginPath(); for (let k = 0; k <= 20; k++) { const yy = sy + 27 + Math.sin(k * 0.8 + f.t * 0.1) * 14; k ? ctx.lineTo(sx + k * 4, yy) : ctx.moveTo(sx, yy); } ctx.stroke();
+      ['#ff4d4d', '#ffd23f', '#3ae374'].forEach((c, k) => { ctx.fillStyle = (f.t >> 4) % 3 === k ? c : '#333'; ctx.fillRect(sx + 6 + k * 14, sy + 62, 8, 6); });
+    } else if (f.k === 'mirror') {   // two mirrors bouncing a harmless green light beam
+      const ax = f.x - 50, bx = f.x + 50, ay = Y - 5 * T, by = Y - 1.2 * T;
+      ctx.fillStyle = '#4a5562'; ctx.fillRect(ax - 3, ay, 6, Y - ay); ctx.fillRect(bx - 3, by, 6, Y - by);
+      ctx.fillStyle = '#cfe6f5'; ctx.fillRect(ax - 10, ay - 4, 20, 6); ctx.fillRect(bx - 10, by - 4, 20, 6);
+      const a = 0.35 + 0.2 * Math.sin(f.t * 0.1);
+      line(f.x - 140, 30, ax, ay, `rgba(120,255,160,${a})`, 3); line(ax, ay, bx, by, `rgba(120,255,160,${a})`, 3); line(bx, by, f.x + 140, 40, `rgba(120,255,160,${a})`, 3);
+    } else if (f.k === 'torch') {
+      const ty = Y - 2.3 * T, fl = Math.sin(tick * 0.3 + f.x) * 2;
+      glowAt(f.x, ty - 8, 70 + fl * 3, 'rgba(255,150,50,.35)');
+      ctx.fillStyle = '#4a3a2a'; ctx.fillRect(f.x - 4, ty, 8, 24); ctx.fillRect(f.x - 9, ty, 18, 5);
+      poly([[f.x - 7, ty], [f.x + fl, ty - 22], [f.x + 7, ty]], '#ff8a1a'); poly([[f.x - 3, ty], [f.x + fl * 0.5, ty - 12], [f.x + 3, ty]], '#ffe066');
+    }
+  }
+}
+function crate(x, y) { ctx.fillStyle = '#a07a44'; ctx.fillRect(x, y, 22, 22); ctx.strokeStyle = '#6b4f28'; ctx.lineWidth = 2; ctx.strokeRect(x + 1, y + 1, 20, 20); line(x + 2, y + 2, x + 20, y + 20, '#6b4f28', 2); }
+function drawStalk(f, col, dark) {
+  const Y = GR * T, sway = Math.sin(tick * 0.025 + f.x * 0.1) * 0.025 + f.kick, segs = Math.round(f.h / 40);
+  for (let k = 0; k < segs; k++) {
+    const y0 = Y - k * 40, x0 = f.x + sway * (Y - y0), x1 = f.x + sway * (Y - y0 + 40);
+    ctx.fillStyle = col; poly([[x0 - f.w / 2, y0], [x0 + f.w / 2, y0], [x1 + f.w / 2, y0 - 40], [x1 - f.w / 2, y0 - 40]], col);
+    ctx.fillStyle = dark; ctx.fillRect(x1 - f.w / 2 - 1, y0 - 40, f.w + 2, 4);
+    if (k > 1 && (k + Math.round(f.x)) % 3 === 0) poly([[x1, y0 - 38], [x1 + 24, y0 - 50], [x1 + 4, y0 - 34]], dark);
+  }
+}
+// World space, after the tiles, behind Kai.
+function drawFlavor() {
+  const Y = GR * T, vis = x => x > cam - 80 && x < cam + VW + 80;
+  for (const f of L.fl) {
+    if (!vis(f.x)) continue;
+    if (f.k === 'frog') {
+      const sq = f.air ? -3 : Math.max(0, Math.sin(tick * 0.08 + f.x)) * 2;
+      ctx.fillStyle = '#3fae49'; ctx.beginPath(); ctx.ellipse(f.x, f.y - 9 + sq / 2, 13, 9 - sq / 2, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#2e8a37'; ctx.fillRect(f.x - 14, f.y - 4, 8, 4); ctx.fillRect(f.x + 6, f.y - 4, 8, 4);
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(f.x - 5, f.y - 17, 4, 0, 7); ctx.arc(f.x + 5, f.y - 17, 4, 0, 7); ctx.fill();
+      ctx.fillStyle = '#111'; ctx.fillRect(f.x - 5, f.y - 18, 2, 2); ctx.fillRect(f.x + 5, f.y - 18, 2, 2);
+    } else if (f.k === 'fly') {   // a dragonfly hovering
+      const x = f.x + Math.sin(f.t * 0.02) * 60, y = f.y + Math.sin(f.t * 0.05) * 20;
+      ctx.fillStyle = '#3a7bd5'; ctx.fillRect(x - 10, y - 1, 20, 3);
+      ctx.fillStyle = `rgba(200,240,255,${tick % 4 < 2 ? 0.8 : 0.4})`; ctx.beginPath(); ctx.ellipse(x - 2, y - 5, 8, 3, -0.4, 0, 7); ctx.ellipse(x - 2, y + 5, 8, 3, 0.4, 0, 7); ctx.fill();
+    } else if (f.k === 'vent') {
+      const warn = f.t > 80 && f.t <= 100;
+      poly([[f.x - 24, Y], [f.x - 14, Y - 14], [f.x + 14, Y - 14], [f.x + 24, Y]], '#4b3a36');
+      ctx.fillStyle = f.on ? '#ffd23f' : warn && tick % 8 < 4 ? '#ff6a00' : '#2a1d1a'; ctx.fillRect(f.x - 10, Y - 16, 20, 5);
+      if (f.on) glowAt(f.x, Y - 20, 30, 'rgba(255,160,40,.5)');
+    } else if (f.k === 'shroom') {
+      const s = f.s, glow = f.lit ? 0.75 + 0.25 * Math.sin(tick * 0.08 + f.x) : 0.35;
+      glowAt(f.x, Y - 14 * s, 40 * s, `rgba(120,255,220,${glow * 0.5})`);
+      ctx.fillStyle = '#d8f5ec'; ctx.fillRect(f.x - 3 * s, Y - 14 * s, 6 * s, 14 * s);
+      ctx.fillStyle = f.lit ? '#5effd0' : '#2f8a78'; ctx.beginPath(); ctx.arc(f.x, Y - 13 * s, 13 * s, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = f.lit ? '#ffffff' : '#5aa898'; ctx.fillRect(f.x - 6 * s, Y - 20 * s, 3 * s, 3 * s); ctx.fillRect(f.x + 3 * s, Y - 18 * s, 3 * s, 3 * s);
+    } else if (f.k === 'bubble') {
+      const r = 3 + f.t / 5; ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2; ctx.fillStyle = '#ff8a1a';
+      ctx.beginPath(); ctx.arc(f.x, f.y - f.t * 0.3, r, 0, 7); ctx.fill(); ctx.stroke();
+    } else if (f.k === 'snowman') {   // a big snowman with a top hat
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(f.x, Y - 16, 18, 0, 7); ctx.arc(f.x, Y - 44, 13, 0, 7); ctx.fill();
+      ctx.fillStyle = '#dceefa'; ctx.beginPath(); ctx.arc(f.x + 5, Y - 12, 10, 0, 7); ctx.fill();
+      ctx.fillStyle = '#111'; ctx.fillRect(f.x - 5, Y - 48, 3, 3); ctx.fillRect(f.x + 3, Y - 48, 3, 3); [-22, -14].forEach(d => ctx.fillRect(f.x - 1, Y + d, 3, 3));
+      poly([[f.x, Y - 44], [f.x + 12, Y - 42], [f.x, Y - 40]], '#ff9a1a'); ctx.fillStyle = '#3a7bd5'; ctx.fillRect(f.x - 13, Y - 34, 26, 5); ctx.fillRect(f.x + 4, Y - 34, 5, 14);
+      line(f.x - 16, Y - 22, f.x - 32, Y - 34, '#6b4226', 3); line(f.x + 16, Y - 22, f.x + 32, Y - 32, '#6b4226', 3);
+      const h = f.hat || { x: f.x, y: Y - 56, a: 0 };
+      ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(h.a); ctx.fillStyle = '#1f1f26'; ctx.fillRect(-13, -2, 26, 5); ctx.fillRect(-8, -18, 16, 17); ctx.fillStyle = '#e63946'; ctx.fillRect(-8, -6, 16, 3); ctx.restore();
+    } else if (f.k === 'chime') {   // a cluster of ice crystals that rings a note
+      const lit = f.flash > 0, col = lit ? '#ffffff' : '#9fdcff';
+      if (lit) glowAt(f.x, Y - 16, 46, 'rgba(180,240,255,.6)');
+      poly([[f.x - 14, Y], [f.x - 9, Y - 22], [f.x - 4, Y]], col); poly([[f.x - 5, Y], [f.x + 1, Y - 34], [f.x + 7, Y]], lit ? '#e8fbff' : '#bfeaff'); poly([[f.x + 5, Y], [f.x + 11, Y - 18], [f.x + 15, Y]], col);
+      ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.fillRect(f.x - 1, Y - 26, 2, 12);
+    } else if (f.k === 'owl') {
+      const flap = f.fly ? Math.sin(tick * 0.5) * 10 : 0, x = f.x, y = f.y, blink = (tick + Math.round(f.x)) % 200 < 8;
+      ctx.fillStyle = '#8a6a4a'; ctx.beginPath(); ctx.ellipse(x, y - 16, 12, 16, 0, 0, 7); ctx.fill();
+      if (f.fly) { poly([[x - 8, y - 18], [x - 30, y - 18 - flap], [x - 10, y - 8]], '#6b4f34'); poly([[x + 8, y - 18], [x + 30, y - 18 - flap], [x + 10, y - 8]], '#6b4f34'); }
+      ctx.fillStyle = '#d9c3a0'; ctx.beginPath(); ctx.ellipse(x, y - 12, 7, 9, 0, 0, 7); ctx.fill();
+      poly([[x - 11, y - 28], [x - 8, y - 36], [x - 4, y - 29]], '#6b4f34'); poly([[x + 11, y - 28], [x + 8, y - 36], [x + 4, y - 29]], '#6b4f34');
+      ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(x - 5, y - 23, 4.5, 0, 7); ctx.arc(x + 5, y - 23, 4.5, 0, 7); ctx.fill();
+      ctx.fillStyle = '#111'; if (blink) { ctx.fillRect(x - 9, y - 23, 8, 2); ctx.fillRect(x + 1, y - 23, 8, 2); } else { ctx.fillRect(x - 6, y - 24, 3, 3); ctx.fillRect(x + 4, y - 24, 3, 3); }
+      poly([[x - 2, y - 19], [x + 2, y - 19], [x, y - 15]], '#ff9a1a');
+    } else if (f.k === 'bat') {
+      const x = f.x, y = f.y;
+      if (!f.fly) { ctx.fillStyle = '#2a1f3a'; ctx.beginPath(); ctx.ellipse(x, y + 8, 6, 9, 0, 0, 7); ctx.fill(); ctx.fillRect(x - 1, y - 2, 2, 4); ctx.fillStyle = '#ff4d4d'; ctx.fillRect(x - 3, y + 11, 2, 2); ctx.fillRect(x + 1, y + 11, 2, 2); }
+      else {
+        const w = Math.sin(tick * 0.6 + f.t) * 8;
+        ctx.fillStyle = '#2a1f3a'; ctx.beginPath(); ctx.ellipse(x, y, 5, 6, 0, 0, 7); ctx.fill();
+        poly([[x - 3, y], [x - 18, y - w], [x - 10, y + 4]], '#3a2a52'); poly([[x + 3, y], [x + 18, y - w], [x + 10, y + 4]], '#3a2a52');
+        ctx.fillStyle = '#ff4d4d'; ctx.fillRect(x - 3, y - 2, 2, 2); ctx.fillRect(x + 1, y - 2, 2, 2);
+      }
+    }
+  }
+}
+// World space, in front of Kai: the closest bamboo.
+function drawFlavorFront() {
+  if (L.flavor !== 'grove') return;
+  ctx.globalAlpha = 0.85;
+  for (const f of L.fl) if (f.k === 'stalk' && !f.back && f.x > cam - 60 && f.x < cam + VW + 60) drawStalk(f, '#3f7a22', '#2c5a16');
+  ctx.globalAlpha = 1;
 }
 
 // ---------------------------------------------------------------- level twists
@@ -2177,6 +2467,7 @@ function updateTwist() {
   // moving platforms
   for (const pl of L.plats) {
     const ox = pl.x, oy = pl.y;
+    if (pl.k === 'lantern') pl.y = pl.y0 + Math.sin(tick * 0.03 + pl.x) * 8;
     if (pl.k === 'gear') { const a = pl.a0 + tick * 0.018; pl.x = pl.hx + Math.cos(a) * 1.9 * T - pl.w / 2; pl.y = pl.hy + Math.sin(a) * 1.9 * T; }
     if (pl.k === 'lily') {
       if (pl.gone > 0) { if (--pl.gone === 0) { pl.y = pl.y0; pl.sink = 0; } else pl.y = 9999; }
@@ -2291,6 +2582,7 @@ function twistMove(p, feetBefore, fallSpeed) {
 function updatePlayer() {
   const p = P;
   updateTwist();
+  updateFlavor();
   const onIce = p.onGround && L.map[Math.floor((p.y + p.h + 2) / T)]?.[Math.floor((p.x + p.w / 2) / T)] === 'I';
   const acc = onIce ? 0.18 : p.onGround ? 0.55 : 0.38;
   if (keys.left && !keys.right) { p.vx -= acc; p.face = -1; }
@@ -2649,7 +2941,10 @@ function updateShotsAndProjectiles() {
 // the factory's force field shorts out, ice shatters, and the castle's shadow wall turns into doves.
 function openGate(st) {
   for (let r = 0; r < GR; r++) for (const gc of st.gate) if (L.map[r][gc] === 'G') L.map[r][gc] = '.';
-  const x0 = st.gate[0] * T, w = 2 * T, k = L.world.key, bits = [];
+  const x0 = st.gate[0] * T, w = 2 * T, k = gateKey(), bits = [];
+  if (k === 'ash') for (let i = 0; i < 26; i++) bits.push({ x: x0 + Math.random() * w, y: Math.random() * GR * T, vx: (Math.random() - 0.5) * 4, vy: -2 - Math.random() * 3, s: 8 + Math.random() * 10, a: Math.random() * 6, va: 0.1 });
+  if (k === 'obsidian') for (let i = 0; i < 30; i++) bits.push({ x: x0 + Math.random() * w, y: Math.random() * GR * T, vx: (Math.random() - 0.3) * 9, vy: -1 - Math.random() * 3, s: 6 + Math.random() * 10, a: Math.random() * 6, va: (Math.random() - 0.5) * 0.4 });
+  if (k === 'ash' || k === 'obsidian') { sfx.stomp(); shake(6, 3); }
   if (k === 'snow') for (let i = 0; i < 30; i++) bits.push({ x: x0 + Math.random() * w, y: Math.random() * GR * T, vx: 6 + Math.random() * 6, vy: -0.5 - Math.random(), s: 8 + Math.random() * 12, a: Math.random() * 6, va: (Math.random() - 0.5) * 0.3 });
   if (k === 'lava') for (let i = 0; i < 16; i++) bits.push({ x: x0 + Math.random() * w, y: Math.random() * GR * T, vx: (Math.random() - 0.5) * 3, vy: -2 - Math.random() * 3, va: 0.2 });
   if (k === 'japan') for (let i = 0; i < 30; i++) bits.push({ x: x0 + w / 2, y: Math.random() * GR * T, vx: (Math.random() - 0.2) * 5, vy: -Math.random() * 2, a: Math.random() * 6 });
@@ -2668,6 +2963,8 @@ function updateGates() {
         if (g.k === 'lava' && b.tx !== undefined) { const f = Math.min(1, g.t / 24); b.x += (b.tx - b.x) * f * 0.25; b.y += (b.ty - b.y) * f * 0.25; }
         if (g.k === 'japan') { b.vy += 0.03; b.vx *= 0.99; }
         if (g.k === 'castle') b.vy -= 0.01;
+        if (g.k === 'ash') b.vy += 0.35;
+        if (g.k === 'obsidian') { b.vy += 0.15; b.vx *= 0.98; }
       }
       if (g.k === 'robot' && g.t < 40 && g.t % 6 === 0) burst(g.x0 + Math.random() * g.w, Math.random() * GR * T, '#7df9ff', 4, 3);
     }
@@ -2923,7 +3220,7 @@ function startRace(travel = null) {
   for (let i = 0; i < GATES; i++) { const q = tg(); gates.push({ z: START_Z + i * GATE_GAP, q, opts: shuffle(choices(q, 3)), done: false }); }
   const slow = prog.easy ? 0.82 : 1;   // Easy mode: everyone rides slower, so there is more time to think
   RC = {
-    topic, length, curves, gates, z: 0, speed: 0, cruise: 4600 * slow, maxSpeed: 8200 * slow, boost: 3000 * slow,
+    topic, length, curves, gates, z: 0, speed: 0, cruise: 4600 * slow, maxSpeed: 8200 * slow, boost: 3000, slow,   // full boost even in Easy, so all right answers always wins
     lane: 1, laneX: 0, time: 0, count: 3.99, goT: 0, anim: 0, bg: 0, right: 0, wrong: 0, streak: 0, finished: false, place: 0,
     travel: typeof travel === 'number' ? travel : null, missed: new Map(), texts: [], spr: bakeRide(prog.ride, pickRiderPal()), ride: prog.ride, track: TRACKS[prog.track] ? prog.track : 'cherry',
     rivals: RIVALS.map((v, k) => ({ ...v, z: 0, speed: 0, base: v.speed * slow, lane: k === 0 ? 0 : k === 1 ? 2 : 1, laneX: LANES[k === 0 ? 0 : k === 1 ? 2 : 1], switchT: R(3, 6) })),
@@ -2965,8 +3262,8 @@ function updateRace(dt) {
   }
   r.laneX += (LANES[r.lane] - r.laneX) * Math.min(1, dt * 10);
   if (r.finished) r.speed = Math.max(0, r.speed - 2500 * dt);
-  else if (r.speed < r.cruise) r.speed = Math.min(r.cruise, r.speed + 1800 * dt);
-  else r.speed = Math.max(r.cruise, r.speed - 1100 * dt);
+  else if (r.speed < r.cruise) r.speed = Math.min(r.cruise, r.speed + 1800 * r.slow * dt);
+  else r.speed = Math.max(r.cruise, r.speed - 1100 * r.slow * dt);
   r.z += r.speed * dt;
   if (!r.finished) r.time += dt;
   r.bg += (r.curves[Math.floor(r.z / SEG)] || 0) * r.speed * dt * 0.00004;
@@ -3343,7 +3640,24 @@ function bgJapan() {
   hills(0.25, 420, '#b5dfa8', 170, 11);
   repeat(0.35, 640, (x, i) => { if (hash(i + 5) < 0.65) pagoda(x, GR * T - 10, '#9a6a86', 0.9); }, 7);
   hills(0.5, 300, '#7fc56f', 100, 23);
-  repeat(0.65, 330, (x, i) => cherryTree(x, GR * T, 0.8 + hash(i) * 0.4), 9);
+  const k = L.def && !L.def.boss ? L.def.k : 0;
+  if (k === 2) {   // Koi Pond: a strip of lake with one torii gate in it
+    const wy = GR * T - 60; ctx.fillStyle = '#6fb0e0'; ctx.fillRect(0, wy, VW, 60); ctx.fillStyle = 'rgba(255,255,255,.5)';
+    for (let n = 0; n < 8; n++) ctx.fillRect(((n * 131 - cam * 0.5 + tick * 0.2) % VW + VW) % VW, wy + 12 + (n * 23) % 40, 26, 2);
+    repeat(0.5, 1400, x => {
+      const b = GR * T - 24;
+      ctx.fillStyle = '#d63a2a'; ctx.fillRect(x - 40, b - 110, 9, 110); ctx.fillRect(x + 31, b - 110, 9, 110); ctx.fillRect(x - 50, b - 94, 100, 8);
+      poly([[x - 64, b - 118], [x + 64, b - 118], [x + 56, b - 108], [x - 56, b - 108]], '#d63a2a'); ctx.fillStyle = '#2b1d18'; ctx.fillRect(x - 68, b - 124, 136, 6);
+    }, 82);
+  }
+  if (k === 1) repeat(0.65, 70, (x, i) => {   // Bamboo Grove: bamboo instead of cherry trees
+    if (hash(i + 3) > 0.6) return;
+    const h = 160 + hash(i) * 140, w = 8 + hash(i + 1) * 5;
+    ctx.fillStyle = '#5c9a3e'; ctx.fillRect(x - w / 2, GR * T - h, w, h); ctx.fillStyle = '#3f7a22';
+    for (let y = GR * T - 40; y > GR * T - h; y -= 44) ctx.fillRect(x - w / 2 - 1, y, w + 2, 3);
+    poly([[x, GR * T - h + 10], [x + 26, GR * T - h - 4], [x + 4, GR * T - h + 16]], '#3f7a22');
+  }, 9);
+  else repeat(0.65, 330, (x, i) => cherryTree(x, GR * T, 0.8 + hash(i) * 0.4), 9);
 }
 function bgSnow() {
   if (L.def && L.def.k === 1) {   // northern lights
@@ -3361,6 +3675,13 @@ function bgSnow() {
   hills(0.25, 380, '#dcecf8', 160, 17);
   repeat(0.4, 170, (x, i) => { if (hash(i + 3) < 0.7) pineTree(x, GR * T, 0.7 + hash(i) * 0.5); }, 19);
   hills(0.55, 300, '#f2f8fd', 90, 29);
+  if (L.def && !L.def.boss && L.def.k === 2) {   // Blizzard Peak: a grey sky and blowing snow
+    ctx.fillStyle = 'rgba(200,205,220,.35)'; ctx.fillRect(0, 0, VW, GR * T);
+    for (let i = 0; i < 40; i++) {
+      const n = k => hash(i * 3.1 + k), x = ((n(1) * (VW + 200) - tick * (5 + n(2) * 4)) % (VW + 200) + VW + 200) % (VW + 200) - 100, y = (n(3) * GR * T + tick * (1 + n(4))) % (GR * T);
+      ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.fillRect(x, y, 6 + n(5) * 6, 2);
+    }
+  }
 }
 function pineTree(x, b, s) {
   ctx.fillStyle = '#5a3d2b'; ctx.fillRect(x - 4 * s, b - 18 * s, 8 * s, 18 * s);
@@ -3377,12 +3698,22 @@ function bgLava() {
     const h = 120 + hash(i + 40) * 80;
     poly([[x - 260, base], [x - 40, base - h], [x + 40, base - h * 0.92], [x + 260, base]], '#3a1016');
   }, 40);
-  repeat(0.12, 820, (x, i) => volcano(x, base, 240 + hash(i) * 70, i), 4);
+  repeat(0.12, 820, (x, i) => {
+    if (L.def && !L.def.boss && L.def.k === 0) {   // Ash Trail: dark ash clouds rolling out of the craters
+      const top = base - 240 - hash(i) * 70;
+      for (let k = 0; k < 5; k++) { const t = (tick * 0.25 + k * 48 + i * 17) % 240; blob(x - 20 + t * 0.6, top - 40 - t * 0.8, 30 + t * 0.25, `rgba(35,28,28,${0.6 * (1 - t / 240)})`); }
+    }
+    volcano(x, base, 240 + hash(i) * 70, i);
+  }, 4);
   // jagged rock spires in front
   repeat(0.35, 240, (x, i) => {
     const w = 40 + hash(i) * 30, h = 110 + hash(i + 1) * 110;
     poly([[x - w, GR * T], [x - w * 0.3, GR * T - h * 0.6], [x - w * 0.1, GR * T - h], [x + w * 0.4, GR * T - h * 0.5], [x + w, GR * T]], '#2e110c');
     poly([[x - w, GR * T], [x - w * 0.3, GR * T - h * 0.6], [x - w * 0.1, GR * T - h], [x - w * 0.15, GR * T]], '#4a1c12');
+    if (L.def && !L.def.boss && L.def.k === 1) {   // Lava Falls: glowing cracks in the rocks
+      ctx.strokeStyle = `rgba(255,${120 + 50 * Math.sin(tick * 0.05 + i) | 0},30,.8)`; ctx.lineWidth = 2; ctx.beginPath();
+      ctx.moveTo(x - w * 0.1, GR * T - h + 14); ctx.lineTo(x + w * 0.1, GR * T - h * 0.6); ctx.lineTo(x - w * 0.05, GR * T - h * 0.3); ctx.lineTo(x + w * 0.15, GR * T); ctx.stroke();
+    }
   }, 8);
   const glow = ctx.createLinearGradient(0, GR * T - 140, 0, GR * T);
   glow.addColorStop(0, 'rgba(255,90,0,0)'); glow.addColorStop(1, 'rgba(255,90,0,.35)');
@@ -3460,6 +3791,12 @@ function bgRobot() {
     ctx.fillStyle = '#ffd23f';
     for (let k = 0; k < 6; k++) ctx.fillRect(x - 60 + k * 20, GR * T - 14, 10, 6);
   }, 6);
+  const k = L.def && !L.def.boss ? L.def.k : 0;
+  if (k === 1) repeat(0.6, 520, (x, i) => {   // Conveyor Run: a low shelf of crates
+    ctx.fillStyle = '#4a4f5a'; ctx.fillRect(x - 80, GR * T - 96, 6, 96); ctx.fillRect(x + 74, GR * T - 96, 6, 96);
+    for (const y of [GR * T - 50, GR * T - 96]) { ctx.fillStyle = '#e07b1a'; ctx.fillRect(x - 80, y, 160, 6); for (let n = 0; n < 3; n++) if (hash(i * 5 + y + n) < 0.75) crate(x - 70 + n * 48, y - 22); }
+  }, 95);
+  if (k === 2) { ctx.fillStyle = 'rgba(150,210,255,.13)'; ctx.fillRect(0, 0, VW, VH); }   // Laser Lab: a brighter, bluer light
 }
 function bgCastle() {
   ctx.fillStyle = 'rgba(255,255,255,.8)';
@@ -3467,30 +3804,53 @@ function bgCastle() {
     const x = ((hash(i) * 2400 - cam * 0.05) % 2400 + 2400) % 2400;
     if (x < VW) ctx.fillRect(x, hash(i + 99) * 330, hash(i + 3) < 0.2 ? 3 : 2, 2);
   }
-  const mx = VW * 0.78, my = 110;
-  const mg = ctx.createRadialGradient(mx, my, 40, mx, my, 140);
-  mg.addColorStop(0, 'rgba(255,246,213,.35)'); mg.addColorStop(1, 'rgba(255,246,213,0)');
-  ctx.fillStyle = mg; ctx.fillRect(mx - 140, my - 140, 280, 280);
-  ctx.fillStyle = '#fff6d5'; ctx.beginPath(); ctx.arc(mx, my, 52, 0, 7); ctx.fill();
-  repeat(0.1, 1300, x => {
-    ctx.fillStyle = '#121838'; ctx.fillRect(x - 150, GR * T - 140, 300, 140);
-    pagoda(x, GR * T - 140, '#121838', 1.6, 3);
-  }, 1);
-  repeat(0.35, 260, (x, i) => {
-    const h = 90 + hash(i) * 70;
-    ctx.fillStyle = '#1a2150'; ctx.fillRect(x - 70, GR * T - h, 140, h);
-    poly([[x - 90, GR * T - h + 8], [x, GR * T - h - 30], [x + 90, GR * T - h + 8]], '#232c66');
-    ctx.fillStyle = 'rgba(255,210,63,.55)'; ctx.fillRect(x - 12, GR * T - h + 26, 24, 18);
-  }, 5);
-  repeat(0.7, 320, (x, i) => {
-    const y = 50 + hash(i) * 70, sw = Math.sin(tick * 0.03 + i) * 4;
-    ctx.strokeStyle = '#555'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + sw, y); ctx.stroke();
-    const lg = ctx.createRadialGradient(x + sw, y + 16, 4, x + sw, y + 16, 40);
-    lg.addColorStop(0, 'rgba(255,80,60,.45)'); lg.addColorStop(1, 'rgba(255,80,60,0)');
-    ctx.fillStyle = lg; ctx.fillRect(x + sw - 40, y - 24, 80, 80);
-    ctx.fillStyle = '#e63946'; ctx.beginPath(); ctx.ellipse(x + sw, y + 16, 12, 16, 0, 0, 7); ctx.fill();
-    ctx.fillStyle = '#222'; ctx.fillRect(x + sw - 8, y, 16, 3); ctx.fillRect(x + sw - 8, y + 30, 16, 3);
-  }, 12);
+  // Every castle level shares the starry sky, the far pagoda and the village; each adds one touch.
+  const fl = L.def && !L.def.boss ? L.def.k : -1, G0 = GR * T;
+  if (fl === 1) {   // Moon Tower: a huge moon with thin clouds
+    const mx = VW * 0.78, my = 150, mr = 120, gr = 260;
+    const mg = ctx.createRadialGradient(mx, my, mr * 0.8, mx, my, gr);
+    mg.addColorStop(0, 'rgba(255,246,213,.35)'); mg.addColorStop(1, 'rgba(255,246,213,0)');
+    ctx.fillStyle = mg; ctx.fillRect(mx - gr, my - gr, gr * 2, gr * 2);
+    ctx.fillStyle = '#fff6d5'; ctx.beginPath(); ctx.arc(mx, my, mr, 0, 7); ctx.fill();
+    ctx.fillStyle = '#efe3bb'; [[-40, -30, 20], [30, 10, 26], [-20, 50, 14], [50, -50, 10]].forEach(([dx, dy, r]) => { ctx.beginPath(); ctx.arc(mx + dx, my + dy, r, 0, 7); ctx.fill(); });
+    ctx.fillStyle = 'rgba(40,50,100,.55)';
+    repeat(0.15, 700, (x, i) => { const y = 110 + hash(i) * 90 + Math.sin(tick * 0.01 + i) * 6; ctx.beginPath(); ctx.ellipse(x, y, 110, 9, 0, 0, 7); ctx.ellipse(x + 60, y - 8, 70, 7, 0, 0, 7); ctx.fill(); }, 31);
+  }
+  repeat(0.1, 1300, x => { ctx.fillStyle = '#121838'; ctx.fillRect(x - 150, G0 - 140, 300, 140); pagoda(x, G0 - 140, '#121838', 1.6, 3); }, 1);
+  const sp = 260, hx = i => i * sp - cam * 0.35 + hash(i + 5) * sp * 0.3, hh = i => 90 + hash(i) * 70, first = Math.floor(cam * 0.35 / sp) - 1;
+  for (let i = first; i < first + Math.ceil(VW / sp) + 3; i++) {
+    const x = hx(i), h = hh(i);
+    ctx.fillStyle = '#1a2150'; ctx.fillRect(x - 70, G0 - h, 140, h);
+    poly([[x - 90, G0 - h + 8], [x, G0 - h - 30], [x + 90, G0 - h + 8]], '#232c66');
+    ctx.fillStyle = 'rgba(255,210,63,.55)'; ctx.fillRect(x - 12, G0 - h + 26, 24, 18);
+  }
+  if (fl === 0) for (let i = first; i < first + Math.ceil(VW / sp) + 2; i++) {   // Lantern Roofs: lanterns on ropes from roof tip to roof tip
+    const x1 = hx(i) + 4, y1 = G0 - hh(i) - 28, x2 = hx(i + 1) - 4, y2 = G0 - hh(i + 1) - 28;
+    const at = t => [x1 + (x2 - x1) * t, y1 + (y2 - y1) * t + Math.sin(t * Math.PI) * 40];
+    ctx.strokeStyle = '#3a3a4a'; ctx.lineWidth = 1.5; ctx.beginPath(); for (let k = 0; k <= 12; k++) { const [a, b] = at(k / 12); k ? ctx.lineTo(a, b) : ctx.moveTo(a, b); } ctx.stroke();
+    [0.3, 0.7].forEach((t, k) => {
+      const [a, b] = at(t), sw = Math.sin(tick * 0.04 + i + k) * 2;
+      glowAt(a + sw, b + 14, 30, 'rgba(255,90,60,.4)');
+      ctx.fillStyle = '#e63946'; ctx.beginPath(); ctx.ellipse(a + sw, b + 14, 8, 11, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#222'; ctx.fillRect(a + sw - 5, b + 2, 10, 2); ctx.fillRect(a + sw - 5, b + 24, 10, 2);
+    });
+  }
+  if (fl === 2) {   // Shadow Walls: a low stone wall in front of the village, with banners and torches on it
+    const top = G0 - 110, off = cam * 0.5;
+    ctx.fillStyle = '#20264f'; ctx.fillRect(0, top, VW, G0 - top);
+    ctx.fillStyle = '#181d40'; for (let y = top + 22; y < G0; y += 24) ctx.fillRect(0, y, VW, 2);
+    for (let y = top + 22; y < G0; y += 24) for (let x = -((off + (y / 24 % 2) * 30) % 60); x < VW; x += 60) ctx.fillRect(x, y, 2, 24);
+    ctx.fillStyle = '#20264f'; for (let x = -(off % 48); x < VW; x += 48) ctx.fillRect(x, top - 18, 28, 18);
+    repeat(0.5, 360, (x, i) => {
+      const sw = Math.sin(tick * 0.03 + i) * 2;
+      ctx.fillStyle = '#2b2440'; ctx.fillRect(x - 18, top + 2, 36, 5);
+      poly([[x - 13, top + 7], [x + 13, top + 7], [x + 13 + sw, top + 80], [x + sw, top + 70], [x - 13 + sw, top + 80]], '#4a2a6a');
+      ctx.fillStyle = '#c9a24f'; ctx.beginPath(); ctx.arc(x + sw * 0.5, top + 30, 6, 0, 7); ctx.fill();
+      const tx = x + 180, ty = top + 40, f = Math.sin(tick * 0.3 + i) * 2;
+      glowAt(tx, ty - 8, 44, 'rgba(255,150,50,.35)'); ctx.fillStyle = '#3a2a1a'; ctx.fillRect(tx - 3, ty, 6, 16);
+      poly([[tx - 6, ty], [tx + f, ty - 16], [tx + 6, ty]], '#ff8a1a');
+    }, 12);
+  }
 }
 
 // ---------------------------------------------------------------- drawing: tiles
@@ -3510,6 +3870,13 @@ function drawTwist() {
       ctx.fillStyle = '#2f8a3a'; ctx.beginPath(); ctx.ellipse(pl.x + pl.w / 2, pl.y + 6, pl.w / 2 + 4, 9, 0, 0.25, Math.PI * 2 - 0.25); ctx.lineTo(pl.x + pl.w / 2, pl.y + 6); ctx.fill();
       ctx.fillStyle = '#5cc463'; ctx.beginPath(); ctx.ellipse(pl.x + pl.w / 2, pl.y + 4, pl.w / 2, 6, 0, 0.3, Math.PI * 2 - 0.3); ctx.lineTo(pl.x + pl.w / 2, pl.y + 4); ctx.fill();
       ctx.fillStyle = '#ff9cc4'; ctx.beginPath(); ctx.arc(pl.x + pl.w * 0.7, pl.y, 5, 0, 7); ctx.fill();
+    } else if (pl.k === 'lantern') {   // a big paper lantern to stand on
+      const cx = pl.x + pl.w / 2;
+      glowAt(cx, pl.y + 24, 60, 'rgba(255,170,60,.45)');
+      ctx.fillStyle = '#e63946'; rrect(pl.x + 4, pl.y + 4, pl.w - 8, 40, 14); ctx.fill();
+      ctx.fillStyle = 'rgba(255,220,120,.55)'; ctx.fillRect(pl.x + 14, pl.y + 10, pl.w - 28, 28);
+      ctx.fillStyle = '#2b1a10'; ctx.fillRect(pl.x, pl.y, pl.w, 6); ctx.fillRect(pl.x + 8, pl.y + 42, pl.w - 16, 5);
+      ctx.fillStyle = '#ffd23f'; ctx.fillRect(cx - 2, pl.y + 47, 4, 10);
     } else {
       ctx.fillStyle = '#5d6d7e'; ctx.fillRect(pl.x, pl.y, pl.w, 14); ctx.fillStyle = '#ffd23f'; ctx.fillRect(pl.x, pl.y, pl.w, 4);
     }
@@ -3608,7 +3975,9 @@ function drawDarkness() {
   const hole = (x, y, r) => { const g = d.createRadialGradient(x - cam, y, r * 0.3, x - cam, y, r); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); d.fillStyle = g; d.fillRect(x - cam - r, y - r, r * 2, r * 2); };
   hole(P.x + P.w / 2, P.y + P.h / 2, 170 + Math.sin(tick * 0.1) * 4);
   for (const f of L.fx) if (f.k === 'crystal') hole(f.x, f.y, f.lit ? 190 : 46);
+  for (const f of L.fl || []) if (f.k === 'shroom') hole(f.x, GR * T - 14, f.lit ? 120 : 40);
   const cs = currentStation(); if (cs && cs.answers) cs.answers.forEach(a => hole(a.c * T + T / 2, a.r * T + T / 2, 50));
+  if (cs && gateKey() === 'obsidian') for (let r = 1; r < GR; r += 2) hole((cs.gate[0] + 1) * T, r * T, 46);   // the crystal gate glows a little
   for (let c = Math.floor(cam / T); c < cam / T + VW / T + 1; c++) if (c >= 0 && c < L.w && L.map[GR][c] === '.') hole(c * T + T / 2, GR * T + 10, 60);
   hole(L.flagC * T, GR * T - 3 * T, 140);
   ctx.drawImage(darkCv, 0, 0);
@@ -3897,7 +4266,22 @@ function drawPillar(k, x, y, c, r) {
     if (top) { ctx.fillStyle = '#c9a24f'; ctx.fillRect(x - 2, y, T + 4, 6); }
   }
 }
+// Each lava level has its own gate: Ash Trail a cracked stone wall, Lava Falls a lavafall, Obsidian Caves black crystal.
+function gateKey() { return L.world.key === 'lava' ? ['ash', 'lava', 'obsidian'][L.def.k] || 'lava' : L.world.key; }
 function drawGateTile(k, x, y, r, c) {
+  if (k === 'ash') {   // grey stone blocks with glowing cracks
+    ctx.fillStyle = '#3a3330'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#6a605a'; ctx.fillRect(x + 2, y + 2, T - 4, T - 4);
+    ctx.fillStyle = '#8a7f78'; ctx.fillRect(x + 2, y + 2, T - 4, 3);
+    ctx.fillStyle = `rgba(255,${120 + 40 * Math.sin(tick * 0.08 + r) | 0},40,.8)`; const cx = x + 10 + (r * 7) % 12; ctx.lineWidth = 2.5; ctx.strokeStyle = ctx.fillStyle; ctx.beginPath(); ctx.moveTo(cx, y + 2); ctx.lineTo(cx + 6, y + 12); ctx.lineTo(cx - 2, y + 22); ctx.lineTo(cx + 5, y + T - 2); ctx.stroke();
+    return true;
+  }
+  if (k === 'obsidian') {   // glassy black crystal with a shine sliding over it
+    ctx.fillStyle = '#120a1c'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#24163a'; poly([[x + 3, y + 3], [x + T - 3, y + 8], [x + T - 8, y + T - 3], [x + 5, y + T - 6]], '#24163a');
+    const sh = (tick * 2 + r * 18) % (T * 6);
+    if (sh < T) { ctx.fillStyle = 'rgba(190,150,255,.45)'; poly([[x + sh * 0.6, y], [x + sh * 0.6 + 6, y], [x + sh * 0.6 - 4, y + T], [x + sh * 0.6 - 10, y + T]], 'rgba(190,150,255,.45)'); }
+    ctx.fillStyle = 'rgba(160,120,255,.6)'; ctx.fillRect(x + 6, y + 5, 2, 8);
+    return true;
+  }
   const left = L.map[r][c - 1] !== 'G';
   if (k === 'japan') {   // shoji paper screen in a red frame
     ctx.fillStyle = '#b3261e'; ctx.fillRect(x, y, T, T);
@@ -3952,6 +4336,13 @@ function drawGateFx(st) {
     if (t > 24) for (let i = 0; i < 3; i++) { ctx.fillStyle = `rgba(220,220,230,${0.5 * fade})`; ctx.beginPath(); ctx.arc(g.x0 + g.w / 2 + Math.sin(t * 0.1 + i * 2) * 20, H - (t - 24) * 1.5 - i * 30, 16 + i * 4, 0, 7); ctx.fill(); }
     ctx.fillStyle = '#2b1d18'; ctx.fillRect(g.x0 - 8, 0, g.w + 16, 22);
     if (plug) block(plug.x - T / 2, plug.y - T / 2, '#2ecc71', '#1e8449', '#8ff0b5');
+  } else if (g.k === 'ash') {   // the stone wall crumbles in a puff of dust
+    if (t < 50) for (let i = 0; i < 4; i++) { ctx.fillStyle = `rgba(150,140,135,${0.5 * (1 - t / 50)})`; ctx.beginPath(); ctx.arc(g.x0 + g.w / 2 + Math.sin(i * 2) * 24, H - 30 - i * 70, 30 + t, 0, 7); ctx.fill(); }
+    ctx.globalAlpha = fade; for (const b of g.bits) { ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.a); ctx.fillStyle = '#6a605a'; ctx.fillRect(-b.s / 2, -b.s / 2, b.s, b.s); ctx.fillStyle = '#ff8a3a'; ctx.fillRect(-b.s / 2, -b.s / 2, b.s, 2); ctx.restore(); }
+    ctx.globalAlpha = 1;
+  } else if (g.k === 'obsidian') {   // the crystal shatters into sparkling shards
+    ctx.globalAlpha = fade; for (const b of g.bits) { ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.a); poly([[0, -b.s], [b.s * 0.4, 0], [0, b.s * 0.5], [-b.s * 0.4, 0]], '#2a1a44'); ctx.fillStyle = '#b48cff'; ctx.fillRect(-1, -b.s * 0.7, 2, b.s * 0.6); ctx.restore(); }
+    ctx.globalAlpha = 1;
   } else if (g.k === 'snow') {   // a gust of wind blows the ice away
     ctx.strokeStyle = `rgba(255,255,255,${0.7 * fade})`; ctx.lineWidth = 3;
     for (let i = 0; i < 6; i++) { const yy = 40 + i * (H / 6), xx = g.x0 - 160 + ((t * 14 + i * 50) % 420); ctx.beginPath(); ctx.moveTo(xx, yy); ctx.quadraticCurveTo(xx + 40, yy - 10, xx + 90, yy); ctx.stroke(); }
@@ -4036,7 +4427,7 @@ function drawTile(t, x, y, c, r) {
     }
     case 'G': {
       const [fill, dark, light, lock] = W.gate;
-      if (drawGateTile(W.key, x, y, r, c)) {
+      if (drawGateTile(gateKey(), x, y, r, c)) {
         if (r === GR - 3 || r === GR - 8) {   // padlock
           ctx.strokeStyle = lock; ctx.lineWidth = 3;
           ctx.beginPath(); ctx.arc(x + T / 2, y + 15, 6, Math.PI, 0); ctx.stroke();
@@ -4228,6 +4619,11 @@ function drawDecor(c) {
       ctx.beginPath(); ctx.moveTo(x - 16, y - 32); ctx.lineTo(x + 14, y - 2); ctx.stroke();
       break;
     case 'castle':
+      if (L.flavor !== 'lanterns') {   // a little pine in a pot (stone lanterns only on Lantern Roofs)
+        ctx.fillStyle = '#5a3a2a'; ctx.fillRect(x - 12, y - 10, 24, 10); ctx.fillStyle = '#4a3020'; ctx.fillRect(x - 2, y - 22, 4, 12);
+        ctx.fillStyle = '#2f6b4a'; [[-10, -26, 11], [8, -30, 10], [0, -38, 9]].forEach(([dx, dy, r]) => { ctx.beginPath(); ctx.ellipse(x + dx, y + dy, r, r * 0.6, 0, 0, 7); ctx.fill(); });
+        break;
+      }
       ctx.fillStyle = '#6a6f8a'; ctx.fillRect(x - 5, y - 30, 10, 30); ctx.fillRect(x - 14, y - 44, 28, 14);
       poly([[x - 18, y - 44], [x, y - 58], [x + 18, y - 44]], '#55597a');
       ctx.fillStyle = `rgba(255,210,63,${0.6 + 0.3 * Math.sin(tick * 0.1 + c)})`; ctx.fillRect(x - 6, y - 41, 12, 8);
@@ -4787,10 +5183,12 @@ function render() {
   if (RC) { renderRace(); return; }
   if (mode === 'menu' && !G) { drawMenuBackdrop(); return; }
   if (L.room) drawRoomBg(); else drawBackground();
+  if (L.flavor && !L.room) drawFlavorSky();
   if (L.twist === 'walljump') drawFireworks();
   const shk = G && G.shake > 0 ? G.shakeAmp : 0;
   ctx.save(); ctx.translate(-Math.round(cam) + (Math.random() - 0.5) * 2 * shk, (Math.random() - 0.5) * 2 * shk);
   for (const d of L.decor) if (d * T > cam - 80 && d * T < cam + VW + 40) drawDecor(d);
+  if (L.flavor) drawFlavorBack();
   drawSigns();
   drawPuzzles();
   if (L.room) drawRoom();
@@ -4798,6 +5196,7 @@ function render() {
   const c0 = Math.max(0, Math.floor(cam / T)), c1 = Math.min(L.w - 1, c0 + Math.ceil(VW / T) + 1);
   drawTiles();
   if (L.twist) drawTwist();
+  if (L.flavor) drawFlavor();
   for (const c of L.coins) if (c.gold && !c.taken && Math.abs(c.x - cam - VW / 2) < VW) {   // the golden gem is on fire
     glowAt(c.x, c.y, 60, 'rgba(255,170,40,.6)');
     if (tick % 2 === 0) G.parts.push({ k: 'bit', x: c.x + (Math.random() - 0.5) * 26, y: c.y + 10, vx: (Math.random() - 0.5) * 0.6, vy: -1.6 - Math.random() * 1.2, life: 30, col: ['#ff6a00', '#ffb300', '#ffd23f', '#ff3d00'][R(0, 3)], s: 7 });
@@ -4809,6 +5208,7 @@ function render() {
   if (L.boss) { drawOrbs(); }
   if (G) { drawPet(); drawPlayer(); drawProjectiles(); drawParticles(); }
   if (L.twist && G) drawTwistFront();
+  if (L.flavor && G) drawFlavorFront();
   if (L.boss && G) drawOutro();
   ctx.restore();
   if (L.twist === 'dark' && G) drawDarkness();
@@ -5483,7 +5883,6 @@ window.addEventListener('keydown', e => {
     keys[k] = true;
   }
   if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
-  if (e.code === 'KeyM') setMuted(!muted);
   if (mode === 'play' && /^Digit[1-5]$/.test(e.code)) tapAnswer(Number(e.code[5]) - 1);
   if (mode === 'play' && ['KeyN', 'KeyM', 'Comma', 'Period', 'Slash'].includes(e.code)) {   // the row just above the arrow keys
     const t = answerTarget();
