@@ -93,6 +93,7 @@
   #ansbar button { min-width: 76px; height: 76px; border-radius: 14px; border: none; border-bottom: 5px solid #8a5a00; background: #ffd23f; color: #3a2200;
     font: 30px "Lilita One", "Trebuchet MS", sans-serif; padding: 0 8px; touch-action: none; }
   #ansbar.five button { min-width: 62px; height: 66px; font-size: 26px; }
+  #ansbar button:disabled { opacity: .3; }
   #ansbar button:active { transform: translateY(3px); border-bottom-width: 2px; }
   body.portrait #ansbar { bottom: calc(max(36px, env(safe-area-inset-bottom)) + 112px); }
   .tbtn[data-k="left"] { left: 18px; }
@@ -985,11 +986,12 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     if (i === 2 || (i === 5 && def.w >= 2)) bridgeChunk();
     if (i === doorAt) doorChunk();
     if (twist && i % 2 === 0) twistChunk();
-    // Question station: a stretch of run-up and a locked gate.
+    // Question station: sign, answer blocks, and a locked gate.
     const s = flat(16), q = L.gen(), five = L.expert;
-    // No answer blocks: the question pops up on the answer bar as Kai runs in. Two ? boxes to jump for on the way.
-    const answers = gateChoices(q, five ? 5 : 3).map(v => ({ val: v, state: 'idle' }));
-    map[GR - 4][s + 4] = '?'; map[GR - 4][s + 8] = '?';
+    // Answer blocks hang over the run-up; the answer bar's buttons match them (same order and colour).
+    const answers = gateChoices(q, five ? 5 : 3).map((v, j) => ({ c: five ? s + 3 + j * 2 : s + 4 + j * 3, r: GR - 4, val: v, state: 'idle', shake: 0 }));
+    answers.forEach(a => { map[a.r][a.c] = 'A'; });
+    map[GR - 8][s + 7] = '?';   // a ? box up high: stand on the middle block to reach it
     for (let r = 0; r < GR; r++) { map[r][s + 13] = 'G'; map[r][s + 14] = 'G'; }
     L.stations.push({ s, q, answers, gate: [s + 13, s + 14], solved: false, opening: null, openT: 0, need: !easy && i % 3 === 1 ? 2 : 1, got: 0 });   // some gates need two answers
     if (i === goldAt && !def.boss) map[GR - 5][s + 1] = 'H';   // hidden block above the sign
@@ -1599,7 +1601,7 @@ function remember(q) {
 function gateChoices(q, n) { return n === 5 ? rowChoices(q, 5) : choices(q, n); }
 function setStationQ(st, q) {
   st.q = q; st.shownAt = G.time;
-  gateChoices(q, st.answers.length).forEach((v, j) => { st.answers[j].val = v; st.answers[j].state = 'idle'; });
+  gateChoices(q, st.answers.length).forEach((v, j) => { const a = st.answers[j]; a.val = v; a.state = 'idle'; L.map[a.r][a.c] = 'A'; });
 }
 // First-try answers build a streak that multiplies the points.
 function streakUp(x, y) {
@@ -1620,6 +1622,7 @@ function bump(c, r) {
     }
   }
   if (t === '?') boxPrize(c, r);
+  else if (t === 'A') answer(c, r);
   else if (t === 'B') {
     L.map[r][c] = '.'; G.score += 50; sfx.brick();
     burst(c * T + T / 2, r * T + T / 2, L.world.brick[0], 8);
@@ -1637,28 +1640,50 @@ function bump(c, r) {
   else sfx.bump();
 }
 
-// Kai throws a shuriken at the gate. Answer before he reaches it and the gate bursts open: Lightning!
+// Tap a button and Kai throws a shuriken at that block (it lands, then counts). Bonking a block from right
+// underneath works too. Answer before Kai reaches the gate for Lightning.
+const ANS_COL = [['#ff8a8a', '#c0392b'], ['#7fd8ff', '#1f7fb5'], ['#7ef0a0', '#1e9e4a'], ['#ffd23f', '#a8600a'], ['#c9a8ff', '#6a3fb5']];
 function gateAnswer(st, i) {
-  const a = st.answers[i]; if (!a || st.solved || st.swap) return;
-  const cx = P.x + P.w / 2, cy = P.y - 10, gx = st.gate[0] * T + T;
+  const a = st.answers[i]; if (!a || st.solved || st.swap || st.star || a.state !== 'idle') return;
+  st.shotT = G.time; st.quick = !st.blocked;
+  st.star = { x: P.x + P.w / 2, y: P.y + 10, a };
+  P.throwT = 14; sfx.throw();
+}
+function answer(c, r) {   // a head bump on an answer block
+  const f = findAnswer(c, r);
+  if (!f || f.st !== currentStation() || f.st.solved || f.st.swap || f.st.star || f.a.state !== 'idle' ||
+    Math.abs(P.x + P.w / 2 - (c * T + T / 2)) > T * 0.35) { sfx.bump(); return; }   // only a clean hit from right underneath counts
+  f.st.shotT = G.time; f.st.quick = !f.st.blocked;
+  resolveAnswer(f.st, f.a);
+}
+function resolveAnswer(st, a) {
+  const cx = a.c * T + T / 2, cy = a.r * T;
   if (a.val !== st.q.ans) {
-    // A miss swaps in a new question, so trying every answer doesn't work.
+    // A miss swaps in a new question, so trying every block doesn't work.
     noteFact(st.q, false, false, L.skill);
-    G.mistakes++; G.streak = 0; remember(st.q); st.swap = 50; st.shakeT = 24; missed(st.q);
-    burst(gx, (GR - 3) * T, '#ff4d4d', 12, 4); sfx.wrong();
+    a.state = 'wrong'; a.shake = 20; G.mistakes++; G.streak = 0;
+    remember(st.q); st.swap = 50; missed(st.q);
+    burst(cx, cy + T / 2, '#9a9a9a', 10, 3); sfx.wrong();
     floatText(cx, cy - 20, 'Oops! New question...', '#ff6b6b', 26);
     return;
   }
-  noteFact(st.q, true, G.time - (st.shownAt ?? G.time) <= 300, L.skill);   // 5 seconds from the question showing counts as fast
-  P.throwT = 14; sfx.throw(); sfx.correct(); streakUp(cx, cy); gotIt();
+  noteFact(st.q, true, (st.shotT ?? G.time) - (st.shownAt ?? G.time) <= 300, L.skill);   // 5 seconds from the question showing counts as fast
+  // the right block shatters into gems
+  L.map[a.r][a.c] = '.'; a.state = 'right';
+  for (let k = 0; k < 8; k++) G.parts.push({ k: 'coin', x: cx, y: cy + T / 2, vx: (Math.random() - 0.5) * 6, vy: -4 - Math.random() * 5, life: 32, v: 1 });
+  burst(cx, cy + T / 2, ANS_COL[st.answers.indexOf(a)][0], 14, 5);
+  sfx.correct(); confetti(cx, cy); streakUp(cx, cy); gotIt();
   if (++st.got < st.need) {   // a double gate: one more!
     floatText(cx, cy - 20, 'One more!', '#3ae374', 30);
-    st.star = { x: cx, y: P.y + 10, open: false }; st.swap = 30; return;
+    st.answers.forEach(o => { if (o !== a && o.state === 'idle') o.state = 'done'; });
+    st.swap = 40; return;
   }
-  a.state = 'right'; award('first-gate');
-  st.solved = true; st.star = { x: cx, y: P.y + 10, open: true };
+  st.answers.forEach(o => { if (o !== a) o.state = 'done'; });
+  award('first-gate');
+  st.solved = true; openGate(st); shake(6, 2);
   G.checkpoint = (st.s + 15) * T;
-  if (!st.blocked) {
+  setTimeout(sfx.gate, 350);
+  if (st.quick) {
     G.coins += 3; G.score += 300; sfx.streak();
     floatText(cx, cy - 20, 'Lightning! +3', '#7df9ff', 32);
   } else floatText(cx, cy - 20, st.q.retry ? 'You remembered it!' : ['Correct!', 'Great job!', 'Awesome!', 'You got it!', 'Super!', 'Hi-yah!'][R(0, 5)], '#3ae374', 30);
@@ -1673,13 +1698,13 @@ function barTarget() {
   if (mode !== 'play') return null;
   const st = currentStation();
   if (!st) return null;
-  if (st === L.arena) return st.orbs && st.orbs.some(o => o.state === 'idle') ? { q: st.q, vals: st.orbs.map(o => o.val) } : null;
-  if (st.swap || P.x < (st.s - 3) * T || P.x > st.gate[1] * T) return null;
+  if (st === L.arena) return st.orbs && st.orbs.some(o => o.state === 'idle') ? { q: st.q, vals: st.orbs.map(o => o.val), off: [] } : null;
+  if (st.swap || st.star || P.x < (st.s - 3) * T || P.x > st.gate[1] * T) return null;
   if (st.barQ !== st.q) { st.barQ = st.q; st.shownAt = G.time; }
-  return { q: st.q, vals: st.answers.map(a => a.val), tag: st.need > 1 ? `Double gate ${st.got + 1}/2` : '' };
+  return { q: st.q, vals: st.answers.map(a => a.val), off: st.answers.map(a => a.state !== 'idle'), tag: st.need > 1 ? `Double gate ${st.got + 1}/2` : '' };
 }
 function syncAnsBar() {
-  const t = barTarget(), key = t ? t.q.text + '|' + t.vals.join(',') + t.tag : '';
+  const t = barTarget(), key = t ? t.q.text + '|' + t.vals.join(',') + t.off.join(',') + t.tag : '';
   if (key === barKey) return;
   barKey = key; const bar = $('ansbar');
   if (!t) { hide('ansbar'); return; }
@@ -1687,6 +1712,8 @@ function syncAnsBar() {
   bar.innerHTML = `<div class="aq">${t.q.missing ? t.q.text : t.q.text + ' = ?'}${t.tag ? `<small>${t.tag}</small>` : ''}</div><div class="ab"></div>`;
   t.vals.forEach((v, i) => {
     const b = document.createElement('button'); b.type = 'button'; b.textContent = v;
+    const [c1, c2] = ANS_COL[i % 5]; b.style.background = c1; b.style.borderBottomColor = c2;
+    if (t.off[i]) b.disabled = true;
     b.addEventListener('pointerdown', e => { e.preventDefault(); audio(); tapAnswer(i); });
     bar.lastChild.appendChild(b);
   });
@@ -2380,6 +2407,7 @@ function updateOrbs() {
   for (const o of ar.orbs) {
     o.ph += 0.05; o.t++;
     if (o.state !== 'idle' || ar.phase !== 'open' || ar.wait) continue;
+    if (circleHits(o.x, o.y + Math.sin(o.ph) * 6, 20, P)) hitOrb(o);   // grabbing one works too
   }
 }
 function hitOrb(o) {
@@ -2388,7 +2416,7 @@ function hitOrb(o) {
     if (o.val === ar.q.ans) {
       o.state = 'thrown'; ar.orbs.forEach(q => { if (q !== o) q.state = 'gone'; });
       noteFact(ar.q, true, G.time - ar.askedAt <= 480, L.skill);
-      ar.wait = 1; G.shots.push({ x: P.x + P.w / 2, y: P.y + 10, spin: 0 });
+      ar.wait = 1; G.shots.push({ x: o.x, y: oy, spin: 0 });
       P.throwT = 14; sfx.correct(); sfx.throw(); streakUp(o.x, oy); gotIt();
       floatText(P.x + P.w / 2, P.y - 30, ar.q.retry ? 'You remembered it!' : 'Shuriken!', '#ffd23f', 28);
       setTimeout(() => { if (L.arena === ar) ar.orbs = []; }, 300);
@@ -2403,13 +2431,12 @@ function hitOrb(o) {
 }
 function drawOrbs() {
   const ar = L.arena; if (!ar || !ar.orbs || ar.phase !== 'open') return;
-  return;   // answers are on the answer bar now
   for (const o of ar.orbs) {
     if (o.state !== 'idle') continue;
     const oy = o.y + Math.sin(o.ph) * 6;
     glowAt(o.x, oy, 34, 'rgba(255,230,120,.35)');
     drawShuriken(o.x, oy, o.ph * 0.6, '#d8dfe8', '#5a6472', 24);
-    ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(o.x, oy, 14, 0, 7); ctx.fill();
+    ctx.fillStyle = ANS_COL[ar.orbs.indexOf(o) % 5][0]; ctx.beginPath(); ctx.arc(o.x, oy, 14, 0, 7); ctx.fill();
     ctx.strokeStyle = '#8a5a00'; ctx.lineWidth = 2; ctx.stroke();
     const v = String(o.val); ctx.fillStyle = '#3a2200'; ctx.font = `${v.length >= 3 ? 12 : 16}px "Lilita One", "Trebuchet MS", sans-serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(v, o.x, oy + 1);
@@ -2571,14 +2598,13 @@ function updateGates() {
     }
     if (st.shakeT > 0) st.shakeT--;
     if (!st.solved && P.x + P.w >= st.gate[0] * T - 4) st.blocked = true;   // had to stop and wait: no Lightning
-    if (st.star) {   // the thrown shuriken flies to the gate
-      const z = st.star, tx = st.gate[0] * T + T, ty = (GR - 3) * T, dx = tx - z.x, dy = ty - z.y, d = Math.hypot(dx, dy);
+    if (st.star) {   // the thrown shuriken flies to its block, then the answer counts
+      const z = st.star, tx = z.a.c * T + T / 2, ty = z.a.r * T + T / 2, dx = tx - z.x, dy = ty - z.y, d = Math.hypot(dx, dy);
       z.spin = (z.spin || 0) + 0.5;
-      if (d < 20) {
-        st.star = null; burst(tx, ty, '#ffd23f', 14, 5);
-        if (z.open) { openGate(st); confetti(tx, ty); shake(6, 2); setTimeout(sfx.gate, 150); } else { shake(3, 2); sfx.hit(); }
-      } else { z.x += dx / d * 18; z.y += dy / d * 18; }
+      if (d < 16) { st.star = null; shake(3, 2); resolveAnswer(st, z.a); }
+      else { z.x += dx / d * 16; z.y += dy / d * 16; }
     }
+    for (const a of st.answers) if (a.shake > 0) a.shake--;
     if (st.swap && --st.swap === 0) setStationQ(st, freshQ(st.q.text));
   }
 }
@@ -3500,7 +3526,7 @@ function drawDarkness() {
   const hole = (x, y, r) => { const g = d.createRadialGradient(x - cam, y, r * 0.3, x - cam, y, r); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); d.fillStyle = g; d.fillRect(x - cam - r, y - r, r * 2, r * 2); };
   hole(P.x + P.w / 2, P.y + P.h / 2, 170 + Math.sin(tick * 0.1) * 4);
   for (const f of L.fx) if (f.k === 'crystal') hole(f.x, f.y, f.lit ? 190 : 46);
-  const cs = currentStation(); if (cs && cs.gate) hole(cs.gate[0] * T + T, (GR - 3) * T, 70);
+  const cs = currentStation(); if (cs && cs.answers) cs.answers.forEach(a => hole(a.c * T + T / 2, a.r * T + T / 2, 50));
   for (let c = Math.floor(cam / T); c < cam / T + VW / T + 1; c++) if (c >= 0 && c < L.w && L.map[GR][c] === '.') hole(c * T + T / 2, GR * T + 10, 60);
   hole(L.flagC * T, GR * T - 3 * T, 140);
   ctx.drawImage(darkCv, 0, 0);
@@ -3984,21 +4010,21 @@ function drawAnswer(x, y, c, r) {
   if (a.shake) x += Math.sin(a.shake * 1.6) * 4;
   const cur = st === currentStation();
   if (a.state === 'right') block(x, y, '#2ecc71', '#1e8449', '#8ff0b5');
-  else if (a.state === 'wrong') block(x, y, '#e74c3c', '#922b21', '#f1948a');
+  else if (a.state === 'wrong') block(x, y, '#8a8a8a', '#4a4a4a', '#b5b5b5');
   else if (a.state === 'done') block(x, y, '#9b6a3c', '#5e3a1c', '#b8875a');
-  else block(x, y, '#f7b928', '#a8600a', '#ffe08a');
+  else { const [c1, c2] = ANS_COL[st.answers.indexOf(a) % 5]; block(x, y, c1, c2, '#ffffff'); }   // same colour as its button
   if (cur && a.state === 'idle') {
     ctx.strokeStyle = `rgba(255,255,255,${0.4 + 0.4 * Math.sin(tick * 0.15)})`; ctx.lineWidth = 3;
     ctx.strokeRect(x - 2, y - 2, T + 4, T + 4);
   }
   const s = String(a.val);
-  ctx.fillStyle = a.state === 'idle' ? '#5a2a00' : '#fff';
+  ctx.fillStyle = a.state === 'idle' ? '#2a1a00' : '#fff';
   ctx.font = `${s.length >= 3 ? 16 : 22}px "Lilita One", "Trebuchet MS", sans-serif`;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(s, x + T / 2, y + T / 2 + 1);
-  if (a.state === 'wrong') {
+  if (a.state === 'wrong') {   // cracked
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(x + 7, y + 7); ctx.lineTo(x + T - 7, y + T - 7); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + 6, y + 4); ctx.lineTo(x + 15, y + 15); ctx.lineTo(x + 11, y + 22); ctx.lineTo(x + 20, y + T - 4); ctx.moveTo(x + 15, y + 15); ctx.lineTo(x + T - 6, y + 10); ctx.stroke();
   }
 }
 
@@ -4070,16 +4096,20 @@ function drawPuzzles() {
 function drawSigns() {
   for (const st of L.stations) if (st.gfx && st.gfx.t < 120 && Math.abs(st.gfx.x0 - cam - VW / 2) < VW) drawGateFx(st);
   for (const st of L.stations) {
-    const gx = st.gate[0] * T + T;
-    if (gx < cam - T || gx > cam + VW + T) continue;
     if (st.star) drawShuriken(st.star.x, st.star.y, st.star.spin, '#d8dfe8', '#5a6472', 16);
-    if (st.solved) continue;
-    const sx = st.shakeT ? Math.sin(st.shakeT * 1.6) * 5 : 0, ly = (GR - 4) * T;
-    glowAt(gx + sx, ly + 20, 40, 'rgba(255,230,120,.35)');
-    drawPix('lock', gx - 21 + sx, ly, 3);
-    if (st.need > 1) {
-      ctx.font = '20px "Lilita One", "Trebuchet MS", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.lineWidth = 4; ctx.strokeStyle = '#3a2200'; ctx.strokeText(`x${st.need - st.got}`, gx + sx, ly + 56); ctx.fillStyle = '#ffd23f'; ctx.fillText(`x${st.need - st.got}`, gx + sx, ly + 56);
+    const x = st.s * T + 4, y = (GR - 3.1) * T, w = 3.5 * T, h = 1.25 * T;
+    if (x > cam + VW || x + w < cam) continue;
+    ctx.fillStyle = '#6e4627'; ctx.fillRect(x + w / 2 - 4, y + h, 8, GR * T - y - h);
+    ctx.fillStyle = '#5e3a1c'; rrect(x - 3, y - 3, w + 6, h + 6, 6); ctx.fill();
+    ctx.fillStyle = st.solved ? '#c8f7d4' : '#f6e1b5'; rrect(x, y, w, h, 5); ctx.fill();
+    const txt = st.solved ? qSolved(st.q) : qShow(st.q);
+    let size = 21; ctx.font = `${size}px "Lilita One", "Trebuchet MS", sans-serif`;
+    while (ctx.measureText(txt).width > w - 10 && size > 12) { size--; ctx.font = `${size}px "Lilita One", "Trebuchet MS", sans-serif`; }
+    ctx.fillStyle = '#3a2200'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(txt, x + w / 2, y + h / 2 + 1);
+    if (st.need > 1 && !st.solved) {   // double gate tag
+      ctx.font = '18px "Lilita One", "Trebuchet MS", sans-serif'; ctx.lineWidth = 4; ctx.strokeStyle = '#3a2200';
+      ctx.strokeText(`x${st.need - st.got}`, x + w + 2, y - 4); ctx.fillStyle = '#ffd23f'; ctx.fillText(`x${st.need - st.got}`, x + w + 2, y - 4);
     }
   }
 }
@@ -4646,7 +4676,7 @@ function drawHUD() {
       ctx.fillRect(bx + i * segW + 1, by + 94, segW - 2, 10);
     }
     if (currentStation()) {
-      hudText('Tap the right answer to throw!', VW / 2, by + 124, 15, '#ffd23f', 'center');
+      hudText('Tap or grab the right shuriken!', VW / 2, by + 124, 15, '#ffd23f', 'center');
       const f = L.arena.phaseT / OPEN_FRAMES(), ww = 160;
       ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(VW / 2 - ww / 2, by + 136, ww, 5);
       ctx.fillStyle = '#ffd23f'; ctx.fillRect(VW / 2 - ww / 2, by + 136, ww * f, 5);
@@ -4883,7 +4913,7 @@ function showHowTo() {
   const row = (icon, txt) => `<div><span>${icon}</span><p style="margin:0">${txt}</p></div>`;
   showMsg('How to play', `<div class="howto">
     ${row('🕹️', isTouch ? 'Use ◀ ▶ to run and ▲ to jump.' : 'Arrow keys or A / D to run, Space or ↑ to jump, P to pause.')}
-    ${row('⛩️', 'Run up to a gate and tap the right answer. Answer before you get there for Lightning! Some gates need two.')}
+    ${row('⛩️', 'Tap the button that matches the right block and Kai throws a shuriken at it (or bonk it from right underneath). Answer before you reach the gate for Lightning! Some gates need two.')}
     ${row('💎', 'Grab gems: green = 1, blue = 5, red = 10. Spend them in the Dojo Shop.')}
     ${row('🌉', 'Bridges: bonk number stones to pick them up (you can carry up to 4) and take them to the altar to make the exact number. Bonk a stone again to put it back.')}
     ${row('👹', 'Bosses: dodge first. When the boss gets tired, tap the right answer to throw a shuriken.')}
