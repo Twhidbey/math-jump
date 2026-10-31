@@ -980,25 +980,45 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     }
   }
 
-  const kinds = easy ? ['coins', 'bricks', 'pipe', 'stairs', 'treasure'] : ['coins', 'pit', 'bricks', 'pipe', 'stairs', 'float', 'treasure'];
+  const kinds = easy ? ['coins', 'bricks', 'pipe', 'stairs'] : ['coins', 'pit', 'bricks', 'pipe', 'stairs', 'float'];
   if (twist === 'koi' && !easy) kinds.push('pit', 'pit');
   const doorAt = def.n > 6 ? 4 : 3, goldAt = 1 + idx % Math.max(1, def.n - 2);
   flat(10);
   for (let i = 0; i < def.n; i++) {
-    const n = ri(rng, 2, 3);
+    const n = ri(rng, 1, 2);   // short runs between gates: more math, less walking
     for (let k = 0; k < n; k++) chunk(kinds[ri(rng, 0, kinds.length - 1)]);
     if (i === 2 || (i === 5 && def.w >= 2)) bridgeChunk();
     if (i === doorAt) doorChunk();
-    if (twist && i % 2 === 0) twistChunk();
+    if (twist && (i % 2 === 0 || twist === 'walljump')) twistChunk();   // wall-jump levels get one before every gate
     // Question station: sign, answer blocks, and a locked gate.
     const s = flat(16), q = L.gen(), five = L.expert;
     // Answer blocks hang over the run-up; the answer bar's buttons match them (same order and colour).
     const answers = gateChoices(q, five ? 5 : 3).map((v, j) => ({ c: five ? s + 3 + j * 2 : s + 4 + j * 3, r: GR - 4, val: v, state: 'idle', shake: 0 }));
     answers.forEach(a => { map[a.r][a.c] = 'A'; });
-    map[GR - 8][s + 7] = '?';   // a ? box up high: stand on the middle block to reach it
     for (let r = 0; r < GR; r++) { map[r][s + 13] = 'G'; map[r][s + 14] = 'G'; }
-    L.stations.push({ s, q, answers, gate: [s + 13, s + 14], solved: false, opening: null, openT: 0, need: !easy && i % 3 === 1 ? 2 : 1, got: 0 });   // some gates need two answers
+    L.stations.push({ s, q, answers, gate: [s + 13, s + 14], solved: false, opening: null, openT: 0, need: easy ? (i % 2 ? 2 : 1) : (i % 3 === 2 ? 3 : 2), got: 0 });   // drill: most gates take 2 or 3 answers
     if (i === goldAt && !def.boss) map[GR - 5][s + 1] = 'H';   // hidden block above the sign
+  }
+  // A steady number of ? boxes: 3 in the first world up to 6 in the last. Extra ones become bricks;
+  // missing ones turn bricks over solid ground into ? boxes, then go over open flat ground.
+  {
+    const want = [3, 4, 5, 5, 6][def.w], boxes = [], spare = [];
+    const nearGate = c => L.stations.some(st => c >= st.s - 1 && c <= st.gate[1] + 1) || L.bridges.some(b => c >= b.signC - 1 && c <= b.altarC + 1) || L.doors.some(d => Math.abs(c - d.c) <= 2);
+    for (let c = 0; c < L.w; c++) for (let r = 0; r < GR; r++) {
+      if (map[r][c] === '?') boxes.push([r, c]);
+      else if (map[r][c] === 'B' && r === GR - 4 && map[GR][c] === '#') spare.push([r, c]);
+    }
+    const pick = arr => arr.splice(Math.floor(rng() * arr.length), 1)[0];
+    while (boxes.length > want) { const [r, c] = pick(boxes); map[r][c] = 'B'; }
+    let n = boxes.length;
+    for (; n < want && spare.length; n++) { const [r, c] = pick(spare); map[r][c] = '?'; }
+    const open = [];
+    for (let c = 12; c < L.w - 2; c++) {
+      if (nearGate(c) || map[GR][c] !== '#') continue;
+      let clear = true; for (let r = GR - 7; r < GR; r++) for (let d = -1; d <= 1; d++) if (map[r][c + d] !== '.') clear = false;
+      if (clear) open.push(c);
+    }
+    for (; n < want && open.length; n++) { const c = pick(open); map[GR - 4][c] = '?'; for (let d = -2; d <= 2; d++) { const i = open.indexOf(c + d); if (i >= 0) open.splice(i, 1); } }
   }
   // Finale: staircase, flag, dojo.
   const s = flat(24);
@@ -1976,7 +1996,7 @@ const POWERS = {
 // Fire and the star both knock out enemies and attacks on touch.
 const fiery = () => hasPower('fire') || hasPower('star');
 // Most ? boxes hold a surprise: a power, a heart, or a gem trick. A plain gem the rest of the time.
-const BOX_PRIZES = ['shield', 'double', 'speed', 'magnet', 'star', 'fire', 'jump', 'heart', 'fountain', 'fountain', 'rainbow', 'rainbow', 'multi', 'multi', 'bigGem'];
+const BOX_PRIZES = ['shield', 'double', 'speed', 'magnet', 'star', 'fire', 'jump', 'heart', 'fountain', 'fountain', 'rainbow', 'rainbow', 'bigGem'];
 function boxPrize(c, r) {
   const key = c + ',' + r, x = c * T + T / 2, y = r * T;
   if (L.multi && L.multi[key] > 0) { coinPop(c, r, 1); if (--L.multi[key] === 0) L.map[r][c] = 'U'; return; }   // keep bonking!
