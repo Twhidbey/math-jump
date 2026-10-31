@@ -84,6 +84,17 @@
     background: rgba(255,255,255,.22); border: 3px solid rgba(255,255,255,.5); color: #fff;
     font-size: 36px; display: flex; align-items: center; justify-content: center; touch-action: none; }
   .tbtn.on { background: rgba(255,255,255,.45); }
+  /* Tap-to-answer bar for gates and bosses */
+  #ansbar { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 7; display: flex; flex-direction: column; align-items: center; gap: 6px;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; }
+  #ansbar .aq { background: rgba(20,24,48,.8); color: #fff; border-radius: 10px; padding: 3px 14px; font: 22px "Lilita One", "Trebuchet MS", sans-serif; }
+  #ansbar .aq small { color: #ffd23f; font-size: 16px; margin-left: 8px; }
+  #ansbar .ab { display: flex; gap: 8px; }
+  #ansbar button { min-width: 76px; height: 76px; border-radius: 14px; border: none; border-bottom: 5px solid #8a5a00; background: #ffd23f; color: #3a2200;
+    font: 30px "Lilita One", "Trebuchet MS", sans-serif; padding: 0 8px; touch-action: none; }
+  #ansbar.five button { min-width: 62px; height: 66px; font-size: 26px; }
+  #ansbar button:active { transform: translateY(3px); border-bottom-width: 2px; }
+  body.portrait #ansbar { bottom: calc(max(36px, env(safe-area-inset-bottom)) + 112px); }
   .tbtn[data-k="left"] { left: 18px; }
   .tbtn[data-k="right"] { left: 116px; }
   .tbtn[data-k="jump"] { right: 24px; width: 100px; height: 100px; background: rgba(255,210,63,.35); }
@@ -483,6 +494,7 @@
   </div>
 </div>
 
+<div id="ansbar" class="hidden"></div>
 <div id="touch" class="hidden">
   <div class="tbtn" data-k="left">◀</div>
   <div class="tbtn" data-k="right">▶</div>
@@ -715,14 +727,23 @@ function reviewPool(exclude) {
   return Object.entries(prog.facts).filter(([k, f]) => k !== exclude && (f.weak || (f.days.length === 1 && f.days[0] < d) || (f.days.length >= 2 && d - f.last >= 4))).map(([, f]) => f);
 }
 // In auto mode about 1 question in 5 is a review: a fact to practice, or one due again.
+// Each level, boss or race gets its own generator that never asks the same fact twice
+// (7 × 5 and 5 × 7 count as one) until the skill runs out of facts. Missed facts still come back on purpose.
 function genFor(skill) {
-  if (!prog.auto || skill.id !== prog.skill) return skill.gen;
-  return () => {
-    if (Math.random() < 0.2) {
-      const pool = reviewPool();
+  const auto = prog.auto && skill.id === prog.skill, seen = new Set(), size = factList(skill)?.length || 1e9;
+  const one = () => {
+    if (auto && Math.random() < 0.2) {
+      const pool = reviewPool().filter(f => !seen.has(factKey(f.q)));
       if (pool.length) return { ...pool[R(0, pool.length - 1)].q, review: true };
     }
     return skill.gen();
+  };
+  return () => {
+    if (seen.size >= size) seen.clear();   // asked every fact: start over
+    let q = one();
+    for (let i = 0; i < 30 && seen.has(factKey(q)); i++) q = one();
+    seen.add(factKey(q));
+    return q;
   };
 }
 // Mastering every fact of a skill (all gold) earns a trophy and gems.
@@ -964,7 +985,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     const answers = gateChoices(q, five ? 5 : 3).map((v, j) => ({ c: five ? s + 3 + j * 2 : s + 4 + j * 3, r: GR - 4, val: v, state: 'idle', shake: 0 }));
     answers.forEach(a => { map[a.r][a.c] = 'A'; });
     for (let r = 0; r < GR; r++) { map[r][s + 13] = 'G'; map[r][s + 14] = 'G'; }
-    L.stations.push({ s, q, answers, gate: [s + 13, s + 14], solved: false, opening: null, openT: 0 });
+    L.stations.push({ s, q, answers, gate: [s + 13, s + 14], solved: false, opening: null, openT: 0, need: !easy && i % 3 === 1 ? 2 : 1, got: 0 });   // some gates need two answers
     if (i === goldAt && !def.boss) map[GR - 5][s + 1] = 'H';   // hidden block above the sign
   }
   // Finale: staircase, flag, dojo.
@@ -1091,7 +1112,7 @@ function buildArena(idx, easy = false, skill = curSkill()) {
   const L = { idx, def, skill, gen: genFor(skill), expert: skillProgress(skill).mature, world: W, sky: W.skies[2], map, w: cols, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [1, cols - 4], flagC: -99, castleC: -99, proj: [] };
   const padC = narrow ? 5 : 7;
   // Fights take turns: a 'dodge' phase where the boss attacks, then an 'open' phase where it is dizzy and you answer.
-  L.arena = { q: skill.gen(), padC, wait: 0, phase: 'dodge', phaseT: 150 };
+  L.arena = { q: L.gen(), padC, wait: 0, phase: 'dodge', phaseT: 150 };
   const sp = BOSS_SPECS[W.boss.kind];
   L.boss = {
     ...W.boss, spec: sp, max: W.boss.hp, x: (cols - 4) * T, y: GR * T - sp.h, w: sp.w, h: sp.h,
@@ -1613,7 +1634,7 @@ function bump(c, r) {
 
 function answer(c, r) {
   const f = findAnswer(c, r);
-  if (!f || f.st.solved || f.st.swap || f.a.state !== 'idle') { sfx.bump(); return; }
+  if (!f || f.st.solved || f.st.swap || f.a.state !== 'idle' || !P.auto) { sfx.bump(); return; }   // answers come from the answer bar, so stray bumps don't count
   const { st, a } = f, cx = c * T + T / 2, cy = r * T;
   if (a.val !== st.q.ans) {
     // A miss swaps in a new question, so trying every block no longer works.
@@ -1623,8 +1644,12 @@ function answer(c, r) {
     sfx.wrong(); floatText(cx, cy - 20, 'Oops! New question...', '#ff6b6b', 26);
     return;
   }
-  noteFact(st.q, true, G.time - (st.shownAt ?? G.time) <= 600, L.skill);   // 10 seconds counts as fast at a gate (there's running to do)
+  noteFact(st.q, true, (st.tapT ?? G.time) - (st.shownAt ?? G.time) <= 300, L.skill);   // 5 seconds from the buttons showing counts as fast
   a.state = 'right';
+  if (++st.got < st.need) {   // a double gate: one more!
+    sfx.correct(); streakUp(cx, cy); gotIt(); floatText(cx, cy - 20, 'One more!', '#3ae374', 30);
+    st.swap = 30; return;
+  }
   st.answers.forEach(o => { if (o !== a) o.state = 'done'; });
   sfx.correct(); confetti(cx, cy); streakUp(cx, cy); gotIt(); award('first-gate');
   st.solved = true; openGate(st); shake(6, 2);
@@ -1636,6 +1661,39 @@ function answer(c, r) {
   if (next && G.missed.length) setStationQ(next, nextQ(next.q.text));
 }
 
+// ---------------------------------------------------------------- answer bar
+// At a gate (or a tired boss) big answer buttons appear. Tapping one makes Kai jump and hit that block,
+// so the math is about knowing, not about aiming a jump.
+let barKey = '';
+function barTarget() {
+  if (mode !== 'play') return null;
+  const st = currentStation();
+  if (!st) return null;
+  if (st === L.arena) return st.orbs && st.orbs.some(o => o.state === 'idle') ? { q: st.q, vals: st.orbs.map(o => o.val) } : null;
+  if (st.swap || P.auto || P.x < (st.s + 1) * T || P.x > (st.s + 13) * T) return null;
+  if (st.barQ !== st.q) { st.barQ = st.q; st.shownAt = G.time; }
+  return { q: st.q, vals: st.answers.map(a => a.val), tag: st.need > 1 ? `Double gate ${st.got + 1}/2` : '' };
+}
+function syncAnsBar() {
+  const t = barTarget(), key = t ? t.q.text + '|' + t.vals.join(',') + t.tag : '';
+  if (key === barKey) return;
+  barKey = key; const bar = $('ansbar');
+  if (!t) { hide('ansbar'); return; }
+  bar.classList.toggle('five', t.vals.length > 3);
+  bar.innerHTML = `<div class="aq">${t.q.missing ? t.q.text : t.q.text + ' = ?'}${t.tag ? `<small>${t.tag}</small>` : ''}</div><div class="ab"></div>`;
+  t.vals.forEach((v, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = v;
+    b.addEventListener('pointerdown', e => { e.preventDefault(); audio(); tapAnswer(i); });
+    bar.lastChild.appendChild(b);
+  });
+  show('ansbar');
+}
+function tapAnswer(i) {
+  const st = barTarget() && currentStation(); if (!st) return;
+  if (st === L.arena) { const o = st.orbs[i]; if (o && o.state === 'idle') hitOrb(o); }
+  else { const a = st.answers[i]; if (!a) return; st.tapT = G.time; P.auto = { x: a.c * T + T / 2 - P.w / 2, t: 150 }; }
+  syncAnsBar();
+}
 function nextBossQuestion() {
   const ar = L.arena; ar.q = nextQ(ar.q.text); ar.wait = 0;
   startDodge();
@@ -2114,6 +2172,14 @@ function twistMove(p, feetBefore, fallSpeed) {
 
 function updatePlayer() {
   const p = P;
+  if (p.auto) {   // walking to the tapped answer block and jumping into it
+    const a = p.auto, dx = a.x - p.x;
+    if (!a.jumped) {
+      keys.left = dx < -3; keys.right = dx > 3;
+      if (Math.abs(dx) <= 3 && p.onGround) { p.x = a.x; p.vx = 0; keys.left = keys.right = false; keys.jump = true; keys.jumpPressed = true; a.jumped = true; }
+    } else if (p.vy >= 0 || p.onGround) { keys.jump = false; p.auto = null; }
+    if (p.auto && --a.t <= 0) { keys.left = keys.right = keys.jump = false; p.auto = null; }
+  }
   updateTwist();
   const onIce = p.onGround && L.map[Math.floor((p.y + p.h + 2) / T)]?.[Math.floor((p.x + p.w / 2) / T)] === 'I';
   const acc = onIce ? 0.18 : p.onGround ? 0.55 : 0.38;
@@ -2287,7 +2353,7 @@ function updateArena() {
     ar.orbs = []; startDodge();
   }
 }
-// When the boss is dizzy, giant shuriken with answers float in the air. Jump and grab the right one,
+// When the boss is tired, giant shuriken with answers float in the air. Tap the right one on the answer bar,
 // and Kai throws it straight at the boss.
 function spawnOrbs() {
   const ar = L.arena, w = STAGES[L.idx].w, n = L.expert || w >= 2 ? 5 : 3, vals = n === 5 ? rowChoices(ar.q, 5) : choices(ar.q, 3);
@@ -2300,8 +2366,11 @@ function updateOrbs() {
   for (const o of ar.orbs) {
     o.ph += 0.05; o.t++;
     if (o.state !== 'idle' || ar.phase !== 'open' || ar.wait) continue;
-    const oy = o.y + Math.sin(o.ph) * 6;
-    if (!circleHits(o.x, oy, 20, P)) continue;
+  }
+}
+function hitOrb(o) {
+  const ar = L.arena, oy = o.y + Math.sin(o.ph) * 6;
+  {
     if (o.val === ar.q.ans) {
       o.state = 'thrown'; ar.orbs.forEach(q => { if (q !== o) q.state = 'gone'; });
       noteFact(ar.q, true, G.time - ar.askedAt <= 480, L.skill);
@@ -4553,7 +4622,7 @@ function drawHUD() {
       ctx.fillRect(bx + i * segW + 1, by + 94, segW - 2, 10);
     }
     if (currentStation()) {
-      hudText('Jump and grab the right shuriken!', VW / 2, by + 124, 15, '#ffd23f', 'center');
+      hudText('Tap the right answer to throw!', VW / 2, by + 124, 15, '#ffd23f', 'center');
       const f = L.arena.phaseT / OPEN_FRAMES(), ww = 160;
       ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(VW / 2 - ww / 2, by + 136, ww, 5);
       ctx.fillStyle = '#ffd23f'; ctx.fillRect(VW / 2 - ww / 2, by + 136, ww * f, 5);
@@ -4566,7 +4635,7 @@ function drawHUD() {
     hudText(`Bonk stones to pick up (one or more), carry to the altar · so far ${br.total}${G.carry ? ` · holding ${G.carry.stones.reduce((a, t) => a + t.val, 0)}` : ''}`, VW / 2, by + 80, 16, '#fff', 'center');
   } else {
     const done = L.stations.filter(s => s.solved).length;
-    hudText(cur ? `Bonk the right answer!  (${done}/${L.stations.length})` : `All ${L.stations.length} gates open!`, VW / 2, by + 80, 16, '#fff', 'center');
+    hudText(cur ? `Tap the right answer!  (${done}/${L.stations.length})` : `All ${L.stations.length} gates open!`, VW / 2, by + 80, 16, '#fff', 'center');
   }
 }
 
@@ -4645,7 +4714,7 @@ function startStage(i) {
   hide('menu');
   if (st.boss) {
     intro(`BOSS: ${W.boss.name}`, `<p class="taunt">“${W.boss.taunt}”</p>
-      <p>First <b>dodge</b> the attacks. When the boss gets tired, jump and grab the shuriken with the right answer to throw it!</p>`, 'Fight!');
+      <p>First <b>dodge</b> the attacks. When the boss gets tired, tap the right answer to throw a shuriken to throw it!</p>`, 'Fight!');
   } else if (!prog.seenWorld[st.w]) {
     prog.seenWorld[st.w] = true; save();
     intro(`World ${st.w + 1}: ${W.name}`, `<div class="bigicon">${bossImg(W.boss.kind)}</div><p>${W.intro}</p>`, "Let's go!");
@@ -4790,10 +4859,10 @@ function showHowTo() {
   const row = (icon, txt) => `<div><span>${icon}</span><p style="margin:0">${txt}</p></div>`;
   showMsg('How to play', `<div class="howto">
     ${row('🕹️', isTouch ? 'Use ◀ ▶ to run and ▲ to jump.' : 'Arrow keys or A / D to run, Space or ↑ to jump, P to pause.')}
-    ${row('⛩️', 'Jump up and bonk the block with the right answer to open each gate.')}
+    ${row('⛩️', 'Tap the right answer and Kai jumps to open the gate. Some gates need two!')}
     ${row('💎', 'Grab gems: green = 1, blue = 5, red = 10. Spend them in the Dojo Shop.')}
     ${row('🌉', 'Bridges: bonk number stones to pick them up (you can carry up to 4) and take them to the altar to make the exact number. Bonk a stone again to put it back.')}
-    ${row('👹', 'Bosses: dodge first. When the boss gets tired, jump and grab the shuriken with the right answer.')}
+    ${row('👹', 'Bosses: dodge first. When the boss gets tired, tap the right answer to throw a shuriken.')}
     ${row('🧮', 'Pick any math for any level. Harder math ★ earns more gems and belt points.')}
     ${row('🔥', 'Daily Dojo: 10 quick questions a day. Keep your streak going and your pet grows!')}
     ${row('📒', 'Fact Book: answer a fact right and fast to make it silver, then again on another day to make it gold.')}
@@ -5215,6 +5284,7 @@ window.addEventListener('keydown', e => {
   }
   if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
   if (e.code === 'KeyM') setMuted(!muted);
+  if (mode === 'play' && /^Digit[1-5]$/.test(e.code)) tapAnswer(Number(e.code[5]) - 1);
   if (e.code === 'Enter' && msgPrimary && !$('msg').classList.contains('hidden')) msgPrimary.click();
 });
 window.addEventListener('keyup', e => { const k = KMAP[e.code]; if (k) keys[k] = false; });
@@ -5277,6 +5347,7 @@ function frame(now) {
     }
     acc -= STEP;
   }
+  syncAnsBar();
   render();
   requestAnimationFrame(frame);
 }
