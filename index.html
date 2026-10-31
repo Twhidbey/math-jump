@@ -879,6 +879,11 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
         [1, 2, 3, 3, 2, 1].forEach((h, i) => { for (let k = 0; k < h; k++) map[GR - 1 - k][s + 1 + i] = 'S'; });
         coin(s + 3, GR - 5, 5); coin(s + 4, GR - 5); break;
       }
+      case 'treasure': {   // ? boxes, and a high one you reach by standing on the brick
+        const s = flat(9);
+        map[GR - 4][s + 2] = '?'; map[GR - 4][s + 4] = 'B'; map[GR - 4][s + 6] = '?'; map[GR - 8][s + 4] = '?';
+        coin(s + 4, GR - 5, 5); maybeEnemy(s + 8); break;
+      }
       case 'float': {
         if (def.pit < 3) return chunk('coins');
         flat(1); const s = addCols(5);
@@ -970,7 +975,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     }
   }
 
-  const kinds = easy ? ['coins', 'bricks', 'pipe', 'stairs'] : ['coins', 'pit', 'bricks', 'pipe', 'stairs', 'float'];
+  const kinds = easy ? ['coins', 'bricks', 'pipe', 'stairs', 'treasure'] : ['coins', 'pit', 'bricks', 'pipe', 'stairs', 'float', 'treasure'];
   if (twist === 'koi' && !easy) kinds.push('pit', 'pit');
   const doorAt = def.n > 6 ? 4 : 3, goldAt = 1 + idx % Math.max(1, def.n - 2);
   flat(10);
@@ -980,10 +985,11 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     if (i === 2 || (i === 5 && def.w >= 2)) bridgeChunk();
     if (i === doorAt) doorChunk();
     if (twist && i % 2 === 0) twistChunk();
-    // Question station: sign, three answer blocks, and a locked gate.
+    // Question station: a stretch of run-up and a locked gate.
     const s = flat(16), q = L.gen(), five = L.expert;
-    const answers = gateChoices(q, five ? 5 : 3).map((v, j) => ({ c: five ? s + 3 + j * 2 : s + 4 + j * 3, r: GR - 4, val: v, state: 'idle', shake: 0 }));
-    answers.forEach(a => { map[a.r][a.c] = 'A'; });
+    // No answer blocks: the question pops up on the answer bar as Kai runs in. Two ? boxes to jump for on the way.
+    const answers = gateChoices(q, five ? 5 : 3).map(v => ({ val: v, state: 'idle' }));
+    map[GR - 4][s + 4] = '?'; map[GR - 4][s + 8] = '?';
     for (let r = 0; r < GR; r++) { map[r][s + 13] = 'G'; map[r][s + 14] = 'G'; }
     L.stations.push({ s, q, answers, gate: [s + 13, s + 14], solved: false, opening: null, openT: 0, need: !easy && i % 3 === 1 ? 2 : 1, got: 0 });   // some gates need two answers
     if (i === goldAt && !def.boss) map[GR - 5][s + 1] = 'H';   // hidden block above the sign
@@ -1618,7 +1624,6 @@ function bump(c, r) {
     L.map[r][c] = '.'; G.score += 50; sfx.brick();
     burst(c * T + T / 2, r * T + T / 2, L.world.brick[0], 8);
   }
-  else if (t === 'A') answer(c, r);
   else if (t === 'K' && currentStation()) openBossPad();
   else if (t === 'N') bridgeStone(c, r);
   else if (t === 'R') roomAnswer(c);
@@ -1632,45 +1637,44 @@ function bump(c, r) {
   else sfx.bump();
 }
 
-function answer(c, r) {
-  const f = findAnswer(c, r);
-  if (!f || f.st.solved || f.st.swap || f.a.state !== 'idle' || !P.auto) { sfx.bump(); return; }   // answers come from the answer bar, so stray bumps don't count
-  const { st, a } = f, cx = c * T + T / 2, cy = r * T;
+// Kai throws a shuriken at the gate. Answer before he reaches it and the gate bursts open: Lightning!
+function gateAnswer(st, i) {
+  const a = st.answers[i]; if (!a || st.solved || st.swap) return;
+  const cx = P.x + P.w / 2, cy = P.y - 10, gx = st.gate[0] * T + T;
   if (a.val !== st.q.ans) {
-    // A miss swaps in a new question, so trying every block no longer works.
+    // A miss swaps in a new question, so trying every answer doesn't work.
     noteFact(st.q, false, false, L.skill);
-    a.state = 'wrong'; a.shake = 20; G.mistakes++; G.streak = 0;
-    remember(st.q); st.swap = 50; missed(st.q);
-    sfx.wrong(); floatText(cx, cy - 20, 'Oops! New question...', '#ff6b6b', 26);
+    G.mistakes++; G.streak = 0; remember(st.q); st.swap = 50; st.shakeT = 24; missed(st.q);
+    burst(gx, (GR - 3) * T, '#ff4d4d', 12, 4); sfx.wrong();
+    floatText(cx, cy - 20, 'Oops! New question...', '#ff6b6b', 26);
     return;
   }
-  noteFact(st.q, true, (st.tapT ?? G.time) - (st.shownAt ?? G.time) <= 300, L.skill);   // 5 seconds from the buttons showing counts as fast
-  a.state = 'right';
+  noteFact(st.q, true, G.time - (st.shownAt ?? G.time) <= 300, L.skill);   // 5 seconds from the question showing counts as fast
+  P.throwT = 14; sfx.throw(); sfx.correct(); streakUp(cx, cy); gotIt();
   if (++st.got < st.need) {   // a double gate: one more!
-    sfx.correct(); streakUp(cx, cy); gotIt(); floatText(cx, cy - 20, 'One more!', '#3ae374', 30);
-    st.swap = 30; return;
+    floatText(cx, cy - 20, 'One more!', '#3ae374', 30);
+    st.star = { x: cx, y: P.y + 10, open: false }; st.swap = 30; return;
   }
-  st.answers.forEach(o => { if (o !== a) o.state = 'done'; });
-  sfx.correct(); confetti(cx, cy); streakUp(cx, cy); gotIt(); award('first-gate');
-  st.solved = true; openGate(st); shake(6, 2);
+  a.state = 'right'; award('first-gate');
+  st.solved = true; st.star = { x: cx, y: P.y + 10, open: true };
   G.checkpoint = (st.s + 15) * T;
-  setTimeout(sfx.gate, 350);
-  const praise = st.q.retry ? 'You remembered it!' : ['Correct!', 'Great job!', 'Awesome!', 'You got it!', 'Super!', 'Hi-yah!'][R(0, 5)];
-  floatText(cx, cy - 20, praise, '#3ae374', 30);
+  if (!st.blocked) {
+    G.coins += 3; G.score += 300; sfx.streak();
+    floatText(cx, cy - 20, 'Lightning! +3', '#7df9ff', 32);
+  } else floatText(cx, cy - 20, st.q.retry ? 'You remembered it!' : ['Correct!', 'Great job!', 'Awesome!', 'You got it!', 'Super!', 'Hi-yah!'][R(0, 5)], '#3ae374', 30);
   const next = currentStation();
   if (next && G.missed.length) setStationQ(next, nextQ(next.q.text));
 }
 
 // ---------------------------------------------------------------- answer bar
-// At a gate (or a tired boss) big answer buttons appear. Tapping one makes Kai jump and hit that block,
-// so the math is about knowing, not about aiming a jump.
+// As Kai runs up to a gate (or when a boss tires) big answer buttons appear. Math is taps; jumping is for fun.
 let barKey = '';
 function barTarget() {
   if (mode !== 'play') return null;
   const st = currentStation();
   if (!st) return null;
   if (st === L.arena) return st.orbs && st.orbs.some(o => o.state === 'idle') ? { q: st.q, vals: st.orbs.map(o => o.val) } : null;
-  if (st.swap || P.auto || P.x < (st.s + 1) * T || P.x > (st.s + 13) * T) return null;
+  if (st.swap || P.x < (st.s - 3) * T || P.x > st.gate[1] * T) return null;
   if (st.barQ !== st.q) { st.barQ = st.q; st.shownAt = G.time; }
   return { q: st.q, vals: st.answers.map(a => a.val), tag: st.need > 1 ? `Double gate ${st.got + 1}/2` : '' };
 }
@@ -1691,7 +1695,7 @@ function syncAnsBar() {
 function tapAnswer(i) {
   const st = barTarget() && currentStation(); if (!st) return;
   if (st === L.arena) { const o = st.orbs[i]; if (o && o.state === 'idle') hitOrb(o); }
-  else { const a = st.answers[i]; if (!a) return; st.tapT = G.time; P.auto = { x: a.c * T + T / 2 - P.w / 2, t: 150 }; }
+  else gateAnswer(st, i);
   syncAnsBar();
 }
 function nextBossQuestion() {
@@ -1916,15 +1920,33 @@ const POWERS = {
   speed: { name: 'Speed boots', pix: 'boot', time: 900 },
   magnet: { name: 'Gem magnet', pix: 'magnet', time: 1200 },
   star: { name: 'Super star', pix: 'star', time: 480 },
+  jump: { name: 'Super jump', pix: 'bolt', time: 900 },
 };
 // Fire and the star both knock out enemies and attacks on touch.
 const fiery = () => hasPower('fire') || hasPower('star');
-// About a third of ? boxes hold a surprise instead of a gem.
-const BOX_PRIZES = ['shield', 'double', 'speed', 'magnet', 'star', 'fire', 'heart'];
+// Most ? boxes hold a surprise: a power, a heart, or a gem trick. A plain gem the rest of the time.
+const BOX_PRIZES = ['shield', 'double', 'speed', 'magnet', 'star', 'fire', 'jump', 'heart', 'fountain', 'fountain', 'rainbow', 'rainbow', 'multi', 'multi', 'bigGem'];
 function boxPrize(c, r) {
+  const key = c + ',' + r, x = c * T + T / 2, y = r * T;
+  if (L.multi && L.multi[key] > 0) { coinPop(c, r, 1); if (--L.multi[key] === 0) L.map[r][c] = 'U'; return; }   // keep bonking!
   L.map[r][c] = 'U';
-  if (Math.random() > 0.34 || L.vault) { coinPop(c, r); return; }
-  const k = BOX_PRIZES[R(0, BOX_PRIZES.length - 1)], x = c * T + T / 2, y = r * T;
+  if (L.vault || Math.random() < 0.3) { coinPop(c, r); return; }
+  const k = BOX_PRIZES[R(0, BOX_PRIZES.length - 1)];
+  if (k === 'multi') {
+    L.map[r][c] = '?'; (L.multi || (L.multi = {}))[key] = 7; coinPop(c, r, 1);
+    floatText(x, y - 50, 'Keep bonking!', '#ffd23f', 24); return;
+  }
+  if (k === 'bigGem') { coinPop(c, r, 10); confetti(x, y); floatText(x, y - 80, 'Big red gem!', '#ff5a5a', 26); petSay('wow'); return; }
+  if (k === 'fountain') {   // a spray of gems
+    for (let i = 0; i < 12; i++) G.parts.push({ k: 'coin', x, y, vx: (Math.random() - 0.5) * 7, vy: -6 - Math.random() * 6, life: 40, v: 1 });
+    G.coins += 12; G.score += 1200; sfx.coin(); sfx.power(); petSay('wow');
+    floatText(x, y - 50, 'Gem fountain! +12', '#3ae374', 26); return;
+  }
+  if (k === 'rainbow') {   // an arc of gems to run and jump through
+    const dir = P.face || 1;
+    for (let i = 0; i < 9; i++) L.coins.push({ x: x + (i + 1) * T * dir, y: y - 30 - Math.sin(i / 8 * Math.PI) * 120, v: i === 4 ? 5 : 1, taken: false });
+    sfx.power(); floatText(x, y - 50, 'Gem rainbow!', '#ff8ad8', 26); return;
+  }
   G.parts.push({ k: 'prize', x, y, vx: 0, vy: -5, life: 50, pix: k === 'heart' ? 'heart' : POWERS[k].pix });
   if (k === 'heart') {
     if (G.hearts < G.maxHearts) { G.hearts++; floatText(x, y - 50, '+1 heart!', '#ff5a8a', 26); } else { G.coins += 10; floatText(x, y - 50, 'Full hearts! +10', '#ff5a8a', 24); }
@@ -2172,14 +2194,6 @@ function twistMove(p, feetBefore, fallSpeed) {
 
 function updatePlayer() {
   const p = P;
-  if (p.auto) {   // walking to the tapped answer block and jumping into it
-    const a = p.auto, dx = a.x - p.x;
-    if (!a.jumped) {
-      keys.left = dx < -3; keys.right = dx > 3;
-      if (Math.abs(dx) <= 3 && p.onGround) { p.x = a.x; p.vx = 0; keys.left = keys.right = false; keys.jump = true; keys.jumpPressed = true; a.jumped = true; }
-    } else if (p.vy >= 0 || p.onGround) { keys.jump = false; p.auto = null; }
-    if (p.auto && --a.t <= 0) { keys.left = keys.right = keys.jump = false; p.auto = null; }
-  }
   updateTwist();
   const onIce = p.onGround && L.map[Math.floor((p.y + p.h + 2) / T)]?.[Math.floor((p.x + p.w / 2) / T)] === 'I';
   const acc = onIce ? 0.18 : p.onGround ? 0.55 : 0.38;
@@ -2196,7 +2210,7 @@ function updatePlayer() {
   if (keys.jumpPressed) { p.jbuf = 8; keys.jumpPressed = false; }
   if (p.jbuf > 0) p.jbuf--;
   if (p.onGround) p.coyote = 7; else if (p.coyote > 0) p.coyote--;
-  if (p.jbuf > 0 && p.coyote > 0) { p.vy = -13.2; p.onGround = false; p.coyote = 0; p.jbuf = 0; p.squash = -8; sfx.jump(); }
+  if (p.jbuf > 0 && p.coyote > 0) { p.vy = hasPower('jump') ? -16.5 : -13.2; p.onGround = false; p.coyote = 0; p.jbuf = 0; p.squash = -8; sfx.jump(); }
   if (p.onGround) p.usedDouble = false;
   else if (p.jbuf > 0 && p.coyote === 0 && hasPower('double') && !p.usedDouble) {
     p.vy = -12; p.usedDouble = true; p.jbuf = 0; sfx.jump(); burst(p.x + p.w / 2, p.y + p.h, '#ffffff', 8, 2);
@@ -2374,9 +2388,9 @@ function hitOrb(o) {
     if (o.val === ar.q.ans) {
       o.state = 'thrown'; ar.orbs.forEach(q => { if (q !== o) q.state = 'gone'; });
       noteFact(ar.q, true, G.time - ar.askedAt <= 480, L.skill);
-      ar.wait = 1; G.shots.push({ x: o.x, y: oy, spin: 0 });
+      ar.wait = 1; G.shots.push({ x: P.x + P.w / 2, y: P.y + 10, spin: 0 });
       P.throwT = 14; sfx.correct(); sfx.throw(); streakUp(o.x, oy); gotIt();
-      floatText(o.x, oy - 30, ar.q.retry ? 'You remembered it!' : 'Shuriken!', '#ffd23f', 28);
+      floatText(P.x + P.w / 2, P.y - 30, ar.q.retry ? 'You remembered it!' : 'Shuriken!', '#ffd23f', 28);
       setTimeout(() => { if (L.arena === ar) ar.orbs = []; }, 300);
     } else {
       o.state = 'gone'; burst(o.x, oy, '#ff6b6b', 12, 4);
@@ -2389,6 +2403,7 @@ function hitOrb(o) {
 }
 function drawOrbs() {
   const ar = L.arena; if (!ar || !ar.orbs || ar.phase !== 'open') return;
+  return;   // answers are on the answer bar now
   for (const o of ar.orbs) {
     if (o.state !== 'idle') continue;
     const oy = o.y + Math.sin(o.ph) * 6;
@@ -2534,8 +2549,7 @@ function openGate(st) {
   for (let r = 0; r < GR; r++) for (const gc of st.gate) if (L.map[r][gc] === 'G') L.map[r][gc] = '.';
   const x0 = st.gate[0] * T, w = 2 * T, k = L.world.key, bits = [];
   if (k === 'snow') for (let i = 0; i < 30; i++) bits.push({ x: x0 + Math.random() * w, y: Math.random() * GR * T, vx: 6 + Math.random() * 6, vy: -0.5 - Math.random(), s: 8 + Math.random() * 12, a: Math.random() * 6, va: (Math.random() - 0.5) * 0.3 });
-  const right = st.answers.find(a => a.state === 'right');
-  if (k === 'lava' && right) { bits.push({ x: right.c * T + T / 2, y: right.r * T + T / 2, vx: 0, vy: 0, va: 0, tx: x0 + w / 2, ty: 10 }); L.map[right.r][right.c] = '.'; }
+  if (k === 'lava') for (let i = 0; i < 16; i++) bits.push({ x: x0 + Math.random() * w, y: Math.random() * GR * T, vx: (Math.random() - 0.5) * 3, vy: -2 - Math.random() * 3, va: 0.2 });
   if (k === 'japan') for (let i = 0; i < 30; i++) bits.push({ x: x0 + w / 2, y: Math.random() * GR * T, vx: (Math.random() - 0.2) * 5, vy: -Math.random() * 2, a: Math.random() * 6 });
   if (k === 'castle') for (let i = 0; i < 9; i++) bits.push({ x: x0 + Math.random() * w, y: 80 + Math.random() * (GR * T - 140), vx: 1 + Math.random() * 2, vy: -1.5 - Math.random() * 1.5, a: Math.random() * 6 });
   st.gfx = { t: 0, x0, w, k, bits };
@@ -2555,7 +2569,16 @@ function updateGates() {
       }
       if (g.k === 'robot' && g.t < 40 && g.t % 6 === 0) burst(g.x0 + Math.random() * g.w, Math.random() * GR * T, '#7df9ff', 4, 3);
     }
-    for (const a of st.answers) if (a.shake > 0) a.shake--;
+    if (st.shakeT > 0) st.shakeT--;
+    if (!st.solved && P.x + P.w >= st.gate[0] * T - 4) st.blocked = true;   // had to stop and wait: no Lightning
+    if (st.star) {   // the thrown shuriken flies to the gate
+      const z = st.star, tx = st.gate[0] * T + T, ty = (GR - 3) * T, dx = tx - z.x, dy = ty - z.y, d = Math.hypot(dx, dy);
+      z.spin = (z.spin || 0) + 0.5;
+      if (d < 20) {
+        st.star = null; burst(tx, ty, '#ffd23f', 14, 5);
+        if (z.open) { openGate(st); confetti(tx, ty); shake(6, 2); setTimeout(sfx.gate, 150); } else { shake(3, 2); sfx.hit(); }
+      } else { z.x += dx / d * 18; z.y += dy / d * 18; }
+    }
     if (st.swap && --st.swap === 0) setStationQ(st, freshQ(st.q.text));
   }
 }
@@ -3477,7 +3500,7 @@ function drawDarkness() {
   const hole = (x, y, r) => { const g = d.createRadialGradient(x - cam, y, r * 0.3, x - cam, y, r); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); d.fillStyle = g; d.fillRect(x - cam - r, y - r, r * 2, r * 2); };
   hole(P.x + P.w / 2, P.y + P.h / 2, 170 + Math.sin(tick * 0.1) * 4);
   for (const f of L.fx) if (f.k === 'crystal') hole(f.x, f.y, f.lit ? 190 : 46);
-  const cs = currentStation(); if (cs && cs.answers) cs.answers.forEach(a => hole(a.c * T + T / 2, a.r * T + T / 2, 50));
+  const cs = currentStation(); if (cs && cs.gate) hole(cs.gate[0] * T + T, (GR - 3) * T, 70);
   for (let c = Math.floor(cam / T); c < cam / T + VW / T + 1; c++) if (c >= 0 && c < L.w && L.map[GR][c] === '.') hole(c * T + T / 2, GR * T + 10, 60);
   hole(L.flagC * T, GR * T - 3 * T, 140);
   ctx.drawImage(darkCv, 0, 0);
@@ -4047,16 +4070,17 @@ function drawPuzzles() {
 function drawSigns() {
   for (const st of L.stations) if (st.gfx && st.gfx.t < 120 && Math.abs(st.gfx.x0 - cam - VW / 2) < VW) drawGateFx(st);
   for (const st of L.stations) {
-    const x = st.s * T + 4, y = (GR - 3.1) * T, w = 3.5 * T, h = 1.25 * T;
-    if (x > cam + VW || x + w < cam) continue;
-    ctx.fillStyle = '#6e4627'; ctx.fillRect(x + w / 2 - 4, y + h, 8, GR * T - y - h);
-    ctx.fillStyle = '#5e3a1c'; rrect(x - 3, y - 3, w + 6, h + 6, 6); ctx.fill();
-    ctx.fillStyle = st.solved ? '#c8f7d4' : '#f6e1b5'; rrect(x, y, w, h, 5); ctx.fill();
-    const txt = st.solved ? qSolved(st.q) : qShow(st.q);
-    let size = 21; ctx.font = `${size}px "Lilita One", "Trebuchet MS", sans-serif`;
-    while (ctx.measureText(txt).width > w - 10 && size > 12) { size--; ctx.font = `${size}px "Lilita One", "Trebuchet MS", sans-serif`; }
-    ctx.fillStyle = '#3a2200'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(txt, x + w / 2, y + h / 2 + 1);
+    const gx = st.gate[0] * T + T;
+    if (gx < cam - T || gx > cam + VW + T) continue;
+    if (st.star) drawShuriken(st.star.x, st.star.y, st.star.spin, '#d8dfe8', '#5a6472', 16);
+    if (st.solved) continue;
+    const sx = st.shakeT ? Math.sin(st.shakeT * 1.6) * 5 : 0, ly = (GR - 4) * T;
+    glowAt(gx + sx, ly + 20, 40, 'rgba(255,230,120,.35)');
+    drawPix('lock', gx - 21 + sx, ly, 3);
+    if (st.need > 1) {
+      ctx.font = '20px "Lilita One", "Trebuchet MS", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.lineWidth = 4; ctx.strokeStyle = '#3a2200'; ctx.strokeText(`x${st.need - st.got}`, gx + sx, ly + 56); ctx.fillStyle = '#ffd23f'; ctx.fillText(`x${st.need - st.got}`, gx + sx, ly + 56);
+    }
   }
 }
 
@@ -4859,7 +4883,7 @@ function showHowTo() {
   const row = (icon, txt) => `<div><span>${icon}</span><p style="margin:0">${txt}</p></div>`;
   showMsg('How to play', `<div class="howto">
     ${row('🕹️', isTouch ? 'Use ◀ ▶ to run and ▲ to jump.' : 'Arrow keys or A / D to run, Space or ↑ to jump, P to pause.')}
-    ${row('⛩️', 'Tap the right answer and Kai jumps to open the gate. Some gates need two!')}
+    ${row('⛩️', 'Run up to a gate and tap the right answer. Answer before you get there for Lightning! Some gates need two.')}
     ${row('💎', 'Grab gems: green = 1, blue = 5, red = 10. Spend them in the Dojo Shop.')}
     ${row('🌉', 'Bridges: bonk number stones to pick them up (you can carry up to 4) and take them to the altar to make the exact number. Bonk a stone again to put it back.')}
     ${row('👹', 'Bosses: dodge first. When the boss gets tired, tap the right answer to throw a shuriken.')}
