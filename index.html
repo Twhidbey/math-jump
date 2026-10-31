@@ -73,6 +73,8 @@
   .medalrow { font-size: 30px; margin: 2px 0 6px; }
   .statrow { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 0 0 12px; }
   .statrow span { background: rgba(255,255,255,.1); border-radius: 999px; padding: 6px 14px; font-size: 22px; font-weight: 800; }
+  .statrow.sum span { font-size: 17px; padding: 4px 12px; background: rgba(125,249,255,.12); }
+  .sumnew { margin: -6px 0 10px; color: #ffd23f; font-size: 16px; }
   .practice { display: flex; gap: 6px; justify-content: center; align-items: center; flex-wrap: wrap; margin: 0 0 12px; font-size: 18px; }
   .practice span { background: rgba(255,107,107,.18); border-radius: 8px; padding: 3px 10px; font-weight: 800; }
   .promo { background: rgba(255,210,63,.15); border-radius: 10px; padding: 8px; margin: 0 0 14px; font-size: 18px; }
@@ -87,8 +89,6 @@
   /* Tap-to-answer bar for gates and bosses */
   #ansbar { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 7; display: flex; flex-direction: column; align-items: center; gap: 6px;
     -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; }
-  #ansbar .aq { background: rgba(20,24,48,.8); color: #fff; border-radius: 10px; padding: 3px 14px; font: 22px "Lilita One", "Trebuchet MS", sans-serif; }
-  #ansbar .aq small { color: #ffd23f; font-size: 16px; margin-left: 8px; }
   #ansbar .ab { display: flex; gap: 8px; }
   #ansbar button { min-width: 76px; height: 76px; border-radius: 14px; border: none; border-bottom: 5px solid #8a5a00; background: #ffd23f; color: #3a2200;
     font: 30px "Lilita One", "Trebuchet MS", sans-serif; padding: 0 8px; touch-action: none; }
@@ -139,6 +139,8 @@
   .gradegrid button, .icongrid button { font: inherit; font-weight: 800; color: #fff; background: rgba(255,255,255,.1); border: 3px solid transparent; border-radius: 10px; padding: 6px 10px; cursor: pointer; }
   .icongrid button { font-size: 26px; padding: 2px 6px; }
   .gradegrid button.on, .icongrid button.on { border-color: #ffd23f; background: rgba(255,210,63,.18); }
+  #pCode { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; touch-action: auto; font: 13px monospace; width: 100%; box-sizing: border-box; padding: 6px 8px; border-radius: 10px; border: 2px solid #5b6bd6; background: #15153a; color: #fff; resize: vertical; }
+  #pMoveMsg { min-height: 1.2em; margin: 4px 0; color: #ffd23f; font-size: 15px; }
   .linkbtn { font: inherit; background: none; border: none; color: #ff8a8a; text-decoration: underline; cursor: pointer; margin-top: 8px; font-size: 14px; }
   .skill { position: relative; }
   .skill.grade { box-shadow: inset 0 0 0 2px rgba(91,200,120,.8); }
@@ -422,6 +424,14 @@
       <div class="pickh">Grade</div><div class="gradegrid" id="pGrades"></div>
       <div class="pickh">Picture</div><div class="icongrid" id="pIcons"></div>
       <div class="row"><button class="btn" id="pSave" type="button">Save</button><button class="btn alt" id="pCancel" type="button">Cancel</button></div>
+      <div id="pMove">
+        <div class="pickh">Move this save to another device</div>
+        <div class="row"><button class="btn ghost" id="pCopy" type="button">Copy save code</button><button class="btn ghost" id="pFile" type="button">Save to file</button></div>
+        <textarea id="pCode" rows="2" placeholder="Paste a save code here" autocomplete="off" spellcheck="false"></textarea>
+        <div class="row"><button class="btn ghost" id="pLoad" type="button">Load code</button><button class="btn ghost" id="pLoadFile" type="button">Load from file</button></div>
+        <input type="file" id="pFileIn" accept=".txt,text/plain" hidden>
+        <p id="pMoveMsg"></p>
+      </div>
       <button class="linkbtn" id="pDelete" type="button">Delete this player</button>
     </div>
     <div class="row" id="playersRow"><button class="btn alt" id="playersClose" type="button">Back</button></div>
@@ -849,16 +859,17 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     if (n >= 4 && rng() < 0.35) L.decor.push(s + ri(rng, 0, n - 2));
     return s;
   };
+  const goldSpots = [];   // pillar and stair tops: the golden gem floats high above one of them
   const coin = (c, r, v = 1) => L.coins.push({ x: c * T + T / 2, y: r * T + T / 2, v, taken: false });
   const speed = (0.9 + idx * 0.05) * (easy ? 0.7 : 1);
   const maybeEnemy = c => { if (rng() < def.enemy * (easy ? 0.4 : 1)) L.enemies.push(walkerFor(W.walker, c, speed)); };
 
   function chunk(type) {
     switch (type) {
-      case 'coins': { const s = flat(6); [10, 9, 9, 10].forEach((r, i) => coin(s + 1 + i, r)); maybeEnemy(s + 4); break; }
+      case 'coins': { const s = flat(6); [10, 9, 10].forEach((r, i) => coin(s + 2 + i, r)); maybeEnemy(s + 4); break; }   // a jump arc on the way
       case 'pit': {
         flat(2); const w = ri(rng, 2, def.pit), s = addCols(w);
-        for (let i = 0; i < w; i++) coin(s + i, 9);
+        coin(s + Math.floor(w / 2), 9);   // one gem in the middle of the jump
         if (W.pit === 'lava' && rng() < 0.7) {
           L.enemies.push({ kind: 'blob', x: (s + w / 2) * T - 13, y: VH + 20, home: VH + 20, w: 26, h: 26, vy: 0, t: 0, delay: R(30, 120), up: false, dead: null });
         }
@@ -869,7 +880,6 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
         for (let i = 1; i <= 5; i++) map[r][s + i] = (i % 2 === 0 && rng() < 0.85) ? '?' : 'B';
         if (rng() < 0.5) {
           for (let i = 2; i <= 4; i++) map[GR - 7][s + i] = i === 3 ? '?' : 'B';
-          coin(s + 2, GR - 8, 5); coin(s + 4, GR - 8, 5);   // blue gems up high
         }
         maybeEnemy(s + 6); break;
       }
@@ -877,17 +887,13 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
         const s = flat(6), h = ri(rng, 2, 3);
         for (let k = 0; k < h; k++) { map[GR - 1 - k][s + 2] = 'O'; map[GR - 1 - k][s + 3] = 'O'; }
         coin(s + 2, GR - h - 2); coin(s + 3, GR - h - 2);
+        goldSpots.push({ x: (s + 3) * T, top: GR - h });
         maybeEnemy(s + 5); break;
       }
       case 'stairs': {
         const s = flat(8);
         [1, 2, 3, 3, 2, 1].forEach((h, i) => { for (let k = 0; k < h; k++) map[GR - 1 - k][s + 1 + i] = 'S'; });
-        coin(s + 3, GR - 5, 5); coin(s + 4, GR - 5); break;
-      }
-      case 'treasure': {   // ? boxes, and a high one you reach by standing on the brick
-        const s = flat(9);
-        map[GR - 4][s + 2] = '?'; map[GR - 4][s + 4] = 'B'; map[GR - 4][s + 6] = '?'; map[GR - 8][s + 4] = '?';
-        coin(s + 4, GR - 5, 5); maybeEnemy(s + 8); break;
+        coin(s + 3, GR - 5, 5); coin(s + 4, GR - 5); goldSpots.push({ x: (s + 4) * T, top: GR - 3 }); break;
       }
       case 'float': {
         if (def.pit < 3) return chunk('coins');
@@ -915,7 +921,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     switch (twist) {
       case 'kite': {   // a koi kite before a trail of sky gems
         const s = flat(4); fx({ k: 'kite', x: (s + 2) * T, y: GR * T - 2.4 * T });
-        const g = flat(12); for (let i = 0; i < 10; i++) coin(g + 1 + i, GR - 6 - Math.round(Math.sin(i * 0.6) * 2), i % 3 ? 1 : 5);
+        const g = flat(12); for (let i = 0; i < 10; i += 2) coin(g + 1 + i, GR - 6 - Math.round(Math.sin(i * 0.6) * 2), i % 4 ? 1 : 5);
         break;
       }
       case 'spring': {   // springy bamboo is the only way over a tall wall; a panda watches
@@ -955,7 +961,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
       }
       case 'ice': {   // a frozen pond of slippery ice with gems to slide through
         const s = flat(12); for (let c = s + 1; c <= s + 10; c++) map[GR][c] = 'I';
-        for (let c = s + 2; c <= s + 9; c += 2) coin(c, GR - 1);
+        for (let c = s + 3; c <= s + 9; c += 3) coin(c, GR - 1);
         break;
       }
       case 'icicles': {   // an ice ledge overhead with icicles that drop
@@ -968,7 +974,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
         const s = flat(9);
         for (let r = GR - 11; r <= GR - 1; r++) map[r][s + 2] = 'L';   // sticks up 2 tiles so Kai climbs clear of the ledge
         for (let c = s + 3; c <= s + 7; c++) map[GR - 9][c] = 'S';
-        for (let c = s + 3; c <= s + 7; c++) coin(c, GR - 10, c === s + 5 ? 10 : 1);
+        coin(s + 5, GR - 10, 10);   // one red gem up top
         break;
       }
       case 'sneak': {   // a guard with a flashlight; barrels to hide in
@@ -982,7 +988,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
 
   const kinds = easy ? ['coins', 'bricks', 'pipe', 'stairs'] : ['coins', 'pit', 'bricks', 'pipe', 'stairs', 'float'];
   if (twist === 'koi' && !easy) kinds.push('pit', 'pit');
-  const doorAt = def.n > 6 ? 4 : 3, goldAt = 1 + idx % Math.max(1, def.n - 2);
+  const doorAt = def.n > 6 ? 4 : 3;
   flat(10);
   for (let i = 0; i < def.n; i++) {
     const n = ri(rng, 1, 2);   // short runs between gates: more math, less walking
@@ -997,7 +1003,6 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     answers.forEach(a => { map[a.r][a.c] = 'A'; });
     for (let r = 0; r < GR; r++) { map[r][s + 13] = 'G'; map[r][s + 14] = 'G'; }
     L.stations.push({ s, q, answers, gate: [s + 13, s + 14], solved: false, opening: null, openT: 0, need: easy ? (i % 2 ? 2 : 1) : (i % 3 === 2 ? 3 : 2), got: 0 });   // drill: most gates take 2 or 3 answers
-    if (i === goldAt && !def.boss) map[GR - 5][s + 1] = 'H';   // hidden block above the sign
   }
   // A steady number of ? boxes: 3 in the first world up to 6 in the last. Extra ones become bricks;
   // missing ones turn bricks over solid ground into ? boxes, then go over open flat ground.
@@ -1011,7 +1016,8 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     const pick = arr => arr.splice(Math.floor(rng() * arr.length), 1)[0];
     while (boxes.length > want) { const [r, c] = pick(boxes); map[r][c] = 'B'; }
     let n = boxes.length;
-    for (; n < want && spare.length; n++) { const [r, c] = pick(spare); map[r][c] = '?'; }
+    const lonely = ([r, c]) => map[r][c - 1] !== '?' && map[r][c + 1] !== '?' && map[r][c - 2] !== '?' && map[r][c + 2] !== '?';
+    for (; n < want; n++) { const ok = spare.filter(lonely); if (!ok.length) break; const b = ok[Math.floor(rng() * ok.length)]; spare.splice(spare.indexOf(b), 1); map[b[0]][b[1]] = '?'; }   // never side by side
     const open = [];
     for (let c = 12; c < L.w - 2; c++) {
       if (nearGate(c) || map[GR][c] !== '#') continue;
@@ -1019,6 +1025,14 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
       if (clear) open.push(c);
     }
     for (; n < want && open.length; n++) { const c = pick(open); map[GR - 4][c] = '?'; for (let d = -2; d <= 2; d++) { const i = open.indexOf(c + d); if (i >= 0) open.splice(i, 1); } }
+  }
+  // Gems mostly come from right answers now, so only every other small loose gem stays.
+  { let k = 0; L.coins = L.coins.filter(c => c.v >= 10 || k++ % 2 === 0); }
+  // One flaming golden gem: about four tiles above a pillar or stair top, so you have to climb up and jump for it.
+  if (!def.boss && goldSpots.length) {
+    const g = goldSpots[Math.floor(rng() * goldSpots.length)];
+    L.coins = L.coins.filter(c => Math.abs(c.x - g.x) > T * 1.5 || c.y > g.top * T);   // nothing else up there
+    L.coins.push({ x: g.x, y: g.top * T - 4.2 * T, v: 25, gold: true, taken: false });
   }
   // Finale: staircase, flag, dojo.
   const s = flat(24);
@@ -1111,13 +1125,12 @@ function openChest(room) {
   const cx = room.chestC * T + T / 2, cy = GR * T - 30;
   sfx.win(); shake(8, 3); confetti(cx, cy - 20); confetti(cx, cy - 20); petSay('wow'); award('vault');
   floatText(cx, cy - 70, `Treasure! +${room.gems}`, '#ffd23f', 30);
-  // the gems spill out across the room for the ninja to collect
+  // the gems spill out around the chest, so grabbing them is on the way out
   let left = room.gems, k = 0;
   while (left > 0) {
-    const v = left >= 10 && k % 3 === 0 ? 10 : left >= 5 ? 5 : 1; left -= v;
-    const col = 2 + (k * 7) % (L.w - 5), row = GR - 1 - (k % 3);
-    L.coins.push({ x: col * T + T / 2, y: row * T + T / 2, v, taken: false });
-    G.parts.push({ k: 'bit', x: cx, y: cy, vx: (Math.random() - 0.5) * 9, vy: -6 - Math.random() * 6, life: 40, col: GEM_COL[v][0], s: 6 });
+    const v = left >= 5 && k % 3 === 0 ? 5 : 1; left -= v;   // lots of small gems so they cover the room
+    const tx = (room.chestC - 5 + Math.random() * 5) * T, ty = (GR - 1 - Math.random() * 2.5) * T;   // a pile just before the chest, on the way to the exit
+    L.coins.push({ x: cx, y: cy, v, taken: true, fly: { x0: cx, y0: cy, tx, ty, t: -k * 2, n: 40 } });   // flies out, then can be picked up
     k++;
   }
 }
@@ -1126,6 +1139,13 @@ function updateRoom() {
   if (room.wait && --room.wait === 0) roomRound(room);
   if (room.wobble) room.wobble--;
   if (room.open) room.openT++;
+  for (const c of L.coins) {
+    const f = c.fly; if (!f) continue;
+    if (++f.t <= 0) continue;
+    const u = Math.min(1, f.t / f.n);
+    c.x = f.x0 + (f.tx - f.x0) * u; c.y = f.y0 + (f.ty - f.y0) * u - Math.sin(u * Math.PI) * 160;
+    if (u >= 1) { c.fly = null; c.taken = false; }
+  }
 }
 
 const BOSS_SPECS = {
@@ -1581,7 +1601,12 @@ function gemSound() {
   const f = 880 * Math.pow(1.06, Math.min(G.chain, 12));
   tone(f, 0.07, 'triangle', 0.06); tone(f * 1.335, 0.2, 'triangle', 0.06, null, 0.07);
 }
-function flyGem(x, y, v) { G.flyers.push({ x: x - cam, y, v, t: 0 }); }
+function flyGem(x, y, v, wait = 0) { G.flyers.push({ x: x - cam, y, v, t: -wait }); }
+// Right answers pay real gems: each one pops out where the answer was and flies into the gem counter.
+function payGems(x, y, n, wait = 0) {
+  G.coins += n;
+  for (let k = 0; k < n; k++) flyGem(x + (k - (n - 1) / 2) * 14, y, 1, wait * 0.12 + k * 0.12);
+}
 function burst(x, y, col, n, spd = 4) {
   for (let i = 0; i < n; i++) G.parts.push({ k: 'bit', x, y, vx: (Math.random() - 0.5) * spd * 2, vy: -Math.random() * spd - 2, life: 50, col, s: 6 });
 }
@@ -1684,7 +1709,7 @@ function gateAnswer(st, i) {
 function answer(c, r) {   // a head bump on an answer block
   const f = findAnswer(c, r);
   if (!f || f.st !== currentStation() || f.st.solved || f.st.swap || f.st.star || f.a.state !== 'idle' ||
-    Math.abs(P.x + P.w / 2 - (c * T + T / 2)) > T * 0.35) { sfx.bump(); return; }   // only a clean hit from right underneath counts
+    Math.floor((P.x + P.w / 2) / T) !== c) { sfx.bump(); return; }   // counts when Kai's middle is under the block (edge clips don't)
   f.st.shotT = G.time; f.st.quick = !f.st.blocked;
   resolveAnswer(f.st, f.a);
 }
@@ -1699,10 +1724,11 @@ function resolveAnswer(st, a) {
     floatText(cx, cy - 20, 'Oops! New question...', '#ff6b6b', 26);
     return;
   }
-  noteFact(st.q, true, (st.shotT ?? G.time) - (st.shownAt ?? G.time) <= 300, L.skill);   // 5 seconds from the question showing counts as fast
+  const fast = (st.shotT ?? G.time) - (st.shownAt ?? G.time) <= (isTouch ? 300 : 600);   // 5 s with buttons, 10 s when Kai has to bonk
+  noteFact(st.q, true, fast, L.skill); G.solved++; if (fast) G.fastN++;
   // the right block shatters into gems
   L.map[a.r][a.c] = '.'; a.state = 'right';
-  for (let k = 0; k < 8; k++) G.parts.push({ k: 'coin', x: cx, y: cy + T / 2, vx: (Math.random() - 0.5) * 6, vy: -4 - Math.random() * 5, life: 32, v: 1 });
+  payGems(cx, cy + T / 2, fast ? 2 : 1);   // the gems inside fly to the counter: 1, or 2 when fast
   burst(cx, cy + T / 2, ansCol(st.answers.indexOf(a))[0], 14, 5);
   sfx.correct(); confetti(cx, cy); streakUp(cx, cy); gotIt();
   if (++st.got < st.need) {   // a double gate: one more!
@@ -1716,7 +1742,7 @@ function resolveAnswer(st, a) {
   G.checkpoint = (st.s + 15) * T;
   setTimeout(sfx.gate, 350);
   if (st.quick) {
-    G.coins += 3; G.score += 300; sfx.streak();
+    G.lightN++; G.score += 300; sfx.streak(); payGems(cx, cy + T / 2, 3, 3);
     floatText(cx, cy - 20, 'Lightning! +3', '#7df9ff', 32);
   } else floatText(cx, cy - 20, st.q.retry ? 'You remembered it!' : ['Correct!', 'Great job!', 'Awesome!', 'You got it!', 'Super!', 'Hi-yah!'][R(0, 5)], '#3ae374', 30);
   const next = currentStation();
@@ -1726,17 +1752,21 @@ function resolveAnswer(st, a) {
 // ---------------------------------------------------------------- answer bar
 // As Kai runs up to a gate (or when a boss tires) big answer buttons appear. Math is taps; jumping is for fun.
 let barKey = '';
-function barTarget() {
+// What can be answered right now (gate blocks or boss shuriken). Touch screens show it as buttons;
+// keyboards use , . / (N M , . / for five) or 1-5.
+function barTarget() { return isTouch ? answerTarget() : null; }
+const ANS_KEYS = n => (n > 3 ? ['N', 'M', ',', '.', '/'] : [',', '.', '/']);
+function answerTarget() {
   if (mode !== 'play') return null;
   const st = currentStation();
   if (!st) return null;
   if (st === L.arena) return st.orbs && st.orbs.some(o => o.state === 'idle') ? { q: st.q, vals: st.orbs.map(o => o.val), off: [] } : null;
   if (st.swap || st.star || P.x < (st.s - 3) * T || P.x > st.gate[1] * T) return null;
   if (st.barQ !== st.q) { st.barQ = st.q; st.shownAt = G.time; }
-  return { q: st.q, vals: st.answers.map(a => a.val), off: st.answers.map(a => a.state !== 'idle'), tag: st.need > 1 ? `Double gate ${st.got + 1}/2` : '' };
+  return { q: st.q, vals: st.answers.map(a => a.val), off: st.answers.map(a => a.state !== 'idle') };
 }
 function syncAnsBar() {
-  const t = barTarget(), key = t ? t.q.text + '|' + t.vals.join(',') + t.off.join(',') + t.tag : '';
+  const t = barTarget(), key = t ? t.q.text + '|' + t.vals.join(',') + t.off.join(',') : '';
   if (key === barKey) return;
   barKey = key; const bar = $('ansbar');
   if (!t) { hide('ansbar'); return; }
@@ -1764,7 +1794,7 @@ function syncAnsBar() {
   show('ansbar');
 }
 function tapAnswer(i) {
-  const st = barTarget() && currentStation(); if (!st) return;
+  const t = answerTarget(), st = t && currentStation(); if (!st || i < 0 || i >= t.vals.length) return;
   if (st === L.arena) { const o = st.orbs[i]; if (o && o.state === 'idle') hitOrb(o); }
   else gateAnswer(st, i);
   syncAnsBar();
@@ -1872,8 +1902,8 @@ const BADGES = [
   { id: 'bridge10', icon: '🏗️', name: 'Master Builder', text: 'Build 10 bridges.' },
   { id: 'dojo7', icon: '🔥', name: 'Dedicated', text: 'Do the Daily Dojo 7 days in a row.' },
   { id: 'vault', icon: '🚪', name: 'Secret Finder', text: 'Solve a secret room puzzle.' },
-  { id: 'golden', icon: '🌟', name: 'Golden Gem', text: 'Find a hidden golden gem.' },
-  { id: 'golden-all', icon: '👑', name: 'Golden Hunter', text: 'Find all 15 golden gems. Unlocks the Golden suit!' },
+  { id: 'golden', icon: '🌟', name: 'Golden Gem', text: 'Grab a flaming golden gem.' },
+  { id: 'golden-all', icon: '👑', name: 'Golden Hunter', text: 'Grab all 15 golden gems. Unlocks the Golden suit!' },
   { id: 'boss-nohit', icon: '🛡️', name: 'Untouchable', text: 'Beat a boss without getting hit.' },
   { id: 'boss-all', icon: '📜', name: 'Scroll Keeper', text: 'Win back all five scrolls.' },
   { id: 'race-win', icon: '🥇', name: 'Champion Rider', text: 'Win a race.' },
@@ -1998,15 +2028,10 @@ const fiery = () => hasPower('fire') || hasPower('star');
 // Most ? boxes hold a surprise: a power, a heart, or a gem trick. A plain gem the rest of the time.
 const BOX_PRIZES = ['shield', 'double', 'speed', 'magnet', 'star', 'fire', 'jump', 'heart', 'fountain', 'fountain', 'rainbow', 'rainbow', 'bigGem'];
 function boxPrize(c, r) {
-  const key = c + ',' + r, x = c * T + T / 2, y = r * T;
-  if (L.multi && L.multi[key] > 0) { coinPop(c, r, 1); if (--L.multi[key] === 0) L.map[r][c] = 'U'; return; }   // keep bonking!
+  const x = c * T + T / 2, y = r * T;
   L.map[r][c] = 'U';
   if (L.vault || Math.random() < 0.3) { coinPop(c, r); return; }
   const k = BOX_PRIZES[R(0, BOX_PRIZES.length - 1)];
-  if (k === 'multi') {
-    L.map[r][c] = '?'; (L.multi || (L.multi = {}))[key] = 7; coinPop(c, r, 1);
-    floatText(x, y - 50, 'Keep bonking!', '#ffd23f', 24); return;
-  }
   if (k === 'bigGem') { coinPop(c, r, 10); confetti(x, y); floatText(x, y - 80, 'Big red gem!', '#ff5a5a', 26); petSay('wow'); return; }
   if (k === 'fountain') {   // a spray of gems
     for (let i = 0; i < 12; i++) G.parts.push({ k: 'coin', x, y, vx: (Math.random() - 0.5) * 7, vy: -6 - Math.random() * 6, life: 40, v: 1 });
@@ -2276,7 +2301,7 @@ function updatePlayer() {
   p.vx = clamp(p.vx, -vmax, vmax);
   if (hasPower('speed') && p.onGround && Math.abs(p.vx) > 4 && tick % 3 === 0) burst(p.x + p.w / 2, p.y + p.h, '#ffffff', 2, 1);
   if (hasPower('star') && tick % 3 === 0) G.parts.push({ k: 'bit', x: p.x + Math.random() * p.w, y: p.y + Math.random() * p.h, vx: 0, vy: -1, life: 20, col: ['#ff5a8a', '#ffd23f', '#7df9ff', '#3ae374'][R(0, 3)], s: 4 });
-  if (hasPower('magnet')) for (const c of L.coins) if (!c.taken) { const dx = p.x + p.w / 2 - c.x, dy = p.y + p.h / 2 - c.y, d = Math.hypot(dx, dy); if (d < 200) { c.x += dx / d * 6; c.y += dy / d * 6; } }
+  if (hasPower('magnet')) for (const c of L.coins) if (!c.taken && !c.gold) { const dx = p.x + p.w / 2 - c.x, dy = p.y + p.h / 2 - c.y, d = Math.hypot(dx, dy); if (d < 200) { c.x += dx / d * 6; c.y += dy / d * 6; } }
 
   if (keys.jumpPressed) { p.jbuf = 8; keys.jumpPressed = false; }
   if (p.jbuf > 0) p.jbuf--;
@@ -2330,7 +2355,11 @@ function updatePlayer() {
   for (const c of L.coins) {
     if (!c.taken && Math.abs(c.x - (p.x + p.w / 2)) < 22 && Math.abs(c.y - (p.y + p.h / 2)) < 30) {
       c.taken = true; G.coins += c.v; G.score += 100 * c.v; gemSound(); flyGem(c.x, c.y, c.v);
-      if (c.v > 1) floatText(c.x, c.y - 24, '+' + c.v, GEM_COL[c.v][0], 22);
+      if (c.gold) {
+        prog.golden[L.idx] = true; save(); G.score += 2500; sfx.win(); confetti(c.x, c.y); shake(8, 3); petSay('wow');
+        floatText(c.x, c.y - 50, 'Golden gem! +25', '#ffd23f', 28);
+        award('golden'); if (Object.keys(prog.golden).length >= 15) award('golden-all');
+      } else if (c.v > 1) floatText(c.x, c.y - 24, '+' + c.v, GEM_COL[c.v][0], 22);
     }
   }
   if (L.prize && overlap(p, L.prize)) {
@@ -2459,7 +2488,8 @@ function hitOrb(o) {
   {
     if (o.val === ar.q.ans) {
       o.state = 'thrown'; ar.orbs.forEach(q => { if (q !== o) q.state = 'gone'; });
-      noteFact(ar.q, true, G.time - ar.askedAt <= 480, L.skill);
+      noteFact(ar.q, true, G.time - ar.askedAt <= 480, L.skill); G.solved++; if (G.time - ar.askedAt <= 480) G.fastN++;
+      payGems(o.x, oy, G.time - ar.askedAt <= 480 ? 2 : 1);
       ar.wait = 1; G.shots.push({ x: o.x, y: oy, spin: 0 });
       P.throwT = 14; sfx.correct(); sfx.throw(); streakUp(o.x, oy); gotIt();
       floatText(P.x + P.w / 2, P.y - 30, ar.q.retry ? 'You remembered it!' : 'Shuriken!', '#ffd23f', 28);
@@ -2484,6 +2514,7 @@ function drawOrbs() {
     ctx.strokeStyle = '#8a5a00'; ctx.lineWidth = 2; ctx.stroke();
     const v = String(o.val); ctx.fillStyle = '#3a2200'; ctx.font = `${v.length >= 3 ? 12 : 16}px "Lilita One", "Trebuchet MS", sans-serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(v, o.x, oy + 1);
+    if (!isTouch) keyTag(ANS_KEYS(ar.orbs.length)[ar.orbs.indexOf(o)], o.x + 22, oy - 22);
   }
 }
 
@@ -2719,6 +2750,13 @@ function finishLevel() {
   const path = pathRound(sk, G.mistakes), up = path.startsWith('<div');
   body += `<div class="statrow"><span>${pixImg('gem', 'pix sm')} +${earned}</span><span>${pixImg('belt', 'pix sm')} +${pts}</span>${up ? '' : path}</div>`;
   if (up) body += path;
+  // how much math got done, and the best so far on this level
+  if (G.solved) {
+    const pb = prog.mathBest || (prog.mathBest = {}), prev = pb[i] || 0;
+    if (G.solved > prev) { pb[i] = G.solved; save(); }
+    body += `<div class="statrow sum"><span>${G.solved} solved</span><span>${G.fastN} fast</span>${G.lightN ? `<span>${G.lightN} Lightning</span>` : ''}${G.bestStreak > 1 ? `<span>${G.bestStreak} in a row</span>` : ''}</div>`
+      + (prev && G.solved > prev ? '<p class="sumnew">New record!</p>' : prev ? `<p class="sumnew">Record: ${prev}</p>` : '');
+  }
   if (after.idx > before.idx) body += `<div class="promo">${beltHTML(after)} &nbsp;<b>${after.name} Belt!</b></div>`;
   if (G.practice.size) body += `<div class="practice">🔁 ${[...G.practice.values()].slice(0, 3).map(q => `<span>${qSolved(q)}</span>`).join('')}</div>`;
   const btns = [];
@@ -4048,6 +4086,13 @@ function drawTile(t, x, y, c, r) {
   }
 }
 
+// A little keyboard key showing which key answers with this block
+function keyTag(k, x, y) {
+  ctx.fillStyle = '#1b1b2f'; rrect(x - 10, y - 10, 20, 20, 5); ctx.fill();
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = '#ffffff'; ctx.font = 'bold 14px "Trebuchet MS", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(k, x, y + (k === ',' || k === '.' ? -3 : 1));
+}
 function drawAnswer(x, y, c, r) {
   const f = findAnswer(c, r); if (!f) return;
   const { st, a } = f;
@@ -4066,6 +4111,7 @@ function drawAnswer(x, y, c, r) {
   ctx.font = `${s.length >= 3 ? 16 : 22}px "Lilita One", "Trebuchet MS", sans-serif`;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(s, x + T / 2, y + T / 2 + 1);
+  if (!isTouch && cur && a.state === 'idle') keyTag(ANS_KEYS(st.answers.length)[st.answers.indexOf(a)], x + T - 2, y - 2);
   if (a.state === 'wrong') {   // cracked
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(x + 6, y + 4); ctx.lineTo(x + 15, y + 15); ctx.lineTo(x + 11, y + 22); ctx.lineTo(x + 20, y + T - 4); ctx.moveTo(x + 15, y + 15); ctx.lineTo(x + T - 6, y + 10); ctx.stroke();
@@ -4720,7 +4766,7 @@ function drawHUD() {
       ctx.fillRect(bx + i * segW + 1, by + 94, segW - 2, 10);
     }
     if (currentStation()) {
-      hudText('Tap or grab the right shuriken!', VW / 2, by + 124, 15, '#ffd23f', 'center');
+      hudText(isTouch ? 'Tap or grab the right shuriken!' : 'Press its key or grab the right shuriken!', VW / 2, by + 124, 15, '#ffd23f', 'center');
       const f = L.arena.phaseT / OPEN_FRAMES(), ww = 160;
       ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(VW / 2 - ww / 2, by + 136, ww, 5);
       ctx.fillStyle = '#ffd23f'; ctx.fillRect(VW / 2 - ww / 2, by + 136, ww * f, 5);
@@ -4733,7 +4779,7 @@ function drawHUD() {
     hudText(`Bonk stones to pick up (one or more), carry to the altar · so far ${br.total}${G.carry ? ` · holding ${G.carry.stones.reduce((a, t) => a + t.val, 0)}` : ''}`, VW / 2, by + 80, 16, '#fff', 'center');
   } else {
     const done = L.stations.filter(s => s.solved).length;
-    hudText(cur ? `Tap the right answer!  (${done}/${L.stations.length})` : `All ${L.stations.length} gates open!`, VW / 2, by + 80, 16, '#fff', 'center');
+    hudText(cur ? `${isTouch ? 'Tap' : 'Bonk'} the right answer!  (${done}/${L.stations.length})` : `All ${L.stations.length} gates open!`, VW / 2, by + 80, 16, '#fff', 'center');
   }
 }
 
@@ -4752,7 +4798,11 @@ function render() {
   const c0 = Math.max(0, Math.floor(cam / T)), c1 = Math.min(L.w - 1, c0 + Math.ceil(VW / T) + 1);
   drawTiles();
   if (L.twist) drawTwist();
-  for (const c of L.coins) if (!c.taken && c.x > cam - 20 && c.x < cam + VW + 20) drawGem(c.x, c.y + Math.sin(tick * 0.08 + c.x) * 3, c.v, tick * 0.08 + c.x);
+  for (const c of L.coins) if (c.gold && !c.taken && Math.abs(c.x - cam - VW / 2) < VW) {   // the golden gem is on fire
+    glowAt(c.x, c.y, 60, 'rgba(255,170,40,.6)');
+    if (tick % 2 === 0) G.parts.push({ k: 'bit', x: c.x + (Math.random() - 0.5) * 26, y: c.y + 10, vx: (Math.random() - 0.5) * 0.6, vy: -1.6 - Math.random() * 1.2, life: 30, col: ['#ff6a00', '#ffb300', '#ffd23f', '#ff3d00'][R(0, 3)], s: 7 });
+  }
+  for (const c of L.coins) if ((!c.taken || (c.fly && c.fly.t > 0)) && c.x > cam - 20 && c.x < cam + VW + 20) drawGem(c.x, c.y + Math.sin(tick * 0.08 + c.x) * 3, c.v, tick * 0.08 + c.x);
   for (const e of L.enemies) drawEnemy(e);
   drawPits(c0, c1);   // after enemies, so lava blobs rise out of the lava
   drawBoss();
@@ -4768,6 +4818,7 @@ function render() {
     drawHUD();
     // gems fly up into the counter
     for (const f of G.flyers) {
+      if (f.t < 0) { drawGem(f.x, f.y + Math.sin(tick * 0.3 + f.x) * 3, f.v, tick * 0.2); continue; }   // waits its turn, then flies
       const e = f.t * f.t;
       drawGem(f.x + (34 - f.x) * e, f.y + (64 - f.y) * e - Math.sin(Math.PI * f.t) * 60, f.v, tick * 0.2);
     }
@@ -4805,7 +4856,7 @@ function startStage(i) {
   L = st.boss ? buildArena(i, prog.easy) : buildLevel(i, prog.easy);
   P = { x: 1.5 * T, y: GR * T - 44, w: 24, h: 44, vx: 0, vy: 0, onGround: false, face: 1, inv: 0, anim: 0, coyote: 0, jbuf: 0, throwT: 0 };
   const hearts = prog.easy ? 5 : 3;
-  G = { idx: i, skill: L.skill, hearts, maxHearts: hearts, coins: 0, score: 0, shake: 0, shakeAmp: 0, freeze: 0, slow: 0, flash: 0, flyers: [], pulse: 0, chain: 0, lastGem: -99, mistakes: 0, streak: 0, bestStreak: 0, missed: [], practice: new Map(), power: null, powerN: 0, carry: null, saved: null,
+  G = { idx: i, skill: L.skill, hearts, maxHearts: hearts, coins: 0, score: 0, shake: 0, shakeAmp: 0, freeze: 0, slow: 0, flash: 0, flyers: [], pulse: 0, chain: 0, lastGem: -99, mistakes: 0, streak: 0, bestStreak: 0, solved: 0, fastN: 0, lightN: 0, missed: [], practice: new Map(), power: null, powerN: 0, carry: null, saved: null,
     pet: prog.equip.pet ? { x: P.x, y: P.y, mood: null, moodT: 0 } : null, glide: 0, alarm: 0, climb: false, hidden: false, bubble: null, tip: null, wrongRun: 0, checkpoint: 1.5 * T, time: 0, parts: [], shots: [], bumps: new Map(), winT: 0 };
   SPR = bakeNinja(heroPal());   // equipped headband and suit, plus the belt you've earned
   cam = 0; ambient.length = 0;
@@ -5271,6 +5322,7 @@ function editPlayer(pl) {
   $('pName').value = pl ? pl.name : '';
   hide('playerGrid'); hide('playersRow'); show('playerForm');
   (pl && players.list.length > 1 ? show : hide)('pDelete');
+  (pl ? show : hide)('pMove'); $('pCode').value = ''; $('pMoveMsg').textContent = '';
   renderPlayerForm();
   if (!isTouch) $('pName').focus();
 }
@@ -5310,6 +5362,55 @@ $('pSave').onclick = () => {
   }
 };
 $('pCancel').onclick = () => { audio(); showPlayers(); };
+
+// Moving a save: one player's progress (and name, grade, picture) as a text code, or that code in a file.
+// Codes are gzipped when the browser can, so they stay fairly short.
+const b64 = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(s); };
+const unb64 = str => Uint8Array.from(atob(str), ch => ch.charCodeAt(0));
+async function pipe(bytes, stream) { return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer()); }
+async function saveCode(pl) {
+  if (pl.id === players.cur) save();
+  let data = {}; try { data = JSON.parse(localStorage.getItem(keyFor(pl.id))) || {}; } catch (e) { /* no storage */ }
+  const bytes = new TextEncoder().encode(JSON.stringify({ v: 1, player: { name: pl.name, grade: pl.grade, icon: pl.icon }, prog: data }));
+  if (typeof CompressionStream === 'function') return 'MNZ1:' + b64(await pipe(bytes, new CompressionStream('gzip')));
+  return 'MN1:' + b64(bytes);
+}
+async function readCode(code) {
+  code = code.replace(/\s+/g, '');
+  const m = code.match(/^(MNZ1|MN1):(.+)$/); if (!m) throw new Error('not a code');
+  let bytes = unb64(m[2]);
+  if (m[1] === 'MNZ1') bytes = await pipe(bytes, new DecompressionStream('gzip'));
+  const d = JSON.parse(new TextDecoder().decode(bytes));
+  if (!d || !d.prog || !d.player) throw new Error('bad save');
+  return d;
+}
+const moveMsg = t => { $('pMoveMsg').textContent = t; };
+$('pCopy').onclick = async () => {
+  audio(); if (!editing) return;
+  const code = await saveCode(editing);
+  try { await navigator.clipboard.writeText(code); moveMsg('Copied! Paste it into a text or email to yourself.'); }
+  catch (e) { $('pCode').value = code; $('pCode').select(); moveMsg('Select the code above and copy it.'); }
+};
+$('pFile').onclick = async () => {
+  audio(); if (!editing) return;
+  const url = URL.createObjectURL(new Blob([await saveCode(editing)], { type: 'text/plain' }));
+  const a = document.createElement('a'); a.href = url; a.download = `math-ninja-${editing.name.replace(/[^\w-]+/g, '_')}.txt`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+  moveMsg('Saved! Open that file on the other device with "Load from file".');
+};
+async function loadSave(text) {
+  if (!editing) return;
+  let d; try { d = await readCode(text); } catch (e) { moveMsg("That code didn't work. Check it was copied whole."); return; }
+  if (!confirm(`Replace ${editing.name}'s progress with ${d.player.name}'s save?`)) return;
+  try { localStorage.setItem(keyFor(editing.id), JSON.stringify(d.prog)); } catch (e) { moveMsg("Couldn't save on this device."); return; }
+  Object.assign(editing, { name: d.player.name || editing.name, grade: d.player.grade ?? editing.grade, icon: d.player.icon || editing.icon });
+  savePlayers();
+  if (editing.id === players.cur) { loadProg(editing.id); applyProg(); }
+  showPlayers();
+}
+$('pLoad').onclick = () => { audio(); loadSave($('pCode').value); };
+$('pLoadFile').onclick = () => { audio(); $('pFileIn').value = ''; $('pFileIn').click(); };
+$('pFileIn').onchange = async () => { const f = $('pFileIn').files[0]; if (f) loadSave(await f.text()); };
 $('pDelete').onclick = () => {
   if (!editing || players.list.length < 2 || !confirm(`Delete ${editing.name} and all their progress?`)) return;
   try { localStorage.removeItem(keyFor(editing.id)); } catch (e) { /* no storage */ }
@@ -5350,6 +5451,7 @@ $('badgesClose').onclick = () => { hide('badges'); buildMenu(); show('menu'); };
 // ---------------------------------------------------------------- input
 const KMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'jump', KeyW: 'jump', Space: 'jump', KeyZ: 'jump' };
 window.addEventListener('keydown', e => {
+  if (e.target.tagName === 'TEXTAREA') return;   // pasting a save code
   if (e.target.tagName === 'INPUT') { if (e.key === 'Enter') $('pSave').click(); return; }   // typing a name
   audio();
   if (!$('dojo').classList.contains('hidden')) { dojoKey(e); return; }
@@ -5383,6 +5485,10 @@ window.addEventListener('keydown', e => {
   if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
   if (e.code === 'KeyM') setMuted(!muted);
   if (mode === 'play' && /^Digit[1-5]$/.test(e.code)) tapAnswer(Number(e.code[5]) - 1);
+  if (mode === 'play' && ['KeyN', 'KeyM', 'Comma', 'Period', 'Slash'].includes(e.code)) {   // the row just above the arrow keys
+    const t = answerTarget();
+    if (t) { e.preventDefault(); tapAnswer(ANS_KEYS(t.vals.length).indexOf({ KeyN: 'N', KeyM: 'M', Comma: ',', Period: '.', Slash: '/' }[e.code])); }
+  }
   if (e.code === 'Enter' && msgPrimary && !$('msg').classList.contains('hidden')) msgPrimary.click();
 });
 window.addEventListener('keyup', e => { const k = KMAP[e.code]; if (k) keys[k] = false; });
