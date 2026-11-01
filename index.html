@@ -234,6 +234,7 @@
   @keyframes smoke { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.4); } }
   .pix { image-rendering: pixelated; width: 36px; height: 36px; display: block; }
   .pix.big { width: 64px; height: 64px; display: inline-block; margin: 0 2px; }
+  canvas.scene { display: block; width: min(100%, 420px); margin: 0 auto 12px; image-rendering: pixelated; border: 3px solid #c9a24f; border-radius: 8px; background: #000; }
   .bigicon .bossimg { width: 104px; height: 104px; display: inline-block; }
   .pix.sm { width: 22px; height: 22px; display: inline-block; vertical-align: -4px; }
   .dojotop .pix { width: 22px; height: 22px; display: inline-block; vertical-align: -4px; }
@@ -398,7 +399,7 @@
       <button class="btn alt" id="easyBtn" type="button">🐣 Easy mode: off</button>
       <button class="btn alt" id="unlockBtn" type="button">🔓 Unlock all levels</button>
       <button class="btn alt" id="playersBtn" type="button">👥 Players</button>
-      <button class="btn alt" id="storyBtn" type="button">📖 Story</button>
+      <button class="btn alt" id="storyBtn" type="button">📖 Read the story</button>
       <button class="btn alt" id="resetBtn" type="button">↺ Reset progress</button>
     </div>
     <div class="row"><button class="btn" id="settingsClose" type="button">Done</button></div>
@@ -3652,14 +3653,7 @@ function finishLevel() {
   const title = st.boss ? 'Scroll won!' : G.mistakes === 0 ? 'Perfect!' : 'Level complete!';
   let body = st.boss ? `<div class="bigicon">${pixImg('scroll', 'pix big')}</div>` : `<div class="bigicon">${pixImg('piece', 'pix big')}<small>${found}/3</small></div>`;
   // Each boss leaves a clue about who the Shogun really is; the last one is revealed in the ending.
-  const FREED = {
-    kage: "Kage won't take your hand. As he fades into the shadows he laughs: <i>\"You fight just like him. Same moves, same little hop.\"</i> The bandits run away, and the lost children find their way home.",
-    golem: "The Golem's fire cools. He is gentle again. <i>\"The Shogun once cried here,\"</i> he rumbles. <i>\"He was holding a little wooden ninja, carved for someone he left behind.\"</i>",
-    bot: "Mega-Bot 3000 switches off the factory. For the first time, every robot gets to rest. Its screen showed a secret file: <b>KURO · FAMILY: 1 FATHER, 1 LITTLE BROTHER</b>.",
-    yeti: "The snowman's frozen heart melts. Now he has a friend. He hands you a red headband the Shogun dropped. It looks exactly like yours.",
-    shogun: '',
-  };
-  if (st.boss && FREED[W.boss.kind]) body += `<p class="freed">${FREED[W.boss.kind]}</p>`;
+  if (st.boss && BOSS_CARD[W.boss.kind]) body += `<p class="freed">${BOSS_CARD[W.boss.kind]}</p>`;
   body += `<div class="medalrow"><span class="dots">${'●'.repeat(dots) + '○'.repeat(3 - dots)}</span> ${medalImg(dots, 'pix sm')}</div>`;
   const earned = Math.round((G.coins + (st.boss ? 20 : 0)) * TIER_GEMS[sk.tier - 1]);
   prog.bank += earned; prog.stats.gems += earned; save();
@@ -3694,18 +3688,50 @@ function finishLevel() {
   showMsg(title, body, btns);
 }
 
+// What each boss leaves behind: a clue about who the Shogun really is (the last one is the ending).
+const BOSS_CARD = {
+  kage: "Kage won't take your hand. As he fades into the shadows he laughs: <i>\"You fight just like him. Same moves, same little hop.\"</i> The bandits run away, and the lost children find their way home.",
+  golem: "The Golem's fire cools. He is gentle again. <i>\"The Shogun once cried here,\"</i> he rumbles. <i>\"He was holding a little wooden ninja, carved for someone he left behind.\"</i>",
+  bot: "Mega-Bot 3000 switches off the factory. For the first time, every robot gets to rest. Its screen showed a secret file: <b>KURO · FAMILY: 1 FATHER, 1 LITTLE BROTHER</b>.",
+  yeti: "The snowman's frozen heart melts. Now he has a friend. He hands you a red headband the Shogun dropped. It looks exactly like yours.",
+  shogun: '',
+};
+
 // The ending comes in three pages: the castle falls, morning, then home.
+const endBody = {
+  falls: () => `<div class="bigicon">${bossImg('shogun')}</div><p>${ENDING}</p>`,
+  morning: () => `<div class="bigicon">${kaiImg()}</div><p>${MORNING}</p>`,
+  home: () => `<div class="bigicon">${kaiImg()}${[0, 1, 2, 3, 4].map(() => pixImg('scroll', 'pix big')).join('')}</div><p>${HOME}</p>`,
+};
 function showEnding() {
-  showMsg('The Castle Falls', `<div class="bigicon">${bossImg('shogun')}</div><p>${ENDING}</p>`, [{ label: 'Next ▶', fn: showMorning, primary: true }]);
+  showMsg('The Castle Falls', endBody.falls(), [{ label: 'Next ▶', fn: showMorning, primary: true }]);
 }
 function showMorning() {
-  showMsg('Morning', `<div class="bigicon">${kaiImg()}</div><p>${MORNING}</p>`, [{ label: 'Next ▶', fn: showHome, primary: true }]);
+  showMsg('Morning', endBody.morning(), [{ label: 'Next ▶', fn: showHome, primary: true }]);
 }
 function showHome() {
   const b = currentBelt();
-  showMsg('Welcome Home', `<div class="bigicon">${kaiImg()}${[0, 1, 2, 3, 4].map(() => pixImg('scroll', 'pix big')).join('')}</div><p>${HOME}</p>
+  showMsg('Welcome Home', `${endBody.home()}
     <div class="promo">${beltHTML(b)} &nbsp;Your rank: <b>${b.name} Belt</b> (${totalPoints()} / ${MAX_POINTS} points)</div>`,
     [{ label: 'Levels', fn: toMenu, primary: true }]);
+}
+// Settings > Read the story: every story page in order, with Back and Next.
+function storyPages() {
+  const pages = [['The Stolen Scrolls', `${sceneHTML('opening')}<p>${STORY}</p>`]];
+  WORLDS.forEach((W, w) => {
+    pages.push([`World ${w + 1}: ${W.name}`, `<div class="bigicon">${bossImg(W.boss.kind)}</div><p>${W.intro}</p>`]);
+    if (BOSS_CARD[W.boss.kind]) pages.push([W.boss.name, `<div class="bigicon">${pixImg('scroll', 'pix big')}</div><p class="freed">${BOSS_CARD[W.boss.kind]}</p>`]);
+  });
+  pages.push(['The Castle Falls', endBody.falls()], ['Morning', endBody.morning()], ['Welcome Home', endBody.home()]);
+  return pages;
+}
+function storyBook(i) {
+  const pages = storyPages(), [title, body] = pages[i], close = () => { hide('msg'); show('menu'); };
+  const btns = [];
+  if (i > 0) btns.push({ label: '◀ Back', fn: () => storyBook(i - 1), alt: true });
+  btns.push(i < pages.length - 1 ? { label: 'Next ▶', fn: () => storyBook(i + 1), primary: true } : { label: 'The end', fn: close, primary: true });
+  if (i < pages.length - 1) btns.push({ label: 'Close', fn: close, alt: true });
+  showMsg(`${title}  (${i + 1}/${pages.length})`, body, btns);
 }
 
 function update() {
@@ -6112,6 +6138,7 @@ function showMsg(title, body, btns) {
     if (b.primary) msgPrimary = el;
   }
   show('msg');
+  runScenes();
 }
 
 function startStage(i) {
@@ -6357,7 +6384,7 @@ function toMenu() {
 }
 
 function showStory(then) {
-  showMsg('The Stolen Scrolls', `<div class="bigicon">${kaiImg()}${pixImg('scroll', 'pix big')}</div><p>${STORY}</p>`, [{ label: "Let's go!", fn: then, primary: true }]);
+  showMsg('The Stolen Scrolls', `${sceneHTML('opening')}<p>${STORY}</p>`, [{ label: "Let's go!", fn: then, primary: true }]);
 }
 
 let pausedMode = 'play';
@@ -6385,7 +6412,7 @@ $('muteBtn').onclick = () => setMuted(!muted);
 $('musicBtn').onclick = () => { audio(); setMusic(!musicOn); };
 $('easyBtn').onclick = () => setEasy(!prog.easy);
 $('unlockBtn').onclick = () => setAllOpen(!prog.allOpen);
-$('storyBtn').onclick = () => { hide('settings'); showStory(() => { hide('msg'); show('menu'); }); };
+$('storyBtn').onclick = () => { hide('settings'); storyBook(0); };
 $('skillChip').onclick = () => { audio(); openSkills(toMenu); };
 $('autoBtn').onclick = () => { audio(); prog.auto = !prog.auto; save(); renderSkills(); };
 
@@ -6447,6 +6474,95 @@ function kaiImg() { const cv = document.createElement('canvas'); cv.width = 40; 
 function petImg(id) { return `<img class="pix big" src="${PET_SPR[id].a[0].toDataURL()}" alt="">`; }
 const bossURL = {};
 function bossImg(kind) { if (!bossURL[kind]) bossURL[kind] = BOSS_SPR[kind].a[0].toDataURL(); return `<img class="pix bossimg" src="${bossURL[kind]}" alt="">`; }
+
+// ---------------------------------------------------------------- story scenes
+// Little pixel-art scenes for the story pages, drawn with the game's own sprites. Each scene loops a few
+// short shots; time is stepped so it moves like pixel art.
+const SCENE_W = 320, SCENE_H = 150;
+let sceneRAF = 0;
+const sceneHTML = name => `<canvas class="scene" data-scene="${name}" width="${SCENE_W}" height="${SCENE_H}"></canvas>`;
+function runScenes() {
+  cancelAnimationFrame(sceneRAF);
+  const cvs = [...document.querySelectorAll('#msgBody canvas.scene')];
+  if (!cvs.length) return;
+  const t0 = performance.now();
+  const step = now => {
+    if (!cvs[0].isConnected) return;
+    const t = Math.max(0, Math.floor((now - t0) / 1000 * 8) / 8);
+    for (const c of cvs) { const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.clearRect(0, 0, SCENE_W, SCENE_H); SCENES[c.dataset.scene](x, t); }
+    sceneRAF = requestAnimationFrame(step);
+  };
+  sceneRAF = requestAnimationFrame(step);
+}
+// draw a baked sprite with its feet at (cx, by)
+function sprAt(c, img, cx, by, sc = 1, flip = false) {
+  const w = Math.round(img.width * sc), h = Math.round(img.height * sc);
+  c.save(); c.translate(Math.round(cx), 0); if (flip) c.scale(-1, 1);
+  c.drawImage(img, Math.round(-w / 2), Math.round(by - h), w, h); c.restore();
+}
+function sceneScroll(c, x, y) {
+  c.fillStyle = '#f4e4bc'; c.fillRect(x - 7, y - 4, 14, 8);
+  c.fillStyle = '#8b5a2b'; c.fillRect(x - 9, y - 5, 3, 10); c.fillRect(x + 6, y - 5, 3, 10);
+  c.fillStyle = '#e63946'; c.fillRect(x - 1, y - 4, 2, 8);
+}
+function sceneBaby(c, x, y) {
+  c.fillStyle = '#120f1a'; c.fillRect(x - 8, y - 6, 16, 12);
+  c.fillStyle = '#f4f4f4'; c.fillRect(x - 7, y - 5, 14, 10);
+  c.fillStyle = '#f6c79c'; c.fillRect(x + 1, y - 4, 5, 5);
+  c.fillStyle = '#16121f'; c.fillRect(x + 2, y - 3, 1, 1); c.fillRect(x + 4, y - 3, 1, 1);
+}
+let KURO_SPR = null;   // Kuro as a boy: a ninja in grey with the same red headband as Kai
+const kuroSpr = () => KURO_SPR || (KURO_SPR = bakeNinja({ n: '#55586a', N: '#7d8197' }));
+// Shots that fade through black: [start, end) in seconds within the loop.
+function sceneShot(c, t, shots) {
+  const len = shots[shots.length - 1][1], lt = t % len;
+  const [a, b, draw] = shots.find(([a, b]) => lt >= a && lt < b);
+  draw(lt - a, b - a);
+  const edge = Math.min(lt - a, b - lt);
+  if (edge < 0.5) { c.fillStyle = `rgba(0,0,0,${1 - edge / 0.5})`; c.fillRect(0, 0, SCENE_W, SCENE_H); }
+}
+const SCENES = {
+  // the old picture on the dojo wall; Kuro puts on the mask and the scrolls fly away; Kai sets off
+  opening(c, t) {
+    sceneShot(c, t, [
+      [0, 4.5, lt => {
+        c.fillStyle = '#f1e0c5'; c.fillRect(0, 0, SCENE_W, SCENE_H);
+        c.fillStyle = '#7b4a2a'; for (const x of [20, 290]) c.fillRect(x, 0, 12, SCENE_H);
+        c.fillStyle = '#b0794a'; c.fillRect(0, 128, SCENE_W, 22);
+        c.fillStyle = '#5a3a20'; c.fillRect(110, 18, 100, 92);   // picture frame
+        c.fillStyle = '#e9d6a8'; c.fillRect(116, 24, 88, 80);
+        sprAt(c, kuroSpr().stand[0], 160, 102, 1.3);
+        sceneBaby(c, 174 + (lt % 1 < 0.5 ? 0 : 1), 90);
+        sprAt(c, SENSEI_SPR.a[0], 66, 140, 1.1, true);   // Sensei looks up at it
+      }],
+      [4.5, 9, lt => {
+        const dark = Math.min(1, lt / 3);
+        c.fillStyle = '#1a1030'; c.fillRect(0, 0, SCENE_W, SCENE_H);
+        c.fillStyle = '#2a1f4a'; c.fillRect(0, 128, SCENE_W, 22);
+        if (lt < 1.2) sprAt(c, kuroSpr().stand[0], 160, 130, 1.6);
+        else {
+          if (lt < 1.5) { c.fillStyle = '#fff'; c.fillRect(0, 0, SCENE_W, SCENE_H); }
+          sprAt(c, BOSS_SPR.shogun[lt % 1 < 0.5 ? 'a' : 'b'][0], 160, 132, 0.95);
+          for (let i = 0; i < 5; i++) {   // the five scrolls fly off
+            const k = Math.max(0, lt - 1.6 - i * 0.25);
+            sceneScroll(c, 160 + (i - 2) * 22 + k * (40 + i * 14), 90 - k * 40 - (k > 0 ? Math.sin(k * 6 + i) * 4 : 0));
+          }
+        }
+        c.fillStyle = `rgba(30,10,60,${dark * 0.45})`; c.fillRect(0, 0, SCENE_W * dark, SCENE_H);   // the shadow spreads
+      }],
+      [9, 13.5, lt => {
+        const g = c.createLinearGradient(0, 0, 0, SCENE_H); g.addColorStop(0, '#ff9a8b'); g.addColorStop(1, '#ffe0b5');
+        c.fillStyle = g; c.fillRect(0, 0, SCENE_W, SCENE_H);
+        c.fillStyle = '#5fbf4a'; c.fillRect(0, 128, SCENE_W, 22);
+        c.fillStyle = '#c9a77a'; c.fillRect(0, 128, SCENE_W, 6);
+        c.fillStyle = '#f1e0c5'; c.fillRect(8, 60, 70, 68); c.fillStyle = '#7b1610'; c.fillRect(0, 50, 86, 12);   // the dojo
+        sprAt(c, SENSEI_SPR.a[0], 60, 140, 1.1);
+        const walk = Math.max(0, lt - 1), x = 110 + walk * 50;
+        sprAt(c, SPR[walk > 0 && lt % 0.5 < 0.25 ? 'walkA' : 'stand'][0], x, 130, 1.4);
+      }],
+    ]);
+  },
+};
 
 // ---------------------------------------------------------------- fact book
 let fbAt = 0;
