@@ -1047,7 +1047,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
   const doorAt = def.n > 6 ? 4 : 3;
   flat(10);
   L.squads = []; L.steps = [];
-  const feedAt = Math.floor(def.n / 2), stepsAt = [1, def.n - 2];
+  const feedAt = Math.floor(def.n / 2), stepsAt = [1];   // one set of stepping stones per level
   for (let i = 0; i < def.n; i++) {
     if (i === feedAt) {   // one hungry animal per level, mid-way, with three numbered foods floating ahead of it
       const s0 = flat(11), q = L.gen(), [kind, food] = ANIMALS[def.w * 3 + def.k] || ANIMALS[0];
@@ -1537,6 +1537,21 @@ const PET_SPR = {
 };
 
 // Bosses face left (toward the hero). Two frames each, drawn at 4x so they tower over the hero.
+// The Shogun's sheet is kept so the story scenes can draw him at 1 pixel per cell.
+const SHOGUN_SHEET = makeFrames(26, 26, { a: '#3d2466', A: '#5a3a8f', y: '#ffd23f', Y: '#c99a1a', m: '#c0182f', M: '#7a0a18', g: '#ffe14a', w: '#f4f4f4', h: '#1d1033', s: '#dfe6ee' }, ({ P, R, E, L }, f) => {
+  L(19, 23, 24, 12, 's'); P(19, 22, 'Y');
+  const s = f ? 1 : 0;
+  R(8 - s, 19, 4, 4, 'h'); R(14 + s, 19, 4, 4, 'h'); R(7 - s, 23, 5, 1, 'h'); R(14 + s, 23, 5, 1, 'h');
+  R(8, 12, 10, 7, 'A'); for (let y = 13; y < 19; y += 2) R(8, y, 10, 1, 'a'); R(8, 17, 10, 1, 'y');
+  R(3, 12, 5, 4, 'a'); R(18, 12, 5, 4, 'a'); R(3, 13, 5, 1, 'y'); R(18, 13, 5, 1, 'y');
+  R(4, 16, 3, 3, 'a'); R(19, 16, 3, 3, 'a'); R(4, 19, 3, 1, 'h'); R(19, 19, 3, 1, 'h');
+  E(13, 6, 6.2, 4.2, 'a'); R(6, 8, 14, 2, 'A'); R(6, 9, 14, 1, 'y');
+  [[7, 3], [7, 2], [8, 1], [9, 1], [10, 0], [11, 0], [15, 0], [16, 0], [17, 1], [18, 1], [19, 2], [19, 3]].forEach(([x, y]) => P(x, y, 'y'));
+  P(13, 1, 'y'); P(13, 2, 'Y'); P(12, 2, 'y'); P(14, 2, 'y');
+  R(10, 7, 6, 5, 'm'); R(10, 7, 6, 1, 'M');
+  P(10, 8, 'g'); P(11, 8, 'g'); P(14, 8, 'g'); P(15, 8, 'g');
+  R(11, 11, 4, 1, 'w'); P(12, 10, 'M'); P(13, 10, 'M');
+  }, 2);
 const BOSS_SPR = {
   kage: bake(makeFrames(26, 26, { d: '#2a2838', D: '#4a4762', m: '#b8c0cc', M: '#7d8797', r: '#ff2a4a', p: '#6b2fa3', P: '#9b59d6', b: '#c0392b', g: '#eef3f8', y: '#ffd23f', h: '#6b4423', f: '#1b1926' }, ({ P, R, E, L }, f) => {
     const s = f ? 1 : 0;
@@ -1584,20 +1599,7 @@ const BOSS_SPR = {
     R(9, 9, 6, 2, 'B'); P(10, 9, 't'); P(13, 9, 't');
     if (f) { R(11, 10, 2, 1, 'r'); }
   }, 2), ['a', 'b'], 4),
-  shogun: bake(makeFrames(26, 26, { a: '#3d2466', A: '#5a3a8f', y: '#ffd23f', Y: '#c99a1a', m: '#c0182f', M: '#7a0a18', g: '#ffe14a', w: '#f4f4f4', h: '#1d1033', s: '#dfe6ee' }, ({ P, R, E, L }, f) => {
-    L(19, 23, 24, 12, 's'); P(19, 22, 'Y');
-    const s = f ? 1 : 0;
-    R(8 - s, 19, 4, 4, 'h'); R(14 + s, 19, 4, 4, 'h'); R(7 - s, 23, 5, 1, 'h'); R(14 + s, 23, 5, 1, 'h');
-    R(8, 12, 10, 7, 'A'); for (let y = 13; y < 19; y += 2) R(8, y, 10, 1, 'a'); R(8, 17, 10, 1, 'y');
-    R(3, 12, 5, 4, 'a'); R(18, 12, 5, 4, 'a'); R(3, 13, 5, 1, 'y'); R(18, 13, 5, 1, 'y');
-    R(4, 16, 3, 3, 'a'); R(19, 16, 3, 3, 'a'); R(4, 19, 3, 1, 'h'); R(19, 19, 3, 1, 'h');
-    E(13, 6, 6.2, 4.2, 'a'); R(6, 8, 14, 2, 'A'); R(6, 9, 14, 1, 'y');
-    [[7, 3], [7, 2], [8, 1], [9, 1], [10, 0], [11, 0], [15, 0], [16, 0], [17, 1], [18, 1], [19, 2], [19, 3]].forEach(([x, y]) => P(x, y, 'y'));
-    P(13, 1, 'y'); P(13, 2, 'Y'); P(12, 2, 'y'); P(14, 2, 'y');
-    R(10, 7, 6, 5, 'm'); R(10, 7, 6, 1, 'M');
-    P(10, 8, 'g'); P(11, 8, 'g'); P(14, 8, 'g'); P(15, 8, 'g');
-    R(11, 11, 4, 1, 'w'); P(12, 10, 'M'); P(13, 10, 'M');
-  }, 2), ['a', 'b'], 4),
+  shogun: bake(SHOGUN_SHEET, ['a', 'b'], 4),
 };
 
 // ---------------------------------------------------------------- audio
@@ -2466,6 +2468,17 @@ function stepsOpts(st) {   // three stones for the next number
   st.opts = vals.map((val, j) => ({ x: stepX(st, st.k + 1), top: GR * T - STONE_TOPS[j] * T, val, state: 'idle', t: 0 }));
   st.shownAt = G.time;
 }
+// Each answer has a time limit (a bar over the stones). Too slow and every stone crumbles: back to the start, new pattern.
+const STEP_TIME = () => (prog.easy ? 12 : 8) * 60;
+function stepsCrumble(st) {
+  const c = G.cross, ans = st.seq[st.k + 1];
+  G.mistakes++; G.streak = 0; missed(stepsQ(st)); sfx.wrong(); st.missed = true;
+  [...st.path, ...st.opts].forEach(o => burst(o.x, o.top + T / 2, '#8a7f78', 10, 4));
+  shake(5, 2); tone(160, 0.35, 'sawtooth', 0.05, 60);
+  floatText(P.x + P.w / 2, P.y - 40, `Too slow! ${st.seq.slice(0, st.k + 1).join(', ')}, ${ans}`, '#ff9a3c', 24);
+  st.path = []; st.opts = [];
+  if (c) { G.cross = null; P.onGround = false; P.vy = 1; }
+}
 const stepsQ = st => ({ op: 'room', missing: true, text: `${st.seq.slice(0, st.k + 1).join(', ')}, ?`, ans: st.seq[st.k + 1] });
 function crossHop(x1, feet1, done, dur = 22) {
   const p = P; G.cross.hop = { x0: p.x + p.w / 2, y0: p.y + p.h, x1, y1: feet1, t: 0, dur, arc: 46 + Math.max(0, p.y + p.h - feet1) * 0.5, done };
@@ -2493,6 +2506,7 @@ function crossTick() {
     return;
   }
   p.onGround = true;
+  if (st.opts.length && st.opts.every(o => o.state === 'idle') && G.time - st.shownAt > STEP_TIME()) { stepsCrumble(st); return; }
   if (keys.left && !st.k) {   // changed your mind on the first stone: hop back to the edge
     st.opts = [];
     crossHop((st.c0 - 1.5) * T, GR * T, () => { G.cross = null; });
@@ -2570,6 +2584,12 @@ function drawSteps() {
       sq(o.x, o.top, o.val, c1, c2, '#ffffff', o.state === 'fade' ? 1 - o.t / 20 : 1);
       if (!isTouch && o.state === 'idle') keyTag(ANS_KEYS(3)[j], o.x + T / 2 - 2, o.top - 2);
     });
+    if (G.cross && G.cross.st === st && !G.cross.hop && st.opts.length && st.opts.every(o => o.state === 'idle')) {   // the time bar
+      const left = clamp(1 - (G.time - st.shownAt) / STEP_TIME(), 0, 1), bx = stepX(st, st.k + 1) - T, by = GR * T - STONE_TOPS[2] * T - 20;
+      ctx.fillStyle = 'rgba(0,0,0,.45)'; rrect(bx - 2, by - 2, 2 * T + 4, 12, 6); ctx.fill();
+      ctx.fillStyle = left > 0.5 ? '#3ae374' : left > 0.25 ? '#ffd23f' : (G.time % 20 < 10 ? '#ff4d4d' : '#ff9a9a');
+      if (left > 0) { rrect(bx, by, 2 * T * left, 8, 4); ctx.fill(); }
+    }
     for (let k = st.k + 2; k < st.n; k++) sq(stepX(st, k), GR * T - T, '?', W.stair[0], W.stair[1], W.stair[2], 0.35);   // blocks still to come
   }
 }
@@ -5985,12 +6005,13 @@ function drawParticles() {
 }
 
 // ---------------------------------------------------------------- drawing: Sensei's tip
-const SENSEI_SPR = bake(makeFrames(18, 18, { s: '#f2c49b', S: '#d9a273', w: '#f4f4f4', W: '#cfcfd8', e: '#16121f', g: '#4a5a7a', G: '#6b7fa8' }, ({ P, R, E }) => {
+const SENSEI_SHEET = makeFrames(18, 18, { s: '#f2c49b', S: '#d9a273', w: '#f4f4f4', W: '#cfcfd8', e: '#16121f', g: '#4a5a7a', G: '#6b7fa8' }, ({ P, R, E }) => {
   R(3, 12, 12, 6, 'g'); R(4, 12, 2, 6, 'G');
   E(9, 6, 4.2, 4.4, 's'); P(7, 3, 'w'); P(8, 3, 'S');
-  R(5, 5, 3, 1, 'w'); R(10, 5, 3, 1, 'w'); P(6, 6, 'e'); P(11, 6, 'e');
+  R(5, 5, 3, 1, 'w'); R(10, 5, 3, 1, 'w'); R(6, 6, 1, 2, 'e'); R(11, 6, 1, 2, 'e');
   E(9, 11, 3.6, 3.4, 'w'); E(9, 14, 2.2, 2.6, 'W'); R(7, 8, 4, 1, 'w');
-}, 1), ['a'], 3);
+}, 1);
+const SENSEI_SPR = bake(SENSEI_SHEET, ['a'], 3);
 function wrapLines(txt, maxW) {
   const lines = []; let cur = '';
   for (const w of txt.split(' ')) {
@@ -6579,18 +6600,26 @@ const bossURL = {};
 function bossImg(kind) { if (!bossURL[kind]) bossURL[kind] = BOSS_SPR[kind].a[0].toDataURL(); return `<img class="pix bossimg" src="${bossURL[kind]}" alt="">`; }
 
 // ---------------------------------------------------------------- story scenes
-// Each story page can show a little picture book: a few slides of pixel-art scenery drawn with the
-// game's own sprites, each with one short caption. Slides move on by themselves; a tap skips ahead.
-const SW = 384, SH = 216, SLIDE_LEN = 5.5;
+// Each story page can show a little picture book: a few slides, each with one short caption. Like an old
+// console, every scene is drawn on ONE pixel grid (SW × SH art pixels) and blown up by a whole number,
+// so every pixel on screen is the same size. Sprites are drawn at 1 pixel per cell and never scaled,
+// there is no zooming, and scenery is whole pixels with flat colours (no smooth gradients).
+// Rules that keep it looking right: eyes are 1 × 2 pixels on everyone; mountains and hills always
+// reach down to the ground (fill to the bottom); draw back to front.
+const SW = 192, SH = 108, SLIDE_LEN = 5.5;
 let sceneRAF = 0;
-const sceneHTML = name => `<div class="scenebox"><canvas class="scene" data-scene="${name}" width="${SW}" height="${SH}"></canvas><div class="scenecap"></div><div class="scenedots"></div></div>`;
+const sceneHTML = name => `<div class="scenebox"><canvas class="scene" data-scene="${name}"></canvas><div class="scenecap"></div><div class="scenedots"></div></div>`;
 function runScenes() {
   cancelAnimationFrame(sceneRAF);
   const boxes = [...document.querySelectorAll('#msgBody .scenebox')];
   if (!boxes.length) return;
   const st = boxes.map(box => {
     const cv = box.querySelector('canvas'), slides = SCENES[cv.dataset.scene];
-    const s = { box, cv, slides, idx: 0, t0: performance.now(), shown: -1 };
+    // whole-number blow-up that fits the box, in real screen pixels
+    const dpr = window.devicePixelRatio || 1, k = Math.max(1, Math.floor((box.clientWidth || 360) * dpr / SW));
+    cv.width = SW * k; cv.height = SH * k; cv.style.width = `${SW * k / dpr}px`; cv.style.height = `${SH * k / dpr}px`;
+    const art = document.createElement('canvas'); art.width = SW; art.height = SH;
+    const s = { box, cv, k, art, slides, idx: 0, t0: performance.now(), shown: -1 };
     cv.onclick = () => { s.idx = (s.idx + 1) % slides.length; s.t0 = performance.now(); };
     box.querySelector('.scenedots').innerHTML = slides.map(() => '<i></i>').join('');
     return s;
@@ -6600,148 +6629,38 @@ function runScenes() {
     for (const s of st) {
       let lt = Math.max(0, (now - s.t0) / 1000);
       if (lt >= SLIDE_LEN) { s.idx = (s.idx + 1) % s.slides.length; s.t0 = now; lt = 0; }
-      const sl = s.slides[s.idx], c = s.cv.getContext('2d');
+      const sl = s.slides[s.idx];
       if (s.shown !== s.idx) {
         s.shown = s.idx;
         s.box.querySelector('.scenecap').innerHTML = sl.cap;
         [...s.box.querySelectorAll('.scenedots i')].forEach((d, i) => d.classList.toggle('on', i === s.idx));
       }
-      c.imageSmoothingEnabled = false; c.save();
-      sl.draw(c, Math.floor(lt * 12) / 12, lt / SLIDE_LEN);
-      c.restore();
-      const edge = Math.min(lt, SLIDE_LEN - lt);
-      if (edge < 0.35) { c.fillStyle = `rgba(0,0,0,${1 - edge / 0.35})`; c.fillRect(0, 0, SW, SH); }
+      const a = s.art.getContext('2d');
+      a.imageSmoothingEnabled = false; a.save(); a.clearRect(0, 0, SW, SH);
+      sl.draw(a, Math.floor(lt * 12) / 12, lt / SLIDE_LEN);
+      a.restore();
+      const edge = Math.min(lt, SLIDE_LEN - lt);   // fade through black, in 4 steps
+      if (edge < 0.4) { a.fillStyle = `rgba(0,0,0,${Math.ceil((1 - edge / 0.4) * 4) / 4})`; a.fillRect(0, 0, SW, SH); }
+      const c = s.cv.getContext('2d'); c.imageSmoothingEnabled = false;
+      c.drawImage(s.art, 0, 0, SW * s.k, SH * s.k);
     }
     sceneRAF = requestAnimationFrame(step);
   };
   sceneRAF = requestAnimationFrame(step);
 }
 
-// ---- scenery kit (everything snaps to whole pixels so it reads as pixel art)
-const rnd = (seed, i) => hash(seed * 97.3 + i * 13.1);
-function bands(c, cols, y0 = 0, y1 = SH) {   // a stepped sky: one flat band per colour
-  const n = cols.length, h = (y1 - y0) / n;
-  cols.forEach((col, i) => { c.fillStyle = col; c.fillRect(0, Math.floor(y0 + i * h), SW, Math.ceil(h) + 1); });
-}
-function disc(c, x, y, r, col) {
-  c.fillStyle = col;
-  for (let dy = -r; dy <= r; dy++) { const w = Math.floor(Math.sqrt(r * r - dy * dy)); c.fillRect(Math.round(x - w), Math.round(y + dy), w * 2 + 1, 1); }
-}
-function ridge(c, seed, base, amp, col, off = 0, step = 3, jag = 1) {   // a range of hills or mountains
-  c.fillStyle = col;
-  for (let x = 0; x < SW; x += step) {
-    const u = (x + off) / 40;
-    const y = base - amp * (0.55 * Math.sin(u * 0.9 + seed) + 0.3 * Math.sin(u * 2.3 + seed * 2) + 0.15 * jag * Math.sin(u * 6.1 + seed * 3));
-    c.fillRect(x, Math.round(y), step, SH - Math.round(y));
-  }
-}
-function peaks(c, list, col, snow) {   // sharp mountains: [x, baseY, halfWidth, height]
-  for (const [x, by, hw, h] of list) for (let dy = 0; dy < h; dy += 2) {
-    const w = Math.round(hw * dy / h);
-    c.fillStyle = snow && dy < h * 0.28 ? snow : col;
-    c.fillRect(Math.round(x - w), Math.round(by - h + dy), w * 2 + 1, 2);
-  }
-}
-function starfield(c, n, seed, h, t) {
-  for (let i = 0; i < n; i++) {
-    const x = Math.floor(rnd(seed, i) * SW), y = Math.floor(rnd(seed + 1, i) * h), tw = Math.sin(t * 3 + i) > 0.6;
-    c.fillStyle = tw ? '#ffffff' : 'rgba(255,255,255,.55)'; c.fillRect(x, y, tw && i % 5 === 0 ? 2 : 1, tw && i % 5 === 0 ? 2 : 1);
-  }
-}
-function cloud(c, x, y, s, col) { disc(c, x, y, 6 * s, col); disc(c, x + 8 * s, y - 3 * s, 8 * s, col); disc(c, x + 17 * s, y, 6 * s, col); c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), Math.round(17 * s), Math.round(6 * s)); }
-function pine(c, x, by, h, col, hi, snow) {
-  c.fillStyle = '#4a3020'; c.fillRect(Math.round(x - 1), Math.round(by - h * 0.2), 3, Math.round(h * 0.2));
-  for (let k = 0; k < 3; k++) {
-    const top = by - h + k * h * 0.25, tierH = h * 0.42, hw = h * (0.2 + k * 0.08);
-    for (let dy = 0; dy < tierH; dy += 2) {
-      const w = Math.round(hw * dy / tierH);
-      c.fillStyle = snow && dy < 4 ? snow : col; c.fillRect(Math.round(x - w), Math.round(top + dy), w + 1, 2);
-      c.fillStyle = snow && dy < 4 ? snow : hi; c.fillRect(Math.round(x + 1), Math.round(top + dy), w, 2);
-    }
-  }
-}
-function scCherry(c, x, by, s, t) {
-  c.fillStyle = '#5a3424'; c.fillRect(Math.round(x - 3 * s), Math.round(by - 34 * s), Math.round(6 * s), Math.round(34 * s));
-  c.fillRect(Math.round(x), Math.round(by - 30 * s), Math.round(14 * s), Math.round(3 * s));
-  c.fillRect(Math.round(x - 14 * s), Math.round(by - 26 * s), Math.round(14 * s), Math.round(3 * s));
-  [[0, -44, 16, '#f7a8c4'], [-16, -34, 12, '#f7a8c4'], [16, -36, 13, '#f7a8c4'], [-6, -50, 10, '#ffc4d8'], [8, -46, 9, '#ffc4d8'], [-14, -38, 6, '#ffc4d8'], [4, -38, 7, '#e97fa6']]
-    .forEach(([dx, dy, r, col]) => disc(c, x + dx * s, by + dy * s + Math.sin(t * 1.5 + dx) * 0.6, r * s, col));
-}
-function petals(c, t, n, seed, x0 = 0, w = SW) {
-  for (let i = 0; i < n; i++) {
-    const sp = 14 + rnd(seed, i) * 16, x = x0 + ((rnd(seed + 2, i) * w + t * sp * 0.8 + Math.sin(t * 2 + i) * 6) % w), y = (rnd(seed + 3, i) * SH + t * sp) % SH;
-    c.fillStyle = i % 3 ? '#ffc4d8' : '#f7a8c4'; c.fillRect(Math.round(x), Math.round(y), 2, i % 2 + 1);
-  }
-}
-function scDojo(c, x, by, s = 1, night = false) {   // the family dojo: cream walls, red roof with turned-up eaves
-  const R = (dx, dy, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(x + dx * s), Math.round(by + dy * s), Math.round(w * s), Math.round(h * s)); };
-  R(-50, -6, 100, 6, '#7a6a5a');                                  // stone base
-  R(-44, -44, 88, 38, night ? '#9a8f80' : '#f1e0c5');             // walls
-  for (const dx of [-44, -16, 14, 40]) R(dx, -44, 4, 38, '#6e4627');   // posts
-  R(-12, -32, 24, 26, night ? '#ffd27a' : '#e8d3a8');             // sliding door, lit at night
-  R(-1, -32, 2, 26, '#6e4627');
-  R(-36, -36, 16, 12, night ? '#ffcf6a' : '#d9c39a'); R(20, -36, 16, 12, night ? '#ffcf6a' : '#d9c39a');
-  for (let k = 0; k < 14; k++) R(-58 + k * 0.5, -48 - k, 116 - k, 1, k < 2 ? '#5a0d08' : '#a3241a');   // roof, wide at the bottom
-  R(-62, -50, 8, 3, '#a3241a'); R(54, -50, 8, 3, '#a3241a'); R(-64, -53, 4, 3, '#a3241a'); R(60, -53, 4, 3, '#a3241a');   // eaves turn up
-  R(-30, -66, 60, 4, '#5a0d08');
-  R(-6, -60, 12, 9, '#3a2a20'); R(-4, -58, 8, 5, '#ffd23f');      // a little sign
-}
-function torii(c, x, by, s, col = '#d63a2f') {
-  const R = (dx, dy, w, h, k = col) => { c.fillStyle = k; c.fillRect(Math.round(x + dx * s), Math.round(by + dy * s), Math.round(w * s), Math.round(h * s)); };
-  R(-14, -30, 4, 30); R(10, -30, 4, 30); R(-20, -34, 40, 4, '#1a1a1a'); R(-17, -31, 34, 3); R(-14, -24, 28, 3);
-}
-// Sensei, standing: his portrait bust on a long grey robe
-function senseiFig(c, x, by, sc = 1, flip = false) {
-  const b = SENSEI_SPR.a[0], w = 30 * sc, h = 24 * sc;
-  c.fillStyle = '#120f1a'; c.fillRect(Math.round(x - w / 2 - 1), Math.round(by - h - 1), Math.round(w + 2), Math.round(h + 1));
-  c.fillStyle = '#4a5a7a'; c.fillRect(Math.round(x - w / 2), Math.round(by - h), Math.round(w), Math.round(h));
-  c.fillStyle = '#6b7fa8'; c.fillRect(Math.round(x - w / 2 + 3 * sc), Math.round(by - h), Math.round(5 * sc), Math.round(h));
-  c.fillStyle = '#d9c39a'; c.fillRect(Math.round(x - w / 2), Math.round(by - h + 6 * sc), Math.round(w), Math.round(3 * sc));
-  sprAt(c, b, x, by - h + 8 * sc, sc * 0.95, flip);
-}
-function sprAt(c, img, cx, by, sc = 1, flip = false) {   // a baked sprite with its feet at (cx, by)
-  const w = Math.round(img.width * sc), h = Math.round(img.height * sc);
-  c.save(); c.translate(Math.round(cx), 0); if (flip) c.scale(-1, 1);
-  c.drawImage(img, Math.round(-w / 2), Math.round(by - h), w, h); c.restore();
-}
-function sceneScroll(c, x, y, glow) {
-  if (glow) disc(c, x, y, 9, 'rgba(255,220,120,.25)');
-  c.fillStyle = '#120f1a'; c.fillRect(Math.round(x - 10), Math.round(y - 6), 20, 12);
-  c.fillStyle = '#f4e4bc'; c.fillRect(Math.round(x - 7), Math.round(y - 4), 14, 8);
-  c.fillStyle = '#8b5a2b'; c.fillRect(Math.round(x - 9), Math.round(y - 5), 3, 10); c.fillRect(Math.round(x + 6), Math.round(y - 5), 3, 10);
-  c.fillStyle = '#e63946'; c.fillRect(Math.round(x - 1), Math.round(y - 4), 2, 8);
-}
-function sceneBaby(c, x, y) {
-  c.fillStyle = '#120f1a'; c.fillRect(x - 8, y - 6, 16, 12);
-  c.fillStyle = '#f4f4f4'; c.fillRect(x - 7, y - 5, 14, 10);
-  c.fillStyle = '#f6c79c'; c.fillRect(x + 1, y - 4, 5, 5);
-  c.fillStyle = '#16121f'; c.fillRect(x + 2, y - 3, 1, 1); c.fillRect(x + 4, y - 3, 1, 1);
-}
-function scGlow(c, x, y, r, col) { const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2); }
-function birds(c, t, n, seed, y0) {
-  c.fillStyle = '#4a3040';
-  for (let i = 0; i < n; i++) {
-    const x = (rnd(seed, i) * SW + t * (10 + i * 2)) % (SW + 20) - 10, y = y0 + rnd(seed + 1, i) * 30, up = (t * 4 + i) % 1 < 0.5;
-    c.fillRect(Math.round(x - 3), Math.round(y + (up ? -1 : 0)), 2, 1); c.fillRect(Math.round(x - 1), Math.round(y), 2, 1); c.fillRect(Math.round(x + 1), Math.round(y + (up ? -1 : 0)), 2, 1);
-  }
-}
-function tufts(c, y, col, seed, t) {   // grass in the very front of the shot
-  c.fillStyle = col;
-  for (let i = 0; i < 26; i++) { const x = Math.floor(rnd(seed, i) * SW), h = 4 + Math.floor(rnd(seed + 1, i) * 7), sway = Math.sin(t * 2 + i) > 0.3 ? 1 : 0; c.fillRect(x, y - h, 2, h); c.fillRect(x + 2 + sway, y - h + 2, 2, h - 2); c.fillRect(x - 2, y - h + 3, 2, h - 3); }
-}
-function branch(c, t, right = true) {   // a cherry branch reaching into the top corner
-  const x0 = right ? SW : 0, d = right ? -1 : 1;
-  c.fillStyle = '#4a2a1c'; for (let k = 0; k < 90; k += 2) c.fillRect(Math.round(x0 + d * k), Math.round(6 + k * 0.18), 2, 4);
-  [[20, 10, 9], [44, 16, 11], [70, 20, 8], [8, 16, 7], [58, 10, 6]].forEach(([k, y, r], i) => {
-    scDisc2(c, x0 + d * k, y + Math.sin(t * 1.3 + i) * 0.7, r, i % 2 ? '#ffc4d8' : '#f7a8c4');
-  });
-}
-const scDisc2 = (c, x, y, r, col) => disc(c, x, y, r, col);
-// Kuro without his mask: the Shadow Shogun's own body, purple and gold, with a boy's face, a black
-// topknot and a red headband instead of the horned helmet and mask (a wooden practice sword, too).
-// Same grid and scale as BOSS_SPR.shogun, so putting the mask on changes only the head. Faces left.
-let KURO_SPR = null;
-const kuroSpr = () => KURO_SPR || (KURO_SPR = bake(makeFrames(26, 26, { a: '#3d2466', A: '#5a3a8f', y: '#ffd23f', Y: '#c99a1a', h: '#1d1033', H: '#16121f', s: '#f2c39a', S: '#d99b72', r: '#e63946', R: '#a91d2b', e: '#16121f', w: '#b0794a' }, ({ P, R, E, L }, f) => {
+// ---- sprites at 1 pixel per cell (made on first use)
+const SCS = {};
+const scSpr = {
+  kai: () => SCS.kai || (SCS.kai = bake(makeFrames(16, 16, KAI_PAL, drawKai, 3), ['stand', 'walkA', 'jump'], 1)),
+  sensei: () => SCS.sensei || (SCS.sensei = bake(SENSEI_SHEET, ['a'], 1)),
+  shogun: () => SCS.shogun || (SCS.shogun = bake(SHOGUN_SHEET, ['a', 'b'], 1)),
+  kuro: () => SCS.kuro || (SCS.kuro = bake(KURO_SHEET(), ['a', 'b'], 1)),
+};
+// Kuro without his mask: the Shadow Shogun's own body (same grid, same pixels), with a boy's face, a black
+// topknot and a red headband instead of the horned helmet and mask, and a wooden practice sword. Faces left.
+let KURO_S = null;
+const KURO_SHEET = () => KURO_S || (KURO_S = makeFrames(26, 26, { a: '#3d2466', A: '#5a3a8f', y: '#ffd23f', Y: '#c99a1a', h: '#1d1033', H: '#16121f', s: '#f2c39a', S: '#d99b72', r: '#e63946', R: '#a91d2b', e: '#16121f', W: '#ffffff', w: '#b0794a' }, ({ P, R, E, L }, f) => {
   L(19, 23, 24, 12, 'w'); P(19, 22, 'Y');
   const st = f ? 1 : 0;
   R(8 - st, 19, 4, 4, 'h'); R(14 + st, 19, 4, 4, 'h'); R(7 - st, 23, 5, 1, 'h'); R(14 + st, 23, 5, 1, 'h');
@@ -6751,97 +6670,185 @@ const kuroSpr = () => KURO_SPR || (KURO_SPR = bake(makeFrames(26, 26, { a: '#3d2
   E(13, 6, 5.2, 4.6, 'H'); R(12, 0, 3, 2, 'H'); R(11, 1, 5, 1, 'H');                 // hair and topknot
   R(9, 6, 7, 6, 's'); R(15, 7, 1, 4, 'S'); R(9, 11, 6, 1, 'S');                     // face (turned left)
   R(8, 4, 11, 2, 'r'); R(8, 5, 11, 1, 'R'); P(19, 5, 'r'); P(20, 6, 'r'); P(21, 7, 'R');   // red headband, tails behind
-  P(10, 8, 'e'); P(13, 8, 'e'); P(10, 7, 'H'); P(13, 7, 'H'); P(11, 10, 'S'); P(12, 10, 'S');
-}, 2), ['a', 'b'], 4));
-const walkF = t => (t % 0.5 < 0.25 ? 'a' : 'b');
-// a slow camera: zoom from 1 to z around (fx, fy) over the slide
-function camZoom(c, p, z, fx, fy) { const k = 1 + (z - 1) * p; c.translate(fx, fy); c.scale(k, k); c.translate(-fx, -fy); }
+  R(10, 7, 1, 2, 'e'); R(11, 7, 1, 2, 'W'); R(13, 7, 1, 2, 'e'); R(14, 7, 1, 2, 'W');      // eyes: 1 × 2, like Kai's
+  P(11, 10, 'S'); P(12, 10, 'S');
+}, 2));
+function sPut(c, img, cx, by, flip = false) {   // a sprite with its feet at (cx, by), never scaled
+  const x = Math.round(cx - img.width / 2), y = Math.round(by - img.height);
+  if (!flip) { c.drawImage(img, x, y); return; }
+  c.save(); c.translate(x + img.width, y); c.scale(-1, 1); c.drawImage(img, 0, 0); c.restore();
+}
+const walkF = t => (t % 0.5 < 0.25 ? 1 : 0);
+
+// ---- scenery kit: whole pixels, flat colours
+const rnd = (seed, i) => hash(seed * 97.3 + i * 13.1);
+const dot = (c, x, y, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
+function bands(c, cols, y0 = 0, y1 = SH) {   // a stepped sky: one flat band per colour
+  const n = cols.length, h = (y1 - y0) / n;
+  cols.forEach((col, i) => dot(c, 0, Math.floor(y0 + i * h), SW, Math.ceil(h) + 1, col));
+}
+function disc(c, x, y, r, col) {
+  for (let dy = -r; dy <= r; dy++) { const w = Math.round(Math.sqrt(r * r - dy * dy)); dot(c, x - w, y + dy, w * 2 + 1, 1, col); }
+}
+function ring(c, x, y, r, col, alpha) { c.globalAlpha = alpha; disc(c, x, y, r, col); c.globalAlpha = 1; }
+function scHills(c, seed, base, amp, col, top) {   // rolling hills, filled all the way down
+  for (let x = 0; x < SW; x++) {
+    const u = x / 20, y = Math.round(base - amp * (0.6 * Math.sin(u * 0.9 + seed) + 0.4 * Math.sin(u * 2.1 + seed * 2)));
+    dot(c, x, y, 1, SH - y, col); if (top) dot(c, x, y, 1, 1, top);
+  }
+}
+function mountains(c, list, col, shade, snow) {   // pointy mountains [x, peakY, halfWidthAtGround]: filled to the bottom
+  for (const [mx, py, hw] of list) for (let y = py; y < SH; y++) {
+    const w = Math.round(hw * (y - py) / (SH - py));
+    dot(c, mx - w, y, w + 1, 1, col); dot(c, mx + 1, y, w, 1, shade);   // lit side, shaded side
+    if (snow && y < py + (SH - py) * 0.18) dot(c, mx - w, y, w * 2 + 1, 1, snow);
+  }
+}
+function starfield(c, n, seed, h, t) {
+  for (let i = 0; i < n; i++) dot(c, Math.floor(rnd(seed, i) * SW), Math.floor(rnd(seed + 1, i) * h), 1, 1, Math.sin(t * 3 + i) > 0.5 ? '#ffffff' : '#8a8ab8');
+}
+function pine(c, x, by, h, col, hi) {
+  dot(c, x, by - 3, 1, 3, '#4a3020');
+  for (let y = 0; y < h - 3; y++) { const w = Math.floor((y % Math.ceil(h / 3)) / 2) + Math.floor(y / Math.ceil(h / 3)); dot(c, x - w, by - h + y, w + 1, 1, col); dot(c, x + 1, by - h + y, w, 1, hi); }
+}
+function scCherry(c, x, by, t) {
+  dot(c, x - 1, by - 16, 3, 16, '#5a3424'); dot(c, x + 1, by - 13, 6, 1, '#5a3424'); dot(c, x - 7, by - 11, 6, 1, '#5a3424');
+  [[0, -21, 7, '#f7a8c4'], [-8, -16, 5, '#f7a8c4'], [8, -17, 6, '#f7a8c4'], [-3, -24, 4, '#ffc4d8'], [4, -22, 4, '#ffc4d8'], [2, -17, 3, '#e97fa6']]
+    .forEach(([dx, dy, r, col]) => disc(c, x + dx, by + dy, r, col));
+}
+function petals(c, t, n, seed) {
+  for (let i = 0; i < n; i++) {
+    const sp = 6 + rnd(seed, i) * 8, x = (rnd(seed + 2, i) * SW + t * sp * 0.8 + Math.sin(t * 2 + i) * 3) % SW, y = (rnd(seed + 3, i) * SH + t * sp) % SH;
+    dot(c, x, y, 1, 1, i % 3 ? '#ffc4d8' : '#f7a8c4');
+  }
+}
+function birds(c, t, n, seed, y0) {
+  for (let i = 0; i < n; i++) {
+    const x = Math.round((rnd(seed, i) * SW + t * (5 + i)) % (SW + 10) - 5), y = Math.round(y0 + rnd(seed + 1, i) * 14), up = (t * 4 + i) % 1 < 0.5 ? 1 : 0;
+    dot(c, x - 2, y - up, 1, 1, '#4a3040'); dot(c, x - 1, y, 1, 1, '#4a3040'); dot(c, x, y - up, 1, 1, '#4a3040');
+  }
+}
+function tufts(c, y, col, seed, t) {
+  for (let i = 0; i < 22; i++) { const x = Math.floor(rnd(seed, i) * SW), h = 2 + Math.floor(rnd(seed + 1, i) * 3), sway = Math.sin(t * 2 + i) > 0.3 ? 1 : 0; dot(c, x, y - h, 1, h, col); dot(c, x + 1 + sway, y - h + 1, 1, h - 1, col); }
+}
+function branch(c) {   // a cherry branch reaching into the top right corner
+  for (let k = 0; k < 46; k++) dot(c, SW - 1 - k, 3 + Math.floor(k * 0.18), 1, 2, '#4a2a1c');
+  [[10, 5, 4], [22, 8, 5], [36, 10, 4], [4, 8, 3], [29, 5, 3]].forEach(([k, y, r], i) => disc(c, SW - k, y, r, i % 2 ? '#ffc4d8' : '#f7a8c4'));
+}
+function scDojo(c, x, by, night = false) {   // the family dojo: cream walls, red roof with turned-up eaves (54 wide)
+  const R = (dx, dy, w, h, col) => dot(c, x + dx, by + dy, w, h, col);
+  R(-25, -3, 50, 3, '#7a6a5a');
+  R(-22, -22, 44, 19, night ? '#9a8f80' : '#f1e0c5');
+  for (const dx of [-22, -8, 7, 20]) R(dx, -22, 2, 19, '#6e4627');
+  R(-6, -16, 12, 13, night ? '#ffd27a' : '#e8d3a8'); R(0, -16, 1, 13, '#6e4627');
+  R(-18, -18, 8, 6, night ? '#ffcf6a' : '#d9c39a'); R(10, -18, 8, 6, night ? '#ffcf6a' : '#d9c39a');
+  for (let k = 0; k < 7; k++) R(-29 + k, -24 - k, 58 - 2 * k, 1, k === 0 ? '#5a0d08' : '#a3241a');
+  R(-31, -26, 3, 2, '#a3241a'); R(28, -26, 3, 2, '#a3241a');
+  R(-14, -32, 28, 2, '#5a0d08'); R(-3, -30, 6, 4, '#3a2a20'); R(-2, -29, 4, 2, '#ffd23f');
+}
+function torii(c, x, by, col = '#d63a2f') {
+  dot(c, x - 8, by - 18, 2, 18, col); dot(c, x + 6, by - 18, 2, 18, col);
+  dot(c, x - 12, by - 21, 24, 2, '#1a1a1a'); dot(c, x - 10, by - 19, 20, 2, col); dot(c, x - 8, by - 14, 16, 1, col);
+}
+function senseiFig(c, x, by, flip = false) {   // Sensei standing: his bust on a long grey robe (30 tall)
+  dot(c, x - 7, by - 13, 14, 13, '#120f1a'); dot(c, x - 6, by - 13, 12, 12, '#4a5a7a'); dot(c, x - 5, by - 13, 2, 12, '#6b7fa8');
+  dot(c, x - 6, by - 10, 12, 1, '#d9c39a'); dot(c, x - 4, by - 1, 3, 1, '#3b3552'); dot(c, x + 1, by - 1, 3, 1, '#3b3552');
+  sPut(c, scSpr.sensei().a[flip ? 1 : 0], x, by - 11, false);
+}
+function scroll(c, x, y) {   // 9 × 5
+  dot(c, x - 4, y - 2, 9, 5, '#120f1a'); dot(c, x - 3, y - 1, 7, 3, '#f4e4bc');
+  dot(c, x - 4, y - 2, 1, 5, '#8b5a2b'); dot(c, x + 4, y - 2, 1, 5, '#8b5a2b'); dot(c, x, y - 1, 1, 3, '#e63946');
+}
+function baby(c, x, y) {   // a bundled baby, 7 × 5
+  dot(c, x - 3, y - 2, 7, 5, '#120f1a'); dot(c, x - 2, y - 1, 5, 3, '#f4f4f4'); dot(c, x, y - 1, 2, 2, '#f6c79c'); dot(c, x + 1, y - 1, 1, 1, '#16121f');
+}
 
 const SCENES = {
   opening: [
-    { cap: 'Long ago, on a quiet hill, Sensei trained a boy named <b>Kuro</b>.', draw(c, t, p) {
-      bands(c, ['#ffb88a', '#ffc796', '#ffd6a2', '#ffe3b0', '#ffeec0'], 0, 120);
-      disc(c, 300, 92, 18, '#fff3c4');
-      ridge(c, 1, 104, 16, '#c98fa8', p * 10); ridge(c, 4, 122, 12, '#9c7aa0', p * 20);
-      ridge(c, 7, 150, 8, '#6fa85a', p * 40, 3, 0.3); c.fillStyle = '#5f9a4c'; c.fillRect(0, 170, SW, 46);
-      c.fillStyle = '#c9a77a'; c.fillRect(0, 186, SW, 30); c.fillStyle = '#b8966a'; for (let x = 0; x < SW; x += 12) c.fillRect(x + (x % 24 ? 0 : 6), 196, 5, 2);
-      const ox = -p * 18;
-      for (const [x, h] of [[200, 44], [222, 56], [330, 50], [352, 40], [372, 58]]) pine(c, x + ox * 0.6, 172, h, '#2f6a3a', '#3f8a4a');
-      birds(c, t, 5, 9, 30);
-      scCherry(c, 40 + ox, 188, 1.3, t);
-      scDojo(c, 270 + ox, 186, 1);
-      sceneBaby(c, 248 + ox, 176);   // a baby asleep on the porch
-      senseiFig(c, 120 + ox, 190, 1.1);
-      const hop = t % 1.6 > 1.1 ? Math.sin((t % 1.6 - 1.1) / 0.5 * Math.PI) * 14 : 0;   // the little hop
-      sprAt(c, kuroSpr().a[0], 168 + ox, 190 - hop, 0.6);
+    { cap: 'Long ago, on a quiet hill, Sensei trained a boy named <b>Kuro</b>.', draw(c, t) {
+      bands(c, ['#ffb88a', '#ffc796', '#ffd6a2', '#ffe3b0', '#ffeec0'], 0, 64);
+      disc(c, 150, 44, 8, '#fff3c4');
+      mountains(c, [[40, 34, 60], [120, 40, 60], [176, 30, 50]], '#c98fa8', '#b37f98', '#ffe8f0');
+      scHills(c, 4, 62, 4, '#9c7aa0');
+      scHills(c, 7, 74, 3, '#6fa85a', '#8fc87a');
+      for (const [x, h] of [[104, 18], [114, 24], [168, 22], [178, 16], [186, 26]]) pine(c, x, 86, h, '#2f6a3a', '#3f8a4a');
+      dot(c, 0, 86, SW, 22, '#5f9a4c'); dot(c, 0, 93, SW, 15, '#c9a77a');
+      for (let x = 0; x < SW; x += 7) dot(c, x + (x % 14 ? 0 : 3), 98, 3, 1, '#b8966a');
+      birds(c, t, 4, 9, 14);
+      scCherry(c, 18, 94, t);
+      scDojo(c, 140, 92);
+      baby(c, 126, 87);   // a baby asleep on the porch
+      senseiFig(c, 54, 96);
+      const hop = t % 1.6 > 1.1 ? Math.round(Math.sin((t % 1.6 - 1.1) / 0.5 * Math.PI) * 7) : 0;   // the little hop
+      sPut(c, scSpr.kuro().a[0], 78, 96 - hop);
       tufts(c, SH, '#4f8a3e', 5, t);
-      petals(c, t, 26, 3);
+      petals(c, t, 16, 3);
     } },
     { cap: 'Now an old picture hangs on the dojo wall: a tall boy holding a baby. Sensei never talks about it.', draw(c, t, p) {
-      camZoom(c, p, 1.25, 216, 80);
-      c.fillStyle = '#e8d6b4'; c.fillRect(0, 0, SW, SH);
-      c.fillStyle = '#dcc8a2'; for (let x = 0; x < SW; x += 24) c.fillRect(x, 0, 2, 168);
-      c.fillStyle = '#6e4627'; c.fillRect(0, 0, SW, 8); c.fillRect(0, 160, SW, 8); c.fillRect(30, 0, 10, 168); c.fillRect(350, 0, 10, 168);
-      c.fillStyle = '#c9b27a'; c.fillRect(0, 168, SW, 48); c.fillStyle = '#b39c66'; for (let x = 0; x < SW; x += 48) c.fillRect(x, 168, 2, 48);   // tatami
-      c.fillStyle = '#3a2416'; c.fillRect(166, 26, 104, 104); c.fillStyle = '#6e4627'; c.fillRect(170, 30, 96, 96);
-      c.fillStyle = '#f0dfb6'; c.fillRect(176, 36, 84, 84); c.fillStyle = '#e2cd9c'; c.fillRect(176, 96, 84, 24);
-      sprAt(c, kuroSpr().a[1], 214, 118, 0.8); sceneBaby(c, 232 + (t % 1.2 < 0.6 ? 0 : 1), 96);
-      c.fillStyle = '#4a3020'; c.fillRect(290, 140, 34, 6);   // a candle on a low shelf
-      c.fillStyle = '#f4f4f4'; c.fillRect(304, 126, 6, 14); c.fillStyle = t % 0.5 < 0.25 ? '#ffd23f' : '#ff9a3c'; c.fillRect(305, 119, 4, 7);
-      scGlow(c, 307, 122, 60, 'rgba(255,200,90,.25)');
-      senseiFig(c, 110, 200, 1.5, true);
-      if (p > 0.55) { c.fillStyle = '#9fd8ff'; c.fillRect(112, 112 + Math.round((p - 0.55) * 30), 2, 3); }   // a tear
+      dot(c, 0, 0, SW, SH, '#e8d6b4');
+      for (let x = 0; x < SW; x += 12) dot(c, x, 0, 1, 84, '#dcc8a2');
+      dot(c, 0, 0, SW, 4, '#6e4627'); dot(c, 0, 80, SW, 4, '#6e4627'); dot(c, 14, 0, 5, 84, '#6e4627'); dot(c, 174, 0, 5, 84, '#6e4627');
+      dot(c, 0, 84, SW, 24, '#c9b27a'); for (let x = 0; x < SW; x += 24) dot(c, x, 84, 1, 24, '#b39c66');
+      dot(c, 82, 10, 42, 42, '#3a2416'); dot(c, 84, 12, 38, 38, '#6e4627'); dot(c, 87, 15, 32, 32, '#f0dfb6'); dot(c, 87, 38, 32, 9, '#e2cd9c');   // the picture
+      sPut(c, scSpr.kuro().a[1], 101, 46); baby(c, 110, 33);
+      dot(c, 30, 30, 22, 2, '#4a3020'); dot(c, 30, 52, 22, 2, '#4a3020');   // a rack of practice staffs
+      for (let i = 0; i < 4; i++) dot(c, 33 + i * 5, 22, 2, 40, i % 2 ? '#b0794a' : '#8b5a2b');
+      dot(c, 134, 12, 14, 2, '#3a2416'); dot(c, 135, 14, 12, 30, '#f4ead5'); dot(c, 134, 44, 14, 2, '#3a2416');   // a hanging scroll: "love"
+      dot(c, 140, 18, 2, 4, '#16121f'); dot(c, 137, 22, 8, 1, '#16121f'); dot(c, 139, 25, 4, 6, '#16121f'); dot(c, 137, 33, 8, 1, '#16121f'); dot(c, 138, 36, 2, 4, '#16121f'); dot(c, 142, 36, 2, 4, '#16121f');
+      dot(c, 96, 88, 22, 5, '#a3241a'); dot(c, 96, 88, 22, 1, '#c8423a');   // a cushion where Sensei sits
+      dot(c, 144, 70, 18, 3, '#4a3020');   // a candle on a low shelf
+      ring(c, 153, 60, 16, '#ffd27a', 0.18); ring(c, 153, 60, 9, '#ffd27a', 0.2);
+      dot(c, 152, 63, 3, 7, '#f4f4f4'); dot(c, 152, t % 0.5 < 0.25 ? 59 : 60, 3, 4, t % 0.5 < 0.25 ? '#ffd23f' : '#ff9a3c');
+      senseiFig(c, 54, 104, true);
+      if (p > 0.5) dot(c, 56, 81 + Math.min(6, Math.floor((p - 0.5) * 24)), 1, 2, '#9fd8ff');   // a tear
     } },
     { cap: 'One night, Kuro took the five Magic Math Scrolls...', draw(c, t, p) {
-      c.fillStyle = '#141a3a'; c.fillRect(0, 0, SW, SH);
-      c.fillStyle = '#0d1230'; for (let x = 0; x < SW; x += 24) c.fillRect(x, 0, 2, 168);
-      c.fillStyle = '#2a2040'; c.fillRect(0, 168, SW, 48);
-      c.fillStyle = '#0a0d22'; c.fillRect(250, 30, 70, 70);
-      c.fillStyle = '#1d2a5a'; c.fillRect(254, 34, 62, 62); disc(c, 296, 56, 12, '#f4f1d0'); disc(c, 300, 52, 11, '#1d2a5a');
-      c.fillStyle = '#0a0d22'; c.fillRect(283, 34, 3, 62); c.fillRect(254, 63, 62, 3);
-      c.fillStyle = 'rgba(200,220,255,.10)'; for (let k = 0; k < 60; k++) c.fillRect(254 - k * 1.6, 96 + k * 1.2, 62, 2);   // moonbeam
-      c.fillStyle = '#4a2a1a'; c.fillRect(120, 120, 120, 10); c.fillRect(126, 130, 8, 38); c.fillRect(226, 130, 8, 38);   // the scroll shelf
+      dot(c, 0, 0, SW, SH, '#141a3a');
+      for (let x = 0; x < SW; x += 12) dot(c, x, 0, 1, 84, '#0d1230');
+      dot(c, 0, 84, SW, 24, '#2a2040');
+      dot(c, 126, 14, 36, 36, '#0a0d22'); dot(c, 128, 16, 32, 32, '#1d2a5a');
+      starfield(c, 0, 1, 0, t); disc(c, 148, 27, 6, '#f4f1d0'); disc(c, 150, 25, 5, '#1d2a5a');
+      dot(c, 143, 16, 1, 32, '#0a0d22'); dot(c, 128, 31, 32, 1, '#0a0d22');
+      c.globalAlpha = 0.12; for (let k = 0; k < 36; k++) dot(c, 128 - k, 48 + k, 32, 1, '#c8dcff'); c.globalAlpha = 1;   // moonlight on the floor
+      dot(c, 58, 62, 62, 4, '#4a2a1a'); dot(c, 60, 66, 3, 18, '#4a2a1a'); dot(c, 115, 66, 3, 18, '#4a2a1a');   // the scroll shelf
       const took = Math.min(5, Math.floor(Math.max(0, p - 0.45) * 14));
-      for (let i = took; i < 5; i++) sceneScroll(c, 140 + i * 20, 112, true);
-      const x = Math.min(150, 20 + t * 60);
-      sprAt(c, kuroSpr()[x < 150 ? walkF(t) : 'a'][1], x, 172, 0.7);
-      if (took) for (let i = 0; i < took; i++) sceneScroll(c, x + 8 + i * 4, 150 - i * 3, false);
+      for (let i = took; i < 5; i++) { ring(c, 68 + i * 11, 58, 5, '#ffe08a', 0.25); scroll(c, 68 + i * 11, 58); }
+      const x = Math.min(68, 10 + t * 30);
+      sPut(c, scSpr.kuro()[x < 68 ? (walkF(t) ? 'b' : 'a') : 'a'][1], x, 88);
+      for (let i = 0; i < took; i++) scroll(c, x + 4, 76 - i * 2);
     } },
     { cap: '...put on a dark mask and became the <b>Shadow Shogun</b>. His shadow spread over the land.', draw(c, t, p) {
-      c.fillStyle = '#0c0718'; c.fillRect(0, 0, SW, SH);
-      scGlow(c, 192, 110, 150, `rgba(120,60,200,${0.15 + p * 0.3})`);
-      c.fillStyle = '#1a1030'; c.fillRect(0, 176, SW, 40);
+      dot(c, 0, 0, SW, SH, '#0c0718'); starfield(c, 40, 4, 70, t);
+      disc(c, 96, 46, 26, '#e8e0c8'); disc(c, 96, 46, 24, '#f4eed8'); dot(c, 84, 38, 4, 3, '#e0d6b8'); dot(c, 104, 52, 5, 3, '#e0d6b8');   // a huge moon behind him
+      mountains(c, [[20, 70, 50], [170, 66, 60]], '#1a1030', '#140c26');
+      dot(c, 70, 86, 52, 22, '#1a1030'); dot(c, 74, 84, 44, 2, '#1a1030');   // the rock he stands on
+      dot(c, 0, 96, SW, 12, '#140c26');
       if (p < 0.38) {
-        sprAt(c, kuroSpr().a[0], 192, 180, 1.35);
-        const off = Math.round((1 - Math.min(1, p / 0.3)) * 110);   // the helmet and mask slide down onto his head
-        const img = BOSS_SPR.shogun.a[0], k = 1.35;   // only the helmet and mask (the top 12 of 26 rows)
-        c.drawImage(img, 0, 0, img.width, 48, Math.round(192 - img.width * k / 2), Math.round(180 - img.height * k - off), Math.round(img.width * k), Math.round(48 * k));
+        sPut(c, scSpr.kuro().a[0], 96, 86);
+        const img = scSpr.shogun().a[0], off = Math.round((1 - Math.min(1, p / 0.3)) * 40);   // the helmet and mask slide down onto him
+        c.drawImage(img, 0, 0, 26, 12, 83, 60 - off, 26, 12);
       } else {
-        if (p < 0.45) { c.fillStyle = '#ffffff'; c.fillRect(0, 0, SW, SH); }
-        sprAt(c, BOSS_SPR.shogun[t % 1 < 0.5 ? 'a' : 'b'][0], 192, 180, 1.35);
+        if (p < 0.43) dot(c, 0, 0, SW, SH, '#ffffff');
+        sPut(c, scSpr.shogun()[t % 1 < 0.5 ? 'a' : 'b'][0], 96, 86);
         const k = (p - 0.38) / 0.62;
-        for (let i = 0; i < 40; i++) {   // the shadow pours out over the land
-          const a = i / 40 * 6.28, r = 40 + k * 260 + Math.sin(i * 3 + t * 4) * 10;
-          scDisc2(c, 192 + Math.cos(a) * r, 120 + Math.sin(a) * r * 0.55, 10 + k * 14, `rgba(70,30,120,${0.55 - k * 0.25})`);
-        }
-        for (let i = 0; i < 5; i++) { const a = -2.6 + i * 0.55, r = 30 + k * 220; sceneScroll(c, 192 + Math.cos(a) * r, 100 + Math.sin(a) * r * 0.6, true); }
+        for (let i = 0; i < 24; i++) { const a = i / 24 * 6.28, r = 20 + k * 130 + Math.sin(i * 3 + t * 4) * 4; ring(c, Math.round(96 + Math.cos(a) * r), Math.round(72 + Math.sin(a) * r * 0.5), 5 + Math.round(k * 6), '#46207a', 0.6 - k * 0.3); }
+        for (let i = 0; i < 5; i++) { const a = -2.6 + i * 0.55, r = 14 + k * 110; scroll(c, Math.round(96 + Math.cos(a) * r), Math.round(56 + Math.sin(a) * r * 0.6)); }
       }
     } },
     { cap: 'Now Sensei sends you: <i>"Bring the scrolls home. And if you can, bring Kuro home too."</i>', draw(c, t, p) {
-      bands(c, ['#ff8f7a', '#ffa88a', '#ffc59c', '#ffdcb0', '#ffecc4'], 0, 165);
-      disc(c, 290, 132, 26 + p * 4, '#fff1b8');
-      for (let i = 0; i < 6; i++) { c.fillStyle = 'rgba(255,240,180,.25)'; c.fillRect(290 - 70 + i * 26, 0, 6, 120); }
-      peaks(c, [[250, 140, 50, 50], [330, 140, 60, 62], [190, 140, 40, 34]], '#a77aa0', '#ffe8f0');
-      ridge(c, 2, 150, 8, '#7a9a6a', 0, 3, 0.4);
-      c.fillStyle = '#5f9a4c'; c.fillRect(0, 160, SW, 56);
-      c.fillStyle = '#c9a77a';   // the path winds off toward the mountains
-      for (let y = 160; y < SH; y += 2) { const k = (y - 160) / 56, w = 6 + k * 70, cx = 290 - k * 140 + Math.sin(k * 3) * 20; c.fillRect(Math.round(cx - w / 2), y, Math.round(w), 2); }
-      birds(c, t, 4, 21, 40);
-      torii(c, 64, 200, 1.6);
-      senseiFig(c, 96, 206, 1.25);
-      const k = Math.max(0, p - 0.25) / 0.75, kx = 120 + k * 150 - Math.sin(k * 3) * 10, ky = 206 - k * 44;
-      sprAt(c, SPR[k > 0 ? walkF(t) : 'stand'][0], kx, ky, 1.2 - k * 0.8);
-      tufts(c, SH, '#4f8a3e', 8, t); branch(c, t); petals(c, t, 14, 6, 200, 184);
+      bands(c, ['#ff8f7a', '#ffa88a', '#ffc59c', '#ffdcb0', '#ffecc4'], 0, 80);
+      disc(c, 146, 62, 13, '#fff1b8');
+      for (let i = 0; i < 5; i++) { c.globalAlpha = 0.2; dot(c, 112 + i * 16, 0, 3, 60, '#fff0b4'); c.globalAlpha = 1; }
+      mountains(c, [[124, 50, 50], [166, 42, 56], [92, 60, 40]], '#a77aa0', '#94698e', '#ffe8f0');
+      scHills(c, 2, 78, 2, '#7a9a6a', '#8aaa7a');
+      dot(c, 0, 82, SW, 26, '#5f9a4c');
+      for (let y = 82; y < SH; y++) { const k = (y - 82) / 26, w = Math.round(3 + k * 30), cx = Math.round(150 - k * 70 + Math.sin(k * 3) * 8); dot(c, cx - (w >> 1), y, w, 1, '#c9a77a'); }   // the path to the mountains
+      birds(c, t, 3, 21, 18);
+      torii(c, 26, 102);
+      senseiFig(c, 44, 104);
+      const k = Math.max(0, p - 0.25) / 0.75, y = Math.round(102 - k * 18), x = Math.round(80 + k * 64 - Math.sin(k * 3) * 6);   // you walk the path toward the mountains
+      sPut(c, scSpr.kai()[k > 0 && walkF(t) ? 'walkA' : 'stand'][0], x, y);
+      tufts(c, SH, '#4f8a3e', 8, t); branch(c); petals(c, t, 8, 6);
     } },
   ],
 };
