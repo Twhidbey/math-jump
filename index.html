@@ -97,6 +97,9 @@
     font: 30px "Lilita One", "Trebuchet MS", sans-serif; padding: 0 8px; touch-action: none; }
   #ansbar.five button { min-width: 62px; height: 66px; font-size: 26px; }
   #ansbar button:disabled { opacity: .3; }
+  #ansbar.drill .ab { gap: 18px; }
+  #ansbar.drill button { min-width: 104px; height: 88px; font-size: 38px; }
+  body.drilling .tbtn { display: none !important; }
   #ansbar.arc { left: 0; top: 0; bottom: auto; transform: none; }
   #ansbar.arc button { position: fixed; min-width: 0; border-radius: 50%; padding: 0; font-size: 26px; box-shadow: 0 2px 8px rgba(0,0,0,.35); }
   #ansbar.arc.five button { font-size: 21px; }
@@ -1191,7 +1194,7 @@ function buildVault(src) {
   if (kind === 'machine') room.mc = machine(tier);
   if (kind === 'train') {   // a fast drill: a power bar that fills with right answers and slowly drains
     const tierRate = [7, 9, 11, 13, 14][tier - 1], prev = prog.dojoRpm[src.skill.id], rate = prev ? clamp(Math.round(prev * 0.9), 5, 20) : tierRate, need = Math.max(8, Math.round(rate * 0.8));
-    Object.assign(room, { move: moveOf(st), steps: 3, gen: src.gen, senseiC: cols - 5, say: moveOf(st).intro, poseT: 0, show: 0, blocks: [], boards: [mid - 4, mid - 2, mid].map(c => ({ c, broken: 0 })),
+    Object.assign(room, { move: moveOf(st), steps: 3, gen: src.gen, senseiC: Math.floor(cols / 2) + 2, say: moveOf(st).intro, combo: 0, intro: 170, demoT: 0, poseT: 0, show: 0, blocks: [], boards: (cols > 20 ? [5, 7, 9] : [2, 4]).map(c => ({ c, broken: 0 })),
       rate, gain: 1 / need, drain: Math.max(0.1, rate / need - 1) / 3600, ease: 1, bar: 0, t: 0, started: false, right: 0, wrong: 0, hitT: 0, hitN: 0, padT: 0, lowT: 0, shownAt: 0 });
   }
   for (const c of room.blocks) map[GR - 3][c] = 'R';
@@ -1250,22 +1253,25 @@ function spillGems(cx, cy, n, c) {
 // a learned step, and it eases off if the kid is stuck low ("Breathe").
 const TRAIN_HITS = [{ r: 8, arm: [0, 26], arm2: [60, 7] }, { r: -10, arm: [35, 10], arm2: [60, 7], leg: [-15, 28] }, { r: 10, arm: [-8, 26], arm2: [5, 20] }];
 function trainAnswer(room, i) {
-  if (room.open || room.show) return;
+  if (room.open || room.show || room.intro > 0) return;
   const right = room.opts[i] === room.q.ans, fast = room.t - room.shownAt <= 240;
   room.started = true;
   noteFact(room.q, right, right && fast, L.skill);
   if (!right) {
-    room.wrong++; G.mistakes++; G.streak = 0; sfx.wrong();
+    room.wrong++; room.combo = 0; G.mistakes++; G.streak = 0; sfx.wrong();
     room.say = `${qSolved(room.q)}. Next one!`;
   } else {
-    room.right++; G.solved++; if (fast) G.fastN++;
+    room.right++; room.combo++; G.solved++; if (fast) G.fastN++;
+    G.parts = G.parts.filter(q => q.tag !== 'combo');   // one combo word at a time
+    floatText(P.x + P.w / 2, P.y - 26, room.combo >= 3 ? `${room.combo} combo!` : ['Hai!', 'Yes!', 'Good!', 'Strong!'][R(0, 3)], room.combo >= 5 ? '#ff8a00' : '#ffffff', room.combo >= 3 ? 22 + Math.min(room.combo, 12) : 20); G.parts[G.parts.length - 1].tag = 'combo';
     room.bar = Math.min(1, room.bar + room.gain); room.hitT = 10; room.hitN++; room.padT = 8;
     sfx.stomp(); tone(880 + Math.min(room.right, 20) * 30, 0.06, 'square', 0.03);
-    const px = room.senseiC * T - 6; burst(px, GR * T - 34, '#ffffff', 4, 2); flyGem(px, GR * T - 50, 1); G.coins++;
+    const at = limbEnd(P, TRAIN_HITS[room.hitN % 3]); burst(at.x, at.y, '#ffffff', 4, 2); flyGem(at.x, at.y - 10, 1); G.coins++;
     while (room.step < 3 && room.bar >= (room.step + 1) / 3 - 1e-6) {
       const stp = room.move.steps[room.step++];
-      room.say = stp.say; room.pose = stp.pose; room.poseT = 45;
-      if (room.step < 3) { sfx.correct(); floatText(VW / 2, GR * T - 170, `Step ${room.step} of 3!`, '#ffd23f', 30); }
+      room.say = stp.say; room.pose = stp.pose; room.poseT = 45; room.demoT = 40;   // Sensei shows it, then Kai copies
+      tone(98, 1.4, 'sine', 0.09); tone(196, 1.1, 'sine', 0.04); G.flash = 0.25; shake(6, 2);   // the gong
+      if (room.step < 3) { sfx.correct(); G.parts = G.parts.filter(q => q.k !== 'text' || q.y < GR * T - 260); floatText(VW / 2, GR * T - 170, `Step ${room.step} of 3!`, '#ffd23f', 30); }
     }
     if (room.step >= 3) { room.show = 1; room.showT = 0; room.poseT = 0; room.hitT = 0; sfx.gate(); }
   }
@@ -1338,9 +1344,12 @@ function trainFinish(room) {
 function updateRoom() {
   const room = L.room; if (!room) return;
   if (room.kind === 'train') {
-    if (room.poseT > 0) room.poseT--;
+    if (room.intro > 0 && --room.intro === 60) { room.say = 'Ready...'; tone(330, 0.15, 'square', 0.04); }
+    if (room.intro === 20) { room.say = 'Begin!'; tone(660, 0.25, 'square', 0.05); }
+    if (room.demoT > 0) room.demoT--; else if (room.poseT > 0) room.poseT--;
     if (room.hitT > 0) room.hitT--;
     if (room.padT > 0) room.padT--;
+    if (!room.open && !room.show && room.combo >= 5 && tick % 3 === 0) G.parts.push({ k: 'bit', x: P.x + Math.random() * P.w, y: P.y + P.h - Math.random() * P.h, vx: 0, vy: -1.6, life: 24, col: ['#ff6a00', '#ffd23f', '#ff3b1f'][R(0, 2)], s: 5 });
     if (room.started && !room.show && !room.open) {
       room.t++;
       room.bar = Math.max(room.step / 3, room.bar - room.drain * room.ease);
@@ -2010,9 +2019,12 @@ function syncAnsBar() {
   bar.classList.toggle('five', t.vals.length > 3);
   bar.innerHTML = '<div class="ab"></div>';   // the question is already on the sign / banner
   const portrait = document.body.classList.contains('portrait'), jb = document.querySelector('.tbtn[data-k="jump"]').getBoundingClientRect();
-  const arc = !portrait && jb.width > 0;   // phone held sideways: fan the buttons out around the jump button, under the right thumb
+  const drill = t.kind === 'train';   // dojo: a big row in the middle, clear of Kai and Sensei
+  bar.classList.toggle('drill', drill);
+  const arc = !drill && !portrait && jb.width > 0;   // phone held sideways: fan the buttons out around the jump button, under the right thumb
   bar.classList.toggle('arc', arc);
-  if (arc || portrait) bar.style.top = bar.style.bottom = '';
+  if (drill) { const r = $('stage').getBoundingClientRect(); bar.style.top = (r.top + r.height * (portrait ? 0.46 : 0.3)) + 'px'; bar.style.bottom = 'auto'; }
+  else if (arc || portrait) bar.style.top = bar.style.bottom = '';
   else {   // computer: up in the sky, above where Kai jumps
     const r = $('stage').getBoundingClientRect(); bar.style.top = (r.top + r.height * 0.26) + 'px'; bar.style.bottom = 'auto';
   }
@@ -2367,7 +2379,7 @@ function enterVault() {
   G.saved = { L, x: P.x, y: P.y };
   L = buildVault(L);
   P.x = 1.5 * T; P.y = GR * T - P.h; P.vx = P.vy = 0; cam = 0;
-  if (L.room.kind === 'train') { P.x = (L.room.senseiC - 2.2) * T; P.face = 1; }
+  if (L.room.kind === 'train') { P.x = (L.room.senseiC - 3.4) * T; P.face = 1; }
   sfx.gate(); floatText(L.room.kind === 'train' ? VW / 2 : P.x + 110, P.y - 30, L.room.kind === 'train' ? `Welcome to ${TRAIN_ROOM[L.world.key]}!` : 'A secret room!', '#ffd23f', 26);
 }
 function leaveVault() {
@@ -2564,7 +2576,7 @@ function startDash(x, y) {
 function miniTarget() {
   if (G && L.vault && L.room && L.room.kind === 'train') {
     const rm = L.room;
-    return rm.open || rm.show ? null : { kind: 'train', q: rm.q, vals: rm.opts, off: rm.opts.map(() => false), ref: rm };
+    return rm.open || rm.show || rm.intro > 0 ? null : { kind: 'train', q: rm.q, vals: rm.opts, off: rm.opts.map(() => false), ref: rm };
   }
   if (!G || L.vault || L.boss) return null;
   const stp = stepsTarget(); if (stp) return stp;
@@ -3205,6 +3217,7 @@ function updatePlayer() {
   G.moveHeld = keys.move;
   moveTick();
   document.body.classList.toggle('canmove', canMoveBtn());
+  document.body.classList.toggle('drilling', !!(L.room && L.room.kind === 'train' && !L.room.open));
   const rm = L.room;
   if (rm && rm.kind === 'train') for (const b of rm.boards) if (b.broken > 0 && --b.broken === 0) burst(b.c * T + T / 2, GR * T - 50, '#ffffff', 6, 2);
   if (rm && rm.kind === 'train' && !rm.open && p.onGround) { p.vx = 0; keys.jump = false; updateRoom(); petTick(); return; }
@@ -5748,6 +5761,7 @@ function drawPlayer() {
 }
 
 // ---------------------------------------------------------------- karate poses (training rooms, gate flourish)
+const BOW_POSE = { r: 25, arm: [90, 12] };
 const TRAIN_READY = { arm: [35, 10], arm2: [60, 7] };
 function mixPose(a, b, e) {
   const n = (x, y) => (x || 0) + ((y || 0) - (x || 0)) * e;
@@ -5766,7 +5780,8 @@ function kaiPose() {
   if (rm && rm.kind === 'train' && P.onGround) {
     if (rm.show) return trainPoseAt(rm, rm.showT);
     if (rm.hitT > 0) return TRAIN_HITS[rm.hitN % 3];
-    if (rm.poseT > 0 && rm.pose) return rm.pose;
+    if (rm.intro > 110) return BOW_POSE;
+    if (rm.poseT > 0 && rm.pose && rm.demoT <= 0) return rm.pose;
     if (!rm.open) return TRAIN_READY;
   }
   if (G.power && G.power.kind === 'sensei' && !P.onGround) return G.power.pose;
@@ -5781,10 +5796,25 @@ function limbEnd(p, pose) {
   const a = l[0] * Math.PI / 180;
   return { x: cx + face * (6 + Math.cos(a) * l[1]), y: base + Math.sin(a) * l[1] };
 }
-function drawKaiPose(p, pose) {
-  const face = poseFace(p, pose), lift = pose.y || 0, feet = p.y + p.h - lift, cx = p.x + p.w / 2, pal = heroPal();
+// Sensei, full body (faces right), a head taller than Kai; he demonstrates each step with the same pose system.
+const SENSEI_BODY = bake(makeFrames(18, 22, { s: '#f2c49b', w: '#f4f4f4', W: '#f4f4f4', V: '#c9cdd8', e: '#16121f', b: '#151515' }, ({ P, R, E }) => {
+  E(9, 4, 3.6, 3.8, 's'); P(5, 4, 'w'); P(13, 4, 'w'); P(5, 5, 'w'); P(13, 5, 'w');
+  R(7, 3, 2, 1, 'w'); R(10, 3, 2, 1, 'w'); P(8, 5, 'e'); P(11, 5, 'e');
+  E(9.5, 8.5, 2.8, 2.4, 'w'); R(8, 10, 3, 2, 'w');
+  R(5, 10, 9, 5, 'W'); R(5, 10, 1, 5, 'V'); P(8, 10, 'V'); P(9, 11, 'V'); P(10, 12, 'V');
+  R(4, 10, 1, 4, 'W'); R(14, 10, 1, 4, 'W'); P(4, 14, 's'); P(14, 14, 's');
+  R(5, 15, 9, 1, 'b'); P(12, 16, 'b'); P(13, 17, 'b');
+  R(6, 16, 3, 4, 'W'); R(10, 16, 3, 4, 'W'); R(6, 16, 1, 4, 'V'); R(10, 16, 1, 4, 'V');
+  R(5, 20, 4, 1, 's'); R(10, 20, 4, 1, 's');
+}, 1), ['a']);
+const SENSEI_FIG = { set: SENSEI_BODY, frames: ['a', 'a'], arm: 36, arm2: 35, leg: 20, sc: 1.25, cols: ['#f4f4f4', '#d8dce6'], skin: '#f2c49b', foot: '#f2c49b' };
+function drawKaiPose(p, pose, fig = null) {
+  const face = poseFace(p, pose), lift = pose.y || 0, feet = p.y + p.h - lift, cx = p.x + p.w / 2, hp = heroPal();
+  const F = fig || { set: SPR, frames: ['stand', 'jump'], arm: 28, arm2: 27, leg: 14, sc: 1, cols: [hp.n, hp.N], skin: KAI_PAL.s, foot: KAI_PAL.f };
+  const pal = { n: F.cols[0], N: F.cols[1] };
   ctx.save(); ctx.translate(cx, feet); ctx.rotate(face * (pose.r || 0) * Math.PI / 180); ctx.translate(-cx, -feet);
-  drawBaked(SPR, pose.leg ? 'jump' : 'stand', face < 0, { x: p.x, y: p.y - lift, w: p.w, h: p.h });
+  drawBaked(F.set, pose.leg ? F.frames[1] : F.frames[0], face < 0, { x: p.x, y: p.y - lift, w: p.w, h: p.h });
+  const sc = F.sc, sl = l => l && [l[0], l[1] * sc];
   const limb = (ox, oy, l, col, end, es) => {
     if (!l) return;
     const a = l[0] * Math.PI / 180, x1 = cx + face * (ox + Math.cos(a) * l[1]), y1 = oy + Math.sin(a) * l[1];
@@ -5793,9 +5823,9 @@ function drawKaiPose(p, pose) {
     ctx.fillStyle = OUTLINE; ctx.fillRect(x1 - es / 2 - 1, y1 - es / 2 - 1, es + 2, es + 2);
     ctx.fillStyle = end; ctx.fillRect(x1 - es / 2, y1 - es / 2, es, es);
   };
-  limb(2, feet - 27, pose.arm2, pal.N, KAI_PAL.s, 6);
-  limb(4, feet - 14, pose.leg, pal.n, KAI_PAL.f, 8);
-  limb(6, feet - 28, pose.arm, pal.n, KAI_PAL.s, 7);
+  limb(2, feet - F.arm2, sl(pose.arm2), pal.N, F.skin, 6);
+  limb(4, feet - F.leg, sl(pose.leg), pal.n, F.foot, 8);
+  limb(6, feet - F.arm, sl(pose.arm), pal.n, F.skin, 7);
   ctx.restore();
 }
 // The moment the move lands: boards crack, wind whooshes.
@@ -5815,24 +5845,39 @@ function trainStrike(room) {
 }
 // Sensei, his speech bubble, the boards to break and the move's name.
 function drawTrain(room) {
-  const sx = room.senseiC * T, sy = GR * T - 54, st = room.show ? room.showT : 0;
+  const sx = room.senseiC * T, sy = GR * T - 70, st = room.show ? room.showT : 0;
   ctx.save();
+  // the wall rack: one scroll per move, gold once learned, the one being taught glows
+  const rx = cam + 18, ry = VW < 700 ? GR * T - 200 : GR * T - 150, cw = VW < 700 ? 30 : 22;
+  ctx.fillStyle = '#5e3a1c'; ctx.fillRect(rx - 6, ry + 34, cw * MOVES.length + 8, 6);
+  if (VW < 700) ctx.fillRect(rx - 6, ry + 74, cw * 8 + 8, 6);
+  MOVES.forEach((m, i) => {
+    const row = VW < 700 && i >= 8 ? 1 : 0, x = rx + (row ? i - 8 : i) * cw, y = ry + row * 40, got = prog.moves[m.name], now = m === room.move;
+    if (now && !got) glowAt(x + 8, y + 18, 18 + Math.sin(tick * 0.15) * 3, 'rgba(255,220,100,.6)');
+    ctx.fillStyle = got ? '#ffd23f' : 'rgba(255,255,255,.25)'; ctx.fillRect(x + 2, y + 4, 12, 28);
+    ctx.fillStyle = got ? '#a8600a' : 'rgba(0,0,0,.3)'; ctx.fillRect(x, y + 2, 16, 4); ctx.fillRect(x, y + 30, 16, 4);
+    if (got) { ctx.fillStyle = '#c0392b'; ctx.fillRect(x + 6, y + 15, 4, 4); }
+  });
+  hudText(`Moves ${MOVES.filter(m => prog.moves[m.name]).length} / ${MOVES.length}`, rx + 2, ry - 8, 13, '#ffd23f', 'left');
   if (st) {   // the room goes dark for the big move
     const k = Math.min(1, st / 20) * (st > TRAIN_STRIKE + 60 ? Math.max(0, 1 - (st - TRAIN_STRIKE - 60) / 30) : 1);
     ctx.fillStyle = `rgba(0,0,10,${0.55 * k})`; ctx.fillRect(cam - 40, 0, VW + 80, GR * T);
   }
-  ctx.drawImage(SENSEI_SPR.a[1], sx, sy);
+  if (!room.open) {   // Kai's power glows brighter as the bar fills
+    const k = room.show ? 1 : room.bar, kx = P.x + P.w / 2, ky = P.y + P.h / 2;
+    glowAt(kx, ky, 26 + k * 50 + Math.sin(tick * 0.15) * 4, `rgba(255,200,60,${0.1 + k * 0.35})`);
+  }
+  {   // Sensei: bows at the start and the end, shows each new step, mirrors Kai's strikes
+    const box = { x: sx + 14, y: GR * T - 62, w: 24, h: 62, face: -1 };   // stands across from Kai and mirrors him
+    const pose = room.intro > 110 ? BOW_POSE : room.demoT > 0 && room.pose ? room.pose : room.hitT > 0 ? TRAIN_HITS[room.hitN % 3]
+      : room.open ? (room.openT < 90 ? BOW_POSE : {}) : TRAIN_READY;
+    drawKaiPose(box, pose, SENSEI_FIG);
+  }
   for (const b of room.boards) {   // board stands to smash once the move is learned
     const bx = b.c * T + T / 2, fy = GR * T;
     ctx.fillStyle = '#3a2a1a'; ctx.fillRect(bx - 2, fy - 50, 4, 50); ctx.fillRect(bx - 12, fy - 4, 24, 4);
     if (!b.broken) { ctx.fillStyle = '#5e3a1c'; ctx.fillRect(bx - 7, fy - 70, 14, 40); ctx.fillStyle = '#c8925a'; ctx.fillRect(bx - 6, fy - 69, 12, 38); ctx.fillStyle = '#a8703a'; ctx.fillRect(bx - 1, fy - 64, 1, 28); }
     else { ctx.fillStyle = '#c8925a'; ctx.fillRect(bx - 22, fy - 6, 16, 6); ctx.fillRect(bx + 8, fy - 6, 14, 6); }
-  }
-  if (!room.open && !room.show) {   // Sensei holds up a training pad
-    const jig = room.padT ? Math.sin(room.padT * 1.5) * 4 + 3 : 0, px = sx - 10 + jig;
-    ctx.fillStyle = OUTLINE; rrect(px - 1, GR * T - 47, 14, 36, 4); ctx.fill();
-    ctx.fillStyle = '#e63946'; rrect(px, GR * T - 46, 12, 34, 4); ctx.fill();
-    ctx.fillStyle = '#ffffff'; ctx.fillRect(px + 3, GR * T - 34, 6, 10);
   }
   ctx.font = '16px "Lilita One", "Trebuchet MS", sans-serif';
   const lines = wrapLines(room.say, 190), bw = Math.max(...lines.map(l => ctx.measureText(l).width)) + 24, bh = lines.length * 20 + 16;
@@ -6029,7 +6074,7 @@ function drawHUD() {
   const cur = currentStation(), by = narrow ? 92 : 10;   // banner sits below the hearts on narrow screens
   const br = activeBridge();
   let txt;
-  if (L.room && L.room.kind === 'train') txt = L.room.open || L.room.show ? L.room.move.name : qShow(L.room.q);
+  if (L.room && L.room.kind === 'train') txt = L.room.open || L.room.show ? L.room.move.name : L.room.intro > 0 ? (L.room.intro > 60 ? 'Bow to Sensei' : L.room.intro > 20 ? 'Ready...' : 'Begin!') : qShow(L.room.q);
   else if (L.room) txt = L.room.open ? 'Treasure!' : { scale: 'Balance the scale!', square: 'Magic square!', machine: 'Number machine!' }[L.room.kind];
   else if (br) txt = `Make ${br.target}!`;
   else if (miniTarget()) txt = qShow(miniTarget().q);
@@ -6059,7 +6104,7 @@ function drawHUD() {
     } else if (!L.boss.dying && !L.boss.dead && !L.boss.outro && !L.arena.wait) hudText('Jump over the attacks!', VW / 2, by + 124, 15, '#fff', 'center');
   } else if (L.vault) {
     const rm = L.room;
-    if (rm.kind === 'train' && !rm.open && !rm.show) drawDrill(rm, by + 98);
+    if (rm.kind === 'train' && !rm.open && !rm.show && !(rm.intro > 0)) drawDrill(rm, by + 98);
     hudText(rm.open && rm.kind === 'train' ? `${isTouch ? 'Tap the move button' : 'Press X'} to try the ${rm.move.name}! Smash the boards, then exit ➜` : rm.open ? 'Grab the gems, then exit ➜' : rm.kind === 'train' ? (rm.show ? '' : `Fill the power bar to learn the ${rm.move.name}!`) : rm.kind === 'scale' ? 'Bonk the number that makes both sides the same'
       : rm.kind === 'square' ? `Every row, column and diagonal adds up to ${rm.sq.sum}` : 'Find the rule, then bonk what comes out', VW / 2, by + 80, 16, '#fff', 'center');
   } else if (br) {
