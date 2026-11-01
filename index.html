@@ -1039,9 +1039,9 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
   const doorAt = def.n > 6 ? 4 : 3;
   flat(10);
   L.squads = []; L.steps = [];
-  const stepsAt = def.n > 6 ? 5 : 4;
+  const feedAt = Math.floor(def.n / 2), stepsAt = [1, def.n - 2];
   for (let i = 0; i < def.n; i++) {
-    if (i > 0) {   // a hungry animal right after the gate, with three numbered foods floating ahead of it
+    if (i === feedAt) {   // one hungry animal per level, mid-way, with three numbered foods floating ahead of it
       const s0 = flat(11), q = L.gen(), [kind, food] = ANIMALS[def.w * 3 + def.k] || ANIMALS[0];
       L.squads.push({ s: s0, q, done: false, kind, food, ax: (s0 + 9) * T + T / 2, foods: choices(q, 3).map((val, j) => ({ x: (s0 + 3 + j * 2) * T + T / 2, y: GR * T - 2.1 * T, val })) });
     }
@@ -1049,7 +1049,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     for (let k = 0; k < n; k++) chunk(kinds[ri(rng, 0, kinds.length - 1)]);
     if (i === 2 || (i === 5 && def.w >= 2)) bridgeChunk();
     if (i === doorAt) doorChunk();
-    if (i === stepsAt) stepsChunk();
+    if (stepsAt.includes(i)) stepsChunk();
     if (twist && (i % 2 === 0 || twist === 'walljump')) twistChunk();   // wall-jump levels get one before every gate
     // Question station: sign, answer blocks, and a locked gate.
     const s = flat(16), q = L.gen(), five = L.expert;
@@ -2658,11 +2658,11 @@ function drawMini() {
       if (f.eaten) return;
       if (f.fade) { f.fade -= 0.05; if (f.fade <= 0) return; ctx.globalAlpha = f.fade; }
       const y = f.y + (f.fly ? 0 : Math.sin(tick * 0.08 + i * 2) * 4), [c1, c2] = ansCol(i);
-      if (!f.fly) { ctx.fillStyle = c2; ctx.beginPath(); ctx.arc(f.x, y, 21, 0, 7); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.beginPath(); ctx.arc(f.x, y, 18, 0, 7); ctx.fill(); }
+      if (!f.fly) { ctx.fillStyle = c1; ctx.beginPath(); ctx.arc(f.x, y, 21, 0, 7); ctx.fill(); ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(f.x, y, 18, 0, 7); ctx.fill(); }
       drawFood(fd.food, f.x, y - 2);
       if (!f.fly) {
-        ctx.fillStyle = c1; rrect(f.x - 15, y + 12, 30, 20, 6); ctx.fill();
-        ctx.font = '16px "Lilita One", "Trebuchet MS", sans-serif'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(f.val, f.x, y + 22);
+        ctx.fillStyle = c1; rrect(f.x - 17, y + 12, 34, 24, 7); ctx.fill(); ctx.fillStyle = '#ffffff'; rrect(f.x - 14, y + 15, 28, 18, 5); ctx.fill();
+        ctx.font = '18px "Lilita One", "Trebuchet MS", sans-serif'; ctx.fillStyle = '#1a1426'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(f.val, f.x, y + 25);
         if (!isTouch && !fd.done) keyTag(ANS_KEYS(3)[i], f.x + 18, y - 18);
       }
       ctx.globalAlpha = 1;
@@ -2673,111 +2673,112 @@ function drawMini() {
     hudText(qShow(mb.q), mb.bubbles[1].x, mb.top, 22, '#fff', 'center');
     mb.bubbles.forEach((b, i) => {
       const y = b.y + Math.sin(tick * 0.08 + i * 2) * 4, [c1, c2] = ansCol(i);
-      ctx.fillStyle = c2; ctx.beginPath(); ctx.arc(b.x, y, 20, 0, 7); ctx.fill(); ctx.fillStyle = c1; ctx.beginPath(); ctx.arc(b.x, y - 1, 17, 0, 7); ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.beginPath(); ctx.arc(b.x - 7, y - 8, 4, 0, 7); ctx.fill();
-      ctx.font = '18px "Lilita One", "Trebuchet MS", sans-serif'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(b.val, b.x, y);
+      ctx.fillStyle = c1; ctx.beginPath(); ctx.arc(b.x, y, 21, 0, 7); ctx.fill(); ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(b.x, y, 16, 0, 7); ctx.fill();
+      ctx.font = '19px "Lilita One", "Trebuchet MS", sans-serif'; ctx.fillStyle = '#1a1426'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(b.val, b.x, y);
       if (!isTouch) keyTag(ANS_KEYS(3)[i], b.x + 16, y - 16);
     });
   }
 }
 
-// Pixel-ish animals for feeding: drawn at x (centre) standing on ground line g. mood: undefined / 'yum' / 'yuck'.
-function drawAnimal(kind, x, g, mood, chew) {
-  const E = (ex, ey, rx, ry, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.ellipse(ex, ey, rx, ry, 0, 0, 7); ctx.fill(); };
-  const Rc = (rx, ry, w, h, col) => { ctx.fillStyle = col; ctx.fillRect(rx, ry, w, h); };
-  const face = (fx, fy, sp = 6, eye = '#111', led = false) => {   // eyes and mouth, depending on mood
-    if (mood === 'yum') { ctx.strokeStyle = eye; ctx.lineWidth = 2; for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(fx + s * sp, fy + 1, 3, Math.PI, 0); ctx.stroke(); } }
-    else if (mood === 'yuck') { ctx.strokeStyle = eye; ctx.lineWidth = 2; for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(fx + s * sp - 3, fy - 2); ctx.lineTo(fx + s * sp + 3, fy + 2); ctx.moveTo(fx + s * sp + 3, fy - 2); ctx.lineTo(fx + s * sp - 3, fy + 2); ctx.stroke(); } E(fx, fy + 8, 3, 4, '#7bd36a'); }
-    else { const blink = (tick + Math.round(x)) % 180 < 6; for (const s of [-1, 1]) { if (blink) Rc(fx + s * sp - 3, fy, 6, 2, eye); else { E(fx + s * sp, fy, led ? 3.5 : 3, led ? 2.5 : 3.2, eye); if (!led) Rc(fx + s * sp, fy - 2, 1.5, 1.5, '#fff'); } } }
-    if (chew) E(fx, fy + 7, 3, 1 + chew * 3, '#5a2a2a');
-  };
-  const legs = (lx, w, col, h = 6) => { Rc(x + lx - w, g - h, 6, h, col); Rc(x + lx + w - 6, g - h, 6, h, col); };
-  switch (kind) {
-    case 'rabbit': case 'moonrabbit': {
-      const body = '#f4f4f4';
-      E(x - 7, g - 50, 5, 14, body); E(x + 7, g - 52, 5, 15, body); E(x - 7, g - 50, 2, 10, '#ffb3c8'); E(x + 7, g - 52, 2, 11, '#ffb3c8');
-      E(x, g - 16, 15, 14, body); E(x, g - 34, 13, 12, body); E(x + 14, g - 12, 5, 5, '#fff');
-      face(x, g - 35, 5); E(x, g - 29, 2, 1.5, '#ff8fab');
-      if (kind === 'moonrabbit') { Rc(x - 30, g - 18, 18, 18, '#8a6a4a'); Rc(x - 32, g - 20, 22, 5, '#6b4f34'); E(x - 21, g - 22, 7, 4, '#fff'); }   // mochi pot
-      break;
-    }
-    case 'panda':
-      E(x - 12, g - 46, 6, 6, '#1f1f26'); E(x + 12, g - 46, 6, 6, '#1f1f26'); E(x, g - 15, 18, 15, '#1f1f26'); E(x, g - 18, 13, 10, '#f4f4f4');
-      E(x, g - 36, 16, 13, '#f4f4f4'); E(x - 6, g - 37, 5, 6, '#1f1f26'); E(x + 6, g - 37, 5, 6, '#1f1f26');
-      face(x, g - 37, 6, '#fff'); E(x, g - 31, 2.5, 2, '#1f1f26'); break;
-    case 'duck':
-      E(x, g - 16, 18, 13, '#ffd23f'); E(x + 4, g - 36, 11, 11, '#ffd23f'); E(x - 6, g - 17, 9, 6, '#f2bd1d');
-      ctx.fillStyle = '#ff8a1a'; ctx.beginPath(); ctx.ellipse(x + 17, g - 33 + chew * 2, 7, 3.5, 0, 0, 7); ctx.fill(); Rc(x - 6, g - 4, 10, 4, '#ff8a1a');
-      face(x + 6, g - 39, 4); break;
-    case 'salamander': case 'lizard': {
-      const col = kind === 'lizard' ? '#e63946' : '#ff8a3a', dk = kind === 'lizard' ? '#a3242f' : '#c96a20';
-      ctx.strokeStyle = col; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(x - 10, g - 10); ctx.quadraticCurveTo(x - 30, g - 8, x - 34, g - 20 + Math.sin(tick * 0.1) * 3); ctx.stroke();
-      if (kind === 'lizard') { E(x - 36, g - 26, 5, 8, '#ffd23f'); E(x - 36, g - 24, 3, 5, '#ff6a00'); }   // flame tail tip
-      E(x, g - 12, 18, 10, col); E(x + 16, g - 20, 12, 10, col); legs(0, 14, dk, 5);
-      if (kind === 'salamander') [[-8, -15], [2, -9], [-2, -18]].forEach(([dx, dy]) => E(x + dx, g + dy, 2.5, 2.5, '#ffd23f'));
-      face(x + 18, g - 24, 4); break;
-    }
-    case 'mole':
-      E(x, g - 15, 18, 15, '#6b4a34'); E(x + 4, g - 26, 13, 11, '#7a5640'); E(x + 15, g - 24, 5, 4, '#ff9cc4');
-      Rc(x - 14, g - 5, 8, 5, '#ffb3c8'); Rc(x + 6, g - 5, 8, 5, '#ffb3c8'); face(x + 5, g - 30, 4); break;
-    case 'robodog': case 'robocat': {
-      const body = kind === 'robodog' ? '#8395a7' : '#a29bfe', dk = kind === 'robodog' ? '#576574' : '#6c5ce7';
-      Rc(x - 18, g - 22, 30, 16, body); legs(-3, 14, dk, 7);
-      Rc(x + 6, g - 40, 20, 18, body); Rc(x + 8, g - 36, 16, 8, '#1b2430');
-      if (kind === 'robodog') { Rc(x + 4, g - 44, 6, 10, dk); Rc(x + 22, g - 44, 6, 10, dk); line(x - 18, g - 20, x - 26, g - 30 + Math.sin(tick * 0.3) * 3, dk, 3); }
-      else { ctx.fillStyle = dk; ctx.beginPath(); ctx.moveTo(x + 6, g - 40); ctx.lineTo(x + 9, g - 50); ctx.lineTo(x + 13, g - 40); ctx.moveTo(x + 19, g - 40); ctx.lineTo(x + 23, g - 50); ctx.lineTo(x + 26, g - 40); ctx.fill(); line(x - 18, g - 18, x - 26, g - 34 + Math.sin(tick * 0.2) * 4, dk, 3); }
-      line(x + 16, g - 40, x + 16, g - 48, dk, 2); E(x + 16, g - 50, 3, 3, mood === 'yuck' ? '#ff4d4d' : '#3ae374');
-      face(x + 16, g - 32, 4, '#4cc9f0', true); break;
-    }
-    case 'drone': {
-      const hy = g - 34 + Math.sin(tick * 0.1) * 4;
-      line(x - 22, hy - 10, x + 22, hy - 10, '#576574', 3);
-      for (const s of [-1, 1]) { Rc(x + s * 22 - 1, hy - 14, 2, 6, '#576574'); E(x + s * 22, hy - 15, tick % 4 < 2 ? 12 : 4, 2, 'rgba(200,220,240,.8)'); }
-      E(x, hy, 16, 11, '#dfe6e9'); Rc(x - 10, hy - 4, 20, 9, '#1b2430'); face(x, hy, 5, '#7df9ff', true); break;
-    }
-    case 'penguin':
-      E(x, g - 22, 15, 21, '#1f1f26'); E(x, g - 19, 10, 15, '#ffffff'); E(x - 14, g - 22, 4, 10, '#1f1f26'); E(x + 14, g - 22, 4, 10, '#1f1f26');
-      ctx.fillStyle = '#ff9a1a'; ctx.beginPath(); ctx.moveTo(x - 4, g - 32); ctx.lineTo(x + 4, g - 32); ctx.lineTo(x, g - 27 + chew * 3); ctx.fill(); Rc(x - 9, g - 3, 7, 3, '#ff9a1a'); Rc(x + 2, g - 3, 7, 3, '#ff9a1a');
-      face(x, g - 36, 5, '#fff'); break;
-    case 'seal':
-      E(x, g - 12, 24, 12, '#9aa5b1'); E(x + 18, g - 24, 12, 11, '#9aa5b1'); E(x - 24, g - 6, 8, 4, '#7d8894');
-      for (const dy of [-1, 2]) { line(x + 22, g - 21 + dy, x + 34, g - 23 + dy * 2, '#555', 1); }
-      E(x + 24, g - 22, 2.5, 2, '#222'); face(x + 18, g - 27, 4); break;
-    case 'fox':
-      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.ellipse(x - 22, g - 18, 12, 7, -0.6, 0, 7); ctx.fill();
-      E(x, g - 14, 16, 12, '#f4f8fc'); legs(0, 12, '#dfe6ee', 5);
-      ctx.fillStyle = '#f4f8fc'; ctx.beginPath(); ctx.moveTo(x + 4, g - 36); ctx.lineTo(x + 8, g - 50); ctx.lineTo(x + 14, g - 38); ctx.moveTo(x + 16, g - 38); ctx.lineTo(x + 22, g - 50); ctx.lineTo(x + 26, g - 36); ctx.fill();
-      E(x + 15, g - 30, 12, 10, '#f4f8fc'); E(x + 24, g - 27, 2.5, 2, '#222'); face(x + 14, g - 32, 4); break;
-    case 'cat':
-      ctx.strokeStyle = '#ff9f43'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(x - 14, g - 12); ctx.quadraticCurveTo(x - 30, g - 18, x - 24, g - 34 + Math.sin(tick * 0.08) * 3); ctx.stroke();
-      E(x, g - 14, 15, 13, '#ff9f43'); legs(0, 11, '#e67e22', 5);
-      ctx.fillStyle = '#ff9f43'; ctx.beginPath(); ctx.moveTo(x - 10, g - 36); ctx.lineTo(x - 8, g - 48); ctx.lineTo(x, g - 38); ctx.moveTo(x, g - 38); ctx.lineTo(x + 8, g - 48); ctx.lineTo(x + 10, g - 36); ctx.fill();
-      E(x, g - 33, 12, 10, '#ff9f43'); face(x, g - 34, 5); E(x, g - 29, 2, 1.5, '#ff6b81'); break;
-    case 'raccoon':
-      for (let k = 0; k < 3; k++) E(x - 18 - k * 6, g - 14 - k * 4, 6, 5, k % 2 ? '#2d3436' : '#9aa5b1');
-      E(x, g - 15, 15, 14, '#9aa5b1'); legs(0, 11, '#636e72', 5);
-      E(x - 9, g - 44, 5, 5, '#636e72'); E(x + 9, g - 44, 5, 5, '#636e72'); E(x, g - 34, 14, 11, '#b2bec3');
-      Rc(x - 13, g - 38, 26, 7, '#2d3436'); face(x, g - 35, 6, '#fff'); E(x, g - 28, 2.5, 2, '#222'); break;
+// Feeding animals as little pixel sprites (16 wide, chibi: big head, big eyes). Each has its own palette; a dark outline
+// is added around the shape. eyes = top-left of each 2×2 eye, mouth = where it chews, face = colour used to blink.
+const ANIMAL_SPR = {
+  rabbit: { pal: { W: '#f4f4f4', P: '#ffb3c8', e: '#1a1426', w: '#ffffff', p: '#ffb3c8', n: '#ff7aa2' }, eyes: [[4, 6], [10, 6]], mouth: [7, 9], face: 'W', rows: [
+    '....WW....WW....', '...WPW....WPW...', '...WPW....WPW...', '...WPW....WPW...', '...WWWWWWWWWW...', '..WWWWWWWWWWWW..', '..WWeeWWWWeeWW..', '..WWewWWWWewWW..',
+    '..WpWWWnnWWWpW..', '...WWWWWWWWWW...', '....WWWWWWWW....', '...WWWWWWWWWW...', '...WWWWWWWWWW...', '....WW....WW....'] },
+  moonrabbit: { pal: { W: '#fdf8ec', P: '#ffb3c8', e: '#1a1426', w: '#ffffff', p: '#ffb3c8', n: '#ff7aa2', Y: '#ffd23f' }, eyes: [[4, 6], [10, 6]], mouth: [7, 9], face: 'W', rows: [
+    '....WW....WW....', '...WPW....WPW...', '...WPW....WPW...', '...WPW....WPW...', '...WWWWYYWWWW...', '..WWWWWWYWWWWW..', '..WWeeWWWWeeWW..', '..WWewWWWWewWW..',
+    '..WpWWWnnWWWpW..', '...WWWWWWWWWW...', '....WWWWWWWW....', '...WWWWWWWWWW...', '...WWWWWWWWWW...', '....WW....WW....'] },
+  panda: { pal: { W: '#f4f4f4', B: '#1f1f26', w: '#ffffff', p: '#ffb3c8' }, eyes: [[3, 6], [11, 6]], mouth: [7, 9], face: 'B', rows: [
+    '..BB........BB..', '.BBBB......BBBB.', '.BBWWWWWWWWWWBB.', '..WWWWWWWWWWWW..', '.WWWWWWWWWWWWWW.', '.WWBBWWWWWWBBWW.', '.WBBBBWWWWBBBBW.', '.WBwBBWWWWBBwBW.',
+    '.WWBBWWBBWWBBWW.', '..WpWWWWWWWWpW..', '...WWWWWWWWWW...', '..BBWWWWWWWWBB..', '..BBWWWWWWWWBB..', '...BBB....BBB...'] },
+  duck: { pal: { Y: '#ffd23f', y: '#f2b51d', O: '#ff8a1a', e: '#1a1426', w: '#ffffff', p: '#ffb3c8' }, eyes: [[5, 3], [9, 3]], mouth: [7, 6], face: 'Y', rows: [
+    '.....YYYYYY.....', '....YYYYYYYY....', '...YYYYYYYYYY...', '...YYeeYYeeYY...', '...YYewYYewYY...', '...YpYOOOOYpY...', '....YOOOOOOY....', '.....YOOOOY.....',
+    '....YYYYYYYY....', '..YYYYYYYYYYYY..', '.yYYYYYYYYYYYYy.', '.yyYYYYYYYYYYyy.', '..YYYYYYYYYYYY..', '.....OO..OO.....'] },
+  salamander: { pal: { O: '#ff8a3a', y: '#ffd23f', e: '#1a1426', w: '#ffffff', p: '#ffb3a0' }, eyes: [[4, 3], [10, 3]], mouth: [7, 7], face: 'O', rows: [
+    '................', '....OOOOOOOO....', '...OOOOOOOOOO...', '..OOeeOOOOeeOO..', '..OOewOOOOewOO..', '..OOOOOOOOOOOO..', '..OpOOOOOOOOpO..', '...OOOOOOOOOO...',
+    '....OOOOOOOO....', '...OOOyOOyOOO...', '..OOOOOOOOOOOOO.', '..OOyOOOOOOyOOOO', '...OOOOOOOOOO.O.', '...OO......OO...'] },
+  lizard: { pal: { O: '#e63946', y: '#ff9f43', F: '#ffd23f', f: '#ff6a00', e: '#1a1426', w: '#ffffff', p: '#ffb3a0' }, eyes: [[4, 3], [10, 3]], mouth: [7, 7], face: 'O', rows: [
+    '.......FF.......', '....OOfFfOOO....', '...OOOOOOOOOO...', '..OOeeOOOOeeOO..', '..OOewOOOOewOO..', '..OOOOOOOOOOOO..', '..OpOOOOOOOOpO..', '...OOOOOOOOOO...',
+    '....OOOOOOOO....', '...OOOyOOyOOO...', '..OOOOOOOOOOOOO.', '..OOOOOOOOOOOOFF', '...OOOOOOOOOO.Ff', '...OO......OO...'] },
+  mole: { pal: { M: '#7a5640', P: '#ff9cc4', e: '#1a1426', w: '#ffffff', p: '#d98a8a' }, eyes: [[4, 4], [10, 4]], mouth: [7, 8], face: 'M', rows: [
+    '................', '.....MMMMMM.....', '...MMMMMMMMMM...', '..MMMMMMMMMMMM..', '..MMeeMMMMeeMM..', '..MMewMMMMewMM..', '..MMMMMPPMMMMM..', '..MpMMPPPPMMpM..',
+    '...MMMMMMMMMM...', '..MMMMMMMMMMMM..', '.PPMMMMMMMMMMPP.', '.PPMMMMMMMMMMPP.', '..MMMMMMMMMMMM..', '...MMM....MMM...'] },
+  robodog: { pal: { G: '#8395a7', D: '#576574', S: '#1b2430', c: '#4cc9f0', A: '#576574', a: '#3ae374', N: '#2d3436', L: '#dfe6e9' }, eyes: [[4, 4], [10, 4]], mouth: [7, 7], face: 'S', led: true, rows: [
+    '.......a........', '.......A........', '..GGGGGGGGGGGG..', '.DGSSSSSSSSSSGD.', '.DGSccSSSSccSGD.', '.DGSccSSSSccSGD.', '.DGSSSSSSSSSSGD.', '..GGGGGNNGGGGG..',
+    '..GGGGGGGGGGGG..', '...GGGGGGGGGG...', '..GGGLGGGGLGGG..', '..GGGGGGGGGGGG..', '..GG..GGGG..GG..', '..DD..DDDD..DD..'] },
+  robocat: { pal: { P: '#a29bfe', S: '#1b2430', c: '#7df9ff', k: '#2d3436', t: '#6c5ce7', p: '#6c5ce7' }, eyes: [[4, 4], [10, 4]], mouth: [7, 7], face: 'S', led: true, rows: [
+    '..P..........P..', '..PP........PP..', '..PPPPPPPPPPPP..', '.PPSSSSSSSSSSPP.', '.PPSccSSSSccSPP.', '.PPSccSSSSccSPP.', '.PPSSSSSSSSSSPP.', '..PPPPPkkPPPPP..',
+    '...PPPPPPPPPP...', '..PPPPPPPPPPPPt.', '..PPPPPPPPPPPPtt', '..PPPPPPPPPPPP.t', '..PP..PPPP..PP..', '..pp..pppp..pp..'] },
+  drone: { pal: { H: '#c8dcf0', R: '#576574', W: '#f4f6f8', S: '#1b2430', c: '#7df9ff', Y: '#ffd23f' }, eyes: [[4, 5], [10, 5]], mouth: [7, 7], face: 'S', led: true, fly: true, rows: [
+    '.HHHH......HHHH.', '...R........R...', '...RRRRRRRRRR...', '..WWWWWWWWWWWW..', '.WWSSSSSSSSSSWW.', '.WWSccSSSSccSWW.', '.WWSccSSSSccSWW.', '.WWSSSSSSSSSSWW.',
+    '..WWWWWWWWWWWW..', '...WWWYYYYWWW...', '....WWWWWWWW....', '.....R....R.....', '....RR....RR....'] },
+  penguin: { pal: { B: '#1f1f26', W: '#ffffff', e: '#1a1426', w: '#ffffff', O: '#ff9a1a', p: '#ffb3c8' }, eyes: [[5, 4], [9, 4]], mouth: [7, 7], face: 'W', rows: [
+    '.....BBBBBB.....', '....BBBBBBBB....', '...BBBBBBBBBB...', '...BWWWBBWWWB...', '..BBWeeWWeeWBB..', '..BBWewWWewWBB..', '..BBWWWOOWWWBB..', '..BBWpWOOWpWBB..',
+    '.BBBWWWWWWWWBBB.', '.BBBWWWWWWWWBBB.', '.BB.WWWWWWWW.BB.', '...BWWWWWWWWB...', '....BBBBBBBB....', '....OOO..OOO....'] },
+  seal: { pal: { G: '#9aa5b1', F: '#7d8894', L: '#dfe6ee', N: '#2d3436', e: '#1a1426', w: '#ffffff', p: '#ffb3c8' }, eyes: [[4, 4], [10, 4]], mouth: [7, 8], face: 'G', rows: [
+    '................', '.....GGGGGG.....', '...GGGGGGGGGG...', '..GGGGGGGGGGGG..', '..GGeeGGGGeeGG..', '..GGewGGGGewGG..', '..GGGGGNNGGGGG..', '..GpGGLLLLGGpG..',
+    '...GGGLLLLGGG...', '..GGGGGGGGGGGG..', '.FGGGGGGGGGGGGF.', 'FFGGGGGGGGGGGGFF', '..GGGGGGGGGGGG..', '....GGGGGGGG....'] },
+  fox: { pal: { W: '#f4f8fc', P: '#ffb3c8', T: '#cfdcea', e: '#1a1426', w: '#ffffff', p: '#ffb3c8', k: '#2d3436' }, eyes: [[4, 5], [10, 5]], mouth: [7, 8], face: 'W', rows: [
+    '..W..........W..', '..WW........WW..', '..WPW......WPW..', '..WWWWWWWWWWWW..', '.WWWWWWWWWWWWWW.', '.WWWeeWWWWeeWWW.', '.WWWewWWWWewWWW.', '..WpWWWkkWWWpW..',
+    '...WWWWWWWWWW...', '....WWWWWWWW.TT.', '...WWWWWWWWWTTTT', '...WWWWWWWWWTTT.', '...WW.WW.WW.....'] },
+  cat: { pal: { O: '#ff9f43', S: '#e67e22', P: '#ffb3c8', W: '#fff3e0', e: '#1a1426', w: '#ffffff', p: '#ffb3c8', n: '#ff6b81', t: '#e67e22' }, eyes: [[4, 5], [10, 5]], mouth: [7, 8], face: 'O', rows: [
+    '..O..........O..', '..OO........OO..', '..OPO......OPO..', '..OOOOSOOSOOOO..', '.OOOOOOOOOOOOOO.', '.OSOeeOOOOeeOSO.', '.OOOewOOOOewOOO.', '..OpOOOnnOOOpO..',
+    '...OOOOOOOOOO...', '....OOOOOOOO.tt.', '...OOWWWWWWOOt..', '...OOWWWWWWOt...', '...OO.OO.OO.....'] },
+  raccoon: { pal: { G: '#9aa5b1', D: '#636e72', L: '#dfe6e9', K: '#2d3436', v: '#ffffff', e: '#1a1426', k: '#1a1426', T: '#636e72', t: '#2d3436' }, eyes: [[3, 5], [11, 5]], mouth: [7, 8], face: 'K', rows: [
+    '..GG........GG..', '.GDDG......GDDG.', '.GGGGGGGGGGGGGG.', '.GGLLLLLLLLLLGG.', '.GKKKKLLLLKKKKG.', '.GKvvKLLLLKvvKG.', '.GKveKLLLLKveKG.', '.GGLLLLkkLLLLGG.',
+    '..GGLLLLLLLLGG..', '...GGGGGGGGGG.Tt', '..GGGGGGGGGGGTtT', '..GGGGGGGGGGGtT.', '..GG..GGGG..GG..'] },
+};
+// little pixel foods (10 wide), same outline treatment
+const FOOD_SPR = {
+  carrot: { pal: { g: '#3ae374', o: '#ff8a1a', d: '#d8661a' }, rows: ['....g.g...', '....ggg...', '...ooooo..', '...oodoo..', '...ooooo..', '....odo...', '....ooo...', '.....o....'] },
+  bamboo: { pal: { g: '#7cc142', d: '#3f7a22', l: '#c5e1a5' }, rows: ['.....d.d..', '....gdd...', '....gl....', '....gg....', '...dddd...', '....gl....', '....gg....', '...dddd...'] },
+  bread: { pal: { b: '#e0a458', l: '#f3c98b' }, rows: ['..bbbbbb..', '.bllllllb.', 'bllllllllb', 'bllllllllb', 'bllllllllb', '.bbbbbbbb.'] },
+  bug: { pal: { g: '#7bd36a', d: '#5aa84a', e: '#1a1426' }, rows: ['', '.gg.gg.dd.', 'gggggggded', 'gdgdgdgddd', '.gggggggd.'] },
+  chili: { pal: { r: '#e63946', g: '#3ae374', l: '#ff8a8a' }, rows: ['..gg......', '...gg.....', '...rrr....', '..rlrrr...', '...rrrrr..', '.....rrr..', '......rr..', '.......r..'] },
+  mushroom: { pal: { r: '#e63946', w: '#ffffff', s: '#f4ead5' }, rows: ['...rrrr...', '.rrwrrwrr.', 'rrrrrrrrrr', 'rwrrrrrwrr', '...ssss...', '...ssss...', '...ssss...'] },
+  bolt: { pal: { g: '#8395a7', l: '#b2bec3', d: '#636e72' }, rows: ['..gggggg..', '..glllgg..', '....ld....', '....ld....', '....dl....', '....ld....', '....dl....', '....ll....'] },
+  battery: { pal: { k: '#2d3436', g: '#3ae374', l: '#b2bec3' }, rows: ['....ll....', '..kkkkkk..', '..k....k..', '..kggggk..', '..kggggk..', '..kggggk..', '..kggggk..', '..kkkkkk..'] },
+  spark: { pal: { y: '#ffd23f', w: '#fff6c0' }, rows: ['.....yy...', '....yy....', '...yyw....', '..yyyyyy..', '....wyy...', '....yy....', '...yy.....', '..y.......'] },
+  fish: { pal: { b: '#74b9ff', d: '#0984e3', e: '#1a1426' }, rows: ['', '...bbbb...', '.bbbbbbb.d', 'bebbbbbbdd', '.bbbbbbb.d', '...bbbb...'] },
+  berries: { pal: { p: '#6c5ce7', l: '#a29bfe', g: '#3ae374' }, rows: ['....gg....', '...gg.....', '..ppp.ppp.', '.plppplpp.', '.ppp.ppp..', '...ppp....', '..plpp....', '...ppp....'] },
+  riceball: { pal: { w: '#ffffff', k: '#2d3436' }, rows: ['....ww....', '...wwww...', '..wwwwww..', '.wwwwwwww.', '.wkkkkkkw.', 'wwkkkkkkww', 'wwkkkkkkww'] },
+  dango: { pal: { p: '#ffb3c8', w: '#ffffff', g: '#a3e4a0', s: '#c9a24f' }, rows: ['........ss', '......ggs.', '.....ggg..', '....www...', '...www....', '..ppp.....', '.ppp......', 's.........'] },
+  apple: { pal: { r: '#e63946', l: '#ff8a8a', g: '#3ae374', s: '#6b4a2e' }, rows: ['....sg....', '....sgg...', '.rrrrrrr..', 'rlrrrrrrr.', 'rlrrrrrrr.', 'rrrrrrrrr.', '.rrrrrrr..', '..rr.rr...'] },
+};
+const sprCache = {};
+function bakeSpr(key, spr, sc) {
+  const id = key + sc; if (sprCache[id]) return sprCache[id];
+  const rows = spr.rows, h = rows.length, w = Math.max(...rows.map(r => r.length)), cv = document.createElement('canvas');
+  cv.width = (w + 2) * sc; cv.height = (h + 2) * sc;
+  const c = cv.getContext('2d'), at = (x, y) => (rows[y] || '')[x] || '.', filled = (x, y) => at(x, y) !== '.';
+  for (let y = -1; y <= h; y++) for (let x = -1; x <= w; x++) {
+    if (filled(x, y)) { c.fillStyle = spr.pal[at(x, y)] || '#fff'; c.fillRect((x + 1) * sc, (y + 1) * sc, sc, sc); }
+    else if (filled(x - 1, y) || filled(x + 1, y) || filled(x, y - 1) || filled(x, y + 1)) { c.fillStyle = '#1a1426'; c.fillRect((x + 1) * sc, (y + 1) * sc, sc, sc); }
   }
+  return (sprCache[id] = cv);
+}
+// mood: undefined / 'yum' / 'yuck'; chew 0..1 opens the mouth
+function drawAnimal(kind, x, g, mood, chew) {
+  const spr = ANIMAL_SPR[kind] || ANIMAL_SPR.rabbit, sc = 3, cv = bakeSpr(kind, spr, sc);
+  const ox = Math.round(x - cv.width / 2), oy = Math.round(g - cv.height + sc + (spr.fly ? -18 + Math.sin(tick * 0.1) * 4 : 0));
+  ctx.imageSmoothingEnabled = false; ctx.drawImage(cv, ox, oy);
+  if (spr.fly && tick % 6 < 3) { ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(ox, oy + sc, 6 * sc, sc); ctx.fillRect(ox + 11 * sc, oy + sc, 6 * sc, sc); }   // spinning blades
+  const px = (cx, cy, w, h, col) => { ctx.fillStyle = col; ctx.fillRect(ox + (cx + 1) * sc, oy + (cy + 1) * sc, w * sc, h * sc); };
+  const face = spr.pal[spr.face];
+  const blink = !mood && (tick + Math.round(x)) % 200 < 7;
+  for (const [ex, ey] of spr.eyes) {
+    if (mood === 'yum') { px(ex, ey, 2, 2, face); px(ex, ey + 1, 2, 1, spr.led ? spr.pal.c : '#1a1426'); px(ex - (spr.led ? 0 : 0), ey, 0, 0, face); }   // happy closed eyes
+    else if (mood === 'yuck') { px(ex, ey, 2, 2, face); px(ex, ey, 1, 1, spr.led ? '#ff4d4d' : '#1a1426'); px(ex + 1, ey + 1, 1, 1, spr.led ? '#ff4d4d' : '#1a1426'); }
+    else if (blink) { px(ex, ey, 2, 2, face); px(ex, ey + 1, 2, 1, spr.led ? spr.pal.c : '#1a1426'); }
+  }
+  const [mx, my] = spr.mouth;
+  if (chew) px(mx, my, 2, chew > 0.5 ? 2 : 1, '#5a2a2a');
+  if (mood === 'yuck') px(mx, my, 2, 2, '#7bd36a');
 }
 function drawFood(kind, x, y) {
-  const E = (ex, ey, rx, ry, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.ellipse(ex, ey, rx, ry, 0, 0, 7); ctx.fill(); };
-  switch (kind) {
-    case 'carrot': poly([[x - 5, y - 6], [x + 5, y - 6], [x, y + 10]], '#ff8a1a'); poly([[x - 4, y - 6], [x - 6, y - 13], [x, y - 7], [x + 6, y - 13], [x + 4, y - 6]], '#3ae374'); break;
-    case 'bamboo': ctx.fillStyle = '#7cc142'; ctx.fillRect(x - 3, y - 11, 6, 22); ctx.fillStyle = '#3f7a22'; ctx.fillRect(x - 4, y - 2, 8, 2); poly([[x + 3, y - 8], [x + 11, y - 13], [x + 4, y - 4]], '#3f7a22'); break;
-    case 'bread': E(x, y, 11, 8, '#e0a458'); E(x, y - 2, 9, 5, '#f3c98b'); break;
-    case 'bug': E(x, y, 9, 5, '#7bd36a'); E(x + 8, y - 1, 4, 4, '#5aa84a'); ctx.fillStyle = '#111'; ctx.fillRect(x + 9, y - 2, 1.5, 1.5); break;
-    case 'chili': ctx.strokeStyle = '#e63946'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(x - 6, y - 6); ctx.quadraticCurveTo(x + 4, y - 2, x + 2, y + 9); ctx.stroke(); ctx.fillStyle = '#3ae374'; ctx.fillRect(x - 9, y - 10, 5, 4); break;
-    case 'mushroom': ctx.fillStyle = '#f4ead5'; ctx.fillRect(x - 3, y - 2, 6, 11); ctx.fillStyle = '#e63946'; ctx.beginPath(); ctx.arc(x, y - 1, 10, Math.PI, 0); ctx.fill(); E(x - 4, y - 5, 2, 2, '#fff'); E(x + 4, y - 7, 2, 2, '#fff'); break;
-    case 'bolt': ctx.fillStyle = '#b2bec3'; ctx.fillRect(x - 3, y - 4, 6, 14); ctx.fillStyle = '#8395a7'; ctx.fillRect(x - 8, y - 9, 16, 6); ctx.fillStyle = '#636e72'; for (let k = 0; k < 3; k++) ctx.fillRect(x - 3, y + k * 4, 6, 1.5); break;
-    case 'battery': ctx.fillStyle = '#2d3436'; ctx.fillRect(x - 6, y - 10, 12, 20); ctx.fillStyle = '#3ae374'; ctx.fillRect(x - 4, y - 2, 8, 10); ctx.fillStyle = '#b2bec3'; ctx.fillRect(x - 2, y - 13, 4, 3); break;
-    case 'spark': poly([[x + 2, y - 12], [x - 7, y + 1], [x, y + 1], [x - 3, y + 12], [x + 7, y - 2], [x, y - 2]], '#ffd23f'); break;
-    case 'fish': E(x - 1, y, 10, 6, '#74b9ff'); poly([[x + 7, y], [x + 13, y - 6], [x + 13, y + 6]], '#0984e3'); ctx.fillStyle = '#111'; ctx.fillRect(x - 7, y - 2, 2, 2); break;
-    case 'berries': [[-5, 2], [5, 2], [0, -5]].forEach(([dx, dy]) => E(x + dx, y + dy, 5, 5, '#6c5ce7')); E(x - 2, y - 7, 2, 2, '#a29bfe'); poly([[x - 2, y - 9], [x + 2, y - 13], [x + 4, y - 9]], '#3ae374'); break;
-    case 'riceball': poly([[x, y - 11], [x + 11, y + 8], [x - 11, y + 8]], '#ffffff'); ctx.fillStyle = '#2d3436'; ctx.fillRect(x - 6, y + 1, 12, 7); break;
-    case 'dango': line(x - 10, y + 10, x + 10, y - 10, '#c9a24f', 2); [['#ffb3c8', -6], ['#ffffff', 0], ['#a3e4a0', 6]].forEach(([c, d]) => E(x + d, y - d, 5, 5, c)); break;
-    case 'apple': E(x, y + 1, 10, 9, '#e63946'); E(x - 3, y - 2, 3, 3, 'rgba(255,255,255,.5)'); ctx.fillStyle = '#6b4a2e'; ctx.fillRect(x - 1, y - 12, 2, 5); poly([[x + 1, y - 10], [x + 8, y - 13], [x + 3, y - 7]], '#3ae374'); break;
-  }
+  const spr = FOOD_SPR[kind] || FOOD_SPR.apple, cv = bakeSpr('f_' + kind, spr, 2.5);
+  ctx.imageSmoothingEnabled = false; ctx.drawImage(cv, Math.round(x - cv.width / 2), Math.round(y - cv.height / 2));
 }
 
 // ---------------------------------------------------------------- level flavour
