@@ -1369,9 +1369,21 @@ const BOSS_SPR = {
 let AC = null, muted = false;
 function audio() {
   if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; } }
-  if (AC && AC.state === 'suspended') AC.resume();
+  if (AC && AC.state !== 'running' && AC.state !== 'closed') AC.resume().catch(() => {});   // 'suspended', or 'interrupted' on iPhones after a call
   return AC;
 }
+// Phones only let sound start from a real tap (iPhones: when the finger lifts). On every tap until it works:
+// ask for "playback" sound so the iPhone silent switch doesn't mute the game, wake the sound up, and play a silent blip.
+let soundUnlocked = false;
+function unlockSound() {
+  if (soundUnlocked) return;
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { }
+  const a = audio(); if (!a) return;
+  try { const b = a.createBuffer(1, 1, 22050), src = a.createBufferSource(); src.buffer = b; src.connect(a.destination); src.start(0); } catch (e) { }
+  if (a.state === 'running') soundUnlocked = true;
+}
+['touchend', 'click', 'keydown', 'pointerup'].forEach(t => window.addEventListener(t, unlockSound, { capture: true, passive: true }));
+document.addEventListener('visibilitychange', () => { if (!document.hidden && AC) { soundUnlocked = false; audio(); } });   // coming back to the game
 function tone(f, d, type = 'square', v = 0.05, f2 = null, delay = 0) {
   if (muted) return;
   const a = audio(); if (!a) return;
