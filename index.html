@@ -3697,7 +3697,7 @@ function finishLevel() {
   const title = st.boss ? 'Scroll won!' : G.mistakes === 0 ? 'Perfect!' : 'Level complete!';
   let body = st.boss ? `<div class="bigicon">${pixImg('scroll', 'pix big')}</div>` : `<div class="bigicon">${pixImg('piece', 'pix big')}<small>${found}/3</small></div>`;
   // Each boss leaves a clue about who the Shogun really is; the last one is revealed in the ending.
-  if (st.boss && BOSS_CARD[W.boss.kind]) body += `<p class="freed">${BOSS_CARD[W.boss.kind]}</p>`;
+  if (st.boss && BOSS_CARD[W.boss.kind]) body = sceneHTML(W.boss.kind) + `<p class="freed">${BOSS_CARD[W.boss.kind]}</p>`;
   body += `<div class="medalrow"><span class="dots">${'●'.repeat(dots) + '○'.repeat(3 - dots)}</span> ${medalImg(dots, 'pix sm')}</div>`;
   const earned = Math.round((G.coins + (st.boss ? 20 : 0)) * TIER_GEMS[sk.tier - 1]);
   prog.bank += earned; prog.stats.gems += earned; save();
@@ -3743,9 +3743,9 @@ const BOSS_CARD = {
 
 // The ending comes in three pages: the castle falls, morning, then home.
 const endBody = {
-  falls: () => `<div class="bigicon">${bossImg('shogun')}</div><p>${ENDING}</p>`,
-  morning: () => `<div class="bigicon">${kaiImg()}</div><p>${MORNING}</p>`,
-  home: () => `<div class="bigicon">${kaiImg()}${[0, 1, 2, 3, 4].map(() => pixImg('scroll', 'pix big')).join('')}</div><p>${HOME}</p>`,
+  falls: () => `${sceneHTML('falls')}<p>${ENDING}</p>`,
+  morning: () => `${sceneHTML('morning')}<p>${MORNING}</p>`,
+  home: () => `${sceneHTML('home')}<p>${HOME}</p>`,
 };
 function showEnding() {
   showMsg('The Castle Falls', endBody.falls(), [{ label: 'Next ▶', fn: showMorning, primary: true }]);
@@ -3763,8 +3763,8 @@ function showHome() {
 function storyPages() {
   const pages = [['The Stolen Scrolls', `${sceneHTML('opening')}<p>${STORY}</p>`]];
   WORLDS.forEach((W, w) => {
-    pages.push([`World ${w + 1}: ${W.name}`, `<div class="bigicon">${bossImg(W.boss.kind)}</div><p>${W.intro}</p>`]);
-    if (BOSS_CARD[W.boss.kind]) pages.push([W.boss.name, `<div class="bigicon">${pixImg('scroll', 'pix big')}</div><p class="freed">${BOSS_CARD[W.boss.kind]}</p>`]);
+    pages.push([`World ${w + 1}: ${W.name}`, `${sceneHTML(W.key)}<p>${W.intro}</p>`]);
+    if (BOSS_CARD[W.boss.kind]) pages.push([W.boss.name, `${sceneHTML(W.boss.kind)}<p class="freed">${BOSS_CARD[W.boss.kind]}</p>`]);
   });
   pages.push(['The Castle Falls', endBody.falls()], ['Morning', endBody.morning()], ['Welcome Home', endBody.home()]);
   return pages;
@@ -6283,7 +6283,7 @@ function startStage(i) {
       <p>First <b>dodge</b> the attacks. When the boss gets tired, tap the right answer to throw a shuriken to throw it!</p>`, 'Fight!');
   } else if (!prog.seenWorld[st.w]) {
     prog.seenWorld[st.w] = true; save();
-    intro(`World ${st.w + 1}: ${W.name}`, `<div class="bigicon">${bossImg(W.boss.kind)}</div><p>${W.intro}</p>`, "Let's go!");
+    intro(`World ${st.w + 1}: ${W.name}`, `${sceneHTML(W.key)}<p>${W.intro}</p>`, "Let's go!");
   } else begin();
 }
 function intro(title, body, label) { mode = 'intro'; hide('pauseBtn'); showTouch(false); showMsg(title, body, [{ label, fn: begin, primary: true }]); }
@@ -6750,10 +6750,10 @@ function torii(c, x, by, col = '#d63a2f') {
   dot(c, x - 8, by - 18, 2, 18, col); dot(c, x + 6, by - 18, 2, 18, col);
   dot(c, x - 12, by - 21, 24, 2, '#1a1a1a'); dot(c, x - 10, by - 19, 20, 2, col); dot(c, x - 8, by - 14, 16, 1, col);
 }
-function senseiFig(c, x, by, flip = false) {   // Sensei standing: his bust on a long grey robe (30 tall)
+function senseiFig(c, x, by, flip = false, young = false) {   // Sensei standing: his bust on a long grey robe (30 tall)
   dot(c, x - 7, by - 13, 14, 13, '#120f1a'); dot(c, x - 6, by - 13, 12, 12, '#4a5a7a'); dot(c, x - 5, by - 13, 2, 12, '#6b7fa8');
   dot(c, x - 6, by - 10, 12, 1, '#d9c39a'); dot(c, x - 4, by - 1, 3, 1, '#3b3552'); dot(c, x + 1, by - 1, 3, 1, '#3b3552');
-  sPut(c, scSpr.sensei().a[flip ? 1 : 0], x, by - 11, false);
+  sPut(c, (young ? youngSensei() : scSpr.sensei()).a[flip ? 1 : 0], x, by - 11, false);
 }
 function scroll(c, x, y) {   // 9 × 5
   dot(c, x - 4, y - 2, 9, 5, '#120f1a'); dot(c, x - 3, y - 1, 7, 3, '#f4e4bc');
@@ -6778,19 +6778,20 @@ const SCENES = {
       scCherry(c, 18, 94, t);
       scDojo(c, 140, 92);
       baby(c, 126, 87);   // a baby asleep on the porch
-      senseiFig(c, 54, 96);
+      senseiFig(c, 54, 96, false, true);
       const hop = t % 1.6 > 1.1 ? Math.round(Math.sin((t % 1.6 - 1.1) / 0.5 * Math.PI) * 7) : 0;   // the little hop
       sPut(c, scSpr.kuro().a[0], 78, 96 - hop);
       tufts(c, SH, '#4f8a3e', 5, t);
       petals(c, t, 16, 3);
     } },
-    { cap: 'Now an old picture hangs on the dojo wall: a tall boy holding a baby. Sensei never talks about it.', draw(c, t, p) {
+    { cap: 'An old picture hangs on the dojo wall: young Sensei holding a baby, with Kuro beside him. Sensei never talks about it.', draw(c, t, p) {
       dot(c, 0, 0, SW, SH, '#e8d6b4');
       for (let x = 0; x < SW; x += 12) dot(c, x, 0, 1, 84, '#dcc8a2');
       dot(c, 0, 0, SW, 4, '#6e4627'); dot(c, 0, 80, SW, 4, '#6e4627'); dot(c, 14, 0, 5, 84, '#6e4627'); dot(c, 174, 0, 5, 84, '#6e4627');
       dot(c, 0, 84, SW, 24, '#c9b27a'); for (let x = 0; x < SW; x += 24) dot(c, x, 84, 1, 24, '#b39c66');
-      dot(c, 82, 10, 42, 42, '#3a2416'); dot(c, 84, 12, 38, 38, '#6e4627'); dot(c, 87, 15, 32, 32, '#f0dfb6'); dot(c, 87, 38, 32, 9, '#e2cd9c');   // the picture
-      sPut(c, scSpr.kuro().a[1], 101, 46); baby(c, 110, 33);
+      dot(c, 72, 6, 56, 50, '#3a2416'); dot(c, 74, 8, 52, 46, '#6e4627'); dot(c, 77, 11, 46, 40, '#f0dfb6'); dot(c, 77, 40, 46, 11, '#e2cd9c');   // the picture
+      senseiFig(c, 90, 50, false, true); baby(c, 91, 36);   // young Sensei holding the baby
+      sPut(c, scSpr.kuro().a[0], 112, 50);
       dot(c, 30, 30, 22, 2, '#4a3020'); dot(c, 30, 52, 22, 2, '#4a3020');   // a rack of practice staffs
       for (let i = 0; i < 4; i++) dot(c, 33 + i * 5, 22, 2, 40, i % 2 ? '#b0794a' : '#8b5a2b');
       dot(c, 134, 12, 14, 2, '#3a2416'); dot(c, 135, 14, 12, 30, '#f4ead5'); dot(c, 134, 44, 14, 2, '#3a2416');   // a hanging scroll: "love"
@@ -6852,6 +6853,465 @@ const SCENES = {
     } },
   ],
 };
+
+
+// ---- more sprites for the story, all at 1 pixel per cell
+const downCache = new Map();
+function downS(img, k) {   // a baked sprite (k screen pixels per cell) back to 1 pixel per cell: exact, no blur
+  if (downCache.has(img)) return downCache.get(img);
+  const cv = document.createElement('canvas'); cv.width = img.width / k; cv.height = img.height / k;
+  const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.drawImage(img, 0, 0, cv.width, cv.height);
+  downCache.set(img, cv); return cv;
+}
+const bossS = (kind, f = 'a', flip = 0) => downS(BOSS_SPR[kind][f][flip], 4);   // bosses face left; flip 1 faces right
+const banditS = (f = 'stand', flip = 0) => downS(ENEMY_SPR.ninja[f][flip], 3);
+let YS = null, WOODEN = null;
+// Sensei when he was younger: dark topknot, dark brows and a short dark beard
+const youngSensei = () => YS || (YS = bake(makeFrames(18, 18, { s: '#f2c49b', S: '#d9a273', d: '#3a3040', D: '#55485e', e: '#16121f', g: '#4a5a7a', G: '#6b7fa8' }, ({ P, R, E }) => {
+  R(3, 12, 12, 6, 'g'); R(4, 12, 2, 6, 'G');
+  E(9, 6, 4.2, 4.4, 's'); E(9, 2.6, 4, 1.8, 'd'); R(8, 0, 3, 2, 'd');
+  R(5, 5, 3, 1, 'd'); R(10, 5, 3, 1, 'd'); R(6, 6, 1, 2, 'e'); R(11, 6, 1, 2, 'e');
+  E(9, 10.2, 3, 1.6, 'D'); R(7, 9, 5, 1, 'd'); P(8, 8, 'S'); P(9, 8, 'S');
+}, 1), ['a'], 1));
+// the little wooden ninja Kuro carved: Kai's own shape, in wood
+const woodenNinja = () => WOODEN || (WOODEN = bake(makeFrames(16, 16, { ...KAI_PAL, n: '#b0794a', N: '#d8a679', r: '#e63946', R: '#a91d2b', s: '#d8a679', w: '#d8a679', e: '#3a2416', b: '#8b5a2b', f: '#6e4627' }, drawKai, 1), ['a'], 1).a[0]);
+function animal(c, kind, x, by, flip = false) {   // the level animals, 1 pixel per cell, with 1 × 2 eyes
+  const sp = ANIMAL_SPR[kind]; if (!sp) return;
+  const img = bakeSpr(kind + '-story', sp, 1), x0 = Math.round(x - img.width / 2), y0 = by - img.height;
+  sPut(c, img, x, by, flip);
+  for (const [ex, ey] of sp.eyes || []) dot(c, flip ? x0 + img.width - 2 - ex : x0 + ex + 1, y0 + ey + 1, 1, 2, '#16121f');
+}
+function child(c, x, by, shirt, f = 0, flip = false) {   // a village child, 11 tall
+  const d = flip ? -1 : 1, st = f ? 1 : 0;
+  dot(c, x - 3, by - 11, 7, 6, '#120f1a'); dot(c, x - 2, by - 10, 5, 4, '#f6c79c'); dot(c, x - 2, by - 11, 5, 2, '#2a1a14');
+  dot(c, x + d, by - 9, 1, 2, '#16121f');
+  dot(c, x - 3, by - 6, 7, 4, '#120f1a'); dot(c, x - 2, by - 5, 5, 3, shirt);
+  dot(c, x - 2 - st, by - 2, 2, 2, '#3b3552'); dot(c, x + 1 + st, by - 2, 2, 2, '#3b3552');
+}
+function robo(c, x, by, body, eye, mood = 'work', t = 0) {   // a little factory robot, 12 tall
+  const sag = mood === 'tired' ? 2 : 0, bob = mood === 'work' && t % 0.5 < 0.25 ? 1 : 0;
+  dot(c, x - 5, by - 12 + sag - bob, 10, 7, '#120f1a'); dot(c, x - 4, by - 11 + sag - bob, 8, 5, body);
+  const ey = mood === 'rest' ? 1 : 2;
+  dot(c, x - 2, by - 10 + sag - bob, 1, ey, eye); dot(c, x + 1, by - 10 + sag - bob, 1, ey, eye);
+  dot(c, x, by - 14 + sag - bob, 1, 2, '#c8d3de'); dot(c, x, by - 15 + sag - bob, 1, 1, eye);
+  dot(c, x - 4, by - 5, 8, 4, '#120f1a'); dot(c, x - 3, by - 5, 6, 3, body);
+  dot(c, x - 3, by - 2, 2, 2, '#3b4552'); dot(c, x + 1, by - 2, 2, 2, '#3b4552');
+}
+function house(c, x, by, w, wall, roof) {
+  dot(c, x, by - 12, w, 12, wall); dot(c, x + 2, by - 8, 4, 4, '#6e4627'); dot(c, x + w - 6, by - 9, 4, 3, '#d9c39a');
+  for (let k = 0; k < 5; k++) dot(c, x - 3 + k, by - 13 - k, w + 6 - 2 * k, 1, k ? roof : '#3a1410');
+}
+function bamboo(c, x, col, hi, sway) {
+  for (let y = 0; y < SH; y++) dot(c, x + (y < 30 ? sway : 0), y, 3, 1, y % 14 === 0 ? hi : col);
+  dot(c, x + 3 + sway, 20, 5, 1, col); dot(c, x - 4 + sway, 34, 4, 1, col);
+}
+function scVolcano(c, x, top, hw, col, shade, glow) {   // filled to the bottom, a crater on top
+  for (let y = top; y < SH; y++) { const w = Math.round(8 + (hw - 8) * (y - top) / (SH - top)); dot(c, x - w, y, w, 1, col); dot(c, x, y, w, 1, shade); }
+  if (glow) { dot(c, x - 6, top, 12, 2, glow); dot(c, x - 2, top + 2, 3, 8, glow); }
+}
+function factory(c, x, by, t, smoke = true) {
+  dot(c, x, by - 30, 70, 30, '#3b4552'); for (let k = 0; k < 5; k++) dot(c, x + k * 14, by - 36, 14, 6, k % 2 ? '#4a5868' : '#5d6d7e');
+  for (let k = 0; k < 6; k++) dot(c, x + 6 + k * 11, by - 24, 6, 5, (k + Math.floor(t * 2)) % 3 ? '#ffd23f' : '#c99a1a');
+  for (const cx of [x + 10, x + 50]) { dot(c, cx, by - 54, 7, 20, '#2f3846'); dot(c, cx, by - 54, 7, 2, '#ff3355');
+    if (smoke) for (let i = 0; i < 5; i++) disc(c, cx + 3 + i * 4 + Math.round(Math.sin(t + i) * 2), by - 58 - i * 6 - Math.round((t * 6) % 6), 2 + i, '#5d6d7e'); }
+}
+function castle(c, x, by, dark = '#1c1a34', lit = '#ffd23f') {
+  dot(c, x - 30, by - 30, 60, 30, dark); dot(c, x - 10, by - 52, 20, 22, dark); dot(c, x - 34, by - 40, 10, 40, dark); dot(c, x + 24, by - 40, 10, 40, dark);
+  for (const [dx, h] of [[-34, -44], [24, -44], [-10, -56]]) for (let k = 0; k < 4; k++) dot(c, x + dx + (dx === -10 ? 0 : 0) - k, by + h + k, (dx === -10 ? 20 : 10) + 2 * k, 1, '#3d2466');
+  for (const [dx, dy] of [[-30, -34], [27, -34], [-3, -46], [3, -46], [-18, -20], [14, -20]]) dot(c, x + dx, by + dy, 2, 3, lit);
+  dot(c, x - 5, by - 12, 10, 12, '#0a0818');
+}
+function iceCave(c) {
+  dot(c, 0, 0, SW, SH, '#2a5a7a');
+  for (let x = 0; x < SW; x += 6) { const h = 6 + Math.floor(rnd(31, x) * 14); for (let k = 0; k < h; k++) dot(c, x + Math.floor(k / 4), k, 6 - Math.floor(k / 2.5), 1, k % 5 ? '#8fd3f4' : '#cfefff'); }
+  dot(c, 0, 92, SW, 16, '#cfefff'); dot(c, 0, 92, SW, 2, '#ffffff');
+}
+function snowfall(c, t, n, seed) { for (let i = 0; i < n; i++) dot(c, (rnd(seed, i) * SW + Math.sin(t + i) * 4) % SW, (rnd(seed + 1, i) * SH + t * (8 + i % 5)) % SH, 1, 1, '#ffffff'); }
+function scHeart(c, x, y, col = '#ff5a8a') { dot(c, x - 3, y - 2, 2, 2, col); dot(c, x + 1, y - 2, 2, 2, col); dot(c, x - 3, y, 6, 2, col); dot(c, x - 2, y + 2, 4, 1, col); dot(c, x - 1, y + 3, 2, 1, col); }
+function lieDown(c, img, x, by) {   // a sprite lying on its back (turned 90°, still on the grid)
+  c.save(); c.translate(Math.round(x - img.height / 2), Math.round(by)); c.rotate(-Math.PI / 2); c.drawImage(img, 0, 0); c.restore();
+}
+function tear(c, x, y, t, speed = 10) { dot(c, x, y + Math.floor((t * speed) % 8), 1, 2, '#9fd8ff'); }
+const ground = (c, y, col, top) => { dot(c, 0, y, SW, SH - y, col); if (top) dot(c, 0, y, SW, 1, top); };
+const dayJapan = c => { bands(c, ['#7cc6ff', '#9ad3ff', '#b8e0ff', '#d6ecff', '#ffe3ef'], 0, 70); mountains(c, [[30, 36, 60], [150, 30, 70]], '#a7b9d8', '#93a6c6', '#ffffff'); scHills(c, 3, 72, 3, '#7cb342', '#9ccf5a'); };
+const nightSky = (c, t, cols = ['#070b24', '#0c1233', '#141a44', '#1f2a5a']) => { bands(c, cols, 0, SH); starfield(c, 40, 7, 70, t); };
+const lavaSky = c => bands(c, ['#1a0505', '#2a0707', '#4a0f08', '#6b1a0a', '#9a3a0a'], 0, SH);
+const snowSky = c => bands(c, ['#9fd4ff', '#b6dfff', '#cde9ff', '#e2f3ff', '#eaf6ff'], 0, SH);
+const factorySky = c => bands(c, ['#1c2533', '#222c3c', '#2a3546', '#334255', '#3b4a5e'], 0, SH);
+
+Object.assign(SCENES, {
+  japan: [
+    { cap: 'In Japan Village, the children loved to play.', draw(c, t) {
+      dayJapan(c); ground(c, 86, '#8fbf5a', '#a5d46a'); dot(c, 0, 94, SW, 14, '#c9a77a');
+      house(c, 8, 86, 30, '#f1e0c5', '#c0392b'); house(c, 130, 86, 26, '#f1e0c5', '#c0392b'); house(c, 164, 86, 24, '#e8d3a8', '#7b1610');
+      scCherry(c, 54, 88, t); torii(c, 112, 92);
+      const bx = 80 + Math.round(Math.sin(t * 2) * 14), by = 86 - Math.round(Math.abs(Math.sin(t * 4)) * 10);
+      disc(c, bx, by, 2, '#e63946');
+      child(c, 64, 98, '#3a86ff', Math.floor(t * 4) % 2); child(c, 96, 98, '#ffd23f', Math.floor(t * 4 + 1) % 2, true); child(c, 82, 102, '#2ecc71', 0);
+      birds(c, t, 3, 2, 10); petals(c, t, 10, 4);
+    } },
+    { cap: 'One day, bandits ran off with the village rice, and the children chased after them...', draw(c, t) {
+      dayJapan(c); ground(c, 86, '#8fbf5a', '#a5d46a'); dot(c, 0, 94, SW, 14, '#c9a77a');
+      house(c, 4, 86, 28, '#f1e0c5', '#c0392b');
+      for (let i = 0; i < 6; i++) bamboo(c, 150 + i * 8, '#5f9e3a', '#8fcf5a', 0);
+      const run = (t * 26) % 60;
+      for (let i = 0; i < 2; i++) { const x = 100 + run + i * 16; sPut(c, banditS(walkF(t + i * 0.2) ? 'walkA' : 'stand'), x, 100); }
+      dot(c, 124 + run, 82, 7, 6, '#d9c39a');   // the rice sack
+      for (let i = 0; i < 3; i++) child(c, 50 + run + i * 12, 102, ['#3a86ff', '#ffd23f', '#2ecc71'][i], Math.floor(t * 6 + i) % 2);
+    } },
+    { cap: '...deep into the bamboo forest. Now they are lost and scared.', draw(c, t) {
+      bands(c, ['#0f2a1c', '#143322', '#1a3d28', '#22482e'], 0, SH);
+      for (let i = 0; i < 12; i++) bamboo(c, 4 + i * 16 + (i % 2) * 5, i % 2 ? '#2f5a2a' : '#3f7a34', '#5a9a46', Math.round(Math.sin(t + i) * 1));
+      ground(c, 94, '#1e3a1a', '#2f5a2a');
+      for (let i = 0; i < 3; i++) child(c, 84 + i * 9, 100, ['#3a86ff', '#ffd23f', '#2ecc71'][i], 0, i === 2);
+      tear(c, 82, 92, t); tear(c, 101, 92, t + 0.4);
+      for (const [x, y] of [[30, 30], [160, 22]]) if (t % 2 < 1.7) { dot(c, x, y, 1, 2, '#ffd23f'); dot(c, x + 3, y, 1, 2, '#ffd23f'); }   // eyes in the dark
+    } },
+    { cap: '<b>Kage the Shadow Blade</b> leads the bandits. He guards the Scroll of Adding.', draw(c, t) {
+      nightSky(c, t); disc(c, 140, 34, 16, '#f4eed8');
+      for (let i = 0; i < 8; i++) bamboo(c, i * 26, '#0f1a14', '#16261c', 0);
+      house(c, 96, 90, 64, '#1a1a2a', '#2a2838'); ground(c, 90, '#0c0c18');
+      sPut(c, bossS('kage', t % 1 < 0.5 ? 'a' : 'b'), 128, 76 - 0);
+      dot(c, 112, 72, 1, 1, '#ffd23f'); scroll(c, 112, 68);
+    } },
+    { cap: 'Sensei says: <i>"Go and find them. Every single one matters."</i>', draw(c, t, p) {
+      dayJapan(c); ground(c, 86, '#8fbf5a', '#a5d46a');
+      for (let i = 0; i < 6; i++) bamboo(c, 146 + i * 8, '#5f9e3a', '#8fcf5a', 0);
+      for (let y = 86; y < SH; y++) dot(c, 30 + (y - 86) * 0, y, 120 - (y - 86), 1, '#c9a77a');
+      torii(c, 30, 100); senseiFig(c, 50, 102);
+      const x = 70 + Math.max(0, p - 0.3) * 120;
+      sPut(c, scSpr.kai()[p > 0.3 && walkF(t) ? 'walkA' : 'stand'][0], x, 100);
+      tufts(c, SH, '#6a9a3e', 2, t); petals(c, t, 8, 9);
+    } },
+  ],
+  kage: [
+    { cap: 'You hold out your hand. "Take my hand?"', draw(c, t) {
+      nightSky(c, t); disc(c, 96, 36, 18, '#f4eed8'); ground(c, 88, '#1a1a2a', '#2a2838');
+      sPut(c, scSpr.kai().stand[0], 76, 88); dot(c, 84, 79, 3, 1, '#f6c79c');
+      sPut(c, bossS('kage'), 118, 88);
+    } },
+    { cap: 'Kage turns away. "Never."', draw(c, t) {
+      nightSky(c, t); disc(c, 96, 36, 18, '#f4eed8'); ground(c, 88, '#1a1a2a', '#2a2838');
+      sPut(c, scSpr.kai().stand[0], 76, 88); sPut(c, bossS('kage', 'a', 1), 120, 88);
+    } },
+    { cap: '"You fight just like <b>him</b>. Same moves, same little hop."', draw(c, t) {
+      bands(c, ['#2a2838', '#3a3650', '#4a4762'], 0, SH); ground(c, 90, '#1a1a2a', '#2a2838');
+      const h = t % 1.4 > 0.9 ? Math.round(Math.sin((t % 1.4 - 0.9) / 0.5 * Math.PI) * 7) : 0;
+      sPut(c, scSpr.kuro().a[1], 66, 90 - h); sPut(c, scSpr.kai()[h ? 'jump' : 'stand'][0], 126, 90 - h);   // the same hop, side by side
+      dot(c, 94, 40, 4, 4, '#ffd23f'); dot(c, 94, 46, 4, 1, '#ffd23f');
+    } },
+    { cap: 'Then he fades into the shadows. The bandits run away.', draw(c, t, p) {
+      nightSky(c, t); disc(c, 96, 36, 18, '#f4eed8'); ground(c, 88, '#1a1a2a', '#2a2838');
+      c.globalAlpha = Math.max(0, Math.ceil((1 - p * 1.6) * 4) / 4); sPut(c, bossS('kage'), 118, 88); c.globalAlpha = 1;
+      for (let i = 0; i < 3; i++) sPut(c, banditS(walkF(t + i * 0.3) ? 'walkA' : 'stand', 1), 150 + p * 60 + i * 12, 88);
+      sPut(c, scSpr.kai().stand[0], 76, 88);
+    } },
+    { cap: 'The lost children find their way home. Every single one.', draw(c, t) {
+      bands(c, ['#ff9a8b', '#ffb59c', '#ffd0b0', '#ffe0b5'], 0, 70); scHills(c, 3, 72, 3, '#7cb342', '#9ccf5a');
+      ground(c, 86, '#8fbf5a', '#a5d46a'); house(c, 20, 86, 30, '#f1e0c5', '#c0392b'); house(c, 140, 86, 30, '#f1e0c5', '#c0392b');
+      for (let i = 0; i < 3; i++) { const x = 70 + i * 20; dot(c, x + 4, 76, 6, 12, '#7b4a2a'); dot(c, x + 5, 72, 4, 4, '#f6c79c'); dot(c, x + 6, 73, 1, 2, '#16121f');   // a parent
+        child(c, x, 98, ['#3a86ff', '#ffd23f', '#2ecc71'][i], Math.floor(t * 3 + i) % 2); }
+      scHeart(c, 96, 60 - Math.floor(t * 4) % 4); petals(c, t, 10, 12);
+    } },
+  ],
+  lava: [
+    { cap: 'Long ago, the <b>Magma Golem</b> was the gentle keeper of the mountain.', draw(c, t) {
+      bands(c, ['#ffb88a', '#ffc796', '#ffd6a2', '#ffe3b0'], 0, SH); scVolcano(c, 120, 18, 90, '#6b4a3a', '#5a3a2e');
+      ground(c, 88, '#6fa85a', '#8fc87a');
+      for (let i = 0; i < 9; i++) { const x = 20 + i * 9; dot(c, x, 94, 1, 4, '#3f8a4a'); disc(c, x, 92, 1, ['#ff6fb5', '#ffd23f', '#ffffff'][i % 3]); }
+      sPut(c, bossS('golem', t % 1 < 0.5 ? 'a' : 'b', 1), 120, 102);
+      birds(c, t, 3, 4, 10);
+    } },
+    { cap: 'But the shadow crept into the volcano...', draw(c, t, p) {
+      lavaSky(c); scVolcano(c, 96, 22, 100, '#3a2420', '#2a1a16', '#ff6a00');
+      for (let i = 0; i < 16; i++) { const a = i * 0.4 + t, r = 50 - p * 30; ring(c, Math.round(96 + Math.cos(a) * r), Math.round(28 + Math.sin(a) * r * 0.3), 5, '#46207a', 0.6); }
+      ground(c, 96, '#2a1a16');
+    } },
+    { cap: '...and filled the Golem with anger.', draw(c, t) {
+      lavaSky(c); scVolcano(c, 96, 26, 110, '#3a2420', '#2a1a16', '#ff6a00');
+      for (let i = 0; i < 8; i++) { const k = (t * 1.5 + i * 0.37) % 1.6; dot(c, 96 + (i - 4) * 6 * k, 26 - 30 * k + 22 * k * k, 2, 2, i % 2 ? '#ff6a00' : '#ffd23f'); }
+      ground(c, 94, '#2a1a16', '#ff6a00');
+      const sh = t % 0.2 < 0.1 ? 1 : 0;
+      sPut(c, bossS('golem', 'a'), 96 + sh, 96);
+      dot(c, 89, 76, 3, 2, '#ff2a2a'); dot(c, 100, 76, 3, 2, '#ff2a2a');
+    } },
+    { cap: 'He guards the Scroll of Taking Away. Rocks fall all around.', draw(c, t) {
+      lavaSky(c); scVolcano(c, 150, 20, 90, '#3a2420', '#2a1a16', '#ff6a00');
+      ground(c, 92, '#2a1a16', '#ff6a00'); dot(c, 60, 92, 50, 3, '#ff6a00'); dot(c, 64, 95, 40, 2, '#ffd23f');
+      for (let i = 0; i < 6; i++) { const y = (t * 40 + i * 19) % 100; dot(c, 20 + i * 30, y, 4, 4, '#5a3a34'); }
+      sPut(c, scSpr.kai().stand[0], 30, 92);
+      scroll(c, 150, 40); ring(c, 150, 40, 8, '#ffd23f', 0.3);
+    } },
+    { cap: 'Sensei says: <i>"No one is too far gone. Carry your light into the fire."</i>', draw(c, t, p) {
+      lavaSky(c); scVolcano(c, 140, 24, 90, '#3a2420', '#2a1a16', '#ff6a00');
+      ground(c, 92, '#2a1a16', '#4a2a20');
+      const x = 30 + p * 80;
+      ring(c, x, 84, 14, '#fff3c4', 0.18); ring(c, x, 84, 8, '#fff3c4', 0.2);   // your light
+      sPut(c, scSpr.kai()[walkF(t) ? 'walkA' : 'stand'][0], x, 92);
+    } },
+  ],
+  golem: [
+    { cap: '"You don\'t have to be angry anymore."', draw(c, t) {
+      lavaSky(c); ground(c, 92, '#2a1a16', '#ff6a00');
+      sPut(c, scSpr.kai().stand[0], 60, 92); sPut(c, bossS('golem'), 124, 92);
+      for (let i = 0; i < 5; i++) dot(c, 112 + i * 6, 50 - ((t * 10 + i * 5) % 16), 2, 2, '#cfcfd8');   // steam
+    } },
+    { cap: 'His fire cools. He is gentle again.', draw(c, t, p) {
+      bands(c, ['#4a3a5a', '#6a5a7a', '#9a8aa0', '#c9b0b8'], 0, SH); ground(c, 92, '#5a4a44', '#7f6c63');
+      sPut(c, scSpr.kai().stand[0], 60, 92); sPut(c, bossS('golem'), 124, 92);
+      c.globalAlpha = 0.5; dot(c, 0, 0, SW, SH, `rgba(80,140,255,${Math.round(p * 4) / 10})`); c.globalAlpha = 1;
+      if (p > 0.6) scHeart(c, 124, 50);
+    } },
+    { cap: '"The Shogun once cried here..."', draw(c, t) {
+      lavaSky(c); ground(c, 92, '#2a1a16', '#4a2a20');
+      dot(c, 80, 80, 34, 12, '#4a3530'); dot(c, 82, 78, 30, 2, '#5a4a44');   // a rock
+      sPut(c, scSpr.shogun().a[0], 96, 80); tear(c, 93, 62, t, 8); tear(c, 98, 62, t + 0.5, 8);
+    } },
+    { cap: '"...holding a little wooden ninja he carved for someone he left behind."', draw(c, t) {
+      bands(c, ['#2a0707', '#3a0f08', '#4a1a0a'], 0, SH);
+      dot(c, 60, 70, 72, 38, '#5a3a8f'); dot(c, 64, 74, 64, 34, '#3d2466');   // his big gloved hands
+      dot(c, 70, 66, 52, 10, '#4a2a6a');
+      sPut(c, woodenNinja(), 96, 74);
+      for (let i = 0; i < 3; i++) dot(c, 86 + i * 8, 40 + ((t * 12 + i * 9) % 22), 1, 2, '#9fd8ff');
+    } },
+    { cap: 'The Golem keeps his mountain again, and gives you the scroll.', draw(c, t) {
+      bands(c, ['#ffb88a', '#ffc796', '#ffd6a2', '#ffe3b0'], 0, SH); scVolcano(c, 150, 26, 80, '#6b4a3a', '#5a3a2e');
+      ground(c, 92, '#6fa85a', '#8fc87a');
+      for (let i = 0; i < 9; i++) { const x = 14 + i * 8; dot(c, x, 96, 1, 4, '#3f8a4a'); disc(c, x, 94, 1, ['#ff6fb5', '#ffd23f', '#ffffff'][i % 3]); }
+      sPut(c, bossS('golem', t % 1 < 0.5 ? 'a' : 'b'), 140, 104); sPut(c, scSpr.kai().stand[0], 100, 100);
+      scroll(c, 100, 76 - Math.floor(t * 4) % 2); scHeart(c, 140, 70);
+    } },
+  ],
+  robot: [
+    { cap: 'The Shogun built a great factory.', draw(c, t) {
+      factorySky(c); starfield(c, 20, 5, 40, t);
+      scHills(c, 9, 82, 3, '#2a3340', '#3b4552'); factory(c, 60, 90, t); ground(c, 90, '#232b36', '#4a5868');
+    } },
+    { cap: 'Its robots work day and night, and never rest.', draw(c, t) {
+      dot(c, 0, 0, SW, SH, '#2a3546'); for (let x = 0; x < SW; x += 16) dot(c, x, 0, 2, 80, '#334255');
+      dot(c, 0, 80, SW, 6, '#4a5868'); for (let x = 0; x < SW; x += 6) dot(c, (x + Math.floor(t * 20)) % SW, 82, 3, 2, '#2c3e50');
+      for (let i = 0; i < 6; i++) { const x = (i * 34 + t * 20) % (SW + 20) - 10; dot(c, x, 74, 8, 6, '#b0794a'); }
+      for (let i = 0; i < 4; i++) robo(c, 24 + i * 46, 100, '#8395a7', '#4cc9f0', 'work', t + i * 0.2);
+      ground(c, 100, '#232b36', '#4a5868');
+      dot(c, 160, 10, 16, 16, '#120f1a'); dot(c, 161, 11, 14, 14, '#f4f4f4'); dot(c, 167, 12, 2, 6, '#16121f'); dot(c, 168, 17, 5, 1, '#16121f');   // the clock never stops
+    } },
+    { cap: 'The robots are very, very tired.', draw(c, t) {
+      dot(c, 0, 0, SW, SH, '#2a3546'); ground(c, 96, '#232b36', '#4a5868');
+      robo(c, 96, 96, '#8395a7', '#4cc9f0', 'tired', t);
+      dot(c, 104, 70 - Math.floor(t * 4) % 6, 3, 1, '#c8d3de'); dot(c, 108, 64 - Math.floor(t * 4) % 6, 4, 1, '#c8d3de');   // z z
+      for (let i = 0; i < 2; i++) robo(c, 50 + i * 92, 96, '#6c7a89', '#4cc9f0', 'tired', t);
+    } },
+    { cap: '<b>Mega-Bot 3000</b> runs the factory and guards the Scroll of Times.', draw(c, t) {
+      factorySky(c); ground(c, 94, '#232b36', '#4a5868');
+      for (let i = 0; i < 4; i++) robo(c, 14 + i * 18, 94, '#6c7a89', '#4cc9f0', 'work', t + i * 0.3);
+      sPut(c, bossS('bot', t % 1 < 0.5 ? 'a' : 'b'), 140, 94);
+      if (t % 1 < 0.5) dot(c, 120, 80, 4, 1, '#ff3355');
+    } },
+    { cap: 'Sensei says: <i>"They were made for more than work. Set them free."</i>', draw(c, t, p) {
+      factorySky(c); starfield(c, 20, 5, 40, t); factory(c, 110, 92, t); ground(c, 92, '#232b36', '#4a5868');
+      senseiFig(c, 30, 98); sPut(c, scSpr.kai()[p > 0.3 && walkF(t) ? 'walkA' : 'stand'][0], 50 + Math.max(0, p - 0.3) * 80, 96);
+    } },
+  ],
+  bot: [
+    { cap: '"You were made for more than work."', draw(c, t) {
+      factorySky(c); ground(c, 94, '#232b36', '#4a5868');
+      sPut(c, scSpr.kai().stand[0], 60, 94); sPut(c, bossS('bot'), 128, 94);
+    } },
+    { cap: 'Its screen flickers: <b>KURO · FAMILY: 1 FATHER, 1 LITTLE BROTHER</b>', draw(c, t) {
+      dot(c, 0, 0, SW, SH, '#1c2533'); dot(c, 40, 14, 112, 76, '#5d6d7e'); dot(c, 44, 18, 104, 68, '#0b1a10');
+      if (t % 0.3 < 0.27) {
+        sPut(c, youngSensei().a[0], 68, 70); dot(c, 61, 70, 14, 10, '#4a5a7a');
+        sPut(c, scSpr.kuro().a[0], 100, 80); baby(c, 128, 74);
+        dot(c, 50, 22, 92, 1, '#3ae374'); dot(c, 50, 82, 92, 1, '#3ae374');
+      }
+    } },
+    { cap: '"...MORE THAN WORK?" Its eyes turn from red to blue.', draw(c, t, p) {
+      factorySky(c); ground(c, 94, '#232b36', '#4a5868');
+      sPut(c, bossS('bot'), 110, 94);
+      const col = p < 0.5 ? '#ff3355' : '#4cc9f0'; dot(c, 98, 62, 3, 2, col); dot(c, 106, 62, 3, 2, col);
+    } },
+    { cap: '"NEW ORDER: EVERYONE REST." The machines go quiet.', draw(c, t) {
+      dot(c, 0, 0, SW, SH, '#2a3546'); ground(c, 96, '#232b36', '#4a5868');
+      for (let i = 0; i < 5; i++) robo(c, 20 + i * 38, 96, '#8395a7', '#4cc9f0', 'rest', t);
+      dot(c, 0, 80, SW, 6, '#4a5868');
+    } },
+    { cap: 'For the first time, every robot gets to rest.', draw(c, t) {
+      bands(c, ['#1f2a5a', '#3a3a7a', '#7a5a9a', '#ff9a8b', '#ffd0a0'], 0, 80); factory(c, 120, 86, t, false);
+      ground(c, 86, '#3b4552', '#5d6d7e');
+      for (let i = 0; i < 4; i++) robo(c, 18 + i * 22, 98, '#8395a7', '#4cc9f0', 'rest', t);
+      sPut(c, bossS('bot', 'a', 1), 150, 100); scHeart(c, 60, 66);
+    } },
+  ],
+  snow: [
+    { cap: 'High on the frozen peaks lives a lonely giant.', draw(c, t) {
+      snowSky(c); mountains(c, [[40, 20, 70], [140, 14, 80]], '#8aa4c0', '#7a94b0', '#ffffff');
+      ground(c, 90, '#eaf6ff', '#ffffff'); pine(c, 20, 92, 18, '#2f6a5a', '#3f8a6a'); pine(c, 176, 92, 22, '#2f6a5a', '#3f8a6a');
+      sPut(c, bossS('yeti'), 110, 96); snowfall(c, t, 30, 3);
+    } },
+    { cap: 'Everyone ran away from him.', draw(c, t, p) {
+      snowSky(c); ground(c, 90, '#eaf6ff', '#ffffff');
+      sPut(c, bossS('yeti'), 50, 96);
+      for (let i = 0; i < 4; i++) animal(c, 'penguin', 90 + p * 90 + i * 16, 98, false);
+      snowfall(c, t, 20, 5);
+    } },
+    { cap: 'So his heart froze as cold as the snow.', draw(c, t, p) {
+      bands(c, ['#5a8ab0', '#6f9ac0', '#8fb0d0'], 0, SH); ground(c, 90, '#cfe0ee', '#eaf6ff');
+      sPut(c, bossS('yeti'), 96, 96);
+      tear(c, 90, 66, t, 6); c.globalAlpha = 0.35; dot(c, 0, 0, SW, Math.round(SH * p), '#cfefff'); c.globalAlpha = 1;
+      snowfall(c, t, 40, 7);
+    } },
+    { cap: 'The <b>Abominable Snowman</b> guards the Scroll of Patterns.', draw(c, t) {
+      iceCave(c); scroll(c, 150, 60); ring(c, 150, 60, 8, '#ffd23f', 0.3);
+      sPut(c, bossS('yeti', t % 1 < 0.5 ? 'a' : 'b'), 120, 94); sPut(c, scSpr.kai().stand[0], 30, 94);
+    } },
+    { cap: 'Sensei says: <i>"Cold hearts melt with kindness."</i>', draw(c, t, p) {
+      snowSky(c); mountains(c, [[150, 16, 70]], '#8aa4c0', '#7a94b0', '#ffffff'); ground(c, 90, '#eaf6ff', '#ffffff');
+      senseiFig(c, 30, 98); sPut(c, scSpr.kai()[p > 0.3 && walkF(t) ? 'walkA' : 'stand'][0], 50 + Math.max(0, p - 0.3) * 90, 96);
+      snowfall(c, t, 24, 9);
+    } },
+  ],
+  yeti: [
+    { cap: '"Nobody should be alone."', draw(c, t) {
+      iceCave(c); sPut(c, scSpr.kai().stand[0], 66, 94); sPut(c, bossS('yeti'), 124, 94);
+    } },
+    { cap: '"...You\'re not running away?" The ice begins to melt.', draw(c, t) {
+      iceCave(c); sPut(c, scSpr.kai().stand[0], 66, 94); sPut(c, bossS('yeti'), 124, 94);
+      for (let i = 0; i < 10; i++) dot(c, 8 + i * 18, (t * 30 + i * 13) % 60, 1, 2, '#9fd8ff');
+    } },
+    { cap: 'Long ago, the Shogun walked past in the snow, and something slipped off...', draw(c, t, p) {
+      snowSky(c); ground(c, 90, '#eaf6ff', '#ffffff');
+      const x = 20 + p * 160; sPut(c, scSpr.shogun()[walkF(t) ? 'a' : 'b'][1], x, 92);
+      const bx = p < 0.4 ? x + 4 : 84; dot(c, bx, p < 0.4 ? 70 : Math.min(88, 70 + (p - 0.4) * 80), 6, 2, '#e63946');   // the red headband
+      snowfall(c, t, 40, 11);
+    } },
+    { cap: 'The Snowman gives you a red headband. It looks just like yours.', draw(c, t) {
+      iceCave(c); sPut(c, scSpr.kai().stand[0], 80, 94); sPut(c, bossS('yeti'), 124, 94);
+      dot(c, 96, 74, 8, 2, '#e63946'); dot(c, 102, 76, 3, 2, '#e63946'); scHeart(c, 124, 52);
+    } },
+    { cap: 'Now he has friends.', draw(c, t) {
+      snowSky(c); mountains(c, [[40, 20, 70], [150, 14, 80]], '#8aa4c0', '#7a94b0', '#ffffff'); ground(c, 90, '#eaf6ff', '#ffffff');
+      sPut(c, bossS('yeti', t % 1 < 0.5 ? 'a' : 'b'), 96, 96);
+      for (let i = 0; i < 4; i++) animal(c, 'penguin', 40 + i * 12 + (i > 1 ? 70 : 0), 100 - (Math.floor(t * 4 + i) % 2) * 2, i > 1);
+      scHeart(c, 96, 52);
+    } },
+  ],
+  castle: [
+    { cap: 'At last, the Shadow Shogun\'s castle.', draw(c, t) {
+      nightSky(c, t); disc(c, 40, 26, 10, '#f4eed8');
+      mountains(c, [[150, 50, 70]], '#141030', '#100c26');
+      castle(c, 110, 70); dot(c, 60, 70, 120, 38, '#100c26');
+      for (let i = 0; i < 12; i++) ring(c, 30 + i * 14, 70 + Math.round(Math.sin(t + i) * 2), 6, '#46207a', 0.5);
+      sPut(c, scSpr.kai().stand[0], 24, 100); ground(c, 100, '#141030');
+    } },
+    { cap: 'Sensei holds you close for a long time.', draw(c, t) {
+      bands(c, ['#1f2a5a', '#2a3060', '#3a3a70'], 0, SH); ground(c, 92, '#2a3152', '#3a4270');
+      senseiFig(c, 92, 94); sPut(c, scSpr.kai().stand[1], 102, 94);
+    } },
+    { cap: '<i>"There\'s something I should have told you long ago..."</i>', draw(c, t) {
+      bands(c, ['#1f2a5a', '#2a3060', '#3a3a70'], 0, SH); ground(c, 92, '#2a3152', '#3a4270');
+      senseiFig(c, 70, 94, true); sPut(c, scSpr.kai().stand[1], 110, 94);
+      if (t % 2 < 1.4) { dot(c, 74, 46, 1, 2, '#9fd8ff'); }
+    } },
+    { cap: '<i>"He was very dear to me. He will not thank you."</i>', draw(c, t) {
+      dot(c, 0, 0, SW, SH, '#e8d6b4'); dot(c, 46, 8, 100, 82, '#3a2416'); dot(c, 49, 11, 94, 76, '#6e4627'); dot(c, 53, 15, 86, 68, '#f0dfb6');
+      sPut(c, youngSensei().a[0], 84, 62); dot(c, 77, 62, 14, 18, '#4a5a7a'); baby(c, 86, 66);
+      sPut(c, scSpr.kuro().a[0], 116, 80);
+    } },
+    { cap: '<i>"Love him anyway."</i>', draw(c, t, p) {
+      nightSky(c, t); castle(c, 150, 92); ground(c, 92, '#141030', '#2a2050');
+      senseiFig(c, 24, 98); sPut(c, scSpr.kai()[walkF(t) ? 'walkA' : 'stand'][0], 50 + p * 80, 96);
+    } },
+  ],
+  falls: [
+    { cap: 'The Shogun is beaten, and his dark castle begins to crumble.', draw(c, t) {
+      nightSky(c, t); const sh = t % 0.2 < 0.1 ? 1 : 0;
+      c.save(); c.translate(sh, 0); castle(c, 96, 96); c.restore();
+      for (let i = 0; i < 8; i++) dot(c, 40 + i * 16, (t * 50 + i * 23) % 100, 4, 4, '#3c4470');
+      ground(c, 96, '#141030');
+    } },
+    { cap: 'A huge beam falls toward him.', draw(c, t, p) {
+      dot(c, 0, 0, SW, SH, '#1a1030'); ground(c, 92, '#2a2050', '#3a3070');
+      sPut(c, scSpr.shogun().a[0], 130, 92); sPut(c, scSpr.kai().stand[0], 60, 92);
+      dot(c, 106, Math.round(-10 + p * 40), 50, 7, '#4a3220'); dot(c, 106, Math.round(-10 + p * 40), 50, 2, '#6b4a2e');
+    } },
+    { cap: 'You don\'t stop to think. You push him out of the way...', draw(c, t, p) {
+      dot(c, 0, 0, SW, SH, '#1a1030'); ground(c, 92, '#2a2050', '#3a3070');
+      const sx = 130 + Math.min(1, p * 2) * 40; sPut(c, scSpr.shogun().a[0], sx, 92);
+      sPut(c, scSpr.kai().jump[0], 120 + Math.min(1, p * 2) * 6, 92);
+      dot(c, 106, 30, 50, 7, '#4a3220'); dot(c, 106, 30, 50, 2, '#6b4a2e');
+    } },
+    { cap: '...and the beam falls on you instead.', draw(c, t, p) {
+      dot(c, 0, 0, SW, SH, '#1a1030'); ground(c, 92, '#2a2050', '#3a3070');
+      sPut(c, scSpr.shogun().a[0], 170, 92); lieDown(c, scSpr.kai().stand[0], 128, 92);
+      dot(c, 106, Math.min(78, 30 + p * 120), 50, 7, '#4a3220');
+      if (p > 0.35 && p < 0.45) dot(c, 0, 0, SW, SH, '#ffffff');
+    } },
+    { cap: 'Everything goes dark.', draw(c, t, p) {
+      dot(c, 0, 0, SW, SH, '#000000');
+      c.globalAlpha = Math.max(0, 1 - p * 1.4); disc(c, 96, 54, 3, '#ffd23f'); c.globalAlpha = 1;
+    } },
+  ],
+  morning: [
+    { cap: 'When the sun comes up, you open your eyes.', draw(c, t) {
+      bands(c, ['#ff9a8b', '#ffb59c', '#ffd0b0', '#ffe0b5', '#fff0c8'], 0, 80); disc(c, 96, 78, 14, '#fff3c4');
+      ground(c, 80, '#5a5a7a', '#7a7aa0'); for (let i = 0; i < 6; i++) dot(c, 10 + i * 32, 74, 14, 6, '#3c4470');   // rubble
+      lieDown(c, scSpr.kai().stand[0], 80, 96); sPut(c, scSpr.shogun().a[0], 116, 96); tear(c, 112, 80, t, 8);
+    } },
+    { cap: 'The Shogun is kneeling beside you, crying. His mask has cracked and fallen away.', draw(c, t, p) {
+      bands(c, ['#ffb59c', '#ffd0b0', '#ffe0b5', '#fff0c8'], 0, 80); ground(c, 80, '#5a5a7a', '#7a7aa0');
+      sPut(c, scSpr.kuro().a[0], 110, 96);
+      const my = Math.min(96, 72 + p * 60); dot(c, 102, Math.round(my) - 6, 5, 5, '#c0182f'); dot(c, 108, Math.round(my) - 5, 4, 4, '#7a0a18');   // the broken mask on the ground
+      tear(c, 103, 82, t, 8);
+    } },
+    { cap: 'You know that face. It\'s the boy in the picture. It\'s <b>Kuro, your big brother</b>.', draw(c, t) {
+      dot(c, 0, 0, SW, SH, '#fff0c8'); dot(c, 22, 10, 66, 70, '#6e4627'); dot(c, 25, 13, 60, 64, '#f0dfb6');
+      sPut(c, youngSensei().a[0], 46, 58); dot(c, 39, 58, 14, 16, '#4a5a7a'); baby(c, 48, 62); sPut(c, scSpr.kuro().a[0], 72, 74);
+      sPut(c, scSpr.kuro().a[0], 150, 100);
+    } },
+    { cap: '"I thought I had to earn Father\'s love. I made this for you, a long time ago."', draw(c, t) {
+      bands(c, ['#ffd0b0', '#ffe0b5', '#fff0c8'], 0, SH);
+      dot(c, 50, 64, 92, 44, '#f2c39a'); dot(c, 50, 64, 92, 2, '#d99b72');   // his open hand
+      sPut(c, woodenNinja(), 96, 70);
+    } },
+    { cap: 'You tie the red headband back on his wrist. "Because you\'re my brother. And you never had to earn it."', draw(c, t) {
+      bands(c, ['#ffb59c', '#ffd0b0', '#ffe0b5', '#fff0c8'], 0, 80); disc(c, 96, 80, 16, '#fff3c4'); ground(c, 80, '#5f9a4c', '#7fba5c');
+      sPut(c, scSpr.kai().stand[0], 84, 100); sPut(c, scSpr.kuro().a[0], 112, 100);
+      dot(c, 98, 83, 4, 2, '#e63946'); scHeart(c, 98, 60 - Math.floor(t * 2) % 3);
+    } },
+  ],
+  home: [
+    { cap: 'Far away, the children are home...', draw(c, t) {
+      bands(c, ['#7cc6ff', '#9ad3ff', '#b8e0ff', '#ffe3ef'], 0, 80); ground(c, 86, '#8fbf5a', '#a5d46a');
+      house(c, 20, 86, 30, '#f1e0c5', '#c0392b'); house(c, 140, 86, 30, '#f1e0c5', '#c0392b'); scCherry(c, 100, 88, t);
+      for (let i = 0; i < 3; i++) child(c, 70 + i * 14, 100 - (Math.floor(t * 4 + i) % 2) * 2, ['#3a86ff', '#ffd23f', '#2ecc71'][i]);
+      petals(c, t, 12, 2);
+    } },
+    { cap: '...the Golem keeps his mountain, the robots rest, and the Snowman has friends.', draw(c, t) {
+      bands(c, ['#ffc796', '#ffe3b0'], 0, SH); dot(c, 0, 80, 64, 28, '#6fa85a'); sPut(c, bossS('golem'), 32, 100);
+      dot(c, 64, 0, 64, SH, '#3b4a5e'); dot(c, 64, 80, 64, 28, '#4a5868'); robo(c, 84, 100, '#8395a7', '#4cc9f0', 'rest', t); robo(c, 108, 100, '#8395a7', '#4cc9f0', 'rest', t);
+      dot(c, 128, 0, 64, SH, '#cde9ff'); dot(c, 128, 80, 64, 28, '#ffffff'); sPut(c, bossS('yeti'), 160, 104); animal(c, 'penguin', 140, 104);
+      dot(c, 63, 0, 2, SH, '#120f1a'); dot(c, 127, 0, 2, SH, '#120f1a');
+    } },
+    { cap: 'Two brothers walk the long road home.', draw(c, t, p) {
+      bands(c, ['#ff9a8b', '#ffb59c', '#ffd0b0', '#ffe0b5'], 0, 76); mountains(c, [[150, 36, 70]], '#a77aa0', '#94698e', '#ffe8f0');
+      scHills(c, 2, 78, 2, '#7a9a6a'); ground(c, 84, '#5f9a4c', '#7fba5c'); dot(c, 0, 92, SW, 8, '#c9a77a');
+      const x = 30 + p * 120; sPut(c, scSpr.kai()[walkF(t) ? 'walkA' : 'stand'][0], x, 98); sPut(c, scSpr.kuro()[walkF(t + 0.25) ? 'a' : 'b'][1], x + 20, 98);
+      birds(c, t, 3, 8, 12);
+    } },
+    { cap: 'Sensei sees you both coming, and he <b>runs</b> down the path.', draw(c, t, p) {
+      dayJapan(c); ground(c, 86, '#8fbf5a', '#a5d46a'); dot(c, 0, 94, SW, 10, '#c9a77a');
+      scDojo(c, 160, 92);
+      senseiFig(c, 150 - p * 50, 102, true); dot(c, 92 - p * 0, 0, 0, 0, '#000');
+      sPut(c, scSpr.kai().stand[0], 40, 100); sPut(c, scSpr.kuro().a[1], 60, 100); petals(c, t, 12, 5);
+    } },
+    { cap: 'He throws his arms around his two sons. <b>"Welcome home."</b>', draw(c, t) {
+      dayJapan(c); ground(c, 86, '#8fbf5a', '#a5d46a'); scDojo(c, 160, 92);
+      sPut(c, scSpr.kai().stand[0], 80, 100); senseiFig(c, 96, 102); sPut(c, scSpr.kuro().a[0], 114, 100);
+      for (let i = 0; i < 5; i++) { const a = t * 0.8 + i * 1.256; scroll(c, Math.round(96 + Math.cos(a) * 34), Math.round(40 + Math.sin(a) * 10)); }
+      scHeart(c, 96, 18); petals(c, t, 20, 7);
+    } },
+  ],
+});
 
 // ---------------------------------------------------------------- fact book
 let fbAt = 0;
