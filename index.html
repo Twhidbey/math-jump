@@ -2502,6 +2502,7 @@ function stepsOpts(st) {   // three stones for the next number
 }
 // Each answer has a time limit (a bar over the stones). Too slow and every stone crumbles: back to the start, new pattern.
 const STEP_TIME = () => (prog.easy ? 12 : 8) * 60;
+const stepTimed = () => !(prog.easy && (curPlayer().grade === 'K' || L.skill.tier === 1));   // no timer in Easy mode for kindergarten
 function stepsCrumble(st) {
   const c = G.cross, ans = st.seq[st.k + 1];
   G.mistakes++; G.streak = 0; missed(stepsQ(st)); sfx.wrong(); st.missed = true;
@@ -2546,7 +2547,7 @@ function crossTick() {
     return;
   }
   p.onGround = true;
-  if (st.opts.length && st.opts.every(o => o.state === 'idle') && G.time - st.shownAt > STEP_TIME()) { stepsCrumble(st); return; }
+  if (stepTimed() && st.opts.length && st.opts.every(o => o.state === 'idle') && G.time - st.shownAt > STEP_TIME()) { stepsCrumble(st); return; }
   if (keys.left && !st.k) {   // changed your mind on the first stone: hop back to the edge
     st.opts = [];
     crossHop((st.c0 - 1.5) * T, GR * T, () => { G.cross = null; });
@@ -2640,7 +2641,7 @@ function drawSteps() {
       sq(o.x, o.top, o.val, c1, c2, '#ffffff', o.state === 'fade' ? 1 - o.t / 20 : 1);
       if (!isTouch && o.state === 'idle') keyTag(ANS_KEYS(3)[j], o.x + T / 2 - 2, o.top - 2);
     });
-    if (G.cross && G.cross.st === st && !G.cross.hop && st.opts.length && st.opts.every(o => o.state === 'idle')) {   // the time bar
+    if (stepTimed() && G.cross && G.cross.st === st && !G.cross.hop && st.opts.length && st.opts.every(o => o.state === 'idle')) {   // the time bar
       const left = clamp(1 - (G.time - st.shownAt) / STEP_TIME(), 0, 1), bx = stepX(st, st.k + 1) - T, by = GR * T - STONE_TOPS[2] * T - 20;
       ctx.fillStyle = 'rgba(0,0,0,.45)'; rrect(bx - 2, by - 2, 2 * T + 4, 12, 6); ctx.fill();
       ctx.fillStyle = left > 0.5 ? '#3ae374' : left > 0.25 ? '#ffd23f' : (G.time % 20 < 10 ? '#ff4d4d' : '#ff9a9a');
