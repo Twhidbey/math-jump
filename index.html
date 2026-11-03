@@ -2149,13 +2149,13 @@ function openBossPad() {
       noteFact(ar.q, false, false, L.skill);
       G.mistakes++; G.streak = 0; remember(ar.q); missed(ar.q);
       sfx.wrong(); floatText(cx, cy - 20, `Oops! ${qSolved(ar.q)}`, '#ff6b6b', 30);
-      ar.q = freshQ(ar.q.text); startDodge(); L.boss.atk = 1;
+      ar.q = freshQ(ar.q.text); startDodge(true);
     },
     onTimeout() {
       const [cx, cy] = here();
       noteFact(ar.q, false, false, L.skill);
       G.streak = 0; sfx.wrong(); floatText(cx, cy - 20, `Too slow! ${qSolved(ar.q)}`, '#ff9a3c', 30);
-      ar.q = freshQ(ar.q.text); startDodge(); L.boss.atk = 1;
+      ar.q = freshQ(ar.q.text); startDodge(true);
     },
   });
 }
@@ -2438,20 +2438,32 @@ function fell() {
   P.x = G.checkpoint; P.y = GR * T - P.h; P.vx = P.vy = 0; P.inv = 100;
   if (first) floatText(P.x + P.w / 2, P.y - 30, `Too far to jump! Build a bridge: ${b.target}`, '#ffd23f', 24);
 }
+// Out of hearts: the level starts over, like most games. Kindergarten and 1st grade players instead go on from the
+// last gate they opened (the level stays as it was), with "Restart level" as the other choice. Bosses always start over.
 function gameOver() {
   mode = 'over'; stopMusic(); sfx.over(); showTouch(false); hide('pauseBtn');
-  setTimeout(() => showMsg('Out of hearts!', '<p>Every ninja falls sometimes. Get up and try again!</p>', [
+  const young = ['K', '1'].includes(curPlayer().grade) && !L.boss;
+  setTimeout(() => showMsg('Out of hearts!', '<p>Every ninja falls sometimes. Get up and try again!</p>', young ? [
+    { label: 'Try again', fn: continueLevel, primary: true },
+    { label: 'Restart level', fn: () => startStage(G.idx), alt: true },
+    { label: 'Levels', fn: toMenu, alt: true },
+  ] : [
     { label: 'Try again', fn: () => startStage(G.idx), primary: true },
     { label: 'Levels', fn: toMenu, alt: true },
   ]), 900);
+}
+function continueLevel() {
+  G.hearts = G.maxHearts; G.streak = 0; G.power = null; G.dash = 0; G.cross = null; G.mbox = null; G.tip = null; G.wrongRun = 0;
+  P.x = G.checkpoint; P.y = GR * T - P.h; P.vx = P.vy = 0; P.inv = 120;
+  playMusic(L.world.key); begin();
 }
 
 // ---------------------------------------------------------------- skip-count stepping stones
 // A pit with a counting pattern to cross. Kai walks to the edge and hops onto the first stone by himself; then each
 // answer is the move: three stones offer the next number and Kai hops onto the one picked (button or key). The right
-// stone falls, breaks apart and fills its 3-column section of the pit with stair blocks (its number on top), so the
-// answers rebuild the path; no bridge. A wrong one crumbles, Kai drops into the pit and pops back at the start with a
-// new pattern (the filled sections clear, since the numbers change).
+// stone holds. Once Kai is across, the stones fall one after another, break apart and fill the pit with stair blocks
+// (numbers on top), so the answers rebuild the path; no bridge. A wrong one crumbles, Kai drops into the pit and pops
+// back at the start with a new pattern.
 // Arrow keys pause while crossing (left hops back to the edge). The step follows the chosen math; take-away counts back.
 function stepSeq(skill, n) {
   const id = skill.id, tier = skill.tier, pick = a => a[R(0, a.length - 1)];
@@ -2505,8 +2517,7 @@ function crossHop(x1, feet1, done, dur = 22) {
   const p = P; G.cross.hop = { x0: p.x + p.w / 2, y0: p.y + p.h, x1, y1: feet1, t: 0, dur, arc: 46 + Math.max(0, p.y + p.h - feet1) * 0.5, done };
   sfx.jump();
 }
-// The stone Kai stands on falls (he rides it down), breaks on the bottom and fills its section up to the ground.
-function crossDrop(o, k, done) { G.cross.drop = { o, k, vy: 1, done }; }
+// A stone breaks on the bottom of the pit and fills its section up to the ground.
 function stepsBreak(st, k, o) {
   stepsFill(st, k); o.filled = true;
   const W = L.world;
@@ -2515,7 +2526,7 @@ function stepsBreak(st, k, o) {
 }
 function crossStart(st) {
   G.cross = { st, hop: null }; P.vx = P.vy = 0; P.face = 1;
-  crossHop(st.path[0].x, st.path[0].top, () => crossDrop(st.path[0], 0, () => stepsOpts(st)));
+  crossHop(st.path[0].x, st.path[0].top, () => { stepsOpts(st); });
   if (!st.told) { st.told = true; floatText(st.c0 * T, GR * T - 4 * T, st.back ? `Count back! Each one is ${st.step} less.` : `Count up! Each one is ${st.step} more.`, '#ffd23f', 26); }
 }
 function crossTick() {
@@ -2524,12 +2535,6 @@ function crossTick() {
   if (keys.jumpPressed || p.jbuf > 0) {   // no jumping on the stones: answers move Kai
     keys.jumpPressed = false; p.jbuf = 0;
     if (!c.hop && st.opts.length && G.time - (c.told || -999) > 90) { c.told = G.time; floatText(p.x + p.w / 2, p.y - 30, 'Pick a number!', '#ffd23f', 22); }
-  }
-  if (c.drop) {
-    const d = c.drop; d.vy = Math.min(d.vy + 0.9, 14); d.o.top = Math.min(GR * T, d.o.top + d.vy);
-    p.x = d.o.x - p.w / 2; p.y = d.o.top - p.h; p.onGround = true;
-    if (d.o.top >= GR * T) { c.drop = null; p.squash = 6; stepsBreak(st, d.k, d.o); d.done(); }
-    return;
   }
   if (c.hop) {
     const h = c.hop; h.t++;
@@ -2544,11 +2549,11 @@ function crossTick() {
   if (st.opts.length && st.opts.every(o => o.state === 'idle') && G.time - st.shownAt > STEP_TIME()) { stepsCrumble(st); return; }
   if (keys.left && !st.k) {   // changed your mind on the first stone: hop back to the edge
     st.opts = [];
-    crossHop((st.c0 - 1.5) * T, GR * T, () => { G.cross = null; stepsClear(st, L, true); Object.assign(st.path[0], { top: GR * T - T, filled: false }); });
+    crossHop((st.c0 - 1.5) * T, GR * T, () => { G.cross = null; });
   }
 }
 function stepsPick(st, i) {
-  const c = G.cross; if (!c || c.st !== st || c.hop || c.drop) return;
+  const c = G.cross; if (!c || c.st !== st || c.hop) return;
   const o = st.opts[i]; if (!o || o.state !== 'idle') return;
   const right = o.val === st.seq[st.k + 1], fast = G.time - (st.shownAt ?? G.time) <= fastFrames(L.skill, null);
   st.opts.forEach(p => { if (p !== o) p.state = 'fade'; });
@@ -2560,14 +2565,13 @@ function stepsPick(st, i) {
       payGems(x, y - 20, 1); sfx.correct(); streakUp(x, y); gotIt();
       const prev = st.path[st.k - 1];
       floatText((prev.x + x) / 2, GR * T - 1.6 * T, `${st.back ? '−' : '+'}${st.step}`, st.back ? '#ff8a3c' : '#3ae374', 26);   // the jump, said out loud
-      crossDrop(o, st.k, () => {
-        floatText(x, GR * T - 2.6 * T, st.seq.slice(0, st.k + 1).join(', '), '#3ae374', 24);
-        if (st.k < st.n - 1) stepsOpts(st);
-        else crossHop((st.c0 + st.w + 0.8) * T, GR * T, () => {   // made it across on the path the answers built
-          st.done = true; G.cross = null; confetti(x, y);
-          floatText(P.x + P.w / 2, GR * T - 3 * T, `${st.seq.join(', ')}!`, '#3ae374', 28);
-        }, 26);
-      });
+      floatText(x, y - 50, st.seq.slice(0, st.k + 1).join(', '), '#3ae374', 24);
+      if (st.k < st.n - 1) stepsOpts(st);
+      else crossHop((st.c0 + st.w + 0.8) * T, GR * T, () => {   // made it across: the stones drop one by one and fill the pit
+        st.done = true; G.cross = null; confetti(x, y);
+        st.fall = st.path.map((o, k) => ({ o, k, vy: 0, wait: 10 + k * 14 }));
+        floatText(P.x + P.w / 2, GR * T - 3 * T, `${st.seq.join(', ')}!`, '#3ae374', 28);
+      }, 26);
     } else {   // the stone crumbles and Kai drops
       G.mistakes++; G.streak = 0; missed(stepsQ(st)); sfx.wrong(); st.missed = true;
       o.state = 'gone'; st.opts = []; burst(x, y + 10, '#8a7f78', 14, 4);
@@ -2588,13 +2592,21 @@ function stepsCatch(p) {
   return true;
 }
 function updateSteps() {
+  for (const st of L.steps || []) if (st.fall) {   // stones falling into the pit after the crossing
+    for (const f of st.fall) {
+      if (f.wait > 0) { f.wait--; continue; }
+      f.vy = Math.min(f.vy + 0.9, 14); f.o.top = Math.min(GR * T, f.o.top + f.vy);
+      if (f.o.top >= GR * T) { stepsBreak(st, f.k, f.o); f.gone = true; }
+    }
+    st.fall = st.fall.filter(f => !f.gone); if (!st.fall.length) st.fall = null;
+  }
   if (G.cross) return;
   const p = P, cx = p.x + p.w / 2;
   for (const st of L.steps || []) if (!st.done && cx > st.c0 * T - 4 && cx < st.c0 * T + T && p.y + p.h <= GR * T + 4) { crossStart(st); return; }
 }
 function stepsTarget() {
   const c = G.cross;
-  if (!c || c.hop || c.drop || !c.st.opts.length) return null;
+  if (!c || c.hop || !c.st.opts.length) return null;
   const st = c.st;
   return { kind: 'steps', q: stepsQ(st), vals: st.opts.map(o => o.val), off: st.opts.map(o => o.state !== 'idle'), ref: st };
 }
@@ -3453,8 +3465,9 @@ function pauseFx(b) {
 }
 const DODGE_FRAMES = () => (prog.easy ? 200 : 260);
 const OPEN_FRAMES = () => (prog.easy ? 900 : 600);
-function startDodge() {
-  const ar = L.arena; ar.phase = 'dodge'; ar.phaseT = DODGE_FRAMES(); L.boss.atk = 30;
+// After a miss the dodge is half as long and the first attack waits a moment, so a struggling kid isn't drained.
+function startDodge(miss = false) {
+  const ar = L.arena; ar.phase = 'dodge'; ar.phaseT = miss ? Math.round(DODGE_FRAMES() / 2) : DODGE_FRAMES(); L.boss.atk = miss ? 40 : 30;
 }
 function updateArena() {
   const ar = L.arena, b = L.boss;
@@ -3506,7 +3519,7 @@ function hitOrb(o) {
       noteFact(ar.q, false, false, L.skill);
       G.mistakes++; G.streak = 0; remember(ar.q); missed(ar.q);
       sfx.wrong(); floatText(P.x + P.w / 2, P.y - 20, `Oops! ${qSolved(ar.q)}`, '#ff6b6b', 30);
-      ar.q = freshQ(ar.q.text); ar.orbs = []; startDodge(); L.boss.atk = 1;
+      ar.q = freshQ(ar.q.text); ar.orbs = []; startDodge(true);
     }
   }
 }
@@ -6207,11 +6220,7 @@ function drawHUD() {
   if (G.streak >= 2) hudText(`🔥 ${G.streak} in a row`, 20, 100, 18, '#ffb627');
   if (G.power) { const pw = POWERS[G.power.kind]; drawPix(pw.pix, 18, 112, 2); hudText(`${G.power.name || pw.name} ${Math.ceil(G.power.t / 60)}s`, 50, 126, 17, '#7df9ff'); }
   const label = st.boss ? `World ${st.w + 1}: Boss` : `Level ${st.label}: ${st.name}`;
-  if (narrow) hudText('Score ' + G.score, VW - 72, 64, 20, '#ffd23f', 'right');
-  else {
-    hudText(label, VW - 70, 26, 18, '#fff', 'right');
-    hudText('Score ' + G.score, VW - 70, 52, 20, '#ffd23f', 'right');
-  }
+  if (!narrow) hudText(label, VW - 70, 26, 18, '#fff', 'right');   // no score on screen (still kept for badges)
 
   const cur = currentStation(), by = narrow ? 92 : 10;   // banner sits below the hearts on narrow screens
   const br = activeBridge();
