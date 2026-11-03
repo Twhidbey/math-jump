@@ -749,8 +749,9 @@ function noteFact(q, right, fast, skill) {
   const { retry, review, ...keep } = q;
   const f = prog.facts[key] || (prog.facts[key] = { q: keep, days: [], ok: 0, miss: 0, last: d });
   f.last = d;
-  if (right && fast) { f.ok++; f.weak = false; if (!f.days.includes(d)) f.days = [...f.days, d].slice(-3); }
-  else if (!right) { f.miss++; f.weak = true; f.days = []; }
+  if (right && fast) { f.ok++; f.weak = false; f.slow = 0; if (!f.days.includes(d)) f.days = [...f.days, d].slice(-3); }
+  else if (!right) { f.miss++; f.weak = true; f.days = []; f.slow = 0; }
+  else if ((f.slow = (f.slow || 0) + 1) >= 3) { f.weak = true; f.slow = 0; }   // right but slow three times: being counted out, so practise it
   if (skill && !review && !factList(skill)) {
     const w = prog.win[skill.id] || (prog.win[skill.id] = []);
     w.push(right && fast ? d : 0); if (w.length > 10) w.shift();
@@ -771,13 +772,14 @@ function reviewPool(exclude) {
   const d = today();
   return Object.entries(prog.facts).filter(([k, f]) => k !== exclude && (f.weak || (f.days.length === 1 && f.days[0] < d) || (f.days.length >= 2 && d - f.last >= 4))).map(([, f]) => f);
 }
-// In auto mode about 1 question in 5 is a review: a fact to practice, or one due again.
+// In auto mode about 1 question in 5 is a review (1 in 3 once two skills are ready): a fact to practice, or one due again.
 // Each level, boss or race gets its own generator that never asks the same fact twice
 // (7 × 5 and 5 × 7 count as one) until the skill runs out of facts. Missed facts still come back on purpose.
 function genFor(skill) {
   const auto = prog.auto && skill.id === prog.skill, seen = new Set(), size = factList(skill)?.length || 1e9;
+  const mix = auto && SKILLS.filter(k => skillProgress(k).ready).length >= 2 ? 1 / 3 : 0.2;   // more mixing once older skills are learned
   const one = () => {
-    if (auto && Math.random() < 0.2) {
+    if (auto && Math.random() < mix) {
       const pool = reviewPool().filter(f => !seen.has(factKey(f.q)));
       if (pool.length) return { ...pool[R(0, pool.length - 1)].q, review: true };
     }
@@ -3974,13 +3976,21 @@ function pickRiderPal() { const hp = heroPal(); return { n: hp.n, N: hp.N, R: hp
 function raceSteer(d) {
   if (!RC || mode !== 'race' || RC.finished) return;
   const lane = clamp(RC.lane + d, 0, 2);
-  if (lane !== RC.lane) { RC.lane = lane; tone(500 + lane * 120, 0.05, 'triangle', 0.04); }
+  if (lane !== RC.lane) {
+    RC.lane = lane; tone(500 + lane * 120, 0.05, 'triangle', 0.04);
+    const g = RC.gates.find(g => !g.done); if (g && RC.count <= 0) g.pickedAt = RC.time;   // when the kid chose, for "fast"
+  }
 }
 function raceText(txt, col) { RC.texts.push({ txt, col, t: 1.4 }); }
 
+// "Fast" is the real time from the question showing to the last steer. Never steering proves nothing (the lane
+// may just be right by luck), so a right answer without a steer isn't noted; a wrong one still is.
 function judgeGate(g) {
   const r = RC; g.done = true;
-  noteFact(g.q, g.opts[r.lane] === g.q.ans, true, r.topic);
+  const right = g.opts[r.lane] === g.q.ans, shown = r.shownAt || 0;
+  if (!right) noteFact(g.q, false, false, r.topic);
+  else if (g.pickedAt != null) noteFact(g.q, true, g.pickedAt - shown <= fastFrames(r.topic, g.q, false) / 60, r.topic);
+  r.shownAt = r.time;   // the next gate's question shows now
   if (g.opts[r.lane] === g.q.ans) {
     r.right++; r.streak++;
     r.speed = Math.min(r.maxSpeed, Math.max(r.speed, r.cruise) + r.boost);
@@ -5655,18 +5665,24 @@ function drawGoal() {
   const inside = G && (mode === 'win' || mode === 'done') && P.x > (L.castleC + 2.2) * T;
   if (px > cam - 300 && px < cam + VW + 300) {
     HOLDERS[L.world.key][L.def.k % 2](px, b);
-    if (!inside) {
-      let { x, y } = scrollSpot();
-      if (G && (mode === 'win' || mode === 'done')) {   // the scroll flies into the ninja's hands
-        const t = Math.min(1, G.winT / 40), hx = P.x + P.w / 2, hy = P.y - 16;
-        x += (hx - x) * t; y += (hy - y) * t - Math.sin(t * Math.PI) * 50;
-      }
+    if (!inside && !(G && (mode === 'win' || mode === 'done'))) {   // waiting on its holder (once Kai has it, drawCarriedScroll draws it)
+      const { x, y } = scrollSpot();
       glowAt(x, y, 34, 'rgba(255,230,120,.5)');
       drawScroll(x, y, 1.3);
     }
   }
   const cx = L.castleC * T;
   if (cx < cam + VW + 60 && cx + 5 * T > cam - 60) HOMES[L.world.key](cx, b);
+}
+// The scroll flies into Kai's hands and he carries it home. Drawn right after Kai, so the house never covers it
+// while he is in front of the house; it disappears with him when he goes inside.
+function drawCarriedScroll() {
+  if (!G || L.boss || L.vault || !(mode === 'win' || mode === 'done') || P.x > (L.castleC + 2.2) * T) return;
+  let { x, y } = scrollSpot();
+  const t = Math.min(1, G.winT / 40), hx = P.x + P.w / 2, hy = P.y - 16;
+  x += (hx - x) * t; y += (hy - y) * t - Math.sin(t * Math.PI) * 50;
+  glowAt(x, y, 34, 'rgba(255,230,120,.5)');
+  drawScroll(x, y, 1.3);
 }
 
 // ---------------------------------------------------------------- drawing: characters
@@ -6277,7 +6293,7 @@ function render() {
   drawPits(c0, c1);   // after enemies, so lava blobs rise out of the lava
   drawBoss();
   if (L.boss) { drawOrbs(); }
-  if (G) { drawPet(); drawPlayer(); drawProjectiles(); drawParticles(); }
+  if (G) { drawPet(); drawPlayer(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
   if (L.twist && G) drawTwistFront();
   if (L.flavor && G) drawFlavorFront();
   if (L.boss && G) drawOutro();
@@ -6485,7 +6501,7 @@ function showHowTo() {
     ${row('🌉', 'Bridges: bonk number stones to pick them up (you can carry up to 4) and take them to the altar to make the exact number. Bonk a stone again to put it back.')}
     ${row('👹', 'Bosses: dodge first. When the boss gets tired, tap the right answer to throw a shuriken.')}
     ${row('🧮', 'Pick any math for any level. Harder math ★ earns more gems and belt points.')}
-    ${row('🔥', 'Daily Dojo: 10 quick questions a day. Keep your streak going and your pet grows!')}
+    ${row('🔥', 'Daily Dojo: 15 quick questions a day. Keep your streak going and your pet grows!')}
     ${row('📒', 'Fact Book: answer a fact right and fast to make it silver, then again on another day to make it gold.')}
     ${row('🐣', 'Easy mode (in Settings): no holes, slower enemies, more time and 5 hearts.')}</div>`,
     [{ label: 'Got it!', fn: () => { hide('msg'); show('menu'); }, primary: true }]);
@@ -7402,48 +7418,67 @@ $('fbNext').onclick = () => { audio(); fbAt = (fbAt + 1) % PATH.length; renderFa
 $('fbClose').onclick = () => { audio(); hide('facts'); toMenu(); };
 
 // ---------------------------------------------------------------- daily dojo
-// Ten quick questions: facts to practice first, then ones due for review (this is what turns silver into
+// Fifteen quick questions: facts to practice first, then ones due for review (this is what turns silver into
 // gold on a new day), then new facts from the current math. Once a day it grows the streak and pays gems.
-const DOJO_N = 10, DOJO_TIME = 10;
+const DOJO_N = 15, DOJO_MORE = 5, DOJO_TIME = 10;
 let dojo = null;
-function dojoQuestions() {
+function dojoQuestions(n = DOJO_N) {
   const d = today(), seen = new Set(), out = [];
-  const add = q => { const k = factKey(q); if (!seen.has(k) && out.length < DOJO_N) { seen.add(k); out.push(q); } };
+  const add = q => { const k = factKey(q); if (!seen.has(k) && out.length < n) { seen.add(k); out.push(q); } };
   const all = Object.values(prog.facts);
   shuffle(all.filter(f => f.weak)).slice(0, 4).forEach(f => add(f.q));
   shuffle(all.filter(f => !f.weak && f.days.length === 1 && f.days[0] < d)).slice(0, 4).forEach(f => add(f.q));
   shuffle(all.filter(f => !f.weak && f.days.length >= 2 && d - f.last >= 4)).slice(0, 2).forEach(f => add(f.q));
-  for (let i = 0; out.length < DOJO_N && i < 60; i++) add(curSkill().gen());
+  for (let i = 0; out.length < n && i < 60; i++) add(curSkill().gen());
+  shuffle(all.filter(f => f.days.length)).forEach(f => add(f.q));   // a small skill (one times table has 9 facts): top up with older facts the kid knows
   return shuffle(out);
 }
-function startDojo() {
-  hide('menu');
+function startDojo(n = DOJO_N) {
+  hide('menu'); hide('msg');
   const before = new Map(Object.entries(prog.facts).map(([k]) => [k, factStatus(k)]));
-  dojo = { qs: dojoQuestions(), i: 0, right: 0, before, lock: false };
+  dojo = { qs: dojoQuestions(n), i: 0, right: 0, before, lock: false };
   show('dojo'); dojoNext();
 }
+// Gold facts (remembered on two days) are typed, not picked: recall, not recognition. Everything else is a row of five.
 function dojoNext() {
   if (dojo.i >= dojo.qs.length) { finishDojo(); return; }
   const q = dojo.qs[dojo.i];
-  dojo.q = q; dojo.opts = rowChoices(q, 5); dojo.left = DOJO_TIME; dojo.lock = false; dojo.sel = 2;
+  const typed = factStatus(factKey(q)) === 'gold';
+  dojo.q = q; dojo.typed = typed ? '' : null; dojo.opts = typed ? [] : rowChoices(q, 5); dojo.time = DOJO_TIME * (typed ? 1.5 : 1); dojo.left = dojo.time; dojo.lock = false; dojo.sel = 2;
   $('djProg').textContent = `${dojo.i + 1} / ${dojo.qs.length}`;
-  $('djQ').innerHTML = q.missing ? q.text.replace('?', '<span class="padin">?</span>') : `${q.text} = <span class="padin">?</span>`;
-  $('djMsg').textContent = '';
-  const box = $('djKeys'); box.innerHTML = '';
-  dojo.opts.forEach((v, i) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = v; b.onclick = () => dojoPick(i); box.appendChild(b); });
+  $('djQ').innerHTML = q.missing ? q.text.replace('?', '<span class="padin" id="djIn">?</span>') : `${q.text} = <span class="padin" id="djIn">?</span>`;
+  $('djMsg').textContent = typed ? 'You know this one. Type it!' : '';
+  const box = $('djKeys'); box.innerHTML = ''; box.classList.toggle('keypad', typed);
+  if (typed) ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', '✓'].forEach(k => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = k; if (k === '✓') b.className = 'ok';
+    b.onclick = () => dojoType(k); box.appendChild(b);
+  });
+  else dojo.opts.forEach((v, i) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = v; b.onclick = () => dojoPick(i); box.appendChild(b); });
   dojoMark();
 }
-function dojoMark() { [...$('djKeys').children].forEach((b, i) => b.classList.toggle('sel', i === dojo.sel)); }
+function dojoType(k) {
+  if (!dojo || dojo.lock || dojo.typed == null) return;
+  audio();
+  if (k === '⌫') dojo.typed = dojo.typed.slice(0, -1);
+  else if (k === '✓') { if (dojo.typed) dojoAnswer(Number(dojo.typed) === dojo.q.ans, -1); return; }
+  else if (dojo.typed.length < 4) { dojo.typed += k; tone(600 + Number(k) * 40, 0.05, 'square', 0.03); }
+  $('djIn').textContent = dojo.typed || '?';
+}
+function dojoMark() { if (dojo.typed == null) [...$('djKeys').children].forEach((b, i) => b.classList.toggle('sel', i === dojo.sel)); }
 function dojoPick(i) {
   if (!dojo || dojo.lock) return;
+  if (dojo.typed != null) { if (i < 0) dojoAnswer(false, -1, true); return; }   // typing: only the time-out comes here
+  dojoAnswer(i >= 0 && dojo.opts[i] === dojo.q.ans, i, i < 0);
+}
+function dojoAnswer(ok, i, late = false) {
   audio(); dojo.lock = true;
-  const q = dojo.q, ok = i >= 0 && dojo.opts[i] === q.ans, btns = [...$('djKeys').children];
-  noteFact(q, ok, DOJO_TIME - dojo.left <= fastFrames(null, q, false) / 60, null);
-  if (ok) { dojo.right++; sfx.correct(); btns[i].classList.add('right'); }
+  const q = dojo.q, btns = [...$('djKeys').children], typed = dojo.typed != null;
+  noteFact(q, ok, dojo.time - dojo.left <= fastFrames(null, q, typed) / 60, null);   // typing gets the longer limit
+  if (ok) { dojo.right++; sfx.correct(); if (i >= 0) btns[i].classList.add('right'); }
   else {
     sfx.wrong(); if (i >= 0) btns[i].classList.add('wrong');
     const j = dojo.opts.indexOf(q.ans); if (j >= 0) btns[j].classList.add('right');
-    $('djMsg').textContent = i < 0 ? `Time's up! ${qSolved(q)}` : qSolved(q);
+    $('djMsg').textContent = late ? `Time's up! ${qSolved(q)}` : qSolved(q);
   }
   $('djQ').innerHTML = qSolved(q);
   setTimeout(() => { if (dojo) { dojo.i++; dojoNext(); } }, ok ? 650 : 1500);
@@ -7451,13 +7486,19 @@ function dojoPick(i) {
 function dojoTick(dt) {
   if (!dojo || dojo.lock || $('dojo').classList.contains('hidden')) return;
   dojo.left -= dt;
-  $('djFuse').style.width = `${Math.max(0, dojo.left / DOJO_TIME) * 100}%`;
+  $('djFuse').style.width = `${Math.max(0, dojo.left / dojo.time) * 100}%`;
   $('djFuse').classList.toggle('low', dojo.left <= 3);
   if (dojo.left <= 0) dojoPick(-1);
 }
 function dojoKey(e) {
   e.preventDefault();
   if (!dojo || e.repeat) return;
+  if (dojo.typed != null) {   // typing: number keys, Backspace, Enter
+    if (/^[0-9]$/.test(e.key)) dojoType(e.key);
+    else if (e.key === 'Backspace') dojoType('⌫');
+    else if (e.code === 'Enter' || e.code === 'NumpadEnter') dojoType('✓');
+    return;
+  }
   if (/^[1-5]$/.test(e.key)) dojoPick(Number(e.key) - 1);
   else if (e.code === 'ArrowLeft' || e.code === 'KeyA') { dojo.sel = clamp(dojo.sel - 1, 0, 4); dojoMark(); }
   else if (e.code === 'ArrowRight' || e.code === 'KeyD') { dojo.sel = clamp(dojo.sel + 1, 0, 4); dojoMark(); }
@@ -7476,7 +7517,7 @@ function finishDojo() {
   const right = dojo.right, n = dojo.qs.length; dojo = null; hide('dojo');
   let body = `<div class="bigicon">${pixImg('flame', 'pix big')}<small>${dl.streak}</small></div><div class="statrow"><span>✔ ${right}/${n}</span>${gems ? `<span>${pixImg('gem', 'pix sm')} +${gems}</span>` : ''}${golds ? `<span>🥇 +${golds}</span>` : ''}</div>`;
   body += first ? `<div class="promo">${dl.streak > 1 ? `${dl.streak} days in a row!` : 'Come back tomorrow to grow your streak!'}</div>` : '<p>Extra practice! Your streak counts once a day.</p>';
-  showMsg(first ? 'Dojo done!' : 'Nice practice!', body, [{ label: 'Play ▶', fn: toMenu, primary: true }, { label: '📒 Facts', fn: () => { hide('msg'); openFacts(); }, alt: true }]);
+  showMsg(first ? 'Dojo done!' : 'Nice practice!', body, [{ label: 'Play ▶', fn: toMenu, primary: true }, { label: 'One more round', fn: () => { audio(); startDojo(DOJO_MORE); }, alt: true }, { label: '📒 Facts', fn: () => { hide('msg'); openFacts(); }, alt: true }]);
 }
 $('dojoBtn').onclick = () => { audio(); startDojo(); };
 
