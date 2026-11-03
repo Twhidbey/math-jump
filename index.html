@@ -80,9 +80,6 @@
   .promo { background: rgba(255,210,63,.15); border-radius: 10px; padding: 8px; margin: 0 0 14px; font-size: 18px; }
   #pauseBtn { position: absolute; top: 1.2%; right: 1%; width: max(40px, 5%); aspect-ratio: 1; border-radius: 10px;
     border: none; background: rgba(0,0,0,.35); color: #fff; font-size: clamp(14px, 2.4vw, 26px); cursor: pointer; z-index: 5; }
-  #leaveBtn { display: none; position: absolute; bottom: 2.5%; left: 1.5%; height: max(40px, 5vw); max-height: 54px; padding: 0 14px; border-radius: 10px;
-    border: none; background: rgba(0,0,0,.45); color: #fff; font: clamp(15px, 2.2vw, 22px) "Lilita One", "Trebuchet MS", sans-serif; cursor: pointer; z-index: 8; }
-  body.drilling #leaveBtn { display: block; }
   #touch { position: fixed; inset: auto 0 0 0; height: 0; z-index: 6; }
   #touch, .tbtn { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   .tbtn { position: fixed; bottom: 18px; width: 84px; height: 84px; border-radius: 50%;
@@ -91,6 +88,7 @@
   .tbtn.on { background: rgba(255,255,255,.45); }
   .tbtn[data-k="move"] { display: none; left: 18px; bottom: 120px; background: rgba(255,120,60,.45); }
   body.canmove .tbtn[data-k="move"] { display: flex; }
+  body.portrait .tbtn[data-k="move"] { bottom: calc(max(36px, env(safe-area-inset-bottom)) + 130px); }
   /* Tap-to-answer bar for gates and bosses */
   #ansbar { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 7; display: flex; flex-direction: column; align-items: center; gap: 6px;
     -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; }
@@ -118,7 +116,6 @@
   body.portrait .tbtn[data-k="right"] { left: 122px; }
   body.portrait .tbtn[data-k="jump"] { right: 12px; width: 120px; height: 120px; }
   body.portrait .tbtn:not([data-k="jump"]) { bottom: calc(max(36px, env(safe-area-inset-bottom)) + 10px); }
-  body.portrait .tbtn[data-k="move"] { left: 12px; width: 84px; height: 84px; font-size: 34px; bottom: calc(max(36px, env(safe-area-inset-bottom)) + 200px); }   /* above the answer row, clear of ◀ */
   body.touch .keys { display: none; }
   body.racing .tbtn[data-k="jump"] { display: none; }
   .bigrow { margin: 4px 0 2px; }
@@ -376,7 +373,6 @@
   <div id="stage">
     <canvas id="game" width="960" height="540"></canvas>
     <button id="pauseBtn" class="hidden" aria-label="Pause">⏸</button>
-    <button id="leaveBtn" type="button">🚪 Leave</button>
   </div>
 </div>
 
@@ -866,9 +862,13 @@ function choices(q, n = 3) {
   return shuffle(out);
 }
 // Answers in a sorted row, with the right one at a random spot so "pick the middle" never works.
+// The row is the closest numbers around the answer, so it can't be guessed by size.
 function rowChoices(q, n) {
-  const a = q.ans, pool = choices(q, n * 2).filter(v => v !== a);
-  const lows = pool.filter(v => v < a), highs = pool.filter(v => v > a);
+  const a = q.ans, st = q.step || 1, times = q.op === '×' && st === 1;
+  const pool = choices(q, n * 2).filter(v => v !== a && (!times || Math.abs(v - a) <= Math.max(q.a, q.b)));   // times: a table row away at most
+  for (let k = 1; k < n; k++) for (const v of [a - k * st, a + k * st])   // fill with the nearest numbers (times rows keep their table neighbours first)
+    if (v >= 0 && !pool.includes(v) && (!times || pool.filter(u => (u < a) === (v < a)).length < n - 1)) pool.push(v);
+  const lows = pool.filter(v => v < a).sort((x, y) => y - x), highs = pool.filter(v => v > a).sort((x, y) => x - y);
   const below = clamp(R(0, n - 1), n - 1 - highs.length, lows.length);
   return [...lows.slice(0, below), a, ...highs.slice(0, n - 1 - below)].sort((x, y) => x - y);
 }
@@ -1026,7 +1026,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
       }
       case 'icicles': {   // an ice ledge overhead with icicles that drop
         const s = flat(10); for (let c = s + 1; c <= s + 8; c++) map[GR - 8][c] = 'I';
-        if (!easy) [s + 2, s + 4.5, s + 7].forEach(c => fx({ k: 'icicle', x: c * T + T / 2, y: (GR - 7) * T, vy: 0, state: 'hang', t: 0 }));
+        [s + 2, s + 4.5, s + 7].forEach(c => fx({ k: 'icicle', x: c * T + T / 2, y: (GR - 7) * T, vy: 0, state: 'hang', t: 0 }));
         coin(s + 4, GR - 9, 5);
         break;
       }
@@ -1366,7 +1366,7 @@ function updateRoom() {
     if (!room.open && !room.show && room.combo >= 5 && tick % 3 === 0) G.parts.push({ k: 'bit', x: P.x + Math.random() * P.w, y: P.y + P.h - Math.random() * P.h, vx: 0, vy: -1.6, life: 24, col: ['#ff6a00', '#ffd23f', '#ff3b1f'][R(0, 2)], s: 5 });
     if (room.started && !room.show && !room.open) {
       room.t++;
-      if (!prog.easy) room.bar = Math.max(room.step / 3, room.bar - room.drain * room.ease);   // Easy mode: the bar doesn't drain
+      room.bar = Math.max(room.step / 3, room.bar - room.drain * room.ease);
       if (room.bar < room.step / 3 + 0.1 && room.t > 600) {
         if (++room.lowT > 420) { room.lowT = 0; room.ease *= 0.6; room.say = 'Breathe. Take your time.'; }
       } else room.lowT = 0;
@@ -1918,32 +1918,6 @@ function streakUp(x, y) {
   if (G.streak % 5 === 0) { confetti(x, y - 30); confetti(x, y - 30); sfx.streak(); grantPower(); }
 }
 
-// Answer blocks and ? boxes also count when Kai runs into their side or lands on top (not just a head bonk).
-// Only a new touch counts, so leaning on a block doesn't keep answering it.
-function touchBlocks(p, hit) {
-  const now = new Set(), add = (c, r) => {
-    if (r < 0 || r >= ROWS || c < 0 || c >= L.w) return;
-    const t = L.map[r][c]; if (t === 'A' || t === '?') now.add(c + ',' + r);
-  };
-  if (hit) now.add(hit.c + ',' + hit.r);   // the head bonk was already handled by bump()
-  const top = Math.floor(p.y / T), bot = Math.floor((p.y + p.h - 0.01) / T);
-  const lc = Math.floor((p.x - 1) / T), rc = Math.floor((p.x + p.w + 1) / T);
-  for (let r = top; r <= bot; r++) { add(lc, r); add(rc, r); }   // within 1 px of Kai's sides
-  if (p.onGround) {   // landed on top: the block under Kai's middle, or the other foot's block
-    const r = Math.floor((p.y + p.h + 1) / T), mid = Math.floor((p.x + p.w / 2) / T);
-    const cs = [mid, Math.floor(p.x / T), Math.floor((p.x + p.w - 1) / T)];
-    const c = cs.find(c => solid(c, r)); if (c !== undefined) add(c, r);
-  }
-  const was = G.touching || new Set();
-  G.touching = now;
-  for (const k of now) if (!was.has(k) && !(hit && k === hit.c + ',' + hit.r)) {
-    const [c, r] = k.split(',').map(Number), t = L.map[r][c];
-    G.bumps.set(k, 10);
-    if (t === '?') boxPrize(c, r);
-    else if (t === 'A') answer(c, r, true);
-  }
-}
-
 function bump(c, r) {
   const t = L.map[r][c];
   G.bumps.set(c + ',' + r, 10);
@@ -1976,8 +1950,8 @@ function bump(c, r) {
   else sfx.bump();
 }
 
-// Tap a button and Kai throws a shuriken at that block (it lands, then counts). Bonking a block from
-// underneath, running into its side or landing on top works too (touchBlocks). Answer before Kai reaches the gate for Lightning.
+// Tap a button and Kai throws a shuriken at that block (it lands, then counts). Bonking a block from right
+// underneath works too. Answer before Kai reaches the gate for Lightning.
 // Block and button colours follow each world's look: [fill, edge], first three clearly different.
 const ANS_COLS = {
   japan:  [['#ffb3c7', '#c2185b'], ['#9be58b', '#3c8d2f'], ['#8fd3ff', '#2b7bb9'], ['#ffd23f', '#a8600a'], ['#ff8a7a', '#b3261e']],
@@ -1993,10 +1967,10 @@ function gateAnswer(st, i) {
   st.star = { x: P.x + P.w / 2, y: P.y + 10, a };
   P.throwT = 14; sfx.throw();
 }
-function answer(c, r, side = false) {   // a head bump on an answer block (side = hit from the side or landed on)
+function answer(c, r) {   // a head bump on an answer block
   const f = findAnswer(c, r);
   if (!f || f.st !== currentStation() || f.st.solved || f.st.swap || f.st.star || f.a.state !== 'idle' ||
-    (!side && Math.floor((P.x + P.w / 2) / T) !== c)) { sfx.bump(); return; }   // counts when Kai's middle is under the block (edge clips don't)
+    Math.floor((P.x + P.w / 2) / T) !== c) { sfx.bump(); return; }   // counts when Kai's middle is under the block (edge clips don't)
   f.st.shotT = G.time; f.st.quick = !f.st.blocked;
   resolveAnswer(f.st, f.a);
 }
@@ -2101,8 +2075,7 @@ function nextBossQuestion() {
 let ask = null, padSel = 0;
 function askQuestion(o) {
   mode = 'pad'; keys.left = keys.right = keys.jump = false;
-  ask = { ...o, opts: rowChoices(o.q, o.n), left: o.time, tick: 3, used: 0, noTimer: !!prog.easy };   // Easy mode: no fuse
-  $('fuse').parentNode.style.visibility = ask.noTimer ? 'hidden' : '';
+  ask = { ...o, opts: rowChoices(o.q, o.n), left: o.time, tick: 3 };
   padSel = 0;
   $('padQ').innerHTML = o.q.missing ? o.q.text.replace('?', '<span class="padin" id="padIn">?</span>') : `${o.q.text} = <span class="padin" id="padIn">?</span>`;
   $('padMsg').textContent = o.keypad ? 'Type the answer!' : o.msg;
@@ -2128,7 +2101,6 @@ function updateFuse() {
   $('fuse').classList.toggle('low', ask.left <= 3);
 }
 function tickPad(dt) {
-  ask.used += dt; if (ask.noTimer) return;
   ask.left -= dt; updateFuse();
   if (ask.left <= ask.tick && ask.tick > 0) { tone(1000, 0.06, 'square', 0.04); ask.tick--; }
   if (ask.left <= 0) { const a = closePad(); a.onTimeout(); }
@@ -2138,7 +2110,7 @@ function pickAnswer(i) {
   if (!ask) return;
   audio();
   const a = closePad();
-  (a.opts[i] === a.q.ans ? a.onRight : a.onWrong)(a.used);
+  (a.opts[i] === a.q.ans ? a.onRight : a.onWrong)(a.time - a.left);
 }
 function padType(k) {
   if (!ask || !ask.keypad) return;
@@ -2147,7 +2119,7 @@ function padType(k) {
   else if (k === '✓') {
     if (!ask.typed) return;
     const a = closePad();
-    (Number(a.typed) === a.q.ans ? a.onRight : a.onWrong)(a.used);
+    (Number(a.typed) === a.q.ans ? a.onRight : a.onWrong)(a.time - a.left);
     return;
   } else if (ask.typed.length < 4) { ask.typed += k; tone(600 + Number(k) * 40, 0.05, 'square', 0.03); }
   $('padIn').textContent = ask.typed || '?';
@@ -2160,7 +2132,7 @@ function openBossPad() {
   const here = () => [P.x + P.w / 2, P.y];
   askQuestion({
     q: ar.q, n: w >= 2 ? 10 : 5, time: PAD_TIME[w] * (prog.easy ? 1.6 : 1), keypad: L.expert,
-    msg: ar.q.retry ? 'This one came back. You can do it!' : prog.easy ? 'Take your time!' : 'Pick the answer before the fuse burns out!',
+    msg: ar.q.retry ? 'This one came back. You can do it!' : 'Pick the answer before the fuse burns out!',
     onRight(took) {
       // Throw a shuriken at the boss; the next question comes after it lands.
       noteFact(ar.q, true, took <= 8, L.skill);
@@ -2263,11 +2235,14 @@ function tipFor(q) {
   if (op === '+') {
     if (a === b) return `Doubles! ${a} + ${a} is double ${a}, which is ${ans}.`;
     if (Math.abs(a - b) === 1) { const m = Math.min(a, b); return `Near double: ${m} + ${m} = ${m * 2}, plus 1 more is ${ans}.`; }
+    const big = Math.max(a, b), small = Math.min(a, b);
+    if (big >= 10 && big < 100 && small < 10 && big % 10 + small >= 10) { const ten = big + 10 - big % 10, need = ten - big; return `Make the next ten first: ${big} + ${need} = ${ten}, then ${small - need} more is ${ans}.`; }
     if (a < 10 && b < 10 && ans > 10) { const big = Math.max(a, b), small = Math.min(a, b), need = 10 - big; return `Make 10 first: ${big} + ${need} = 10, then ${small - need} more is ${ans}.`; }
     if (a >= 10 && b >= 10) { const t = Math.floor(a / 10) * 10 + Math.floor(b / 10) * 10, o = a % 10 + b % 10; return `Add the tens, then the ones: ${t} + ${o} = ${ans}.`; }
     return `Start at the bigger number and count on ${Math.min(a, b)} more: ${ans}.`;
   }
   if (op === '−') {
+    if (a >= 10 && a < 100 && b < 10 && a % 10 && a % 10 < b) { const ten = a - a % 10; return `Take away to the ten first: ${a} − ${a % 10} = ${ten}, then ${b - a % 10} more is ${ans}.`; }
     if (b <= 3) return `Count back ${b} from ${a}: ${ans}.`;
     if (a >= 20 && b >= 10) { const t = Math.floor(b / 10) * 10; return `Take away the tens, then the ones: ${a} − ${t} = ${a - t}, then take away ${b % 10} more: ${ans}.`; }
     return `Count up from ${b} to ${a}. That's ${ans} steps.`;
@@ -2472,7 +2447,9 @@ function gameOver() {
 // ---------------------------------------------------------------- skip-count stepping stones
 // A pit with a counting pattern to cross. Kai walks to the edge and hops onto the first stone by himself; then each
 // answer is the move: three stones offer the next number and Kai hops onto the one picked (button or key). The right
-// stone holds; a wrong one crumbles, Kai drops into the pit and pops back at the start with a new pattern.
+// stone falls, breaks apart and fills its 3-column section of the pit with stair blocks (its number on top), so the
+// answers rebuild the path; no bridge. A wrong one crumbles, Kai drops into the pit and pops back at the start with a
+// new pattern (the filled sections clear, since the numbers change).
 // Arrow keys pause while crossing (left hops back to the edge). The step follows the chosen math; take-away counts back.
 function stepSeq(skill, n) {
   const id = skill.id, tier = skill.tier, pick = a => a[R(0, a.length - 1)];
@@ -2488,7 +2465,16 @@ function stepSeq(skill, n) {
   if (back) seq = seq.reverse();
   return { seq, step, back };
 }
+// stone k owns pit columns c0 + 3k .. c0 + 3k + 2
+function stepsFill(st, k, lv = L) { for (let c = st.c0 + 3 * k; c < st.c0 + 3 * k + 3; c++) { lv.map[GR][c] = 'S'; lv.map[GR + 1][c] = 'S'; } }
+function stepsClear(st, lv = L, fx = false) {
+  for (let c = st.c0; c < st.c0 + st.w; c++) {
+    if (fx && lv.map[GR][c] === 'S') burst(c * T + T / 2, GR * T + T / 2, lv.world.stair[0], 6, 3);
+    lv.map[GR][c] = '.'; lv.map[GR + 1][c] = '.';
+  }
+}
 function stepsSet(st, lv = L) {
+  stepsClear(st, lv);
   const s = stepSeq(lv.skill, st.n); Object.assign(st, s);
   st.k = 0; st.missed = false; st.opts = [];
   st.path = [{ x: stepX(st, 0), top: GR * T - T, val: s.seq[0] }];
@@ -2506,6 +2492,7 @@ function stepsCrumble(st) {
   const c = G.cross, ans = st.seq[st.k + 1];
   G.mistakes++; G.streak = 0; missed(stepsQ(st)); sfx.wrong(); st.missed = true;
   [...st.path, ...st.opts].forEach(o => burst(o.x, o.top + T / 2, '#8a7f78', 10, 4));
+  stepsClear(st, L, true);
   shake(5, 2); tone(160, 0.35, 'sawtooth', 0.05, 60);
   floatText(P.x + P.w / 2, P.y - 40, `Too slow! ${st.seq.slice(0, st.k + 1).join(', ')}, ${ans}`, '#ff9a3c', 24);
   st.path = []; st.opts = [];
@@ -2516,10 +2503,18 @@ function crossHop(x1, feet1, done, dur = 22) {
   const p = P; G.cross.hop = { x0: p.x + p.w / 2, y0: p.y + p.h, x1, y1: feet1, t: 0, dur, arc: 46 + Math.max(0, p.y + p.h - feet1) * 0.5, done };
   sfx.jump();
 }
+// The stone Kai stands on falls (he rides it down), breaks on the bottom and fills its section up to the ground.
+function crossDrop(o, k, done) { G.cross.drop = { o, k, vy: 1, done }; }
+function stepsBreak(st, k, o) {
+  stepsFill(st, k); o.filled = true;
+  const W = L.world;
+  for (let c = st.c0 + 3 * k; c < st.c0 + 3 * k + 3; c++) { burst(c * T + T / 2, GR * T + 4, W.stair[0], 5, 3); burst(c * T + T / 2, GR * T + 4, W.stair[2], 3, 2); }
+  shake(4, 2); tone(140, 0.18, 'square', 0.06, 60); tone(90, 0.25, 'triangle', 0.06, 50, 0.04);
+}
 function crossStart(st) {
   G.cross = { st, hop: null }; P.vx = P.vy = 0; P.face = 1;
-  crossHop(st.path[0].x, st.path[0].top, () => { stepsOpts(st); });
-  if (!st.told) { st.told = true; floatText(st.c0 * T, GR * T - 4 * T, st.back ? `Count back by ${st.step}s!` : `Count by ${st.step}s!`, '#ffd23f', 26); }
+  crossHop(st.path[0].x, st.path[0].top, () => crossDrop(st.path[0], 0, () => stepsOpts(st)));
+  if (!st.told) { st.told = true; floatText(st.c0 * T, GR * T - 4 * T, st.back ? `Count back! Each one is ${st.step} less.` : `Count up! Each one is ${st.step} more.`, '#ffd23f', 26); }
 }
 function crossTick() {
   const c = G.cross, st = c.st, p = P;
@@ -2527,6 +2522,12 @@ function crossTick() {
   if (keys.jumpPressed || p.jbuf > 0) {   // no jumping on the stones: answers move Kai
     keys.jumpPressed = false; p.jbuf = 0;
     if (!c.hop && st.opts.length && G.time - (c.told || -999) > 90) { c.told = G.time; floatText(p.x + p.w / 2, p.y - 30, 'Pick a number!', '#ffd23f', 22); }
+  }
+  if (c.drop) {
+    const d = c.drop; d.vy = Math.min(d.vy + 0.9, 14); d.o.top = Math.min(GR * T, d.o.top + d.vy);
+    p.x = d.o.x - p.w / 2; p.y = d.o.top - p.h; p.onGround = true;
+    if (d.o.top >= GR * T) { c.drop = null; p.squash = 6; stepsBreak(st, d.k, d.o); d.done(); }
+    return;
   }
   if (c.hop) {
     const h = c.hop; h.t++;
@@ -2538,14 +2539,14 @@ function crossTick() {
     return;
   }
   p.onGround = true;
-  if (!prog.easy && st.opts.length && st.opts.every(o => o.state === 'idle') && G.time - st.shownAt > STEP_TIME()) { stepsCrumble(st); return; }   // Easy mode: no timer
+  if (st.opts.length && st.opts.every(o => o.state === 'idle') && G.time - st.shownAt > STEP_TIME()) { stepsCrumble(st); return; }
   if (keys.left && !st.k) {   // changed your mind on the first stone: hop back to the edge
     st.opts = [];
-    crossHop((st.c0 - 1.5) * T, GR * T, () => { G.cross = null; });
+    crossHop((st.c0 - 1.5) * T, GR * T, () => { G.cross = null; stepsClear(st, L, true); Object.assign(st.path[0], { top: GR * T - T, filled: false }); });
   }
 }
 function stepsPick(st, i) {
-  const c = G.cross; if (!c || c.st !== st || c.hop) return;
+  const c = G.cross; if (!c || c.st !== st || c.hop || c.drop) return;
   const o = st.opts[i]; if (!o || o.state !== 'idle') return;
   const right = o.val === st.seq[st.k + 1], fast = G.time - (st.shownAt ?? G.time) <= fastFrames(L.skill, null);
   st.opts.forEach(p => { if (p !== o) p.state = 'fade'; });
@@ -2555,13 +2556,16 @@ function stepsPick(st, i) {
       G.solved++; if (fast) G.fastN++;
       o.state = 'path'; st.path.push(o); st.opts = []; st.k++;
       payGems(x, y - 20, 1); sfx.correct(); streakUp(x, y); gotIt();
-      floatText(x, y - 50, st.seq.slice(0, st.k + 1).join(', '), '#3ae374', 24);
-      if (st.k < st.n - 1) stepsOpts(st);
-      else crossHop((st.c0 + st.w + 0.8) * T, GR * T, () => {   // made it across: a bridge appears behind
-        st.done = true; G.cross = null; confetti(x, y);
-        for (let col = st.c0; col < st.c0 + st.w; col++) { L.map[GR][col] = 'b'; burst(col * T + T / 2, GR * T, '#c9a24f', 3, 2); }
-        floatText(P.x + P.w / 2, GR * T - 3 * T, `${st.seq.join(', ')}!`, '#3ae374', 28);
-      }, 26);
+      const prev = st.path[st.k - 1];
+      floatText((prev.x + x) / 2, GR * T - 1.6 * T, `${st.back ? '−' : '+'}${st.step}`, st.back ? '#ff8a3c' : '#3ae374', 26);   // the jump, said out loud
+      crossDrop(o, st.k, () => {
+        floatText(x, GR * T - 2.6 * T, st.seq.slice(0, st.k + 1).join(', '), '#3ae374', 24);
+        if (st.k < st.n - 1) stepsOpts(st);
+        else crossHop((st.c0 + st.w + 0.8) * T, GR * T, () => {   // made it across on the path the answers built
+          st.done = true; G.cross = null; confetti(x, y);
+          floatText(P.x + P.w / 2, GR * T - 3 * T, `${st.seq.join(', ')}!`, '#3ae374', 28);
+        }, 26);
+      });
     } else {   // the stone crumbles and Kai drops
       G.mistakes++; G.streak = 0; missed(stepsQ(st)); sfx.wrong(); st.missed = true;
       o.state = 'gone'; st.opts = []; burst(x, y + 10, '#8a7f78', 14, 4);
@@ -2576,7 +2580,7 @@ function stepsCatch(p) {
   const cx = p.x + p.w / 2, st = (L.steps || []).find(st => !st.done && cx > st.c0 * T - T && cx < (st.c0 + st.w) * T + T);
   if (!st) return false;
   burst(cx, GR * T + 10, '#ffffff', 10, 3); tone(300, 0.25, 'sine', 0.06, 700);
-  stepsSet(st);
+  stepsClear(st, L, true); stepsSet(st);
   p.x = (st.c0 - 2.5) * T; p.y = GR * T - p.h; p.vx = p.vy = 0; p.inv = 30;
   floatText(p.x + p.w / 2, p.y - 30, 'Try again!', '#ffffff', 22);
   return true;
@@ -2588,7 +2592,7 @@ function updateSteps() {
 }
 function stepsTarget() {
   const c = G.cross;
-  if (!c || c.hop || !c.st.opts.length) return null;
+  if (!c || c.hop || c.drop || !c.st.opts.length) return null;
   const st = c.st;
   return { kind: 'steps', q: stepsQ(st), vals: st.opts.map(o => o.val), off: st.opts.map(o => o.state !== 'idle'), ref: st };
 }
@@ -2596,19 +2600,25 @@ function drawSteps() {
   const W = L.world;
   for (const st of L.steps || []) {
     const x0 = st.c0 * T, x1 = (st.c0 + st.w) * T;
-    if (x1 < cam - 60 || x0 > cam + VW + 60 || st.done) continue;
-    const sx = x0 - 2.4 * T, txt = st.back ? `Count back by ${st.step}s` : `Count by ${st.step}s`;   // the rule on a sign
-    ctx.font = '20px "Lilita One", "Trebuchet MS", sans-serif'; const w = ctx.measureText(txt).width + 26;
-    ctx.fillStyle = '#6b4a2e'; ctx.fillRect(sx - 3, GR * T - 70, 6, 70);
-    ctx.fillStyle = '#f3e3c3'; rrect(sx - w / 2, GR * T - 106, w, 38, 8); ctx.fill(); ctx.strokeStyle = '#6b4a2e'; ctx.lineWidth = 3; ctx.stroke();
-    ctx.fillStyle = '#3a2614'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, sx, GR * T - 86);
-    const sq = (x, top, val, fill, dark, light, a = 1) => {   // a plain square block with its number
-      ctx.globalAlpha = a; block(x - T / 2, top, fill, dark, light);
+    if (x1 < cam - 60 || x0 > cam + VW + 60) continue;
+    const num = (x, top, val) => {   // a number painted on a block
       ctx.font = `${String(val).length > 2 ? 15 : 19}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.strokeText(val, x, top + T / 2 + 1); ctx.fillText(val, x, top + T / 2 + 1);
-      ctx.globalAlpha = 1;
     };
-    st.path.forEach(o => sq(o.x, o.top, o.val, W.stair[0], W.stair[1], W.stair[2]));
+    const sq = (x, top, val, fill, dark, light, a = 1) => {   // a plain square block with its number
+      ctx.globalAlpha = a; block(x - T / 2, top, fill, dark, light); num(x, top, val); ctx.globalAlpha = 1;
+    };
+    st.path.forEach(o => o.filled ? num(o.x, GR * T, o.val) : sq(o.x, o.top, o.val, W.stair[0], W.stair[1], W.stair[2]));   // filled sections are map tiles
+    if (st.done) continue;
+    const sx = x0 - 2.4 * T, txt = st.back ? `Count back by ${st.step}s` : `Count up by ${st.step}s`;   // the rule on a sign, with an arrow
+    ctx.font = '20px "Lilita One", "Trebuchet MS", sans-serif'; const w = ctx.measureText(txt).width + 26 + 22;
+    ctx.fillStyle = '#6b4a2e'; ctx.fillRect(sx - 3, GR * T - 70, 6, 70);
+    ctx.fillStyle = '#f3e3c3'; rrect(sx - w / 2, GR * T - 106, w, 38, 8); ctx.fill(); ctx.strokeStyle = '#6b4a2e'; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = '#3a2614'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, sx - 11, GR * T - 86);
+    const ax = Math.round(sx + w / 2 - 22), ay = GR * T - 87;   // pixel arrow: down for back, up for up
+    ctx.fillStyle = st.back ? '#e8590c' : '#2f9e44';
+    ctx.fillRect(ax - 2, ay - 9, 4, 18);
+    for (let i = 0; i < 5; i++) { const yy = st.back ? ay + 9 - i * 2 : ay - 11 + i * 2; ctx.fillRect(ax - 1 - i * 2 + 1, yy, i * 4 + 2, 2); }
     st.opts.forEach((o, j) => {
       if (o.state === 'gone') return;
       if (o.state === 'fade') { o.t = (o.t || 0) + 1; if (o.t > 20) return; }
@@ -2616,7 +2626,7 @@ function drawSteps() {
       sq(o.x, o.top, o.val, c1, c2, '#ffffff', o.state === 'fade' ? 1 - o.t / 20 : 1);
       if (!isTouch && o.state === 'idle') keyTag(ANS_KEYS(3)[j], o.x + T / 2 - 2, o.top - 2);
     });
-    if (!prog.easy && G.cross && G.cross.st === st && !G.cross.hop && st.opts.length && st.opts.every(o => o.state === 'idle')) {   // the time bar
+    if (G.cross && G.cross.st === st && !G.cross.hop && st.opts.length && st.opts.every(o => o.state === 'idle')) {   // the time bar
       const left = clamp(1 - (G.time - st.shownAt) / STEP_TIME(), 0, 1), bx = stepX(st, st.k + 1) - T, by = GR * T - STONE_TOPS[2] * T - 20;
       ctx.fillStyle = 'rgba(0,0,0,.45)'; rrect(bx - 2, by - 2, 2 * T + 4, 12, 6); ctx.fill();
       ctx.fillStyle = left > 0.5 ? '#3ae374' : left > 0.25 ? '#ffd23f' : (G.time % 20 < 10 ? '#ff4d4d' : '#ff9a9a');
@@ -3146,7 +3156,6 @@ const TWIST_HINT = {
   ice: '⛸️ Slippery ice! Slide carefully', icicles: '🧊 Icicles fall when you run under them!', avalanche: '☃️ Giant snowballs! Jump over them',
   walljump: '🧗 Wall jump: jump again while touching a wall', ladders: '🪜 Hold jump to climb ladders', sneak: '🔦 Sneak past the guards. Hide in barrels!',
 };
-const EASY_NO_HINT = new Set(['rocks', 'icicles', 'avalanche']);   // Easy mode has no falling rocks, icicles or snowballs
 // no rolling snowballs while the ninja is working out a gate
 function currentStationNear() { const cs = currentStation(); return cs && cs.s && Math.abs(P.x - (cs.s + 6) * T) < 9 * T; }
 function groundTop(c) { for (let r = 0; r < ROWS; r++) if (solid(c, r)) return r * T; return null; }
@@ -3220,11 +3229,11 @@ function updateTwist() {
       }
     }
   }
-  if (tw === 'avalanche' && !prog.easy && tick % 170 === 0 && p.x > 12 * T && !currentStationNear()) {
-    L.fx.push({ k: 'roll', x: cam + VW + 40, y: 0, r: 22, vx: -3.4, a: 0 });
+  if (tw === 'avalanche' && tick % (prog.easy ? 260 : 170) === 0 && p.x > 12 * T && !currentStationNear()) {
+    L.fx.push({ k: 'roll', x: cam + VW + 40, y: 0, r: 22, vx: prog.easy ? -2.6 : -3.4, a: 0 });
   }
   if (tw === 'avalanche' && tick % 4 === 0) G.parts.push({ k: 'bit', x: cam + VW + 10, y: R(40, GR * T), vx: -6 - Math.random() * 3, vy: 0.6, life: 70, col: 'rgba(255,255,255,.8)', s: 3 });
-  if (tw === 'rocks' && !prog.easy && !L.vault && tick % 95 === 0) {
+  if (tw === 'rocks' && !L.vault && tick % (prog.easy ? 150 : 95) === 0) {
     const x = p.x + p.w / 2 + R(60, 320) * (p.face || 1), gy = groundTop(Math.floor(x / T));
     if (gy !== null) L.fx.push({ k: 'rock', x, gy, t: 60, y: -40, vy: 0 });
   }
@@ -3320,7 +3329,6 @@ function updatePlayer() {
   const hit = moveY(p);
   twistMove(p, feetBefore, fallSpeed);
   if (hit) bump(hit.c, hit.r);
-  touchBlocks(p, hit);
   if (wasAir && p.onGround && fallSpeed > 6) { p.squash = 8; burst(p.x + p.w / 2, p.y + p.h, '#e8e0d0', 4, 1.5); }
   if (p.squash > 0) p.squash--; else if (p.squash < 0) p.squash++;
   if (p.inv > 0) p.inv--;
@@ -3416,7 +3424,6 @@ function updateEnemies() {
 }
 
 function bossAttack(b) {
-  if (prog.easy) return;   // Easy mode: bosses don't throw anything
   const easy = prog.easy ? 0.7 : 1, sx = b.x + (b.face > 0 ? b.w : 0), kind = b.spec.attack;
   const lob = k => {
     const t = prog.easy ? 85 : 70, g = 0.3, px = P.x + P.w / 2;
@@ -3442,7 +3449,7 @@ function pauseFx(b) {
   else if (b.kind === 'kage') burst(b.face > 0 ? b.x + b.w : b.x, b.y + b.h - 4, '#c8d3de', 1, 1);
   else if (b.kind === 'shogun') G.parts.push({ k: 'bit', x: cx + b.face * 18, y: b.y + 30, vx: b.face * 0.6, vy: -0.6, life: 24, col: 'rgba(255,255,255,.7)', s: 5 });
 }
-const DODGE_FRAMES = () => (prog.easy ? 150 : 260);   // Easy: nothing to dodge but the boss himself
+const DODGE_FRAMES = () => (prog.easy ? 200 : 260);
 const OPEN_FRAMES = () => (prog.easy ? 900 : 600);
 function startDodge() {
   const ar = L.arena; ar.phase = 'dodge'; ar.phaseT = DODGE_FRAMES(); L.boss.atk = 30;
@@ -3450,7 +3457,6 @@ function startDodge() {
 function updateArena() {
   const ar = L.arena, b = L.boss;
   if (!ar || b.dying || b.dead || b.outro || ar.wait) return;
-  if (ar.phase === 'open' && prog.easy) return;   // Easy mode: the boss stays tired until Kai answers
   if (--ar.phaseT > 0) return;
   if (ar.phase === 'dodge') {
     // The boss tires out (each in its own way). Attacks already flying still land, then a short beat.
@@ -3525,11 +3531,11 @@ function say(who, txt, t = 120) { (who === 'kai' ? G : L.boss).say = { txt, t };
 function dropPrize(b, x) { L.prize = { x: (x ?? b.x + b.w / 2) - 20, y: b.y + 10, w: 40, h: 30, vy: -8 }; }
 function runOutro(b) {
   const o = b.outro, t = ++o.t, cx = b.x + b.w / 2, k = b.kind;
+  keys.left = keys.right = keys.jump = false; keys.jumpPressed = false;
   if (b.say && --b.say.t <= 0) b.say = null;
   if (G.say && --G.say.t <= 0) G.say = null;
   b.t++; b.vy = Math.min(b.vy + 0.55, 12); moveY(b);
-  if (o.done) return;   // scene over: Kai can move again to grab the scroll
-  keys.left = keys.right = keys.jump = false; keys.jumpPressed = false;
+  if (o.done) return;
   if (k === 'kage') {
     if (t === 20) say('kai', 'Take my hand?');
     if (t === 110) say('boss', 'Never.', 80);
@@ -6070,12 +6076,12 @@ function drawTip() {
   wrapLines(t.txt, w - 92).slice(0, 3).forEach((ln, i) => ctx.fillText(ln, x + 76, y + 32 + i * 20));
   if (t.pic) drawTipPic(t.pic, x + 14, y + 96, w - 28, h - 106);
 }
-function drawTipPic(pic, x, y, w, h) {
+function drawTipPic(pic, x, y, w, h, big = 18) {   // big: the largest ten-frame cell
   const dot = (cx, cy, r, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill(); };
   ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   if (pic.k === 'frames') {   // ten frames: red dots, then blue (or ghost) dots, so "make 10" shows itself
     const red = pic.red || 0, more = pic.blue || pic.ghost || 0, total = red + more, frames = total > 10 || red > 10 ? 2 : 1;
-    const cell = Math.min(18, h / 2 - 2, (w - 20) / (frames * 5 + 1)), fw = cell * 5;
+    const cell = Math.min(big, h / 2 - 2, (w - 20) / (frames * 5 + 1)), fw = cell * 5;
     const x0 = x + (w - (frames * fw + (frames - 1) * cell)) / 2, y0 = y + (h - cell * 2) / 2;
     for (let f = 0; f < frames; f++) for (let i = 0; i < 10; i++) {
       const n = f * 10 + i, cx = x0 + f * (fw + cell) + (i % 5) * cell, cy = y0 + Math.floor(i / 5) * cell;
@@ -6169,9 +6175,16 @@ function drawDrill(rm, y) {
     keyTag(ANS_KEYS(3)[i], t.x + t.w - 6, t.y + 4);
   });
 }
+// Kindergarten math (tier 1 skills) shows its picture right with the question: ten frames, so 2 + 3 is dots, not just digits.
+// Only in levels (gates, animals, math boxes), never in boss fights, and hidden while Sensei's tip (which has the picture) is up.
+function kidPic() {
+  if (!G || L.boss || L.vault || G.tip || !L.skill || L.skill.tier !== 1 || activeBridge()) return null;
+  const m = miniTarget(), q = m ? m.q : currentStation() && currentStation().q;
+  return q ? picFor(q) : null;
+}
 function drawHUD() {
-  const narrow = VW < 700, st = STAGES[G.idx];
-  if (L.twist && G.time < 300 && !L.vault && !(prog.easy && EASY_NO_HINT.has(L.twist))) hudText(TWIST_HINT[L.twist], VW / 2, (narrow ? 92 : 10) + 104, narrow ? 15 : 19, '#ffd23f', 'center');
+  const narrow = VW < 700, st = STAGES[G.idx], pic = kidPic(), picH = pic ? (narrow ? 46 : 56) : 0;
+  if (L.twist && G.time < 300 && !L.vault) hudText(TWIST_HINT[L.twist], VW / 2, (narrow ? 92 : 10) + 104 + (pic ? picH + 6 : 0), narrow ? 15 : 19, '#ffd23f', 'center');
   for (let i = 0; i < G.maxHearts; i++) heart(30 + i * 36, 16, 13, i < G.hearts ? '#ff4d6d' : 'rgba(0,0,0,.35)');
   drawGem(34, 64, 1, tick * 0.06);
   hudText('× ' + G.coins, 54, 65, 22 + G.pulse);
@@ -6211,11 +6224,9 @@ function drawHUD() {
     }
     if (currentStation()) {
       hudText(isTouch ? 'Tap or grab the right shuriken!' : 'Press its key or grab the right shuriken!', VW / 2, by + 124, 15, '#ffd23f', 'center');
-      if (!prog.easy) {
-        const f = L.arena.phaseT / OPEN_FRAMES(), ww = 160;
-        ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(VW / 2 - ww / 2, by + 136, ww, 5);
-        ctx.fillStyle = '#ffd23f'; ctx.fillRect(VW / 2 - ww / 2, by + 136, ww * f, 5);
-      }
+      const f = L.arena.phaseT / OPEN_FRAMES(), ww = 160;
+      ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(VW / 2 - ww / 2, by + 136, ww, 5);
+      ctx.fillStyle = '#ffd23f'; ctx.fillRect(VW / 2 - ww / 2, by + 136, ww * f, 5);
     } else if (!L.boss.dying && !L.boss.dead && !L.boss.outro && !L.arena.wait) hudText('Jump over the attacks!', VW / 2, by + 124, 15, '#fff', 'center');
   } else if (L.vault) {
     const rm = L.room;
@@ -6227,6 +6238,12 @@ function drawHUD() {
   } else {
     const done = L.stations.filter(s => s.solved).length;
     hudText(cur ? `${isTouch ? 'Tap' : 'Bonk'} the right answer!  (${done}/${L.stations.length})` : `All ${L.stations.length} gates open!`, VW / 2, by + 80, 16, '#fff', 'center');
+  }
+  if (pic) {   // the picture in a small panel under the banner, same style as the banner
+    const pw = narrow ? 210 : 250, px = VW / 2 - pw / 2, py = by + 92;
+    ctx.fillStyle = 'rgba(20,20,50,.75)'; rrect(px, py, pw, picH, 12); ctx.fill();
+    ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2; ctx.stroke();
+    drawTipPic(pic, px + 4, py + 3, pw - 8, picH - 6, 24);
   }
   if (L.room && L.room.kind === 'train' && L.room.intro > 150) drawTrainIntro(L.room);   // covers everything
 }
@@ -6470,7 +6487,7 @@ function showHowTo() {
     ${row('🧮', 'Pick any math for any level. Harder math ★ earns more gems and belt points.')}
     ${row('🔥', 'Daily Dojo: 10 quick questions a day. Keep your streak going and your pet grows!')}
     ${row('📒', 'Fact Book: answer a fact right and fast to make it silver, then again on another day to make it gold.')}
-    ${row('🐣', 'Easy mode (in Settings): falls cost no hearts, slower enemies, no timers and 5 hearts.')}</div>`,
+    ${row('🐣', 'Easy mode (in Settings): no holes, slower enemies, more time and 5 hearts.')}</div>`,
     [{ label: 'Got it!', fn: () => { hide('msg'); show('menu'); }, primary: true }]);
 }// ---------------------------------------------------------------- dojo shop
 // Buying asks for the change: "you have 52, it costs 35, how many will you have left?"
@@ -6542,7 +6559,7 @@ function toMenu() {
   const newest = Math.min(unlockedCount() - 1, STAGES.length - 1);
   L = buildLevel(STAGES[newest].w * PER_WORLD);   // menu backdrop shows the newest world
   ambient.length = 0;
-  hide('msg'); hide('shop'); hide('skills'); hide('settings'); hide('badges'); hide('raceSetup'); hide('pauseBtn'); showTouch(false); document.body.classList.remove('drilling'); buildMenu(); show('menu');
+  hide('msg'); hide('shop'); hide('skills'); hide('settings'); hide('badges'); hide('raceSetup'); hide('pauseBtn'); showTouch(false); buildMenu(); show('menu');
 }
 
 function showStory(then) {
@@ -6822,14 +6839,13 @@ const SCENES = {
       tufts(c, SH, '#4f8a3e', 5, t);
       petals(c, t, 16, 3);
     } },
-    { cap: 'An old picture hangs on the dojo wall: young Sensei holding a baby, with Kuro beside him. Sensei never talks about it.', draw(c, t, p) {
+    { cap: 'An old picture hangs on the dojo wall: a tall boy holding a baby. Sensei never talks about it.', draw(c, t, p) {
       dot(c, 0, 0, SW, SH, '#e8d6b4');
       for (let x = 0; x < SW; x += 12) dot(c, x, 0, 1, 84, '#dcc8a2');
       dot(c, 0, 0, SW, 4, '#6e4627'); dot(c, 0, 80, SW, 4, '#6e4627'); dot(c, 14, 0, 5, 84, '#6e4627'); dot(c, 174, 0, 5, 84, '#6e4627');
       dot(c, 0, 84, SW, 24, '#c9b27a'); for (let x = 0; x < SW; x += 24) dot(c, x, 84, 1, 24, '#b39c66');
       dot(c, 72, 6, 56, 50, '#3a2416'); dot(c, 74, 8, 52, 46, '#6e4627'); dot(c, 77, 11, 46, 40, '#f0dfb6'); dot(c, 77, 40, 46, 11, '#e2cd9c');   // the picture
-      senseiFig(c, 90, 50, false, true); baby(c, 91, 36);   // young Sensei holding the baby
-      sPut(c, scSpr.kuro().a[0], 112, 50);
+      sPut(c, scSpr.kuro().a[0], 100, 50); baby(c, 96, 38);   // young Kuro holding baby Kai
       dot(c, 30, 30, 22, 2, '#4a3020'); dot(c, 30, 52, 22, 2, '#4a3020');   // a rack of practice staffs
       for (let i = 0; i < 4; i++) dot(c, 33 + i * 5, 22, 2, 40, i % 2 ? '#b0794a' : '#8b5a2b');
       dot(c, 134, 12, 14, 2, '#3a2416'); dot(c, 135, 14, 12, 30, '#f4ead5'); dot(c, 134, 44, 14, 2, '#3a2416');   // a hanging scroll: "love"
@@ -7252,8 +7268,7 @@ Object.assign(SCENES, {
     } },
     { cap: '<i>"He was very dear to me. He will not thank you."</i>', draw(c, t) {
       dot(c, 0, 0, SW, SH, '#e8d6b4'); dot(c, 46, 8, 100, 82, '#3a2416'); dot(c, 49, 11, 94, 76, '#6e4627'); dot(c, 53, 15, 86, 68, '#f0dfb6');
-      sPut(c, youngSensei().a[0], 84, 62); dot(c, 77, 62, 14, 18, '#4a5a7a'); baby(c, 86, 66);
-      sPut(c, scSpr.kuro().a[0], 116, 80);
+      sPut(c, scSpr.kuro().a[0], 96, 80); baby(c, 92, 68);   // the dojo picture: young Kuro holding baby Kai
     } },
     { cap: '<i>"Love him anyway."</i>', draw(c, t, p) {
       nightSky(c, t); castle(c, 150, 92); ground(c, 92, '#141030', '#2a2050');
@@ -7301,9 +7316,9 @@ Object.assign(SCENES, {
       const my = Math.min(96, 72 + p * 60); dot(c, 102, Math.round(my) - 6, 5, 5, '#c0182f'); dot(c, 108, Math.round(my) - 5, 4, 4, '#7a0a18');   // the broken mask on the ground
       tear(c, 103, 82, t, 8);
     } },
-    { cap: 'You know that face. It\'s the boy in the picture. It\'s <b>Kuro, your big brother</b>.', draw(c, t) {
+    { cap: 'You know that face. It\'s the tall boy in the picture. It\'s <b>Kuro, your big brother</b>.', draw(c, t) {
       dot(c, 0, 0, SW, SH, '#fff0c8'); dot(c, 22, 10, 66, 70, '#6e4627'); dot(c, 25, 13, 60, 64, '#f0dfb6');
-      sPut(c, youngSensei().a[0], 46, 58); dot(c, 39, 58, 14, 16, '#4a5a7a'); baby(c, 48, 62); sPut(c, scSpr.kuro().a[0], 72, 74);
+      sPut(c, scSpr.kuro().a[0], 55, 74); baby(c, 51, 62);   // the dojo picture: young Kuro holding baby Kai
       sPut(c, scSpr.kuro().a[0], 150, 100);
     } },
     { cap: '"I thought I had to earn Father\'s love. I made this for you, a long time ago."', draw(c, t) {
@@ -7435,9 +7450,7 @@ function dojoPick(i) {
 }
 function dojoTick(dt) {
   if (!dojo || dojo.lock || $('dojo').classList.contains('hidden')) return;
-  dojo.left -= dt;   // keeps counting in Easy mode too, for the "fast" check
-  $('djFuse').parentNode.style.visibility = prog.easy ? 'hidden' : '';
-  if (prog.easy) return;   // Easy mode: no fuse
+  dojo.left -= dt;
   $('djFuse').style.width = `${Math.max(0, dojo.left / DOJO_TIME) * 100}%`;
   $('djFuse').classList.toggle('low', dojo.left <= 3);
   if (dojo.left <= 0) dojoPick(-1);
@@ -7615,11 +7628,6 @@ $('resetBtn').onclick = () => {
   if (confirm(`Reset ${curPlayer().name}'s belts, points and unlocked levels?`)) { prog.best = {}; prog.mastery = {}; prog.seenWorld = {}; setAllOpen(false); }
 };
 $('pauseBtn').onclick = togglePause;
-$('leaveBtn').onclick = () => {   // leave the dojo without finishing the lesson (no pressure)
-  if (mode !== 'play' || !L.vault || !L.room || L.room.kind !== 'train' || L.room.open || L.room.show) return;
-  audio(); leaveVault(); document.body.classList.remove('drilling');
-  floatText(P.x + P.w / 2, P.y - 40, 'You can learn it next time!', '#ffd23f', 24);
-};
 $('shopBtn').onclick = () => { audio(); openShop(); };
 $('raceBtn').onclick = () => { audio(); showRaceSetup(); };
 $('shopClose').onclick = () => { hide('shop'); buildMenu(); show('menu'); };
