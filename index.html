@@ -397,7 +397,7 @@
   </div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 5, 2026 2:47 PM PT · pattern walls</div>
+  <div class="build">Updated Nov 5, 2026 3:05 PM PT · auto-update</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -7988,6 +7988,21 @@ else if (!prog.seenIntro) {
   prog.seenIntro = true; save();
   hide('menu'); showStory(() => { hide('msg'); show('menu'); });
 }
+// Auto-update: a home-screen icon always opens the same saved link, so the phone/iPad can keep an old copy.
+// On the home screen, fetch the page fresh and compare the build stamp; if it's newer, reload once with a new ?v=.
+function checkUpdate() {
+  if (!/^https?:/.test(location.protocol) || mode !== 'menu') return;
+  const here = (document.querySelector('.build') || {}).textContent || '';
+  fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(html => {
+    const m = /class="build">([^<]*)</.exec(html), there = m && m[1];
+    if (!there || there === here || mode !== 'menu') return;
+    if (sessionStorage.getItem('mn-update') === there) return;   // tried once already: don't loop
+    sessionStorage.setItem('mn-update', there);
+    location.replace(location.pathname + '?v=' + Date.now());
+  }).catch(() => {});
+}
+checkUpdate();
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
 requestAnimationFrame(frame);
 })();
 </script>
