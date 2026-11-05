@@ -100,6 +100,7 @@
   #ansbar button:disabled { opacity: .3; }
   #ansbar.drill .ab { gap: 18px; }
   #ansbar.drill button { min-width: 104px; height: 88px; font-size: 38px; }
+  #ansbar.stun button { opacity: .35; }
   body.drilling .tbtn { display: none !important; }
   #ansbar.arc { left: 0; top: 0; bottom: auto; transform: none; }
   #ansbar.arc button { position: fixed; min-width: 0; border-radius: 50%; padding: 0; font-size: 26px; box-shadow: 0 2px 8px rgba(0,0,0,.35); }
@@ -154,6 +155,16 @@
   .gtag { position: absolute; top: -9px; left: 8px; background: #2ecc71; color: #08321a; font-size: 11px; font-weight: 800; border-radius: 999px; padding: 1px 7px; }
   .autobtn { font: inherit; font-size: 15px; color: #fff; background: rgba(255,255,255,.08); border: 3px solid transparent; border-radius: 999px; padding: 6px 14px; cursor: pointer; margin: 0 auto 8px; display: block; }
   .autobtn.on { border-color: #2ecc71; background: rgba(46,204,113,.18); }
+  .tracks { max-width: 460px; margin: 0 auto 10px; font-size: 14px; }
+  .tracks:empty { display: none; }
+  .trow { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
+  .trow .tn { width: 92px; text-align: right; opacity: .85; }
+  .trow .tcells { display: flex; gap: 3px; flex-wrap: wrap; }
+  .trow i { width: 12px; height: 12px; background: rgba(255,255,255,.18); border-radius: 2px; }
+  .trow i.learn { background: #3ae374; }
+  .trow i.pass { background: #ffd23f; }
+  .trow i.now { box-shadow: 0 0 0 2px #fff; }
+  .trow .tx { flex: 1; text-align: left; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .levelup { border-color: #2ecc71 !important; }
   .mathchip .dots { color: #8a5a00; letter-spacing: 1px; font-size: 14px; }
   .dojobtn { font: inherit; font-weight: 800; font-size: 18px; color: #fff; background: #e8590c; border: none; border-bottom: 4px solid #a33d06; border-radius: 999px; padding: 6px 14px; cursor: pointer; }
@@ -397,7 +408,7 @@
   </div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 5, 2026 3:31 PM PT · karate poses in pixel art</div>
+  <div class="build">Updated Nov 5, 2026 3:48 PM PT · worlds favour a kind of math; no mashing in the dojo</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -457,6 +468,7 @@
     <h2>Pick your math</h2>
     <div class="shophint">Harder math ★ earns more gems and belt points!</div>
     <button class="autobtn" id="autoBtn" type="button"></button>
+    <div class="tracks" id="trackBox"></div>
     <div class="tabs" id="skillTabs"></div>
     <div class="skillgrid" id="skillGrid"></div>
     <div class="row"><button class="btn alt" id="skillsClose" type="button">Back</button></div>
@@ -743,11 +755,17 @@ function factStatus(key) {
 // "Fast" means answered from memory, not counted out. Times and divide facts should come in about 3 s
 // (6 s when Kai has to walk or bonk); adding and taking away get 5 s (10 s).
 function fastFrames(skill, q, walk = !isTouch) {
+  if (q && q.sk) skill = SKILL[q.sk];   // mixed levels: each question has its own skill
   const quick = (q && (q.op === '×' || q.op === '÷')) || (skill && (skill.cat === 'mul' || skill.cat === 'div'));
   return (walk ? (quick ? 6 : 10) : (quick ? 3 : 5)) * 60;
 }
 function noteFact(q, right, fast, skill) {
   if (!q || q.op === 'room') return;
+  if (q.sk) skill = SKILL[q.sk];
+  if (q.trk && !q.review && G && G.byTrack) {   // grade tracks: how each kind of math went in this level
+    const b = G.byTrack[q.trk] || (G.byTrack[q.trk] = { right: 0, wrong: 0, fast: 0 });
+    if (right) { b.right++; if (fast) b.fast++; } else b.wrong++;
+  }
   const key = factKey(q), d = today();
   const { retry, review, ...keep } = q;
   const f = prog.facts[key] || (prog.facts[key] = { q: keep, days: [], ok: 0, miss: 0, last: d });
@@ -777,10 +795,10 @@ function reviewPool(exclude) {
 // In auto mode about 1 question in 5 is a review: a fact to practice, or one due again.
 // Each level, boss or race gets its own generator that never asks the same fact twice
 // (7 × 5 and 5 × 7 count as one) until the skill runs out of facts. Missed facts still come back on purpose.
-function genFor(skill) {
-  const auto = prog.auto && skill.id === prog.skill, seen = new Set(), size = factList(skill)?.length || 1e9;
+function genFor(skill, reviews = true) {
+  const auto = reviews && prog.auto && skill.id === prog.skill, seen = new Set(), size = factList(skill)?.length || 1e9;
   const one = () => {
-    if (auto && Math.random() < 0.2) {
+    if (auto && Math.random() < (GRADE[curPlayer().grade] ? 0.25 : 0.2)) {
       const pool = reviewPool().filter(f => !seen.has(factKey(f.q)));
       if (pool.length) return { ...pool[R(0, pool.length - 1)].q, review: true };
     }
@@ -804,9 +822,11 @@ function checkTrophies() {
     [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.2, 'triangle', 0.05, null, 0.1 + i * 0.1));
   }
 }
-// Called at the end of a level, boss or race. Returns what to tell the player, or '' when auto is off.
-function pathRound(skill) {
+// Called at the end of a level, boss or race with how it went ({ right, wrong, fast }). Returns what to tell the
+// player, or '' when auto is off. Players with a grade use the grade tracks (trackRound); others walk PATH.
+function pathRound(skill, how = {}) {
   checkTrophies();
+  if (prog.auto && GRADE[curPlayer().grade]) return trackRound(skill, how);
   if (!prog.auto || skill.id !== prog.skill || !PATH.includes(skill.id)) return '';
   const pr = skillProgress(skill), next = PATH[PATH.indexOf(skill.id) + 1];
   if (pr.ready && next) {   // learned (silver) AND remembered on another day (gold), so the facts stick
@@ -1142,11 +1162,13 @@ function walkerFor(kind, c, speed) {
   return { kind, x: c * T + 4, y: GR * T - size[1], w: size[0], h: size[1], vx: -speed, vy: 0, onGround: false, dead: null, t: R(0, 60) };
 }
 
+// The grade-track plan of the level being built (set by startStage, null otherwise): questions come from mixGen.
+var LEVEL_MIX = null;
 function buildLevel(idx, easy = false, skill = curSkill()) {
   const def = STAGES[idx], W = WORLDS[def.w], rng = mulberry32(1234 + idx * 7919);
   const map = newMap();
   const twist = def.boss ? null : TWISTS[def.w * 3 + def.k];
-  const L = { idx, def, skill, twist, fx: [], plats: [], chaseX: -8 * T, gen: genFor(skill), expert: skillProgress(skill).mature, world: W, sky: W.skies[def.k], map, w: 0, enemies: [], coins: [], stations: [], walls: [], wallCells: new Map(), bridges: [], doors: [], decor: [], flagC: 0, castleC: 0, boss: null, proj: [] };
+  const L = { idx, def, skill, twist, fx: [], plats: [], chaseX: -8 * T, gen: LEVEL_MIX ? mixGen(LEVEL_MIX) : genFor(skill), expert: skillProgress(skill).mature, world: W, sky: W.skies[def.k], map, w: 0, enemies: [], coins: [], stations: [], walls: [], wallCells: new Map(), bridges: [], doors: [], decor: [], flagC: 0, castleC: 0, boss: null, proj: [] };
   const addCols = n => { for (let i = 0; i < n; i++) { for (let r = 0; r < ROWS; r++) map[r].push('.'); L.w++; } return L.w - n; };
   const flat = n => {
     const s = addCols(n);
@@ -1468,7 +1490,7 @@ function buildVault(src) {
   if (kind === 'train') {   // a fast drill: a power bar that fills with right answers and slowly drains
     const tierRate = [7, 9, 11, 13, 14][tier - 1], prev = prog.dojoRpm[src.skill.id], rate = prev ? clamp(Math.round(prev * 0.9), 5, 20) : tierRate, need = Math.max(8, Math.round(rate * 0.8));
     Object.assign(room, { move: moveOf(st), steps: 3, gen: src.gen, senseiC: Math.floor(cols / 2) + 2, say: moveOf(st).intro, combo: 0, intro: TRAIN_INTRO, demoT: 0, poseT: 0, show: 0, blocks: [], boards: (cols > 20 ? [5, 7, 9] : [2, 4]).map(c => ({ c, broken: 0 })),
-      rate, gain: 1 / need, drain: Math.max(0.1, rate / need - 1) / 3600, ease: 1, bar: 0, t: 0, started: false, right: 0, wrong: 0, hitT: 0, hitN: 0, padT: 0, lowT: 0, shownAt: 0 });
+      rate, gain: 1 / need, drain: Math.max(0.1, rate / need - 1) / 3600, ease: 1, bar: 0, t: 0, started: false, right: 0, wrong: 0, hitT: 0, hitN: 0, padT: 0, lowT: 0, shownAt: 0, qT: 0, stun: 0, wrun: 0, last: [] });
   }
   for (const c of room.blocks) map[GR - 3][c] = 'R';
   const V = { idx: src.idx, def: src.def, skill: src.skill, world: src.world, sky: ['#000', '#000'], map, w: cols, enemies: [], coins: [], stations: [], bridges: [], doors: [],
@@ -1525,22 +1547,34 @@ function spillGems(cx, cy, n, c) {
 // At least 8 right answers (about 0.8 × rate); the drain is set so a kid answering at room.rate per minute fills it in about a minute; it never drains below
 // a learned step, and it eases off if the kid is stuck low ("Breathe").
 const TRAIN_HITS = [{ r: 8, arm: [0, 26], arm2: [60, 7] }, { r: -10, arm: [35, 10], arm2: [60, 7], leg: [-15, 28] }, { r: 10, arm: [-8, 26], arm2: [5, 20] }];
+// No mashing: taps in the first 0.4 s of a problem don't count (read it first), a miss knocks the bar back 3/4 of a
+// right answer and Kai is off balance for a moment (1.2 s, 2.5 s, 4 s for misses in a row), and a new step (or the
+// finale) only lands with at most 1 miss in the last 8 answers. Simulated: honest 90% right fills it as fast as
+// before (~35 s); tapping at random fills it within 10 minutes about 2% of the time.
+const TRAIN_STUN = [72, 150, 240], TRAIN_READ = 24;
 function trainAnswer(room, i) {
   if (room.open || room.show || room.intro > 0) return;
+  if (room.stun > 0 || room.qT < TRAIN_READ) return;
   const right = room.opts[i] === room.q.ans, fast = room.t - room.shownAt <= 240;
   room.started = true;
   noteFact(room.q, right, right && fast, L.skill);
+  room.last.push(right ? 1 : 0); if (room.last.length > 8) room.last.shift();
   if (!right) {
     room.wrong++; room.combo = 0; G.mistakes++; G.streak = 0; sfx.wrong();
-    room.say = `${qSolved(room.q)}. Next one!`;
+    room.stun = TRAIN_STUN[Math.min(room.wrun++, TRAIN_STUN.length - 1)];
+    room.bar = Math.max(room.step / 3, room.bar - room.gain * 0.75);
+    room.say = `${qSolved(room.q)}. ${room.wrun >= 3 ? 'Stop. Read it first.' : room.wrun === 2 ? 'Slow down and think.' : 'Next one!'}`;
   } else {
+    room.wrun = 0;
+    const steady = room.last.length - room.last.reduce((a, b) => a + b, 0) <= 1;   // at most 1 miss in the last 8
     room.right++; room.combo++; G.solved++; if (fast) G.fastN++;
     G.parts = G.parts.filter(q => q.tag !== 'combo');   // one combo word at a time
     floatText(P.x + P.w / 2, P.y - 26, room.combo >= 3 ? `${room.combo} combo!` : ['Hai!', 'Yes!', 'Good!', 'Strong!'][R(0, 3)], room.combo >= 5 ? '#ff8a00' : '#ffffff', room.combo >= 3 ? 22 + Math.min(room.combo, 12) : 20); G.parts[G.parts.length - 1].tag = 'combo';
-    room.bar = Math.min(1, room.bar + room.gain); room.hitT = 10; room.hitN++; room.padT = 8;
+    room.bar = Math.min(steady ? 1 : (room.step + 1) / 3 - 0.02, room.bar + room.gain); room.hitT = 10; room.hitN++; room.padT = 8;
+    if (!steady && room.bar >= (room.step + 1) / 3 - 0.03) room.say = 'Almost! A few right in a row to learn the step.';
     sfx.stomp(); tone(880 + Math.min(room.right, 20) * 30, 0.06, 'square', 0.03);
     const at = limbEnd(P, TRAIN_HITS[room.hitN % 3]); burst(at.x, at.y, '#ffffff', 4, 2); flyGem(at.x, at.y - 10, 1); G.coins++;
-    while (room.step < 3 && room.bar >= (room.step + 1) / 3 - 1e-6) {
+    while (steady && room.step < 3 && room.bar >= (room.step + 1) / 3 - 1e-6) {
       const stp = room.move.steps[room.step++];
       room.say = stp.say; room.pose = stp.pose; room.poseT = 45; room.demoT = 40;   // Sensei shows it, then Kai copies
       tone(98, 1.4, 'sine', 0.09); tone(196, 1.1, 'sine', 0.04); G.flash = 0.25; shake(6, 2);   // the gong
@@ -1548,7 +1582,7 @@ function trainAnswer(room, i) {
     }
     if (room.step >= 3) { room.show = 1; room.showT = 0; room.poseT = 0; room.hitT = 0; sfx.gate(); }
   }
-  roomRound(room); room.shownAt = room.t;
+  roomRound(room); room.shownAt = room.t; room.qT = 0;
 }
 // Try the move: X on computers, the round move button on phones. Works in the training room once learned
 // (boards to smash) and during the move's power after leaving (knocks enemies away).
@@ -1627,11 +1661,13 @@ function updateRoom() {
     if (room.demoT > 0) room.demoT--; else if (room.poseT > 0) room.poseT--;
     if (room.hitT > 0) room.hitT--;
     if (room.padT > 0) room.padT--;
+    if (room.intro <= 0) { room.qT++; if (room.stun > 0) room.stun--; }
     if (!room.open && !room.show && room.combo >= 5 && tick % 3 === 0) G.parts.push({ k: 'bit', x: P.x + Math.random() * P.w, y: P.y + P.h - Math.random() * P.h, vx: 0, vy: -1.6, life: 24, col: ['#ff6a00', '#ffd23f', '#ff3b1f'][R(0, 2)], s: 5 });
     if (room.started && !room.show && !room.open) {
       room.t++;
       room.bar = Math.max(room.step / 3, room.bar - room.drain * room.ease);
-      if (room.bar < room.step / 3 + 0.1 && room.t > 600) {
+      const tryHard = !room.last.length || room.last.reduce((a, b) => a + b, 0) / room.last.length >= 0.6;   // "Breathe" helps slow kids, not guessing
+      if (room.bar < room.step / 3 + 0.1 && room.t > 600 && tryHard) {
         if (++room.lowT > 420) { room.lowT = 0; room.ease *= 0.6; room.say = 'Breathe. Take your time.'; }
       } else room.lowT = 0;
     }
@@ -1666,7 +1702,7 @@ const BOSS_SPECS = {
 function buildArena(idx, easy = false, skill = curSkill()) {
   const def = STAGES[idx], W = WORLDS[def.w], map = newMap(), narrow = VW < 700, cols = narrow ? 18 : 27;
   for (let c = 0; c < cols; c++) { for (let r = 0; r < ROWS; r++) map[r].push('.'); map[GR][c] = '#'; map[GR + 1][c] = '#'; }
-  const L = { idx, def, skill, gen: genFor(skill), expert: skillProgress(skill).mature, world: W, sky: W.skies[2], map, w: cols, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [1, cols - 4], flagC: -99, castleC: -99, proj: [] };
+  const L = { idx, def, skill, gen: LEVEL_MIX ? mixGen(LEVEL_MIX) : genFor(skill), expert: skillProgress(skill).mature, world: W, sky: W.skies[2], map, w: cols, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [1, cols - 4], flagC: -99, castleC: -99, proj: [] };
   const padC = narrow ? 5 : 7;
   // Fights take turns: a 'dodge' phase where the boss attacks, then an 'open' phase where it is dizzy and you answer.
   L.arena = { q: L.gen(), padC, wait: 0, phase: 'dodge', phaseT: 150 };
@@ -2024,6 +2060,135 @@ const GRADES = [
   { id: '5', name: '5th grade +', skill: 'xmix69', easy: null, picks: ['xall', 'xtens', 'x11', 'x12', 'dmix', 'tpattern', 'tbalmul'] },
 ];
 const GRADE = Object.fromEntries(GRADES.map(g => [g.id, g]));
+// Grade tracks (auto mode for a player with a grade): each grade's math is split into a few kinds, each easy → hard.
+// A level uses ONE kind; the next level goes to the track that is furthest behind (not the same one twice in a row
+// when there is a choice; tracks waiting for tomorrow's gold go last). A track's spot is its first skill that isn't
+// passed yet (90% learned, half gold, as on PATH). How a level went moves that track's NEXT level: great (90% right,
+// most of them fast) = one step harder ("Challenge"), hard (under 60% right) = one step easier with Sensei's tips
+// after one miss. When every track of the grade is passed, the next grade's tracks take over.
+const GRADE_TRACKS = {
+  K: [['Add', 'add5 add10 make10'], ['Take away', 'sub10']],
+  1: [['Add', 'add10 make10 add20 addtens'], ['Take away', 'sub10 sub20'], ['Think', 'tskip tmissadd']],
+  2: [['Add', 'add20 addtens add2d1d add2d'], ['Take away', 'sub20 subtens sub2d1d sub2d'], ['Times', 'x2 x5 x10'], ['Think', 'tskip tmissadd tbal']],
+  3: [['Times', 'x2 x5 x10 x3 x4 xmix25 x6 x7 x8 x9 xmix69'], ['Divide', 'd2 d5 d10 d3 d4'], ['Big adding', 'add2d'], ['Big take-away', 'sub2d'], ['Think', 'tbal tmissmul tmissdiv']],
+  4: [['Times', 'xmix69 x11 x12 xtens xall'], ['Divide', 'd6 d7 d8 d9 dmix'], ['Think', 'tmissmul tmissdiv tpattern tbalmul']],
+  5: [['Times', 'xall xtens x11 x12'], ['Divide', 'dmix'], ['Think', 'tpattern tbalmul']],
+};
+// Skills that wait for another skill of the same grade to be learned first (divide by 5 after times 5, ...).
+const TRACK_REQ = { d2: 'x2', d5: 'x5', d10: 'x10', d3: 'x3', d4: 'x4', d6: 'x6', d7: 'x7', d8: 'x8', d9: 'x9', dmix: 'xall', tmissmul: 'xmix25', tmissdiv: 'd5' };
+const gradeTracks = gi => (GRADE_TRACKS[GRADES[gi].id] || []).map(([name, ids]) => ({ name, ids: ids.split(' ') }));
+function reqMet(id, gi) {
+  const r = TRACK_REQ[id];
+  return !r || !gradeTracks(gi).some(t => t.ids.includes(r)) || skillProgress(SKILL[r]).done;
+}
+function trackState(t, gi) {
+  const f = t.ids.findIndex(id => !skillProgress(SKILL[id]).ready);
+  if (f < 0) return { t, f: t.ids.length, done: true, frac: 1 };
+  const pr = skillProgress(SKILL[t.ids[f]]);
+  return { t, f, done: false, locked: !reqMet(t.ids[f], gi), waiting: pr.done, frac: (f + pr.learned / Math.max(1, pr.n)) / t.ids.length };
+}
+// The player's grade, or the next one once every track of it is passed.
+function trackPlan() {
+  const g = GRADE[curPlayer().grade]; if (!g) return null;
+  let gi = GRADES.indexOf(g), sts;
+  for (;;) {
+    sts = gradeTracks(gi).map(t => trackState(t, gi));
+    if (sts.some(x => !x.done) || gi === GRADES.length - 1) return { gi, sts };
+    gi++;
+  }
+}
+const trackMem = () => prog.gtrack || (prog.gtrack = { last: null, adj: {}, seen: {} });
+// Each world favours one kind of math: level 1 is only that kind (at the kid's spot in it, a step up after a great
+// level, a step back after a hard one), levels 2 and 3 and the boss mix: 40% the world's kind (at least 10 points over an
+// even share, so 60/40 with two kinds), the rest shared by the
+// other kinds being learned (the boss also brings back kinds already passed). No home kind for this grade, or it's
+// locked or passed: level 1 takes the kind furthest behind.
+const WORLD_HOME = { japan: 'add', lava: 'sub', robot: 'mul', snow: 'div', castle: 'think' };
+const KIND_NAME = { add: 'Add', sub: 'Take away', mul: 'Times', div: 'Divide', think: 'Think' };
+const trackCat = x => SKILL[x.t.ids[0]].cat;
+function behind(sts, tm) {   // the kind furthest behind (not the last one played; ones waiting for tomorrow's gold last)
+  const live = sts.filter(x => !x.done && !x.locked);
+  let pool = live.filter(x => !x.waiting); if (!pool.length) pool = live;
+  if (pool.length > 1) pool = pool.filter(x => x.t.name !== tm.last);
+  return pool.sort((a, b) => a.frac - b.frac)[0] || null;
+}
+// The plan for stage i: { focus, track, skill, mode, mix: [{ track, skill | ids, p }], note, fresh }. commit = this
+// level is starting (uses up a challenge / step back, remembers it); otherwise it's a preview for the level card.
+function planStage(i, commit) {
+  const plan = prog.auto && !prog.pickOnce && trackPlan(); if (!plan) return null;
+  const st = STAGES[i], W = WORLDS[st.w], cat = WORLD_HOME[W.key], tm = trackMem(), gname = GRADES[plan.gi].name;
+  const home = plan.sts.find(x => trackCat(x) === cat), homeOk = home && !home.done && !home.locked;
+  const note = homeOk || !KIND_NAME[cat] ? '' : !home ? '' : home.done ? `You passed all your ${KIND_NAME[cat]}! Mixed math here.`
+    : `${KIND_NAME[cat]} opens after ${SKILL[TRACK_REQ[home.t.ids[home.f]]].name}.`;
+  const spot = x => ({ track: x.t.name, ...(x.done ? { ids: x.t.ids } : { skill: x.t.ids[x.f] }) });
+  let out;
+  if (!st.boss && st.k === 0) {   // level 1: the world's kind only
+    const x = homeOk ? home : behind(plan.sts, tm); if (!x) return null;
+    const adj = tm.adj[x.t.name] || 0;
+    let k = Math.max(0, Math.min(x.t.ids.length - 1, x.f + adj));
+    if (k > x.f && !reqMet(x.t.ids[k], plan.gi)) k = x.f;
+    out = { focus: true, track: x.t.name, skill: x.t.ids[k], mode: k > x.f ? 'challenge' : k < x.f ? 'back' : '', mix: [{ track: x.t.name, skill: x.t.ids[k], p: 1 }] };
+    if (commit) { tm.adj[x.t.name] = 0; tm.last = x.t.name; }
+  } else {   // levels 2, 3 and the boss: a mix leaning 40% to the world's kind
+    const others = plan.sts.filter(x => x !== home && !x.locked && (st.boss || !x.done));
+    const withHome = (homeOk || (st.boss && home && home.done)) ? home : null;
+    if (!withHome && !others.length) return null;
+    const hp = !withHome ? 0 : others.length ? Math.max(0.4, 1 / (others.length + 1) + 0.1) : 1;   // the world's kind always leads
+    const mix = [...(withHome ? [{ ...spot(withHome), p: hp }] : []), ...others.map(x => ({ ...spot(x), p: (1 - hp) / others.length }))];
+    const main = withHome && !withHome.done ? withHome : behind(others, tm) || withHome || others[0];
+    out = { focus: false, track: main.t.name, skill: main.done ? main.t.ids[main.t.ids.length - 1] : main.t.ids[main.f], mode: '', mix };
+  }
+  out.note = note; out.fresh = !tm.seen[out.skill]; out.grade = gname; out.home = homeOk ? KIND_NAME[cat] : null;
+  if (commit) {
+    tm.seen[out.skill] = true;
+    out.passed = plan.sts.flatMap(x => x.t.ids).filter(id => skillProgress(SKILL[id]).ready);
+    prog.skill = out.skill; prog.trackNow = out;
+  }
+  return out;
+}
+// Questions for a planned level: about 1 in 4 is a review, the rest pick a kind by its share; each question carries
+// its kind (trk) and skill (sk) so the level can be judged kind by kind.
+function mixGen(mix) {
+  const gens = {}, gen = id => gens[id] || (gens[id] = genFor(SKILL[id], false)), seen = new Set();
+  return () => {
+    if (Math.random() < 0.25) {
+      const pool = reviewPool().filter(f => !seen.has(factKey(f.q)));
+      if (pool.length) { const q = { ...pool[R(0, pool.length - 1)].q, review: true }; seen.add(factKey(q)); return q; }
+    }
+    let r = Math.random(), w = mix.mix[mix.mix.length - 1];
+    for (const m of mix.mix) if ((r -= m.p) < 0) { w = m; break; }
+    const id = w.skill || w.ids[R(0, w.ids.length - 1)];
+    return { ...gen(id)(), trk: w.track, sk: id };
+  };
+}
+// End of a level, boss or race: judge each kind that got enough questions (great = 90% right and most of them fast:
+// its next level 1 is a step up; under 60% right: a step back, with Sensei's tips after one miss).
+function trackRound(skill, how) {
+  const tm = trackMem(), now = prog.trackNow, plan = trackPlan();
+  let by = G && G.byTrack && !how.race ? G.byTrack : null;
+  if (!by) {   // races (and levels with a hand-picked skill): the whole thing counts for the skill's kind
+    const x = plan && plan.sts.find(y => y.t.ids.includes(skill.id));
+    by = x ? { [x.t.name]: { right: how.right || 0, wrong: how.wrong || 0, fast: how.fast || 0 } } : {};
+  }
+  const lines = [];
+  for (const [track, b] of Object.entries(by)) {
+    const n = b.right + b.wrong; if (n < 4) continue;
+    const rate = b.right / n, quick = b.right ? b.fast / b.right : 0, x = plan && plan.sts.find(y => y.t.name === track);
+    if (rate >= 0.9 && quick >= 0.7) {
+      tm.adj[track] = 1;
+      const up = x && !x.done && x.t.ids[Math.min(x.t.ids.length - 1, x.f + 1)];
+      if (up && up !== x.t.ids[x.f]) lines.push(`${pixImg('star', 'pix sm')} Challenge next time: <b>${SKILL[up].name}</b>`);
+    } else if (rate < 0.6) { tm.adj[track] = -1; lines.push(`Next time: a little practice on <b>${track}</b>. Sensei will help!`); }
+  }
+  if (now && now.passed && G && G.idx === now.stage && !how.race) {   // skills passed in this level
+    for (const id of (plan ? plan.sts.flatMap(x => x.t.ids) : [])) if (!now.passed.includes(id) && skillProgress(SKILL[id]).ready) lines.unshift(`${pixImg('star', 'pix sm')} Passed: <b>${SKILL[id].name}</b>!`);
+  }
+  save();
+  const pr = skillProgress(skill), stat = `<span title="Facts learned">${pixImg('book', 'pix sm')} ${pr.learned}/${pr.n}</span>`;
+  if (!lines.length) return stat;
+  sfx.win();
+  return `<div class="promo levelup">${lines.join('<br>')}</div>`;
+}
 const PLAYER_ICONS = ['🥷', '🐯', '🐼', '🦊', '🐸', '🐲', '🦄', '🐵', '🦖'];
 let players = { list: [{ id: 'p1', name: 'Player 1', grade: null, icon: '🥷' }], cur: 'p1' };
 try { const s = JSON.parse(localStorage.getItem(PLAYERS_KEY)); if (s && s.list && s.list.length) players = s; } catch (e) { /* no storage */ }
@@ -2296,6 +2461,7 @@ function answerTarget() {
   return { q: st.q, vals: st.answers.map(a => a.val), off: st.answers.map(a => a.state !== 'idle') };
 }
 function syncAnsBar() {
+  $('ansbar').classList.toggle('stun', !!(L && L.room && L.room.kind === 'train' && L.room.stun > 0));   // dojo: Kai is off balance after a miss
   const t = barTarget(), key = t ? t.q.text + '|' + t.vals.join(',') + t.off.join(',') : '';
   if (key === barKey) return;
   barKey = key; const bar = $('ansbar');
@@ -2543,7 +2709,7 @@ function senseiTip(txt, q = null) {
 }
 function missed(q) {
   petSay('sad');
-  if (++G.wrongRun >= 2) { senseiTip(tipFor(q), q); G.wrongRun = 0; }
+  if (++G.wrongRun >= (G.tipSoon ? 1 : 2)) { senseiTip(tipFor(q), q); G.wrongRun = 0; }   // a step-back level: help after one miss
 }
 function gotIt() { petSay('happy'); G.wrongRun = 0; }
 
@@ -3984,7 +4150,7 @@ function finishLevel() {
   if (currentBelt().name === 'Black') award('black-belt');
   if (dots === 3) award('gold-medal');
   if (sk.tier >= 4) award('brave');
-  const path = pathRound(sk, G.mistakes), up = path.startsWith('<div');
+  const path = pathRound(sk, { right: G.solved, wrong: G.mistakes, fast: G.fastN }), up = path.startsWith('<div');
   body += `<div class="statrow"><span>${pixImg('gem', 'pix sm')} +${earned}</span><span>${pixImg('belt', 'pix sm')} +${pts}</span>${up ? '' : path}</div>`;
   if (up) body += path;
   // how much math got done, and the best so far on this level
@@ -4269,7 +4435,7 @@ function finishRace() {
     if (RC !== r) return;
     mode = 'racedone'; hide('pauseBtn'); showTouch(false);
     const medal = r.place === 4 ? pixImg('race', 'pix big') : medalImg(4 - r.place);
-    const path = pathRound(r.topic, GATES - r.right), up = path.startsWith('<div');
+    const path = pathRound(r.topic, { right: r.right, wrong: GATES - r.right, fast: r.right, race: true }), up = path.startsWith('<div');
     let body = `<div class="bigicon">${medal}</div><div class="statrow"><span>${pixImg('clock', 'pix sm')} ${r.time.toFixed(1)}s${best ? ' NEW!' : ''}</span><span>✔ ${r.right}/${GATES}</span><span>💎 +${reward}</span>${up ? '' : path}</div>`;
     if (up) body += path;
     if (r.missed.size) body += `<div class="practice">🔁 ${[...r.missed.values()].slice(0, 3).map(q => `<span>${qSolved(q)}</span>`).join('')}</div>`;
@@ -6088,6 +6254,7 @@ function kaiPose() {
   if (rm && rm.kind === 'train' && P.onGround) {
     if (rm.show) return trainPoseAt(rm, rm.showT);
     if (rm.hitT > 0) return TRAIN_HITS[rm.hitN % 3];
+    if (rm.stun > 0 && !rm.show && !rm.open) return { r: -10 + Math.sin(rm.stun * 0.3) * 4, arm: [100, 10], arm2: [115, 10] };   // off balance after a miss
     if (rm.intro > 90 && rm.intro <= 150) return BOW_POSE;
     if (rm.poseT > 0 && rm.pose && rm.demoT <= 0) return rm.pose;
     if (!rm.open) return TRAIN_READY;
@@ -6471,6 +6638,7 @@ function drawDrill(rm, y) {
   if (isTouch) return;
   const tw = 120, th = 74, gap = 22, tx = VW / 2 - (3 * tw + 2 * gap) / 2, ty = y + 40;
   rm.tiles = rm.opts.map((v, i) => ({ x: tx + i * (tw + gap), y: ty, w: tw, h: th }));
+  ctx.globalAlpha = rm.stun > 0 ? 0.35 : 1;
   rm.tiles.forEach((t, i) => {
     const [c1, c2] = ansCol(i);
     ctx.fillStyle = c2; rrect(t.x, t.y + 6, t.w, t.h, 12); ctx.fill();
@@ -6479,6 +6647,7 @@ function drawDrill(rm, y) {
     ctx.fillText(rm.opts[i], t.x + t.w / 2, t.y + t.h / 2);
     keyTag(ANS_KEYS(3)[i], t.x + t.w - 6, t.y + 4);
   });
+  ctx.globalAlpha = 1;
 }
 function drawHUD() {
   const narrow = VW < 700, st = STAGES[G.idx];
@@ -6621,11 +6790,14 @@ function startStage(i) {
   const st = STAGES[i], W = WORLDS[st.w];
   RC = null; document.body.classList.remove('racing');
   playMusic(st.boss ? 'boss' : W.key);
+  const plan = planStage(i, true); if (plan) plan.stage = i; else prog.trackNow = null;
+  prog.pickOnce = false; LEVEL_MIX = plan;
   L = st.boss ? buildArena(i, prog.easy) : buildLevel(i, prog.easy);
+  LEVEL_MIX = null;
   P = { x: 1.5 * T, y: GR * T - 44, w: 24, h: 44, vx: 0, vy: 0, onGround: false, face: 1, inv: 0, anim: 0, coyote: 0, jbuf: 0, throwT: 0 };
   const hearts = prog.easy ? 5 : 3;
   G = { idx: i, skill: L.skill, hearts, maxHearts: hearts, coins: 0, score: 0, shake: 0, shakeAmp: 0, freeze: 0, slow: 0, flash: 0, flyers: [], pulse: 0, chain: 0, lastGem: -99, mistakes: 0, streak: 0, bestStreak: 0, solved: 0, fastN: 0, lightN: 0, missed: [], practice: new Map(), power: null, powerN: 0, carry: null, saved: null,
-    pet: prog.equip.pet ? { x: P.x, y: P.y, mood: null, moodT: 0 } : null, glide: 0, alarm: 0, climb: false, hidden: false, bubble: null, tip: null, mbox: null, dash: 0, cross: null, wrongRun: 0, checkpoint: 1.5 * T, time: 0, parts: [], shots: [], bumps: new Map(), winT: 0 };
+    pet: prog.equip.pet ? { x: P.x, y: P.y, mood: null, moodT: 0 } : null, glide: 0, alarm: 0, climb: false, hidden: false, bubble: null, tip: null, mbox: null, dash: 0, cross: null, wrongRun: 0, tipSoon: !!(plan && plan.mode === 'back'), byTrack: plan ? {} : null, checkpoint: 1.5 * T, time: 0, parts: [], shots: [], bumps: new Map(), winT: 0 };
   SPR = bakeNinja(heroPal());   // equipped headband and suit, plus the belt you've earned
   cam = 0; ambient.length = 0;
   hide('menu');
@@ -6739,8 +6911,12 @@ function buildMenu() {
 function confirmStage(i) {
   const st = STAGES[i], W = WORLDS[st.w], k = curSkill();
   hide('menu');
-  showMsg(st.boss ? W.boss.name : `${st.label} · ${st.name}`, `<p class="mathline">Math: <b>${k.name}</b> <span class="tier">${stars(k.tier)}</span><br>
-    <small>like ${k.ex} · 💎 ×${TIER_GEMS[k.tier - 1]}</small></p>`,
+  const pl = planStage(i, false), pk = pl ? SKILL[pl.skill] : k;
+  const tag = pl && pl.mode === 'challenge' ? ' <span class="tier">⭐ Challenge!</span>' : pl && pl.fresh ? ' <span class="tier">New!</span>' : '';
+  const what = !pl || pl.focus ? `<b>${pk.name}</b> <span class="tier">${stars(pk.tier)}</span>${tag}`
+    : `<b>Mixed</b>${pl.home ? ` · mostly <b>${pl.home}</b>` : ''}<br><small>with ${pl.mix.filter(m => m.track !== pl.mix[0].track || !pl.home).map(m => m.track).join(', ')}</small>`;
+  showMsg(st.boss ? W.boss.name : `${st.label} · ${st.name}`, `<p class="mathline">Math: ${what}${pl && pl.note ? `<br><small>${pl.note}</small>` : ''}<br>
+    <small>${pl && !pl.focus ? '' : `like ${pk.ex} · `}💎 ×${TIER_GEMS[pk.tier - 1]}</small></p>`,
     [{ label: 'Start ▶', fn: () => startStage(i), primary: true }, { label: 'Change math', fn: () => openSkills(() => confirmStage(i)), alt: true }, { label: 'Back', fn: toMenu, alt: true }]);
 }
 
@@ -6751,8 +6927,15 @@ function openSkills(then) {
   hide('menu'); hide('msg'); renderSkills(); show('skills');
 }
 function renderSkills() {
-  $('autoBtn').innerHTML = prog.auto ? '🧭 Auto: <b>on</b> · moves up after 2 great rounds' : '🧭 Auto: <b>off</b> · tap to move up by itself';
+  const plan = trackPlan();
+  $('autoBtn').innerHTML = !prog.auto ? '🧭 Auto: <b>off</b> · tap to move up by itself'
+    : plan ? `🧭 Auto: <b>on</b> · mixes ${GRADES[plan.gi].name} math and steps up` : '🧭 Auto: <b>on</b> · moves up after 2 great rounds';
   $('autoBtn').classList.toggle('on', prog.auto);
+  // grade tracks: one row per kind of math, one square per skill (gold = passed, green = learned, ring = next up)
+  $('trackBox').innerHTML = prog.auto && plan ? plan.sts.map(x => `<div class="trow"><span class="tn">${x.t.name}</span><span class="tcells">${x.t.ids.map((id, i) => {
+    const kp = skillProgress(SKILL[id]), cls = kp.ready ? 'pass' : kp.done ? 'learn' : '';
+    return `<i class="${cls}${id === prog.skill ? ' now' : ''}" title="${SKILL[id].name}"></i>`;
+  }).join('')}</span><span class="tx">${x.done ? '✔' : x.locked ? `🔒 ${SKILL[TRACK_REQ[x.t.ids[x.f]]].name} first` : SKILL[x.t.ids[x.f]].name}</span></div>`).join('') : '';
   $('skillTabs').innerHTML = '';
   for (const [cat, label] of SKILL_CATS) {
     const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.className = cat === skillTab ? 'on' : '';
@@ -6767,7 +6950,7 @@ function renderSkills() {
     if (mine) b.classList.add('grade');
     const kp = skillProgress(k);
     b.innerHTML = `${prog.trophies[k.id] ? '<span class="ttag">🏆</span>' : ''}${mine ? `<span class="gtag">🎒 ${g.id === 'K' ? 'K' : g.name.split(' ')[0]}</span>` : ''}<span class="sn">${k.name} ${medal}</span><span class="se">like ${k.ex}</span><span class="st">${stars(k.tier)}</span><span class="sm">💎 ×${TIER_GEMS[k.tier - 1]} · 📒 ${kp.learned}/${kp.n}</span>`;
-    b.onclick = () => { audio(); prog.skill = k.id; save(); hide('skills'); (skillsThen || toMenu)(); };
+    b.onclick = () => { audio(); prog.skill = k.id; prog.pickOnce = !!prog.auto; save(); hide('skills'); (skillsThen || toMenu)(); };
     $('skillGrid').appendChild(b);
   }
 }
@@ -7831,10 +8014,10 @@ $('pSave').onclick = () => {
   if (editing) {
     const gradeChanged = editing.grade !== pickGrade;
     Object.assign(editing, { name, grade: pickGrade, icon: pickIcon });
-    if (gradeChanged && g && editing.id === players.cur) { prog.skill = g.skill; if (g.easy !== null) setEasy(g.easy); save(); }
+    if (gradeChanged && g && editing.id === players.cur) { prog.skill = g.skill; prog.gtrack = null; prog.trackNow = null; if (g.easy !== null) setEasy(g.easy); save(); }
     else if (gradeChanged && g) {   // update the other player's save directly
       const k = keyFor(editing.id);
-      try { const s = JSON.parse(localStorage.getItem(k)) || freshProg(); s.skill = g.skill; if (g.easy !== null) s.easy = g.easy; localStorage.setItem(k, JSON.stringify(s)); } catch (e) { /* no storage */ }
+      try { const s = JSON.parse(localStorage.getItem(k)) || freshProg(); s.skill = g.skill; s.gtrack = null; s.trackNow = null; if (g.easy !== null) s.easy = g.easy; localStorage.setItem(k, JSON.stringify(s)); } catch (e) { /* no storage */ }
     }
     savePlayers(); showPlayers();
   } else {
