@@ -177,11 +177,6 @@
   .tablegrid span.gold { background: #ffd23f; color: #3a2200; }
   .winrow { font-size: 26px; letter-spacing: 4px; margin: 10px 0; }
   .expert { color: #7df9ff; font-size: 14px; margin-bottom: 8px; }
-  .nbook { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 12px; }
-  .nbpage { background: rgba(255,255,255,.06); border-radius: 10px; padding: 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-  .nbpage canvas { width: 100%; max-width: 162px; image-rendering: auto; }
-  .nbpage span { font-size: 12px; line-height: 1.25; text-align: center; }
-  .nbpage.dim { opacity: .35; }
   .ttag { position: absolute; top: -10px; right: 6px; font-size: 18px; }
   .padkeys.keypad { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 300px; margin: 0 auto; }
   .padkeys .ok { background: #2ecc71 !important; color: #08321a !important; }
@@ -306,11 +301,6 @@
   .ibtn { font: inherit; font-weight: 800; font-size: 13px; color: #fff; background: rgba(255,255,255,.1); border: none; border-radius: 14px;
     padding: 8px 2px; cursor: pointer; display: grid; justify-items: center; gap: 2px; }
   .ibtn span { font-size: 26px; line-height: 1; }
-  .cluerow { display: flex; justify-content: center; gap: 8px; margin: 2px 0 4px; }
-  .clue { width: 40px; height: 40px; padding: 0; border: 2px solid rgba(255,255,255,.22); background: rgba(0,0,0,.25); border-radius: 8px; display: grid; place-items: center; }
-  .clue.on { border-color: #ffd23f; background: rgba(255,210,63,.12); cursor: pointer; }
-  .clue .pix, .clueline .pix { width: 30px; height: 30px; image-rendering: pixelated; }
-  .clueline { display: flex; justify-content: center; gap: 12px; margin: 6px 0 2px; }
   .ibtn b { color: #ffd23f; }
   .ibtn:hover { background: rgba(255,255,255,.18); }
   .setlist { display: grid; gap: 8px; margin: 10px 0 14px; }
@@ -404,7 +394,6 @@
     <button class="ibtn" id="settingsBtn" type="button"><span data-pix="gear"></span>Settings</button>
     <button class="ibtn" id="helpBtn" type="button"><span data-pix="help"></span>How to</button>
   </div>
-  <div class="cluerow" id="clueRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
 </div>
@@ -545,11 +534,12 @@
 'use strict';
 
 const cv = document.getElementById('game');
-cv.addEventListener('pointerdown', e => {   // computers: click the big answer tiles in the dojo
-  const rm = L && L.room, tr = rm && rm.tiles; if (!tr || mode !== 'play') return;
+cv.addEventListener('pointerdown', e => {   // click / tap the big answer tiles in the dojo, or the blocks of a pattern wall
+  if (!L || mode !== 'play') return;
+  const rm = L.room, tr = rm && rm.tiles;
   const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) * VW / r.width, y = (e.clientY - r.top) * VH / r.height;
-  const i = tr.findIndex(t => x >= t.x && x <= t.x + t.w && y >= t.y && y <= t.y + t.h);
-  if (i >= 0) { audio(); tapAnswer(i); }
+  if (tr) { const i = tr.findIndex(t => x >= t.x && x <= t.x + t.w && y >= t.y && y <= t.y + t.h); if (i >= 0) { audio(); tapAnswer(i); } return; }
+  if (L.walls && L.walls.length && wallTap(x + cam, y)) { audio(); syncAnsBar(); }
 });
 let ctx = cv.getContext('2d');
 const VH = 540, T = 36, ROWS = 15, GR = 13;   // GR = first ground row
@@ -760,9 +750,8 @@ function noteFact(q, right, fast, skill) {
   const { retry, review, ...keep } = q;
   const f = prog.facts[key] || (prog.facts[key] = { q: keep, days: [], ok: 0, miss: 0, last: d });
   f.last = d;
-  if (right && fast) { f.ok++; f.weak = false; f.slow = 0; if (!f.days.includes(d)) f.days = [...f.days, d].slice(-3); }
-  else if (!right) { f.miss++; f.weak = true; f.days = []; f.slow = 0; }
-  else if ((f.slow = (f.slow || 0) + 1) >= 3) { f.weak = true; f.slow = 0; }   // right but slow three times: being counted out, so practise it
+  if (right && fast) { f.ok++; f.weak = false; if (!f.days.includes(d)) f.days = [...f.days, d].slice(-3); }
+  else if (!right) { f.miss++; f.weak = true; f.days = []; }
   if (skill && !review && !factList(skill)) {
     const w = prog.win[skill.id] || (prog.win[skill.id] = []);
     w.push(right && fast ? d : 0); if (w.length > 10) w.shift();
@@ -783,14 +772,13 @@ function reviewPool(exclude) {
   const d = today();
   return Object.entries(prog.facts).filter(([k, f]) => k !== exclude && (f.weak || (f.days.length === 1 && f.days[0] < d) || (f.days.length >= 2 && d - f.last >= 4))).map(([, f]) => f);
 }
-// In auto mode about 1 question in 5 is a review (1 in 3 once two skills are ready): a fact to practice, or one due again.
+// In auto mode about 1 question in 5 is a review: a fact to practice, or one due again.
 // Each level, boss or race gets its own generator that never asks the same fact twice
 // (7 × 5 and 5 × 7 count as one) until the skill runs out of facts. Missed facts still come back on purpose.
 function genFor(skill) {
   const auto = prog.auto && skill.id === prog.skill, seen = new Set(), size = factList(skill)?.length || 1e9;
-  const mix = auto && SKILLS.filter(k => skillProgress(k).ready).length >= 2 ? 1 / 3 : 0.2;   // more mixing once older skills are learned
   const one = () => {
-    if (auto && Math.random() < mix) {
+    if (auto && Math.random() < 0.2) {
       const pool = reviewPool().filter(f => !seen.has(factKey(f.q)));
       if (pool.length) return { ...pool[R(0, pool.length - 1)].q, review: true };
     }
@@ -875,117 +863,274 @@ function choices(q, n = 3) {
   return shuffle(out);
 }
 // Answers in a sorted row, with the right one at a random spot so "pick the middle" never works.
-// The row is the closest numbers around the answer, so it can't be guessed by size.
 function rowChoices(q, n) {
-  const a = q.ans, st = q.step || 1, times = q.op === '×' && st === 1;
-  const pool = choices(q, n * 2).filter(v => v !== a && (!times || Math.abs(v - a) <= Math.max(q.a, q.b)));   // times: a table row away at most
-  for (let k = 1; k < n; k++) for (const v of [a - k * st, a + k * st])   // fill with the nearest numbers (times rows keep their table neighbours first)
-    if (v >= 0 && !pool.includes(v) && (!times || pool.filter(u => (u < a) === (v < a)).length < n - 1)) pool.push(v);
-  const lows = pool.filter(v => v < a).sort((x, y) => y - x), highs = pool.filter(v => v > a).sort((x, y) => x - y);
+  const a = q.ans, pool = choices(q, n * 2).filter(v => v !== a);
+  const lows = pool.filter(v => v < a), highs = pool.filter(v => v > a);
   const below = clamp(R(0, n - 1), n - 1 - highs.length, lows.length);
   return [...lows.slice(0, below), a, ...highs.slice(0, n - 1 - below)].sort((x, y) => x - y);
 }
 
 // Each level has its own twist (bosses don't).
+// ---------------------------------------------------------------- pattern walls
+// Older players only: one gate per level is guarded by a wall of number blocks built in a famous pattern.
+// Pascal's Triangle and Fibonacci Stairs have ? holes to fill (bonk / tap / key the right block and it flies in);
+// the Prime Wall is touched directly: find every prime. All done: the pattern lights up, crumbles, the gate opens.
+// (Function declarations: buildLevel uses them during startup, before G and isTouch exist, so the build path
+// must not touch those.)
+function wallKinds(skill) {
+  if (!skill) return [];
+  if (skill.cat === 'mul' || skill.cat === 'div' || (skill.cat === 'think' && skill.tier >= 4)) return ['prime', 'pascal', 'fib'];
+  const i = PATH.indexOf(skill.id);
+  return skill.tier >= 3 || (i >= 0 && i >= PATH.indexOf('add2d1d')) ? ['pascal', 'fib'] : [];
+}
+function isPrime(v) { if (v < 2) return false; for (let d = 2; d * d <= v; d++) if (v % d === 0) return false; return true; }
+function wallInfo(kind) {
+  return {
+    pascal: { title: "Pascal's Triangle", rule: 'Each block = the two blocks above it, added up!', text: 'Fill the ? block!',
+      tip: "This is Pascal's Triangle. Every block is the two blocks just above it, added together. The edges are always 1." },
+    fib: { title: 'Fibonacci Stairs', rule: 'Each step = the two steps before it, added up!', text: 'Fill the ? step!',
+      tip: 'These are the Fibonacci numbers: 1, 1, 2, 3, 5, 8... Each one is the two before it, added together.' },
+    prime: { title: 'Prime Wall', rule: 'A prime can only be made as 1 × itself. Touch every prime!', text: 'Find the primes!',
+      tip: 'A prime number can only be made as 1 times itself. 7 is prime. 6 is not, because 6 = 2 × 3. Find every prime to break the wall!' },
+  }[kind];
+}
+// The blocks of one wall: x = column from the left, y = rows up from the ground. 'num' shows a number, 'hole' is a ?,
+// 'fill' is a plain block that keeps the shape solid.
+function wallPuzzle(kind, skill) {
+  const big = skill.cat === 'mul' || skill.cat === 'div' || skill.tier >= 4, cells = [];
+  if (kind === 'pascal') {
+    const N = skill.tier >= 5 ? 7 : big ? 6 : 5, rows = [[1]], at = {};
+    for (let n = 1; n < N; n++) rows.push(range(0, n).map(j => (rows[n - 1][j - 1] || 0) + (rows[n - 1][j] || 0)));
+    rows.forEach((row, n) => {
+      for (let x = N - 1 - n; x <= N - 1 + n; x++) {
+        const j = (x - (N - 1 - n)) / 2, num = Number.isInteger(j);
+        const cl = { x, y: N - 1 - n, n, j, type: num ? 'num' : 'fill', val: num ? row[j] : 0 };
+        cells.push(cl); if (num) at[n + ',' + j] = cl;
+      }
+    });
+    // holes inside the triangle, never touching each other, so every ? can be worked out from blocks you can see
+    const holes = [];
+    for (const c of shuffle(cells.filter(c => c.type === 'num' && c.n >= 2 && c.j > 0 && c.j < c.n))) {
+      if (holes.length >= (N === 5 ? 2 : 3)) break;
+      if (!holes.some(h => Math.abs(h.n - c.n) <= 1 && Math.abs(h.x - c.x) <= 2)) holes.push(c);
+    }
+    holes.sort((a, b) => a.n - b.n || a.x - b.x);
+    holes.forEach(h => { h.type = 'hole'; h.par = [at[(h.n - 1) + ',' + (h.j - 1)], at[(h.n - 1) + ',' + h.j]]; });
+    return { kind, w: 2 * N - 1, cells, holes };
+  }
+  if (kind === 'fib') {
+    const n = big ? 9 : 8, seq = [1, 1], tops = [];
+    while (seq.length < n) seq.push(seq[seq.length - 1] + seq[seq.length - 2]);
+    seq.forEach((v, k) => {   // stairs going up: plain blocks under each number
+      for (let y = 0; y < k; y++) cells.push({ x: k, y, type: 'fill', val: 0 });
+      const cl = { x: k, y: k, k, type: 'num', val: v }; cells.push(cl); tops.push(cl);
+    });
+    const holes = [];
+    for (const c of shuffle(tops.filter(c => c.k >= 3))) {
+      if (holes.length >= (big ? 3 : 2)) break;
+      if (!holes.some(h => Math.abs(h.k - c.k) < 2)) holes.push(c);
+    }
+    holes.sort((a, b) => a.k - b.k);
+    holes.forEach(h => { h.type = 'hole'; h.par = [tops[h.k - 2], tops[h.k - 1]]; });
+    return { kind, w: n, cells, holes };
+  }
+  // prime: a 5 × 3 wall of numbers, 5 of them prime; most of the others are odd, so "odd means prime" doesn't work
+  const hi = skill.tier >= 4 ? 60 : 40, ps = shuffle(range(2, hi).filter(isPrime)).slice(0, 5);
+  const odd = shuffle(range(9, hi).filter(v => v % 2 && !isPrime(v))).slice(0, 6), even = shuffle(range(4, hi).filter(v => v % 2 === 0)).slice(0, 4);
+  shuffle([...ps, ...odd, ...even]).forEach((v, i) => cells.push({ x: i % 5, y: Math.floor(i / 5), type: 'num', val: v, prime: isPrime(v), state: 'idle' }));
+  return { kind, w: 5, cells, holes: [], total: 5, found: 0 };
+}
+function wallOptsFor(h) {   // three blocks for a hole: the answer and two real kid mistakes
+  const ans = h.val, [a, b] = h.par.map(p => p.val), big = Math.max(a, b);
+  const near = [ans + 1, ans - 1, big * 2, big + 1, ans + 2, ans - 2, ans + 10, ans - 10].filter(v => v > 0 && v !== ans);
+  return shuffle([ans, ...[...new Set(near)].slice(0, 4).sort(() => Math.random() - 0.5).slice(0, 2)]);
+}
+function wallNext(w) {
+  const info = wallInfo(w.kind);
+  if (w.on) w.shownAt = G.time;   // (not while the level is being built: G may not exist yet)
+  if (w.kind === 'prime') {
+    const left = w.cells.filter(c => c.state === 'idle'), pr = shuffle(left.filter(c => c.prime)), no = shuffle(left.filter(c => !c.prime));
+    w.opts = shuffle([...pr.slice(0, 1), ...no.slice(0, 2)]);
+    w.q = { op: 'room', missing: true, text: `${info.text} ${w.found}/${w.total}`, ans: 0, tip: info.tip };
+    return;
+  }
+  const h = w.holes[w.k];
+  wallOptsFor(h).forEach((v, j) => { const o = w.choices[j]; o.val = v; o.state = 'idle'; });
+  w.q = { op: 'room', missing: true, text: info.text, ans: h.val, tip: `${info.rule} ${h.par[0].val} + ${h.par[1].val} = ${h.val}.` };
+}
+// Is Kai at a wall that wants an answer? (also drives the answer buttons and keys)
+function wallAt() {
+  if (!G || !L.walls || L.vault || L.boss) return null;
+  const cx = P.x + P.w / 2;
+  return L.walls.find(w => !w.done && !w.endT && cx > (w.s - 1) * T && cx < w.gate[0] * T) || null;
+}
+function wallTarget() {
+  const w = wallAt(); if (!w || w.fly) return null;
+  const list = w.kind === 'prime' ? w.opts : w.choices;
+  if (!list.length) return null;
+  return { kind: 'wall', q: w.q, vals: list.map(o => o.val), off: list.map(o => o.state !== 'idle'), ref: w };
+}
+function wallPick(w, i) {
+  if (w.kind === 'prime') { wallTouch(w, w.opts[i]); return; }
+  const o = w.choices[i], h = w.holes[w.k];
+  if (!o || !h || o.state !== 'idle' || w.fly || w.done || w.endT) return;
+  const right = o.val === h.val, x = o.c * T + T / 2, y = o.r * T, sum = `${h.par[0].val} + ${h.par[1].val} = ${h.val}`;
+  w.choices.forEach(p => { if (p !== o) p.state = 'done'; });
+  if (right) {
+    const fast = G.time - w.shownAt <= fastFrames(null, null);
+    G.solved++; if (fast) G.fastN++;
+    o.state = 'right'; sfx.correct(); streakUp(x, y); gotIt(); payGems(x, y, fast ? 2 : 1);
+  } else {   // show the right answer, then it flies in anyway (no gems)
+    G.mistakes++; G.streak = 0; missed(w.q); sfx.wrong();
+    o.state = 'wrong'; o.shake = 20;
+    floatText(x, y - 20, `Oops! ${sum}`, '#ff6b6b', 26);
+  }
+  P.throwT = 14;
+  w.fly = { val: h.val, x0: x, y0: y + T / 2, x1: h.c * T + T / 2, y1: h.r * T + T / 2, t: right ? 0 : -50, dur: 26, right, col: right ? ansCol(i) : ['#cfd6e4', '#7a8496'] };
+}
+function wallTouch(w, cl) {
+  if (!cl || cl.state !== 'idle' || w.done || w.endT) return;
+  const x = cl.c * T + T / 2, y = cl.r * T;
+  if (cl.prime) {
+    const fast = G.time - w.shownAt <= fastFrames(null, null);
+    G.solved++; if (fast) G.fastN++;
+    cl.state = 'gone'; L.map[cl.r][cl.c] = '.'; w.found++;
+    burst(x, y + T / 2, L.world.stair[0], 14, 5); sfx.correct(); streakUp(x, y); gotIt(); payGems(x, y + T / 2, fast ? 2 : 1);
+    floatText(x, y - 20, `${cl.val} is prime!`, '#3ae374', 26);
+    if (w.found >= w.total) { wallDone(w); return; }
+  } else {
+    let p = 2; while (cl.val % p) p++;
+    G.mistakes++; G.streak = 0; missed(w.q); sfx.wrong();
+    cl.state = 'wrong'; cl.shake = 20;
+    floatText(x, y - 20, `Not prime: ${cl.val} = ${p} × ${cl.val / p}`, '#ff6b6b', 24);
+  }
+  wallNext(w);
+}
+function wallBonk(c, r) {   // Kai bonks a choice block from underneath
+  const w = wallAt(), i = w && w.choices ? w.choices.findIndex(o => o.c === c && o.r === r) : -1;
+  if (i < 0 || w.fly || Math.floor((P.x + P.w / 2) / T) !== c) { sfx.bump(); return; }
+  wallPick(w, i);
+}
+function wallTap(wx, wy) {   // a tap or click on the wall itself
+  const w = wallAt(); if (!w || w.fly) return false;
+  const c = Math.floor(wx / T), r = Math.floor(wy / T);
+  if (w.kind === 'prime') {
+    const cl = L.wallCells.get(c + ',' + r);
+    if (cl && cl.w === w && cl.state === 'idle') { wallTouch(w, cl); return true; }
+    return false;
+  }
+  const i = w.choices.findIndex(o => o.c === c && o.r === r);
+  if (i >= 0) { wallPick(w, i); return true; }
+  return false;
+}
+function wallDone(w) {
+  w.endT = 80; w.opts = [];
+  const info = wallInfo(w.kind), x = (w.c0 + w.w / 2) * T;
+  sfx.streak(); confetti(x, GR * T - 4 * T);
+  floatText(x, GR * T - 6 * T, `${info.title}!`, '#ffd23f', 32);
+}
+function updateWalls() {
+  for (const w of L.walls || []) {
+    if (w.gfx && w.gfx.t < 120) tickGateFx(w);
+    if (w.done) continue;
+    for (const o of [...(w.choices || []), ...w.cells]) { if (o.shake > 0) o.shake--; if (o.flash > 0) o.flash--; if (o.pop > 0) o.pop--; }
+    if (!w.on && wallAt() === w) {   // first look: the timer starts now, and Sensei explains a new kind of wall once
+      w.on = true; w.shownAt = G.time;
+      prog.wallSeen = prog.wallSeen || {};
+      if (!prog.wallSeen[w.kind]) { prog.wallSeen[w.kind] = true; save(); senseiTip(wallInfo(w.kind).tip); }
+    }
+    const f = w.fly;
+    if (f && ++f.t >= f.dur) {   // the block lands in its hole
+      const h = w.holes[w.k];
+      w.fly = null; h.type = 'num'; h.pop = 16; h.flash = 50; h.par.forEach(p => { p.flash = 50; });
+      burst(f.x1, f.y1, f.col[0], 10, 3); shake(3, 2); tone(f.right ? 660 : 330, 0.12, 'square', 0.04, f.right ? 880 : 300);
+      if (f.right) floatText(f.x1, f.y1 - 40, `${h.par[0].val} + ${h.par[1].val} = ${h.val}`, '#3ae374', 26);
+      if (++w.k >= w.holes.length) wallDone(w); else wallNext(w);
+    }
+    if (w.endT && --w.endT === 0) {   // the whole pattern crumbles and the gate opens
+      for (const cl of w.cells) if (cl.state !== 'gone') { L.map[cl.r][cl.c] = '.'; burst(cl.c * T + T / 2, cl.r * T + T / 2, L.world.stair[0], 4, 3); }
+      for (const o of w.choices || []) L.map[o.r][o.c] = '.';
+      w.done = true; openGate(w); shake(8, 3); setTimeout(sfx.gate, 300);
+      payGems(w.gate[0] * T, GR * T - 3 * T, 3);
+      G.checkpoint = (w.gate[1] + 2) * T;
+    }
+  }
+}
+function drawWalls() {
+  const W = L.world, act = wallAt();
+  const label = (x, y, val, fill, dark, light, txt = '#2a1a00', pad = 5) => {   // a plain block in the world's colours, dark number on white
+    block(x, y, fill, dark, light);
+    ctx.fillStyle = '#ffffff'; rrect(x + pad, y + pad, T - 2 * pad, T - 2 * pad, 5); ctx.fill();
+    const s = String(val); ctx.fillStyle = txt; ctx.font = `${s.length > 2 ? 14 : s.length > 1 ? 18 : 21}px "Lilita One", "Trebuchet MS", sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s, x + T / 2, y + T / 2 + 1);
+  };
+  const glow = (x, y, a, col = '255,255,255') => { ctx.strokeStyle = `rgba(${col},${a})`; ctx.lineWidth = 3; ctx.strokeRect(x - 2, y - 2, T + 4, T + 4); };
+  for (const w of L.walls || []) {
+    if (w.done || (w.gate[1] + 1) * T < cam - 40 || w.s * T > cam + VW + 40) continue;
+    const info = wallInfo(w.kind), on = w === act, pulse = 0.45 + 0.4 * Math.sin(tick * 0.15);
+    {   // the name on a sign post at the start
+      const sx = (w.s + 1) * T; ctx.font = '20px "Lilita One", "Trebuchet MS", sans-serif'; const tw = ctx.measureText(info.title).width + 26;
+      ctx.fillStyle = '#6b4a2e'; ctx.fillRect(sx - 3, GR * T - 70, 6, 70);
+      ctx.fillStyle = '#f3e3c3'; rrect(sx - tw / 2, GR * T - 106, tw, 38, 8); ctx.fill(); ctx.strokeStyle = '#6b4a2e'; ctx.lineWidth = 3; ctx.stroke();
+      ctx.fillStyle = '#3a2614'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(info.title, sx, GR * T - 86);
+    }
+    const hole = w.holes[w.k];
+    for (const cl of w.cells) {
+      if (cl.state === 'gone') continue;
+      let x = cl.c * T, y = cl.r * T;
+      if (cl.shake) x += Math.sin(cl.shake * 1.6) * 4;
+      if (cl.pop) y -= Math.sin(cl.pop / 16 * Math.PI) * 6;
+      const oi = w.kind === 'prime' && on ? w.opts.indexOf(cl) : -1;
+      if (cl.type === 'fill') block(x, y, W.stair[0], W.stair[1], W.stair[2]);
+      else if (cl.type === 'hole') {
+        const cur = cl === hole;
+        ctx.globalAlpha = cur ? 1 : 0.6; block(x, y, W.stair[0], W.stair[1], W.stair[2]); ctx.globalAlpha = 1;
+        ctx.fillStyle = 'rgba(20,20,50,.75)'; rrect(x + 5, y + 5, T - 10, T - 10, 5); ctx.fill();
+        ctx.fillStyle = '#ffd23f'; ctx.font = '22px "Lilita One", "Trebuchet MS", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('?', x + T / 2, y + T / 2 + 1);
+        if (cur && on) glow(x, y, pulse, '255,210,63');
+      } else if (cl.state === 'wrong') {
+        label(x, y, cl.val, '#8a8a8a', '#4a4a4a', '#b5b5b5', '#777');
+        ctx.strokeStyle = '#4a4a4a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x + 6, y + 4); ctx.lineTo(x + 15, y + 15); ctx.lineTo(x + 11, y + 22); ctx.lineTo(x + 20, y + T - 4); ctx.stroke();
+      } else if (oi >= 0) {   // the three blocks the buttons / keys point at, in their colours
+        const [c1, c2] = ansCol(oi); label(x, y, cl.val, c1, c2, '#ffffff', '#2a1a00', 8); glow(x, y, 0.5 + 0.4 * Math.sin(tick * 0.15));
+        if (!isTouch) keyTag(ANS_KEYS(3)[oi], x + T - 2, y - 2);
+      } else {
+        label(x, y, cl.val, W.stair[0], W.stair[1], W.stair[2]);
+        if (w.kind === 'prime' && on) glow(x, y, 0.15 + 0.15 * Math.sin(tick * 0.1 + cl.x + cl.y));   // every block can be touched
+      }
+      if (cl.flash) glow(x, y, cl.flash / 50, '58,227,116');
+      if (w.endT) {   // all done: the pattern lights up from the bottom
+        const lit = clamp((80 - w.endT) / 8 - cl.y, 0, 1);
+        ctx.fillStyle = `rgba(255,236,150,${0.55 * lit * (0.6 + 0.4 * Math.sin(tick * 0.3))})`; ctx.fillRect(x, y, T, T);
+      }
+    }
+    for (const [j, o] of (w.choices || []).entries()) {   // the answer blocks hanging over the run-up (Pascal and Fibonacci)
+      if (w.endT) break;
+      let x = o.c * T; const y = o.r * T;
+      if (o.shake) x += Math.sin(o.shake * 1.6) * 4;
+      if (o.state === 'wrong') block(x, y, '#8a8a8a', '#4a4a4a', '#b5b5b5');
+      else if (o.state === 'idle' && on) { const [c1, c2] = ansCol(j); block(x, y, c1, c2, '#ffffff'); }
+      else block(x, y, '#9b6a3c', '#5e3a1c', '#b8875a');
+      if (o.state !== 'right') {
+        const s = String(o.val); ctx.fillStyle = o.state === 'idle' && on ? '#2a1a00' : '#fff';
+        ctx.font = `${s.length >= 3 ? 16 : 22}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s, x + T / 2, y + T / 2 + 1);
+      }
+      if (on && o.state === 'idle' && !w.fly) { glow(x, y, pulse); if (!isTouch) keyTag(ANS_KEYS(3)[j], x + T - 2, y - 2); }
+    }
+    const f = w.fly;
+    if (f && f.t >= 0) {   // the picked number flies up into its hole
+      const u = f.t / f.dur, x = f.x0 + (f.x1 - f.x0) * u, y = f.y0 + (f.y1 - f.y0) * u - Math.sin(u * Math.PI) * 60;
+      label(x - T / 2, y - T / 2, f.val, f.col[0], f.col[1], '#ffffff');
+    }
+  }
+}
 // feeding animals per level (world × 3 + level) and their food; stepping-stone spots (used while building levels)
 const ANIMALS = [['rabbit', 'carrot'], ['panda', 'bamboo'], ['duck', 'bread'], ['salamander', 'bug'], ['lizard', 'chili'], ['mole', 'mushroom'],
   ['robodog', 'bolt'], ['robocat', 'battery'], ['drone', 'spark'], ['penguin', 'fish'], ['seal', 'fish'], ['fox', 'berries'],
   ['cat', 'riceball'], ['moonrabbit', 'dango'], ['raccoon', 'apple']];
-// One short story per level at the hungry animal (shown to readers, 2nd grade and up): same numbers, same answer,
-// so choosing the operation is practised without touching the Fact Book. Think skills, tens and missing numbers stay plain.
-const WORD_ANIMAL = { robodog: 'robot dog', robocat: 'robot cat', moonrabbit: 'moon rabbit' };
-const WORD_FOOD = { carrot: ['carrot', 'carrots'], bamboo: ['bamboo', 'bamboo'], bread: ['bread', 'bread'], bug: ['bug', 'bugs'], chili: ['chili', 'chilis'],
-  mushroom: ['mushroom', 'mushrooms'], bolt: ['bolt', 'bolts'], battery: ['battery', 'batteries'], spark: ['spark', 'sparks'], fish: ['fish', 'fish'],
-  berries: ['berry', 'berries'], riceball: ['rice ball', 'rice balls'], dango: ['dango', 'dango'], apple: ['apple', 'apples'] };
-function wordQ(q, animal, food) {
-  if (!q || q.missing || q.step || q.puzzle || !['+', '−', '×', '÷'].includes(q.op)) return q;
-  const an = WORD_ANIMAL[animal] || animal, [one, many] = WORD_FOOD[food] || [food, food + 's'], f = n => (n === 1 ? one : many);
-  const ans = /(s|x|sh|ch)$/.test(an) ? an + 'es' : an + 's', { a, b } = q;
-  const story = q.op === '+' ? `The ${an} has ${a} ${f(a)} and finds ${b} more. How many?`
-    : q.op === '−' ? `The ${an} had ${a} ${f(a)} and ate ${b}. How many left?`
-    : q.op === '×' ? `The ${an} finds ${a} piles of ${b} ${f(b)}. How many?`
-    : `${a} ${f(a)} shared by ${b} ${ans}. How many each?`;
-  return { ...q, story };
-}
-const reader = () => ['2', '3', '4', '5'].includes(curPlayer().grade);
 const stepX = (st, k) => (st.c0 + 1 + 3 * k) * T + T / 2;
 const STONE_TOPS = [1, 3.3, 5.6];   // the three choice blocks, tiles above the ground (room for Kai between them)
 const FLAVORS = ['sakura', 'grove', 'frogs', 'vents', 'bubbles', 'shrooms', 'steam', 'boxes', 'lab', 'snowmen', 'chimes', 'wind', 'lanterns', 'owls', 'bats'];   // addFlavor
-// ---- the puzzle gate: the first gate of every level is a puzzle that teaches the idea behind the level's math
-// (learn the idea here, practise it at the gates, master it in the training room). Three parts, no timer, no "fast";
-// a wrong answer keeps the same part (Sensei explains after two misses). The puzzle follows the kid's math; it is
-// drawn in the world's colours on the ground just before the gate. Parts use op 'room', so they never touch the Fact Book.
-const PZ = (text, ans, extra = {}) => ({ op: 'room', missing: true, puzzle: true, text, ans, ...extra });
-const pzSplit = (W, n, lo = 1) => { const all = shuffle(range(lo, W - lo)); return range(0, n - 1).map(i => all[i % all.length]); };
-const PUZZLES = {
-  bond: { name: 'Number bond', say: 'Two parts make the whole!', line: 'Number bond: two parts make the whole. 3 and 4 make 7.',
-    make(k) {
-      const tens = k.id === 'addtens' || k.id === 'subtens', st = tens ? 10 : 1;
-      let W = k.id === 'add5' ? R(4, 5) : k.id === 'make10' ? 10 : k.tier === 1 ? R(5, 10) : R(11, 18);
-      if (tens) W = R(5, 10);
-      const lo = !tens && W > 10 ? W - 9 : 1, splits = pzSplit(W, 3, lo).map(a => [a * st, (W - a) * st]);
-      W *= st;
-      const tip = (a, b) => `${a} and ${b} make ${W}. Count on from ${a} to ${W}: that's ${b}.`;
-      if (k.cat === 'sub') return { W, splits, parts: splits.map(([a, b]) => PZ(`${W} − ${a} = ?`, b, { step: st, tip: `${W} is ${a} and ${b}. Take away ${a} and ${b} is left.` })) };
-      return { W, splits, parts: [
-        PZ(`${splits[0][0]} + ? = ${W}`, splits[0][1], { step: st, tip: tip(...splits[0]) }),
-        PZ(`${splits[1][0]} + ? = ${W}`, splits[1][1], { step: st, tip: tip(...splits[1]) }),
-        PZ(`${W} − ${splits[2][0]} = ?`, splits[2][1], { step: st, tip: `${W} is ${splits[2][0]} and ${splits[2][1]}. Take away ${splits[2][0]} and ${splits[2][1]} is left.` })] };
-    } },
-  line: { name: 'Number line', say: 'Jump to the ten first!', line: 'Number line: jump to the next ten first. 47 + 3 = 50, then 2 more is 52.',
-    make(k) {
-      const sub = k.cat === 'sub', big = k.tier >= 3;
-      for (;;) {
-        const b = R(3, 9);
-        if (!sub) {
-          const a = big ? R(1, 8) * 10 + R(3, 9) : R(6, 9), ten = a + 10 - a % 10, need = ten - a, rest = b - need;
-          if (rest < 1 || need < 1) continue;
-          return { a, b, ten, end: a + b, sub, parts: [
-            PZ(`${a} + ? = ${ten}`, need, { tip: `Count up from ${a} to ${ten}: that's ${need}.` }),
-            PZ(`${b} = ${need} + ?`, rest, { tip: `Split ${b}: ${need} and ${rest} make ${b}.` }),
-            PZ(`${ten} + ${rest} = ?`, a + b, { tip: `${ten} and ${rest} more is ${a + b}. So ${a} + ${b} = ${a + b}.` })] };
-        }
-        const a = big ? R(2, 9) * 10 + R(1, 7) : R(11, 17), first = a % 10, ten = a - first, rest = b - first;
-        if (rest < 1 || first < 1) continue;
-        return { a, b, ten, end: a - b, sub, parts: [
-          PZ(`${a} − ? = ${ten}`, first, { tip: `Count back from ${a} to ${ten}: that's ${first}.` }),
-          PZ(`${b} = ${first} + ?`, rest, { tip: `Split ${b}: ${first} and ${rest} make ${b}.` }),
-          PZ(`${ten} − ${rest} = ?`, a - b, { tip: `${ten} take away ${rest} is ${a - b}. So ${a} − ${b} = ${a - b}.` })] };
-      }
-    } },
-  balance: { name: 'Balance', say: 'Both sides are the same!', line: 'Balance: = means both sides are the same. 4 + 2 = 3 + 3.',
-    make(k) {
-      const times = k.id === 'tbalmul', tier = Math.min(3, k.tier), qs = [];
-      while (qs.length < 3) { const b = balanceQ(tier, times); if (!qs.some(o => o.l === b.l)) qs.push(b); }
-      const val = l => { const [x, op, y] = l.split(' '); return op === '×' ? x * y : +x + +y; };
-      return { qs: qs.map(b => ({ ...b, v: val(b.l) })), parts: qs.map(b => PZ(`${b.l} = ${b.r}`, b.ans, { step: b.step,
-        tip: `${b.l} is ${val(b.l)}. The other side must be ${val(b.l)} too: ${b.r.replace('?', b.ans)} = ${val(b.l)}.` })) };
-    } },
-  array: { name: 'Array split', say: 'Split it into facts you know!', line: 'Array split: 7 × 8 is 7 × 5 plus 7 × 3. 35 + 21 = 56.',
-    make(k) {
-      const tab = /^x(\d+)$/.exec(k.id), a = tab ? +tab[1] : k.id === 'xmix25' ? R(2, 5) : k.id === 'xmix69' ? R(6, 9) : R(3, 9), b = R(7, 9), l = a * 5, r = a * (b - 5);
-      const pic = { k: 'array', rows: a, cols: b };
-      return { a, b, parts: [
-        PZ(`${a} × 5 = ?`, l, { pic, tip: `${a} rows of 5: count by 5s ${a} times. That's ${l}.` }),
-        PZ(`${a} × ${b - 5} = ?`, r, { pic, tip: `The other part: ${a} rows of ${b - 5} is ${r}.` }),
-        PZ(`${a} × ${b} = ${l} + ${r} = ?`, a * b, { pic, tip: `Put the parts back together: ${l} + ${r} = ${a * b}.` })] };
-    } },
-  share: { name: 'Sharing', say: 'Sharing is dividing!', line: 'Sharing: 12 gems shared by 3 is 4 each. That is 12 ÷ 3 = 4.',
-    make(k) {
-      const tab = /^d(\d+)$/.exec(k.id), d = tab ? +tab[1] : R(2, 6), each = shuffle(range(2, Math.max(4, Math.floor(30 / d)))).slice(0, 3);
-      return { d, shares: each.map(e => [e * d, e]), parts: each.map(e => PZ(`${e * d} ÷ ${d} = ?`, e, { pic: { k: 'groups', g: d, each: e },
-        tip: `Share ${e * d} between ${d}: one each, again and again. Each one gets ${e}.` })) };
-    } },
-};
-function puzzleFor(k) {   // which puzzle fits the level's math (null: a plain gate)
-  if (!k) return null;
-  if (k.tier === 1 || ['addtens', 'subtens', 'tmissadd'].includes(k.id)) return 'bond';
-  if (['add20', 'sub20', 'add2d1d', 'sub2d1d'].includes(k.id)) return 'line';
-  if (['add2d', 'sub2d', 'tbal', 'tbalmul'].includes(k.id)) return 'balance';
-  if (k.cat === 'mul' && k.id !== 'xtens') return 'array';
-  if (k.cat === 'div') return 'share';
-  return null;
-}
 const TWISTS = ['kite', 'spring', 'koi', 'rocks', 'chase', 'dark', 'gears', 'conveyor', 'lasers', 'ice', 'icicles', 'avalanche', 'walljump', 'ladders', 'sneak'];
 // ---------------------------------------------------------------- level builders
 function newMap() { const m = []; for (let r = 0; r < ROWS; r++) m.push([]); return m; }
@@ -999,7 +1144,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
   const def = STAGES[idx], W = WORLDS[def.w], rng = mulberry32(1234 + idx * 7919);
   const map = newMap();
   const twist = def.boss ? null : TWISTS[def.w * 3 + def.k];
-  const L = { idx, def, skill, twist, fx: [], plats: [], chaseX: -8 * T, gen: genFor(skill), expert: skillProgress(skill).mature, world: W, sky: W.skies[def.k], map, w: 0, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [], flagC: 0, castleC: 0, boss: null, proj: [] };
+  const L = { idx, def, skill, twist, fx: [], plats: [], chaseX: -8 * T, gen: genFor(skill), expert: skillProgress(skill).mature, world: W, sky: W.skies[def.k], map, w: 0, enemies: [], coins: [], stations: [], walls: [], wallCells: new Map(), bridges: [], doors: [], decor: [], flagC: 0, castleC: 0, boss: null, proj: [] };
   const addCols = n => { for (let i = 0; i < n; i++) { for (let r = 0; r < ROWS; r++) map[r].push('.'); L.w++; } return L.w - n; };
   const flat = n => {
     const s = addCols(n);
@@ -1067,6 +1212,16 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     flat(5); const c0 = addCols(w); flat(4);
     const st = { c0, w, n, done: false };
     stepsSet(st, L); L.steps.push(st);
+  }
+  // A pattern wall stands in for one gate: run-up (with three answer blocks for Pascal / Fibonacci), the wall, then the gate.
+  function wallChunk(kind) {
+    const pz = wallPuzzle(kind, skill), s = flat(kind === 'prime' ? 7 : 12), c0 = flat(pz.w);
+    flat(1); const g = flat(2); flat(3);
+    for (let r = 0; r < GR; r++) { map[r][g] = 'G'; map[r][g + 1] = 'G'; }
+    const w = { ...pz, s, c0, gate: [g, g + 1], done: false, on: false, opts: [], k: 0, shownAt: 0, choices: kind === 'prime' ? null : [0, 1, 2].map(j => ({ c: c0 - 9 + j * 3, r: GR - 4, val: 0, state: 'idle', shake: 0 })) };
+    w.cells.forEach(cl => { cl.w = w; cl.c = c0 + cl.x; cl.r = GR - 1 - cl.y; cl.state = cl.state || 'idle'; map[cl.r][cl.c] = 'X'; L.wallCells.set(cl.c + ',' + cl.r, cl); });
+    (w.choices || []).forEach(o => { map[o.r][o.c] = 'Z'; });
+    wallNext(w); L.walls.push(w);
   }
   // The training-room entrance: its look (and whether it sits up on a ledge or behind a cracked brick) depends on the level.
   function doorChunk() {
@@ -1157,9 +1312,10 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
   flat(10);
   L.squads = []; L.steps = [];
   const feedAt = Math.floor(def.n / 2), stepsAt = [1];   // one set of stepping stones per level
+  const wk = def.boss ? [] : wallKinds(skill), wallGate = wk.length && def.n >= 3 ? feedAt : -1;   // older players: the middle gate is a pattern wall
   for (let i = 0; i < def.n; i++) {
     if (i === feedAt) {   // one hungry animal per level, mid-way, with three numbered foods floating ahead of it
-      const s0 = flat(11), [kind, food] = ANIMALS[def.w * 3 + def.k] || ANIMALS[0], q = wordQ(L.gen(), kind, food);
+      const s0 = flat(11), q = L.gen(), [kind, food] = ANIMALS[def.w * 3 + def.k] || ANIMALS[0];
       L.squads.push({ s: s0, q, done: false, kind, food, ax: (s0 + 9) * T + T / 2, foods: choices(q, 3).map((val, j) => ({ x: (s0 + 3 + j * 2) * T + T / 2, y: GR * T - 2.1 * T, val })) });
     }
     const n = ri(rng, 1, 2);   // short runs between gates: more math, less walking
@@ -1168,15 +1324,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     if (i === doorAt) doorChunk();
     if (stepsAt.includes(i)) stepsChunk();
     if (twist && (i % 2 === 0 || twist === 'walljump')) twistChunk();   // wall-jump levels get one before every gate
-    const ptype = i === 0 && !def.boss ? puzzleFor(skill) : null;
-    if (ptype) {   // the puzzle gate: sign, three answer blocks, the puzzle on the ground, then the gate
-      const s = flat(24), pz = { type: ptype, ...PUZZLES[ptype].make(skill), i: 0, done: 0, wrongT: 0, tilt: -0.16, deal: 0, mx: 0 };
-      const q = pz.parts[0], answers = choices(q, 3).map((v, j) => ({ c: s + 4 + j * 3, r: GR - 4, val: v, state: 'idle', shake: 0 }));
-      answers.forEach(a => { map[a.r][a.c] = 'A'; });
-      for (let r = 0; r < GR; r++) { map[r][s + 21] = 'G'; map[r][s + 22] = 'G'; }
-      L.stations.push({ s, q, answers, gate: [s + 21, s + 22], solved: false, opening: null, openT: 0, need: pz.parts.length, got: 0, puzzle: pz });
-      continue;
-    }
+    if (i === wallGate) { wallChunk(wk[(def.w * 3 + def.k) % wk.length]); continue; }
     // Question station: sign, answer blocks, and a locked gate.
     const s = flat(16), q = L.gen(), five = L.expert;
     // Answer blocks hang over the run-up; the answer bar's buttons match them (same order and colour).
@@ -1189,7 +1337,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
   // missing ones turn bricks over solid ground into ? boxes, then go over open flat ground.
   {
     const want = [3, 4, 5, 5, 6][def.w], boxes = [], spare = [];
-    const nearGate = c => L.steps.some(z => c >= z.c0 - 6 && c <= z.c0 + z.w + 2) || L.squads.some(q => c >= q.s && c <= q.s + 10) || L.stations.some(st => c >= st.s - 1 && c <= st.gate[1] + 1) || L.bridges.some(b => c >= b.signC - 1 && c <= b.altarC + 1) || L.doors.some(d => Math.abs(c - d.c) <= 2);
+    const nearGate = c => L.steps.some(z => c >= z.c0 - 6 && c <= z.c0 + z.w + 2) || L.squads.some(q => c >= q.s && c <= q.s + 10) || L.stations.some(st => c >= st.s - 1 && c <= st.gate[1] + 1) || L.walls.some(w => c >= w.s - 1 && c <= w.gate[1] + 1) || L.bridges.some(b => c >= b.signC - 1 && c <= b.altarC + 1) || L.doors.some(d => Math.abs(c - d.c) <= 2);
     for (let c = 0; c < L.w; c++) for (let r = 0; r < GR; r++) {
       if (map[r][c] === '?') boxes.push([r, c]);
       else if (map[r][c] === 'B' && r === GR - 4 && map[GR][c] === '#') spare.push([r, c]);
@@ -1878,7 +2026,7 @@ const keyFor = id => (id === 'p1' ? SAVE_KEY : `${SAVE_KEY}:${id}`);
 const curPlayer = () => players.list.find(x => x.id === players.cur) || players.list[0];
 function savePlayers() { try { localStorage.setItem(PLAYERS_KEY, JSON.stringify(players)); } catch (e) { /* no storage */ } }
 const freshProg = () => ({ best: {}, skill: 'add10', ride: 'panda', track: 'cherry', mastery: {}, easy: null, allOpen: false, seenIntro: false, seenWorld: {}, bank: 0, music: true, layout: 5, auto: true, facts: {}, win: {}, trophies: {}, daily: { last: 0, streak: 0, best: 0 },
-  badges: {}, golden: {}, moves: {}, dojoRpm: {}, notebook: {}, stats: { bridges: 0, gems: 0 },
+  badges: {}, golden: {}, moves: {}, dojoRpm: {}, stats: { bridges: 0, gems: 0 },
   owned: ['band-red', 'suit-navy'], equip: { band: 'band-red', suit: 'suit-navy', trail: null, pet: null }, raceBest: {} });
 let prog;
 function loadProg(id) {
@@ -1917,7 +2065,7 @@ const keys = { left: false, right: false, jump: false, jumpPressed: false };
 const ambient = [];         // falling petals / rising embers, in screen space
 
 // ---------------------------------------------------------------- physics
-const SOLID = new Set(['W', '#', 'B', '?', 'U', 'S', 'P', 'Q', 'p', 'q', 'G', 'A', 'K', 'N', 'b', 'R', 'J', 'C', 'c', 'I', 'O']);
+const SOLID = new Set(['W', '#', 'B', '?', 'U', 'S', 'P', 'Q', 'p', 'q', 'G', 'A', 'K', 'N', 'b', 'R', 'J', 'C', 'c', 'I', 'O', 'X', 'Z']);
 function solid(c, r) {
   if (c < 0 || c >= L.w) return true;
   if (r >= ROWS) return false;
@@ -2049,6 +2197,7 @@ function bump(c, r) {
   }
   else if (t === 'K' && currentStation()) openBossPad();
   else if (t === 'N') bridgeStone(c, r);
+  else if (t === 'Z') wallBonk(c, r);
   else if (t === 'R') roomAnswer(c);
   else if (t === 'W') {   // the cracked brick hides the training room in Shadow Walls
     L.map[r][c] = '.'; sfx.brick(); burst(c * T + T / 2, r * T + T / 2, L.world.brick[0], 12); shake(6, 3);
@@ -2089,7 +2238,6 @@ function answer(c, r) {   // a head bump on an answer block
   resolveAnswer(f.st, f.a);
 }
 function resolveAnswer(st, a) {
-  if (st.puzzle) { puzzleAnswer(st, a); return; }
   const cx = a.c * T + T / 2, cy = a.r * T;
   if (a.val !== st.q.ans) {
     // A miss swaps in a new question, so trying every block doesn't work.
@@ -2115,7 +2263,7 @@ function resolveAnswer(st, a) {
   st.answers.forEach(o => { if (o !== a) o.state = 'done'; });
   award('first-gate');
   st.solved = true; openGate(st); shake(6, 2);
-  G.checkpoint = (st.gate[1] + 1) * T;
+  G.checkpoint = (st.s + 15) * T;
   setTimeout(sfx.gate, 350);
   if (st.quick) {
     G.lightN++; G.score += 300; sfx.streak(); payGems(cx, cy + T / 2, 3, 3);
@@ -2123,45 +2271,6 @@ function resolveAnswer(st, a) {
   } else floatText(cx, cy - 20, st.q.retry ? 'You remembered it!' : ['Correct!', 'Great job!', 'Awesome!', 'You got it!', 'Super!', 'Hi-yah!'][R(0, 5)], '#3ae374', 30);
   const next = currentStation();
   if (next && G.missed.length) setStationQ(next, nextQ(next.q.text));
-}
-
-// The puzzle gate: each right answer fills one part (and the puzzle shows it); a wrong one keeps the same part.
-function puzzleAnswer(st, a) {
-  const pz = st.puzzle, part = pz.parts[pz.i], cx = a.c * T + T / 2, cy = a.r * T;
-  if (a.val !== part.ans) {
-    a.state = 'wrong'; a.shake = 20; G.mistakes++; G.streak = 0; st.swap = 50; missed(part);
-    pz.wrongT = 40; pz.wrongVal = a.val;
-    burst(cx, cy + T / 2, '#9a9a9a', 10, 3); sfx.wrong();
-    floatText(cx, cy - 20, 'Not that one. Look again!', '#ff9a3c', 26);
-    return;
-  }
-  G.solved++; L.map[a.r][a.c] = '.'; a.state = 'right';
-  payGems(cx, cy + T / 2, 1); burst(cx, cy + T / 2, ansCol(st.answers.indexOf(a))[0], 14, 5);
-  sfx.correct(); confetti(cx, cy); streakUp(cx, cy); gotIt();
-  st.answers.forEach(o => { if (o !== a && o.state === 'idle') o.state = 'done'; });
-  pz.done++; st.got++;
-  if (pz.done < pz.parts.length) { floatText(cx, cy - 20, ['Yes!', 'Good!', 'Right!', 'Hai!'][R(0, 3)], '#3ae374', 28); st.swap = 60; return; }
-  award('first-gate');
-  st.solved = true; openGate(st); shake(6, 2);
-  G.checkpoint = (st.gate[1] + 1) * T;
-  setTimeout(sfx.gate, 350);
-  const info = PUZZLES[pz.type], first = !prog.notebook[pz.type];
-  payGems(cx, cy + T / 2, 5, 3);
-  floatText((st.s + 16) * T, GR * T - 5.2 * T, info.say, '#ffd23f', 30);
-  prog.notebook[pz.type] = (prog.notebook[pz.type] || 0) + 1; save();
-  if (first) setTimeout(() => { if (G && L.stations.includes(st)) floatText(P.x + P.w / 2, P.y - 70, "New page in Sensei's notebook!", '#7df9ff', 26); }, 1000);
-}
-const balRight = (b, v) => { const [x, op, y] = b.r.replace('?', v).split(' '); return op === '×' ? x * y : +x + +y; };   // the right pan's weight with v in it
-function puzzleTick(st) {
-  const pz = st.puzzle; if (pz.wrongT > 0) pz.wrongT--;
-  const shown = pz.done > pz.i;   // the part on show is solved (waiting for the next one)
-  if (pz.type === 'balance') {
-    const b = pz.qs[pz.i], wrong = pz.wrongT > 0 ? Math.sign(balRight(b, pz.wrongVal) - b.v) : 0;
-    const target = shown || st.solved ? 0 : wrong ? 0.2 * wrong : -0.16;   // the heavy side goes down
-    pz.tilt += (target - pz.tilt) * 0.12;
-  }
-  if (pz.type === 'share' && tick % 5 === 0 && pz.deal < pz.shares[pz.i][0]) { pz.deal++; if (G && Math.abs(P.x - st.s * T) < VW) tone(700 + (pz.deal % 5) * 60, 0.04, 'triangle', 0.02); }
-  if (pz.type === 'line') { const to = Math.min(pz.done, 2); pz.mx += (to - pz.mx) * 0.1; }
 }
 
 // ---------------------------------------------------------------- answer bar
@@ -2292,23 +2401,22 @@ function openBossPad() {
       noteFact(ar.q, true, took <= 8, L.skill);
       const [cx, cy] = here();
       ar.wait = 1;
-      const last = L.boss.hp <= 1;   // the last answer: no shuriken, Kai holds out his hand
-      if (last) offerHand(); else { G.shots.push({ x: cx, y: P.y + 10, spin: 0 }); P.throwT = 14; sfx.throw(); }
-      sfx.correct(); streakUp(cx, cy); gotIt();
-      floatText(cx, cy - 20, last ? 'Right!' : ar.q.retry ? 'You remembered it!' : 'Shuriken!', '#ffd23f', 28);
+      G.shots.push({ x: cx, y: P.y + 10, spin: 0 });
+      P.throwT = 14; sfx.correct(); sfx.throw(); streakUp(cx, cy); gotIt();
+      floatText(cx, cy - 20, ar.q.retry ? 'You remembered it!' : 'Shuriken!', '#ffd23f', 28);
     },
     onWrong() {
       const [cx, cy] = here();
       noteFact(ar.q, false, false, L.skill);
       G.mistakes++; G.streak = 0; remember(ar.q); missed(ar.q);
       sfx.wrong(); floatText(cx, cy - 20, `Oops! ${qSolved(ar.q)}`, '#ff6b6b', 30);
-      ar.q = freshQ(ar.q.text); startDodge(true);
+      ar.q = freshQ(ar.q.text); startDodge(); L.boss.atk = 1;
     },
     onTimeout() {
       const [cx, cy] = here();
       noteFact(ar.q, false, false, L.skill);
       G.streak = 0; sfx.wrong(); floatText(cx, cy - 20, `Too slow! ${qSolved(ar.q)}`, '#ff9a3c', 30);
-      ar.q = freshQ(ar.q.text); startDodge(true);
+      ar.q = freshQ(ar.q.text); startDodge(); L.boss.atk = 1;
     },
   });
 }
@@ -2390,14 +2498,11 @@ function tipFor(q) {
   if (op === '+') {
     if (a === b) return `Doubles! ${a} + ${a} is double ${a}, which is ${ans}.`;
     if (Math.abs(a - b) === 1) { const m = Math.min(a, b); return `Near double: ${m} + ${m} = ${m * 2}, plus 1 more is ${ans}.`; }
-    const big = Math.max(a, b), small = Math.min(a, b);
-    if (big >= 10 && big < 100 && small < 10 && big % 10 + small >= 10) { const ten = big + 10 - big % 10, need = ten - big; return `Make the next ten first: ${big} + ${need} = ${ten}, then ${small - need} more is ${ans}.`; }
     if (a < 10 && b < 10 && ans > 10) { const big = Math.max(a, b), small = Math.min(a, b), need = 10 - big; return `Make 10 first: ${big} + ${need} = 10, then ${small - need} more is ${ans}.`; }
     if (a >= 10 && b >= 10) { const t = Math.floor(a / 10) * 10 + Math.floor(b / 10) * 10, o = a % 10 + b % 10; return `Add the tens, then the ones: ${t} + ${o} = ${ans}.`; }
     return `Start at the bigger number and count on ${Math.min(a, b)} more: ${ans}.`;
   }
   if (op === '−') {
-    if (a >= 10 && a < 100 && b < 10 && a % 10 && a % 10 < b) { const ten = a - a % 10; return `Take away to the ten first: ${a} − ${a % 10} = ${ten}, then ${b - a % 10} more is ${ans}.`; }
     if (b <= 3) return `Count back ${b} from ${a}: ${ans}.`;
     if (a >= 20 && b >= 10) { const t = Math.floor(b / 10) * 10; return `Take away the tens, then the ones: ${a} − ${t} = ${a - t}, then take away ${b % 10} more: ${ans}.`; }
     return `Count up from ${b} to ${a}. That's ${ans} steps.`;
@@ -2591,32 +2696,18 @@ function fell() {
   P.x = G.checkpoint; P.y = GR * T - P.h; P.vx = P.vy = 0; P.inv = 100;
   if (first) floatText(P.x + P.w / 2, P.y - 30, `Too far to jump! Build a bridge: ${b.target}`, '#ffd23f', 24);
 }
-// Out of hearts: the level starts over, like most games. Kindergarten and 1st grade players instead go on from the
-// last gate they opened (the level stays as it was), with "Restart level" as the other choice. Bosses always start over.
 function gameOver() {
   mode = 'over'; stopMusic(); sfx.over(); showTouch(false); hide('pauseBtn');
-  const young = ['K', '1'].includes(curPlayer().grade) && !L.boss;
-  setTimeout(() => showMsg('Out of hearts!', '<p>Every ninja falls sometimes. Get up and try again!</p>', young ? [
-    { label: 'Try again', fn: continueLevel, primary: true },
-    { label: 'Restart level', fn: () => startStage(G.idx), alt: true },
-    { label: 'Levels', fn: toMenu, alt: true },
-  ] : [
+  setTimeout(() => showMsg('Out of hearts!', '<p>Every ninja falls sometimes. Get up and try again!</p>', [
     { label: 'Try again', fn: () => startStage(G.idx), primary: true },
     { label: 'Levels', fn: toMenu, alt: true },
   ]), 900);
-}
-function continueLevel() {
-  G.hearts = G.maxHearts; G.streak = 0; G.power = null; G.dash = 0; G.cross = null; G.mbox = null; G.tip = null; G.wrongRun = 0;
-  P.x = G.checkpoint; P.y = GR * T - P.h; P.vx = P.vy = 0; P.inv = 120;
-  playMusic(L.world.key); begin();
 }
 
 // ---------------------------------------------------------------- skip-count stepping stones
 // A pit with a counting pattern to cross. Kai walks to the edge and hops onto the first stone by himself; then each
 // answer is the move: three stones offer the next number and Kai hops onto the one picked (button or key). The right
-// stone holds. Once Kai is across, the stones fall one after another, break apart and fill the pit with stair blocks
-// (numbers on top), so the answers rebuild the path; no bridge. A wrong one crumbles, Kai drops into the pit and pops
-// back at the start with a new pattern.
+// stone holds; a wrong one crumbles, Kai drops into the pit and pops back at the start with a new pattern.
 // Arrow keys pause while crossing (left hops back to the edge). The step follows the chosen math; take-away counts back.
 function stepSeq(skill, n) {
   const id = skill.id, tier = skill.tier, pick = a => a[R(0, a.length - 1)];
@@ -2632,16 +2723,7 @@ function stepSeq(skill, n) {
   if (back) seq = seq.reverse();
   return { seq, step, back };
 }
-// stone k owns pit columns c0 + 3k .. c0 + 3k + 2
-function stepsFill(st, k, lv = L) { for (let c = st.c0 + 3 * k; c < st.c0 + 3 * k + 3; c++) { lv.map[GR][c] = 'S'; lv.map[GR + 1][c] = 'S'; } }
-function stepsClear(st, lv = L, fx = false) {
-  for (let c = st.c0; c < st.c0 + st.w; c++) {
-    if (fx && lv.map[GR][c] === 'S') burst(c * T + T / 2, GR * T + T / 2, lv.world.stair[0], 6, 3);
-    lv.map[GR][c] = '.'; lv.map[GR + 1][c] = '.';
-  }
-}
 function stepsSet(st, lv = L) {
-  stepsClear(st, lv);
   const s = stepSeq(lv.skill, st.n); Object.assign(st, s);
   st.k = 0; st.missed = false; st.opts = [];
   st.path = [{ x: stepX(st, 0), top: GR * T - T, val: s.seq[0] }];
@@ -2655,13 +2737,10 @@ function stepsOpts(st) {   // three stones for the next number
 }
 // Each answer has a time limit (a bar over the stones). Too slow and every stone crumbles: back to the start, new pattern.
 const STEP_TIME = () => (prog.easy ? 12 : 8) * 60;
-const kEasy = () => !!prog.easy && (curPlayer().grade === 'K' || (L.skill && L.skill.tier === 1));   // Easy mode for a kindergartner (grade K or K math)
-const stepTimed = () => !kEasy();   // no stepping-stone timer in Easy mode for kindergarten
 function stepsCrumble(st) {
   const c = G.cross, ans = st.seq[st.k + 1];
   G.mistakes++; G.streak = 0; missed(stepsQ(st)); sfx.wrong(); st.missed = true;
   [...st.path, ...st.opts].forEach(o => burst(o.x, o.top + T / 2, '#8a7f78', 10, 4));
-  stepsClear(st, L, true);
   shake(5, 2); tone(160, 0.35, 'sawtooth', 0.05, 60);
   floatText(P.x + P.w / 2, P.y - 40, `Too slow! ${st.seq.slice(0, st.k + 1).join(', ')}, ${ans}`, '#ff9a3c', 24);
   st.path = []; st.opts = [];
@@ -2672,17 +2751,10 @@ function crossHop(x1, feet1, done, dur = 22) {
   const p = P; G.cross.hop = { x0: p.x + p.w / 2, y0: p.y + p.h, x1, y1: feet1, t: 0, dur, arc: 46 + Math.max(0, p.y + p.h - feet1) * 0.5, done };
   sfx.jump();
 }
-// A stone breaks on the bottom of the pit and fills its section up to the ground.
-function stepsBreak(st, k, o) {
-  stepsFill(st, k); o.filled = true;
-  const W = L.world;
-  for (let c = st.c0 + 3 * k; c < st.c0 + 3 * k + 3; c++) { burst(c * T + T / 2, GR * T + 4, W.stair[0], 5, 3); burst(c * T + T / 2, GR * T + 4, W.stair[2], 3, 2); }
-  shake(4, 2); tone(140, 0.18, 'square', 0.06, 60); tone(90, 0.25, 'triangle', 0.06, 50, 0.04);
-}
 function crossStart(st) {
   G.cross = { st, hop: null }; P.vx = P.vy = 0; P.face = 1;
   crossHop(st.path[0].x, st.path[0].top, () => { stepsOpts(st); });
-  if (!st.told) { st.told = true; floatText(st.c0 * T, GR * T - 4 * T, st.back ? `Count back! Each one is ${st.step} less.` : `Count up! Each one is ${st.step} more.`, '#ffd23f', 26); }
+  if (!st.told) { st.told = true; floatText(st.c0 * T, GR * T - 4 * T, st.back ? `Count back by ${st.step}s!` : `Count by ${st.step}s!`, '#ffd23f', 26); }
 }
 function crossTick() {
   const c = G.cross, st = c.st, p = P;
@@ -2701,7 +2773,7 @@ function crossTick() {
     return;
   }
   p.onGround = true;
-  if (stepTimed() && st.opts.length && st.opts.every(o => o.state === 'idle') && G.time - st.shownAt > STEP_TIME()) { stepsCrumble(st); return; }
+  if (st.opts.length && st.opts.every(o => o.state === 'idle') && G.time - st.shownAt > STEP_TIME()) { stepsCrumble(st); return; }
   if (keys.left && !st.k) {   // changed your mind on the first stone: hop back to the edge
     st.opts = [];
     crossHop((st.c0 - 1.5) * T, GR * T, () => { G.cross = null; });
@@ -2718,13 +2790,11 @@ function stepsPick(st, i) {
       G.solved++; if (fast) G.fastN++;
       o.state = 'path'; st.path.push(o); st.opts = []; st.k++;
       payGems(x, y - 20, 1); sfx.correct(); streakUp(x, y); gotIt();
-      const prev = st.path[st.k - 1];
-      floatText((prev.x + x) / 2, GR * T - 1.6 * T, `${st.back ? '−' : '+'}${st.step}`, st.back ? '#ff8a3c' : '#3ae374', 26);   // the jump, said out loud
       floatText(x, y - 50, st.seq.slice(0, st.k + 1).join(', '), '#3ae374', 24);
       if (st.k < st.n - 1) stepsOpts(st);
-      else crossHop((st.c0 + st.w + 0.8) * T, GR * T, () => {   // made it across: the stones drop one by one and fill the pit
+      else crossHop((st.c0 + st.w + 0.8) * T, GR * T, () => {   // made it across: a bridge appears behind
         st.done = true; G.cross = null; confetti(x, y);
-        st.fall = st.path.map((o, k) => ({ o, k, vy: 0, wait: 10 + k * 14 }));
+        for (let col = st.c0; col < st.c0 + st.w; col++) { L.map[GR][col] = 'b'; burst(col * T + T / 2, GR * T, '#c9a24f', 3, 2); }
         floatText(P.x + P.w / 2, GR * T - 3 * T, `${st.seq.join(', ')}!`, '#3ae374', 28);
       }, 26);
     } else {   // the stone crumbles and Kai drops
@@ -2741,20 +2811,12 @@ function stepsCatch(p) {
   const cx = p.x + p.w / 2, st = (L.steps || []).find(st => !st.done && cx > st.c0 * T - T && cx < (st.c0 + st.w) * T + T);
   if (!st) return false;
   burst(cx, GR * T + 10, '#ffffff', 10, 3); tone(300, 0.25, 'sine', 0.06, 700);
-  stepsClear(st, L, true); stepsSet(st);
+  stepsSet(st);
   p.x = (st.c0 - 2.5) * T; p.y = GR * T - p.h; p.vx = p.vy = 0; p.inv = 30;
   floatText(p.x + p.w / 2, p.y - 30, 'Try again!', '#ffffff', 22);
   return true;
 }
 function updateSteps() {
-  for (const st of L.steps || []) if (st.fall) {   // stones falling into the pit after the crossing
-    for (const f of st.fall) {
-      if (f.wait > 0) { f.wait--; continue; }
-      f.vy = Math.min(f.vy + 0.9, 14); f.o.top = Math.min(GR * T, f.o.top + f.vy);
-      if (f.o.top >= GR * T) { stepsBreak(st, f.k, f.o); f.gone = true; }
-    }
-    st.fall = st.fall.filter(f => !f.gone); if (!st.fall.length) st.fall = null;
-  }
   if (G.cross) return;
   const p = P, cx = p.x + p.w / 2;
   for (const st of L.steps || []) if (!st.done && cx > st.c0 * T - 4 && cx < st.c0 * T + T && p.y + p.h <= GR * T + 4) { crossStart(st); return; }
@@ -2769,25 +2831,19 @@ function drawSteps() {
   const W = L.world;
   for (const st of L.steps || []) {
     const x0 = st.c0 * T, x1 = (st.c0 + st.w) * T;
-    if (x1 < cam - 60 || x0 > cam + VW + 60) continue;
-    const num = (x, top, val) => {   // a number painted on a block
-      ctx.font = `${String(val).length > 2 ? 15 : 19}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.strokeText(val, x, top + T / 2 + 1); ctx.fillText(val, x, top + T / 2 + 1);
-    };
-    const sq = (x, top, val, fill, dark, light, a = 1) => {   // a plain square block with its number
-      ctx.globalAlpha = a; block(x - T / 2, top, fill, dark, light); num(x, top, val); ctx.globalAlpha = 1;
-    };
-    st.path.forEach(o => o.filled ? num(o.x, GR * T, o.val) : sq(o.x, o.top, o.val, W.stair[0], W.stair[1], W.stair[2]));   // filled sections are map tiles
-    if (st.done) continue;
-    const sx = x0 - 2.4 * T, txt = st.back ? `Count back by ${st.step}s` : `Count up by ${st.step}s`;   // the rule on a sign, with an arrow
-    ctx.font = '20px "Lilita One", "Trebuchet MS", sans-serif'; const w = ctx.measureText(txt).width + 26 + 22;
+    if (x1 < cam - 60 || x0 > cam + VW + 60 || st.done) continue;
+    const sx = x0 - 2.4 * T, txt = st.back ? `Count back by ${st.step}s` : `Count by ${st.step}s`;   // the rule on a sign
+    ctx.font = '20px "Lilita One", "Trebuchet MS", sans-serif'; const w = ctx.measureText(txt).width + 26;
     ctx.fillStyle = '#6b4a2e'; ctx.fillRect(sx - 3, GR * T - 70, 6, 70);
     ctx.fillStyle = '#f3e3c3'; rrect(sx - w / 2, GR * T - 106, w, 38, 8); ctx.fill(); ctx.strokeStyle = '#6b4a2e'; ctx.lineWidth = 3; ctx.stroke();
-    ctx.fillStyle = '#3a2614'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, sx - 11, GR * T - 86);
-    const ax = Math.round(sx + w / 2 - 22), ay = GR * T - 87;   // pixel arrow: down for back, up for up
-    ctx.fillStyle = st.back ? '#e8590c' : '#2f9e44';
-    ctx.fillRect(ax - 2, ay - 9, 4, 18);
-    for (let i = 0; i < 5; i++) { const yy = st.back ? ay + 9 - i * 2 : ay - 11 + i * 2; ctx.fillRect(ax - 1 - i * 2 + 1, yy, i * 4 + 2, 2); }
+    ctx.fillStyle = '#3a2614'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, sx, GR * T - 86);
+    const sq = (x, top, val, fill, dark, light, a = 1) => {   // a plain square block with its number
+      ctx.globalAlpha = a; block(x - T / 2, top, fill, dark, light);
+      ctx.font = `${String(val).length > 2 ? 15 : 19}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.strokeText(val, x, top + T / 2 + 1); ctx.fillText(val, x, top + T / 2 + 1);
+      ctx.globalAlpha = 1;
+    };
+    st.path.forEach(o => sq(o.x, o.top, o.val, W.stair[0], W.stair[1], W.stair[2]));
     st.opts.forEach((o, j) => {
       if (o.state === 'gone') return;
       if (o.state === 'fade') { o.t = (o.t || 0) + 1; if (o.t > 20) return; }
@@ -2795,7 +2851,7 @@ function drawSteps() {
       sq(o.x, o.top, o.val, c1, c2, '#ffffff', o.state === 'fade' ? 1 - o.t / 20 : 1);
       if (!isTouch && o.state === 'idle') keyTag(ANS_KEYS(3)[j], o.x + T / 2 - 2, o.top - 2);
     });
-    if (stepTimed() && G.cross && G.cross.st === st && !G.cross.hop && st.opts.length && st.opts.every(o => o.state === 'idle')) {   // the time bar
+    if (G.cross && G.cross.st === st && !G.cross.hop && st.opts.length && st.opts.every(o => o.state === 'idle')) {   // the time bar
       const left = clamp(1 - (G.time - st.shownAt) / STEP_TIME(), 0, 1), bx = stepX(st, st.k + 1) - T, by = GR * T - STONE_TOPS[2] * T - 20;
       ctx.fillStyle = 'rgba(0,0,0,.45)'; rrect(bx - 2, by - 2, 2 * T + 4, 12, 6); ctx.fill();
       ctx.fillStyle = left > 0.5 ? '#3ae374' : left > 0.25 ? '#ffd23f' : (G.time % 20 < 10 ? '#ff4d4d' : '#ff9a9a');
@@ -2822,6 +2878,7 @@ function miniTarget() {
   if (!G || L.vault || L.boss) return null;
   const stp = stepsTarget(); if (stp) return stp;
   if (G.cross) return null;
+  const wt = wallTarget(); if (wt) return wt;
   const cx = P.x + P.w / 2;
   const mb = G.mbox;
   if (mb && Math.abs(cx - mb.bubbles[1].x) < 8 * T) return { kind: 'box', q: mb.q, vals: mb.bubbles.map(b => b.val), off: mb.bubbles.map(() => false), ref: mb };
@@ -2837,6 +2894,7 @@ function miniTarget() {
 function miniAnswer(m, i) {
   if (m.kind === 'steps') { stepsPick(m.ref, i); return; }
   if (m.kind === 'feed') { feedPick(m.ref, i); return; }
+  if (m.kind === 'wall') { wallPick(m.ref, i); return; }
   if (m.kind === 'train') { trainAnswer(m.ref, i); return; }
   P.throwT = 14; sfx.throw(); boxPick(m.ref, i);
 }
@@ -2901,14 +2959,7 @@ function drawMini() {
     if (fd.ax < cam - 6 * T || fd.foods[0].x > cam + VW + 60) continue;
     const g = GR * T, chew = fd.mood === 'yum' && fd.moodT > 20 && fd.moodT < 80 ? Math.abs(Math.sin(fd.moodT * 0.4)) : 0;
     drawAnimal(fd.kind, fd.ax, g - (fd.mood === 'yum' && fd.moodT > 80 && fd.moodT < 140 ? Math.abs(Math.sin(fd.moodT * 0.2)) * 14 : 0), fd.mood, chew);
-    if (!fd.done && fd.q.story && reader()) {   // a readers' thought bubble: the story in two short lines (the banner keeps the numbers)
-      ctx.font = '16px "Lilita One", "Trebuchet MS", sans-serif';
-      const lines = wrapLines(fd.q.story, 210), w = Math.max(...lines.map(l => ctx.measureText(l).width)) + 24, h = lines.length * 19 + 14, bx = clamp(fd.ax + 14, cam + w / 2 + 6, cam + VW - w / 2 - 6), by = g - 108 - h;
-      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(fd.ax + 8, g - 62, 4, 0, 7); ctx.arc(fd.ax + 6, g - 76, 6, 0, 7); ctx.arc(fd.ax + 8, g - 94, 8, 0, 7); ctx.fill();
-      rrect(bx - w / 2, by, w, h, 16); ctx.fill(); ctx.strokeStyle = '#cfd6e4'; ctx.lineWidth = 2; ctx.stroke();
-      ctx.fillStyle = '#22224a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      lines.forEach((l, k) => ctx.fillText(l, bx, by + 16 + k * 19));
-    } else if (!fd.done) {   // a thought bubble with the problem
+    if (!fd.done) {   // a thought bubble with the problem
       const txt = qShow(fd.q); ctx.font = '22px "Lilita One", "Trebuchet MS", sans-serif'; const w = ctx.measureText(txt).width + 26, bx = fd.ax - 10, by = g - 112;
       ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(fd.ax + 8, g - 62, 4, 0, 7); ctx.arc(fd.ax + 2, g - 74, 6, 0, 7); ctx.fill();
       rrect(bx - w / 2, by - 20, w, 40, 18); ctx.fill(); ctx.strokeStyle = '#cfd6e4'; ctx.lineWidth = 2; ctx.stroke();
@@ -3049,7 +3100,7 @@ function addFlavor(L) {
   L.flavor = L.def.boss ? null : FLAVORS[L.def.w * 3 + L.def.k]; L.fl = []; L.chimeN = 0; L.windT = 0;
   if (!L.flavor) return;
   const rng = mulberry32(777 + L.idx * 131), map = L.map, end = L.flagC - 14, Y = GR * T;
-  const busy = c => (L.steps || []).some(z => c >= z.c0 - 6 && c <= z.c0 + z.w + 2) || (L.squads || []).some(q => c >= q.s && c <= q.s + 10) || L.stations.some(st => c >= st.s - 1 && c <= st.gate[1] + 1) || L.bridges.some(b => c >= b.signC - 1 && c <= b.c0 + b.w + 1) || L.doors.some(d => Math.abs(c - d.c) <= 2);
+  const busy = c => (L.steps || []).some(z => c >= z.c0 - 6 && c <= z.c0 + z.w + 2) || (L.squads || []).some(q => c >= q.s && c <= q.s + 10) || L.stations.some(st => c >= st.s - 1 && c <= st.gate[1] + 1) || (L.walls || []).some(w => c >= w.s - 1 && c <= w.gate[1] + 1) || L.bridges.some(b => c >= b.signC - 1 && c <= b.c0 + b.w + 1) || L.doors.some(d => Math.abs(c - d.c) <= 2);
   const clear = (c, h) => { if (c < 1 || c >= L.w - 1 || map[GR][c] !== '#') return false; for (let r = GR - h; r < GR; r++) if (map[r][c] !== '.') return false; return true; };
   const spots = (gap, h, wide = 0) => {
     const out = []; let last = -99;
@@ -3401,7 +3452,7 @@ function updateTwist() {
       G.hidden = hidden;
       if (!f.seen && !hidden && dx > 0 && dx < 4.5 * T && dy < dx * 0.45 + 24) {
         f.seen = true; G.alarm = 120; sfx.wrong(); floatText(f.x, GR * T - 80, '❗ Spotted!', '#ff4d4d', 26);
-        if (!kEasy()) for (const k of [7, 9]) L.enemies.push(walkerFor('shadow', Math.floor(p.x / T) + k * (p.face || 1), 1.4));   // none for kindergarten in Easy mode
+        for (const k of [7, 9]) L.enemies.push(walkerFor('shadow', Math.floor(p.x / T) + k * (p.face || 1), 1.4));
       }
     }
   }
@@ -3627,9 +3678,8 @@ function pauseFx(b) {
 }
 const DODGE_FRAMES = () => (prog.easy ? 200 : 260);
 const OPEN_FRAMES = () => (prog.easy ? 900 : 600);
-// After a miss the dodge is half as long and the first attack waits a moment, so a struggling kid isn't drained.
-function startDodge(miss = false) {
-  const ar = L.arena; ar.phase = 'dodge'; ar.phaseT = miss ? Math.round(DODGE_FRAMES() / 2) : DODGE_FRAMES(); L.boss.atk = miss ? 40 : 30;
+function startDodge() {
+  const ar = L.arena; ar.phase = 'dodge'; ar.phaseT = DODGE_FRAMES(); L.boss.atk = 30;
 }
 function updateArena() {
   const ar = L.arena, b = L.boss;
@@ -3672,17 +3722,16 @@ function hitOrb(o) {
       o.state = 'thrown'; ar.orbs.forEach(q => { if (q !== o) q.state = 'gone'; });
       noteFact(ar.q, true, G.time - ar.askedAt <= 480, L.skill); G.solved++; if (G.time - ar.askedAt <= 480) G.fastN++;
       payGems(o.x, oy, G.time - ar.askedAt <= 480 ? 2 : 1);
-      const last = L.boss.hp <= 1;   // the last answer: no shuriken, Kai holds out his hand
-      ar.wait = 1; if (last) offerHand(); else { G.shots.push({ x: o.x, y: oy, spin: 0 }); P.throwT = 14; sfx.throw(); }
-      sfx.correct(); streakUp(o.x, oy); gotIt();
-      floatText(P.x + P.w / 2, P.y - 30, last ? 'Right!' : ar.q.retry ? 'You remembered it!' : 'Shuriken!', '#ffd23f', 28);
+      ar.wait = 1; G.shots.push({ x: o.x, y: oy, spin: 0 });
+      P.throwT = 14; sfx.correct(); sfx.throw(); streakUp(o.x, oy); gotIt();
+      floatText(P.x + P.w / 2, P.y - 30, ar.q.retry ? 'You remembered it!' : 'Shuriken!', '#ffd23f', 28);
       setTimeout(() => { if (L.arena === ar) ar.orbs = []; }, 300);
     } else {
       o.state = 'gone'; burst(o.x, oy, '#ff6b6b', 12, 4);
       noteFact(ar.q, false, false, L.skill);
       G.mistakes++; G.streak = 0; remember(ar.q); missed(ar.q);
       sfx.wrong(); floatText(P.x + P.w / 2, P.y - 20, `Oops! ${qSolved(ar.q)}`, '#ff6b6b', 30);
-      ar.q = freshQ(ar.q.text); ar.orbs = []; startDodge(true);
+      ar.q = freshQ(ar.q.text); ar.orbs = []; startDodge(); L.boss.atk = 1;
     }
   }
 }
@@ -3705,27 +3754,6 @@ function drawOrbs() {
 // Each boss acts out what happens next: Kage refuses and fades into shadow, the Golem cools and gives the
 // scroll, Mega-Bot shows its secret file and switches the factory off, the Snowman melts and gives the headband, and the
 // Shogun's castle falls in. Kai can't move during these little scenes.
-// Grace, played: the last right answer in a boss fight is not a final blow. Kai walks up and holds out his hand;
-// when he reaches the boss it calms (gold sparkles, not fire) and the boss's own ending follows. Kage refuses it.
-const HAND_POSE = { arm: [8, 22] };
-function offerHand() {
-  const ar = L.arena; ar.wait = 9999; L.proj = []; G.hand = { t: 0, reached: 0 };
-  say('kai', 'Take my hand?', 150);
-  setTimeout(() => { if (L.arena === ar) ar.orbs = []; }, 300);
-}
-function updateHand() {
-  const h = G.hand, b = L.boss;
-  if (!b || b.outro || b.dead) { G.hand = null; return; }
-  h.t++;
-  keys.jump = false; keys.jumpPressed = false;
-  if (b.dying) { keys.left = keys.right = false; return; }   // holding the hand out while the boss calms
-  const right = b.x + b.w / 2 > P.x + P.w / 2, tx = right ? b.x - P.w - 8 : b.x + b.w + 8, d = tx - P.x;
-  if (Math.abs(d) > 12 && h.t < 360) { keys.right = d > 0; keys.left = d < 0; return; }
-  keys.left = keys.right = false; P.vx = 0; P.face = right ? 1 : -1;
-  if (++h.reached === 1 && ['golem', 'bot', 'yeti'].includes(b.kind)) floatText(b.x + b.w / 2, b.y - 20, '♥', '#ff5a8a', 34);   // they take it
-  if (h.reached < 40) return;
-  b.hp = 0; b.dying = 70; b.gentle = true; L.proj = []; sfx.bossDown(); shake(8, 3); G.slow = 60; G.flash = 0.4;
-}
 function say(who, txt, t = 120) { (who === 'kai' ? G : L.boss).say = { txt, t }; }
 function dropPrize(b, x) { L.prize = { x: (x ?? b.x + b.w / 2) - 20, y: b.y + 10, w: 40, h: 30, vy: -8 }; }
 function runOutro(b) {
@@ -3736,7 +3764,8 @@ function runOutro(b) {
   b.t++; b.vy = Math.min(b.vy + 0.55, 12); moveY(b);
   if (o.done) return;
   if (k === 'kage') {
-    if (t === 30) say('boss', 'Never.', 80);   // Kai already held out his hand ("Take my hand?")
+    if (t === 20) say('kai', 'Take my hand?');
+    if (t === 110) say('boss', 'Never.', 80);
     if (t === 190) say('boss', 'You fight just like him. Same moves, same little hop.', 150);
     if (t > 330) { b.alpha = Math.max(0, 1 - (t - 330) / 70); if (t % 3 === 0) burst(b.x + Math.random() * b.w, b.y + Math.random() * b.h, '#2a2838', 4, 2); }
     if (t === 400) { o.done = true; b.dead = true; dropPrize(b); }
@@ -3794,7 +3823,7 @@ function updateBoss() {
   const b = L.boss; if (!b || b.dead) return;
   if (b.dying > 0) {
     b.dying--;
-    if (b.dying % 6 === 0) burst(b.x + Math.random() * b.w, b.y + Math.random() * b.h, b.gentle ? ['#ffffff', '#ffd23f', '#ffe8a0'][R(0, 2)] : ['#ffd23f', '#ff6a00', '#fff'][R(0, 2)], b.gentle ? 4 : 6, b.gentle ? 2 : 5);
+    if (b.dying % 6 === 0) burst(b.x + Math.random() * b.w, b.y + Math.random() * b.h, ['#ffd23f', '#ff6a00', '#fff'][R(0, 2)], 6, 5);
     if (b.dying === 0) { b.outro = { t: 0 }; b.vy = 0; }
     return;
   }
@@ -3863,22 +3892,24 @@ function openGate(st) {
   st.gfx = { t: 0, x0, w, k, bits };
   if (k === 'robot') sfx.attack();
 }
+function tickGateFx(st) {   // the opening effect of a gate (also used by pattern walls)
+  const g = st.gfx;
+  g.t++;
+  for (const b of g.bits) {
+    b.x += b.vx; b.y += b.vy; b.a += b.va || 0.15;
+    if (g.k === 'snow') { b.vx *= 0.99; b.vy += 0.05; }
+    if (g.k === 'lava' && b.tx !== undefined) { const f = Math.min(1, g.t / 24); b.x += (b.tx - b.x) * f * 0.25; b.y += (b.ty - b.y) * f * 0.25; }
+    if (g.k === 'japan') { b.vy += 0.03; b.vx *= 0.99; }
+    if (g.k === 'castle') b.vy -= 0.01;
+    if (g.k === 'ash') b.vy += 0.35;
+    if (g.k === 'obsidian') { b.vy += 0.15; b.vx *= 0.98; }
+  }
+  if (g.k === 'robot' && g.t < 40 && g.t % 6 === 0) burst(g.x0 + Math.random() * g.w, Math.random() * GR * T, '#7df9ff', 4, 3);
+}
 function updateGates() {
+  updateWalls();
   for (const st of L.stations) {
-    const g = st.gfx;
-    if (g && g.t < 120) {
-      g.t++;
-      for (const b of g.bits) {
-        b.x += b.vx; b.y += b.vy; b.a += b.va || 0.15;
-        if (g.k === 'snow') { b.vx *= 0.99; b.vy += 0.05; }
-        if (g.k === 'lava' && b.tx !== undefined) { const f = Math.min(1, g.t / 24); b.x += (b.tx - b.x) * f * 0.25; b.y += (b.ty - b.y) * f * 0.25; }
-        if (g.k === 'japan') { b.vy += 0.03; b.vx *= 0.99; }
-        if (g.k === 'castle') b.vy -= 0.01;
-        if (g.k === 'ash') b.vy += 0.35;
-        if (g.k === 'obsidian') { b.vy += 0.15; b.vx *= 0.98; }
-      }
-      if (g.k === 'robot' && g.t < 40 && g.t % 6 === 0) burst(g.x0 + Math.random() * g.w, Math.random() * GR * T, '#7df9ff', 4, 3);
-    }
+    if (st.gfx && st.gfx.t < 120) tickGateFx(st);
     if (st.shakeT > 0) st.shakeT--;
     if (!st.solved && P.x + P.w >= st.gate[0] * T - 4) st.blocked = true;   // had to stop and wait: no Lightning
     if (st.star) {   // the thrown shuriken flies to its block, then the answer counts
@@ -3888,11 +3919,7 @@ function updateGates() {
       else { z.x += dx / d * 16; z.y += dy / d * 16; }
     }
     for (const a of st.answers) if (a.shake > 0) a.shake--;
-    if (st.puzzle) puzzleTick(st);
-    if (st.swap && --st.swap === 0) {
-      if (st.puzzle) { const pz = st.puzzle, was = pz.i; pz.i = Math.min(pz.done, pz.parts.length - 1); if (pz.i !== was) pz.deal = 0; setStationQ(st, pz.parts[pz.i]); }
-      else setStationQ(st, freshQ(st.q.text));
-    }
+    if (st.swap && --st.swap === 0) setStationQ(st, freshQ(st.q.text));
   }
 }
 
@@ -3977,8 +4004,6 @@ function finishLevel() {
 }
 
 // What each boss leaves behind: a clue about who the Shogun really is (the last one is the ending).
-const CLUES = ['hop', 'woodninja', 'file', 'headband'];   // one per boss of worlds 1–4 (the Shogun has none)
-const clueHTML = (all = false) => CLUES.map((ic, w) => (all || prog.best[bossOf(w)]) ? pixImg(ic, 'pix') : '<i></i>').join('');
 const BOSS_CARD = {
   kage: "Kage won't take your hand. As he fades into the shadows he laughs: <i>\"You fight just like him. Same moves, same little hop.\"</i> The bandits run away, and the lost children find their way home.",
   golem: "The Golem's fire cools. He is gentle again. <i>\"The Shogun once cried here,\"</i> he rumbles. <i>\"He was holding a little wooden ninja, carved for someone he left behind.\"</i>",
@@ -3990,7 +4015,7 @@ const BOSS_CARD = {
 // The ending comes in three pages: the castle falls, morning, then home.
 const endBody = {
   falls: () => `${sceneHTML('falls')}<p>${ENDING}</p>`,
-  morning: () => `${sceneHTML('morning')}<div class="clueline">${clueHTML(true)}</div><p>${MORNING}</p>`,
+  morning: () => `${sceneHTML('morning')}<p>${MORNING}</p>`,
   home: () => `${sceneHTML('home')}<p>${HOME}</p>`,
 };
 function showEnding() {
@@ -4030,7 +4055,6 @@ function update() {
   if (!G) { cam = (tick * 1.2) % (L.w * T - VW); return; }
   G.time++;
   { const cs = currentStation(); if (cs && cs.answers && cs.shownAt == null) cs.shownAt = G.time; }
-  if (G.hand && mode === 'play') updateHand();
   if (mode === 'play') { updatePlayer(); updateEnemies(); }
   else if (mode === 'win') { updateWin(); updateEnemies(); }
   if (mode === 'play' || mode === 'win') { updateBoss(); if (L.boss) { updateArena(); updateOrbs(); updateShotsAndProjectiles(); } }
@@ -4049,10 +4073,7 @@ function update() {
   for (const f of G.flyers) { f.t += 1 / 28; if (f.t >= 1) G.pulse = 8; }
   G.flyers = G.flyers.filter(f => f.t < 1);
   if (G.pulse > 0) G.pulse--;
-  let want = P.x + P.w / 2 - VW * 0.4;
-  const ps = VW < 700 && L.stations && L.stations.find(st => st.puzzle && !st.solved && P.x > (st.s - 3) * T && P.x < st.gate[0] * T);
-  if (ps) want = Math.max(want, Math.min(P.x - 40, (ps.s + 12) * T + 336 - VW));   // upright phones: lead ahead so the puzzle is in view
-  cam = clamp(want, 0, Math.max(0, L.w * T - VW));
+  cam = clamp(P.x + P.w / 2 - VW * 0.4, 0, Math.max(0, L.w * T - VW));
 }
 
 
@@ -4182,21 +4203,13 @@ function pickRiderPal() { const hp = heroPal(); return { n: hp.n, N: hp.N, R: hp
 function raceSteer(d) {
   if (!RC || mode !== 'race' || RC.finished) return;
   const lane = clamp(RC.lane + d, 0, 2);
-  if (lane !== RC.lane) {
-    RC.lane = lane; tone(500 + lane * 120, 0.05, 'triangle', 0.04);
-    const g = RC.gates.find(g => !g.done); if (g && RC.count <= 0) g.pickedAt = RC.time;   // when the kid chose, for "fast"
-  }
+  if (lane !== RC.lane) { RC.lane = lane; tone(500 + lane * 120, 0.05, 'triangle', 0.04); }
 }
 function raceText(txt, col) { RC.texts.push({ txt, col, t: 1.4 }); }
 
-// "Fast" is the real time from the question showing to the last steer. Never steering proves nothing (the lane
-// may just be right by luck), so a right answer without a steer isn't noted; a wrong one still is.
 function judgeGate(g) {
   const r = RC; g.done = true;
-  const right = g.opts[r.lane] === g.q.ans, shown = r.shownAt || 0;
-  if (!right) noteFact(g.q, false, false, r.topic);
-  else if (g.pickedAt != null) noteFact(g.q, true, g.pickedAt - shown <= fastFrames(r.topic, g.q, false) / 60, r.topic);
-  r.shownAt = r.time;   // the next gate's question shows now
+  noteFact(g.q, g.opts[r.lane] === g.q.ans, true, r.topic);
   if (g.opts[r.lane] === g.q.ans) {
     r.right++; r.streak++;
     r.speed = Math.min(r.maxSpeed, Math.max(r.speed, r.cruise) + r.boost);
@@ -4937,7 +4950,6 @@ function drawDarkness() {
   for (const z of L.steps || []) if (!z.done) { [...z.path, ...z.opts].forEach(o => hole(o.x, o.top + 8, 50)); hole((z.c0 - 2.4) * T, GR * T - 90, 70); }
   for (const f of L.fl || []) if (f.k === 'shroom') hole(f.x, GR * T - 14, f.lit ? 120 : 40);
   const cs = currentStation(); if (cs && cs.answers) cs.answers.forEach(a => hole(a.c * T + T / 2, a.r * T + T / 2, 50));
-  if (cs && cs.puzzle) { hole((cs.s + 12) * T + 170, GR * T - 95, 200); hole(cs.s * T + 64, GR * T - 90, 80); }   // the puzzle and its sign glow
   if (cs && gateKey() === 'obsidian') for (let r = 1; r < GR; r += 2) hole((cs.gate[0] + 1) * T, r * T, 46);   // the crystal gate glows a little
   for (let c = Math.floor(cam / T); c < cam / T + VW / T + 1; c++) if (c >= 0 && c < L.w && L.map[GR][c] === '.') hole(c * T + T / 2, GR * T + 10, 60);
   hole(L.flagC * T, GR * T - 3 * T, 140);
@@ -5411,6 +5423,7 @@ function drawTile(t, x, y, c, r) {
       break;
     }
     case 'A': drawAnswer(x, y, c, r); break;
+    case 'X': case 'Z': break;   // pattern walls: drawn by drawWalls
     case 'N': {
       const st = L.bridges.flatMap(b => b.stones).find(t => t.c === c && t.r === r);
       if (!st || st.state !== 'home') { ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.setLineDash([4, 4]); ctx.strokeRect(x + 3, y + 3, T - 6, T - 6); ctx.setLineDash([]); break; }
@@ -5617,129 +5630,9 @@ function drawEntrance(d) {
   if (!d.used && label) hudText(TRAIN_SIGN[W.key], cx, y - (st === 'roof' ? 46 : st === 'torii' ? 38 : 22) + Math.sin(tick * 0.1) * 3, 15, '#ffd23f', 'center');
 }
 
-// ---- drawing the puzzle gate: plain, in the world's colours, standing on the ground (gy) in a 324-wide spot at x0
-function pzText(txt, x, y, size, col = '#3a2200') {
-  ctx.font = `${size}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.fillStyle = col; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, x, y);
-}
-function pzBoard(x, y, w, h, gy, W) {   // a board on two posts, like the gate signs, framed in the world's stair colour
-  ctx.fillStyle = '#6e4627'; ctx.fillRect(x + 24, y + h, 8, gy - y - h); ctx.fillRect(x + w - 32, y + h, 8, gy - y - h);
-  ctx.fillStyle = W.stair[1]; rrect(x - 4, y - 4, w + 8, h + 8, 8); ctx.fill();
-  ctx.fillStyle = W.stair[0]; rrect(x - 1, y - 1, w + 2, h + 2, 7); ctx.fill();
-  ctx.fillStyle = '#f6e1b5'; rrect(x + 3, y + 3, w - 6, h - 6, 5); ctx.fill();
-}
-function pzPlate(x, y, w, h, W, hi, fill = '#ffffff') {
-  ctx.fillStyle = fill; rrect(x, y, w, h, 6); ctx.fill();
-  ctx.lineWidth = 3; ctx.strokeStyle = hi ? '#ffb300' : W.stair[1]; rrect(x, y, w, h, 6); ctx.stroke();
-}
-function pzDots(n, cx, y, col, max = 10) {
-  if (n > max) return;
-  const sp = 10; for (let i = 0; i < n; i++) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx - (n - 1) * sp / 2 + i * sp, y, 3.6, 0, 7); ctx.fill(); }
-}
-const pzGem = (x, y, col) => poly([[x, y - 5], [x + 4, y], [x, y + 5], [x - 4, y]], col);
-function drawPuzzleArt(pz, x0, gy, W, cols) {
-  const blink = tick % 40 < 22, cx = x0 + 162, i = pz.i, shown = pz.done > i;
-  if (pz.type === 'bond') {
-    const y = gy - 176, [a, b] = pz.splits[i], open = !shown;
-    pzBoard(x0 + 12, y, 300, 150, gy, W);
-    ctx.strokeStyle = W.stair[1]; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(cx - 20, y + 58); ctx.lineTo(cx - 70, y + 82); ctx.moveTo(cx + 20, y + 58); ctx.lineTo(cx + 70, y + 82); ctx.stroke();
-    pzPlate(cx - 60, y + 10, 120, 50, W, false);
-    pzText(pz.W, cx, y + 27, 24); pzDots(pz.W, cx, y + 49, '#7a6a5a');
-    pzPlate(cx - 125, y + 82, 110, 50, W, false); pzText(a, cx - 70, y + 99, 22); pzDots(a, cx - 70, y + 121, '#ff5a5a', 9);
-    pzPlate(cx + 15, y + 82, 110, 50, W, open && blink, open ? '#fff8d8' : '#ffffff');
-    pzText(open ? '?' : b, cx + 70, y + 99, 22, open ? '#c0392b' : '#3a2200'); if (!open) pzDots(b, cx + 70, y + 121, '#4aa8ff', 9);
-    const rec = pz.splits.slice(0, pz.done).map(([p, q]) => `${p} + ${q}`).join('   ');
-    if (rec) pzText(rec, cx, y + 141, 14, '#6e4627');
-  } else if (pz.type === 'line') {
-    const y = gy - 176, lo = Math.min(pz.a, pz.end), hi = Math.max(pz.a, pz.end), n = hi - lo, px = v => x0 + 42 + (v - lo) * 240 / n, ly = y + 92;
-    pzBoard(x0 + 12, y, 300, 150, gy, W);
-    ctx.fillStyle = '#3a2200'; ctx.fillRect(x0 + 30, ly - 1, 264, 3);
-    for (let v = lo; v <= hi; v++) { const t = v === pz.ten; ctx.fillStyle = t ? '#c0392b' : '#3a2200'; ctx.fillRect(px(v) - 1, ly - (t ? 10 : 6), t ? 3 : 2, t ? 20 : 12); }
-    pzText(pz.a, px(pz.a), ly + 20, 17); pzText(pz.ten, px(pz.ten), ly + 20, 17, '#c0392b');
-    pzText(pz.done >= 3 ? pz.end : '?', px(pz.end), ly + 20, 17, pz.done >= 3 ? '#3a2200' : '#c0392b');
-    const sg = pz.sub ? '−' : '+', j1 = Math.abs(pz.ten - pz.a), j2 = pz.b - j1;
-    const arc = (v1, v2, lab, state) => {   // state: 'done', 'now' (dashed, blinking) or nothing
-      if (!state) return;
-      const x1 = px(v1), x2 = px(v2), mid = (x1 + x2) / 2, r = Math.abs(x2 - x1) / 2;
-      ctx.strokeStyle = state === 'done' ? '#2f9e44' : (blink ? '#ffb300' : '#d9a23a'); ctx.lineWidth = 3; ctx.setLineDash(state === 'done' ? [] : [6, 5]);
-      ctx.beginPath(); ctx.ellipse(mid, ly - 4, r, Math.min(34, r * 0.9), 0, Math.PI, 0); ctx.stroke(); ctx.setLineDash([]);
-      pzText(state === 'done' ? `${sg}${lab}` : '?', mid, ly - 14 - Math.min(34, r * 0.9), 17, state === 'done' ? '#2f9e44' : '#c0392b');
-    };
-    arc(pz.a, pz.ten, j1, pz.done >= 1 ? 'done' : 'now');
-    arc(pz.ten, pz.end, j2, pz.done >= 2 ? 'done' : pz.done === 1 || (pz.done === 0 && i === 1) ? 'now' : null);
-    const stops = [pz.a, pz.ten, pz.end], m = Math.min(2, pz.mx), k = Math.min(1, Math.floor(m)), f = m - k;   // a gem hops along the line
-    pzGem(px(stops[k]) + (px(stops[k + 1]) - px(stops[k])) * f, ly - 10 - Math.sin(f * Math.PI) * 22, '#3ae374');
-    pzText(`${pz.b} = ${j1} + ${pz.done >= 2 ? j2 : '?'}`, cx, y + 132, 17, pz.done === 1 ? '#c0392b' : '#3a2200');
-    pzText(`${pz.a} ${sg} ${pz.b}`, cx, y + 22, 20);
-  } else if (pz.type === 'array') {
-    const y = gy - 176, { a, b } = pz, cell = Math.min(17, 76 / a, 250 / b), gx = cx - b * cell / 2, gyy = y + 40 + (76 - a * cell) / 2;
-    pzBoard(x0 + 12, y, 300, 150, gy, W);
-    for (let r = 0; r < a; r++) for (let c = 0; c < b; c++) {
-      const left = c < 5, on = left ? pz.done >= 1 : pz.done >= 2;
-      ctx.fillStyle = on ? cols[left ? 0 : 1][0] : '#ffffff'; ctx.fillRect(gx + c * cell + 1, gyy + r * cell + 1, cell - 2, cell - 2);
-      ctx.strokeStyle = on ? cols[left ? 0 : 1][1] : '#c8b48a'; ctx.lineWidth = 1; ctx.strokeRect(gx + c * cell + 1.5, gyy + r * cell + 1.5, cell - 3, cell - 3);
-    }
-    ctx.strokeStyle = W.stair[1]; ctx.lineWidth = 3; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.moveTo(gx + 5 * cell, gyy - 6); ctx.lineTo(gx + 5 * cell, gyy + a * cell + 6); ctx.stroke(); ctx.setLineDash([]);
-    if (!shown && blink && i < 2) { ctx.strokeStyle = '#ffb300'; ctx.lineWidth = 3; const c0 = i ? 5 : 0, c1 = i ? b : 5; ctx.strokeRect(gx + c0 * cell - 1, gyy - 1, (c1 - c0) * cell + 2, a * cell + 2); }
-    pzText(`${a} × ${b} = ${pz.done >= 3 ? a * b : '?'}`, cx, y + 22, 20, pz.done >= 3 ? '#2f9e44' : '#3a2200');
-    pzText(pz.done >= 1 ? a * 5 : '?', gx + 2.5 * cell, y + 134, 18, pz.done >= 1 ? '#3a2200' : '#c0392b');
-    pzText(pz.done >= 2 ? a * (b - 5) : '?', gx + (5 + (b - 5) / 2) * cell, y + 134, 18, pz.done >= 2 ? '#3a2200' : '#c0392b');
-  } else if (pz.type === 'balance') {
-    const q = pz.qs[i], py = gy - 64, half = 104, c = Math.cos(pz.tilt), sn = Math.sin(pz.tilt);
-    block(cx - 18, gy - 36, W.stair[0], W.stair[1], W.stair[2]);   // the stand: world blocks with a post
-    ctx.fillStyle = W.stair[1]; ctx.fillRect(cx - 5, py, 10, gy - 36 - py);
-    ctx.save(); ctx.translate(cx, py); ctx.rotate(pz.tilt);
-    ctx.fillStyle = W.stair[1]; rrect(-half - 6, -7, 2 * half + 12, 14, 6); ctx.fill(); ctx.fillStyle = W.stair[0]; rrect(-half - 3, -4, 2 * half + 6, 8, 4); ctx.fill();
-    ctx.restore();
-    ctx.fillStyle = W.stair[2]; ctx.beginPath(); ctx.arc(cx, py, 6, 0, 7); ctx.fill();
-    const pan = (side, txt, hi) => {   // a plate resting upright on each end of the beam
-      const ex = cx + side * half * c, ey = py + side * half * sn;
-      pzPlate(ex - 50, ey - 50, 100, 42, W, hi); pzText(txt, ex, ey - 29, 19, txt.includes('?') ? '#c0392b' : '#3a2200');
-    };
-    pan(-1, q.l, false);
-    const wrongNow = pz.wrongT > 0 && !shown;
-    pan(1, shown || pz.done > i ? q.r.replace('?', q.ans) : wrongNow ? q.r.replace('?', pz.wrongVal) : q.r, !shown && blink);
-    if (shown || Math.abs(pz.tilt) < 0.02) pzText('=', cx, py - 30, 28, '#2f9e44');
-  } else if (pz.type === 'share') {
-    const [n, each] = pz.shares[i], d = pz.d, deal = shown ? n : Math.min(pz.deal, n), y = gy - 176, by = y + 132, sp = 214 / d, bw = Math.min(34, sp - 6);
-    pzBoard(x0 + 12, y, 300, 150, gy, W);
-    pzText(`${n} shared by ${d}`, cx, y + 20, 19);
-    for (let k = 0; k < n - deal; k++) pzGem(x0 + 32 + (k % 4) * 9, by - 4 - Math.floor(k / 4) * 10, '#2f9e44');   // the pile still to share
-    if (n - deal) pzText(n - deal, x0 + 45, by - 16 - Math.ceil((n - deal) / 4) * 10, 15);
-    for (let k = 0; k < d; k++) {
-      const bx = x0 + 92 + k * sp + sp / 2, got = deal > k ? Math.floor((deal - 1 - k) / d) + 1 : 0;
-      for (let g = 0; g < got; g++) pzGem(bx - 5 + (g % 2) * 10, by - 18 - Math.floor(g / 2) * 10, '#2f9e44');
-      ctx.fillStyle = W.stair[1]; rrect(bx - bw / 2 - 2, by - 12, bw + 4, 16, 6); ctx.fill();   // a bowl in the world's colour
-      ctx.fillStyle = W.stair[0]; rrect(bx - bw / 2, by - 10, bw, 12, 5); ctx.fill();
-      if (shown) pzText(each, bx, by - 30 - Math.ceil(each / 2) * 10, 16, '#2f9e44');
-      else if (deal >= n && blink) pzText('?', bx, by - 30 - Math.ceil(each / 2) * 10, 16, '#c0392b');
-    }
-  }
-}
-// A solved example of each puzzle, drawn small for the notebook pages.
-const NB_SAMPLE = {
-  bond: { type: 'bond', W: 7, splits: [[3, 4], [5, 2], [1, 6]] },
-  line: { type: 'line', a: 47, b: 5, ten: 50, end: 52, sub: false, mx: 2 },
-  balance: { type: 'balance', qs: [{ l: '4 + 2', r: '3 + ?', ans: 3, v: 6 }], tilt: 0 },
-  array: { type: 'array', a: 7, b: 8 },
-  share: { type: 'share', d: 3, shares: [[12, 4]], deal: 12 },
-};
-function drawNotebookPic(cv, type) {
-  const old = ctx, c = cv.getContext('2d'), W = WORLDS[0], pz = { ...NB_SAMPLE[type], i: 0, done: type === 'balance' || type === 'share' ? 1 : 3 };
-  if (type === 'bond' || type === 'line' || type === 'array') pz.i = 2;
-  ctx = c; c.clearRect(0, 0, cv.width, cv.height); c.save(); c.scale(cv.width / 336, cv.height / 186);
-  try { drawPuzzleArt(pz, 6, 182, W, ANS_COLS.japan); } finally { c.restore(); ctx = old; }
-}
-function drawPuzzle(st) {
-  const pz = st.puzzle, x0 = (st.s + 12) * T + 8;
-  if (x0 > cam + VW + 40 || x0 + 340 < cam - 40) return;
-  ctx.save(); if (pz.wrongT > 0 && pz.type !== 'balance') ctx.translate(Math.sin(pz.wrongT * 0.9) * pz.wrongT / 10, 0);
-  drawPuzzleArt(pz, x0, GR * T, L.world, ANS_COLS[L.world.key] || ANS_COLS.japan);
-  ctx.restore();
-}
 function drawSigns() {
-  for (const st of L.stations) if (st.gfx && st.gfx.t < 120 && Math.abs(st.gfx.x0 - cam - VW / 2) < VW) drawGateFx(st);
+  for (const st of [...L.stations, ...(L.walls || [])]) if (st.gfx && st.gfx.t < 120 && Math.abs(st.gfx.x0 - cam - VW / 2) < VW) drawGateFx(st);
   for (const st of L.stations) {
-    if (st.puzzle) drawPuzzle(st);
     if (st.star) drawShuriken(st.star.x, st.star.y, st.star.spin, '#d8dfe8', '#5a6472', 16);
     const x = st.s * T + 4, y = (GR - 3.1) * T, w = 3.5 * T, h = 1.25 * T;
     if (x > cam + VW || x + w < cam) continue;
@@ -5751,9 +5644,7 @@ function drawSigns() {
     while (ctx.measureText(txt).width > w - 10 && size > 12) { size--; ctx.font = `${size}px "Lilita One", "Trebuchet MS", sans-serif`; }
     ctx.fillStyle = '#3a2200'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(txt, x + w / 2, y + h / 2 + 1);
-    if (st.puzzle) {   // puzzle parts: three little blocks on top of the sign, filled as each part is solved
-      for (let k = 0; k < st.need; k++) { const bx = x + w / 2 - 33 + k * 24; ctx.fillStyle = '#5e3a1c'; ctx.fillRect(bx - 2, y - 22, 22, 20); ctx.fillStyle = k < st.got ? '#ffd23f' : '#f6e1b5'; ctx.fillRect(bx + 1, y - 19, 16, 14); }
-    } else if (st.need > 1 && !st.solved) {   // double gate tag
+    if (st.need > 1 && !st.solved) {   // double gate tag
       ctx.font = '18px "Lilita One", "Trebuchet MS", sans-serif'; ctx.lineWidth = 4; ctx.strokeStyle = '#3a2200';
       ctx.strokeText(`x${st.need - st.got}`, x + w + 2, y - 4); ctx.fillStyle = '#ffd23f'; ctx.fillText(`x${st.need - st.got}`, x + w + 2, y - 4);
     }
@@ -5994,24 +5885,18 @@ function drawGoal() {
   const inside = G && (mode === 'win' || mode === 'done') && P.x > (L.castleC + 2.2) * T;
   if (px > cam - 300 && px < cam + VW + 300) {
     HOLDERS[L.world.key][L.def.k % 2](px, b);
-    if (!inside && !(G && (mode === 'win' || mode === 'done'))) {   // waiting on its holder (once Kai has it, drawCarriedScroll draws it)
-      const { x, y } = scrollSpot();
+    if (!inside) {
+      let { x, y } = scrollSpot();
+      if (G && (mode === 'win' || mode === 'done')) {   // the scroll flies into the ninja's hands
+        const t = Math.min(1, G.winT / 40), hx = P.x + P.w / 2, hy = P.y - 16;
+        x += (hx - x) * t; y += (hy - y) * t - Math.sin(t * Math.PI) * 50;
+      }
       glowAt(x, y, 34, 'rgba(255,230,120,.5)');
       drawScroll(x, y, 1.3);
     }
   }
   const cx = L.castleC * T;
   if (cx < cam + VW + 60 && cx + 5 * T > cam - 60) HOMES[L.world.key](cx, b);
-}
-// The scroll flies into Kai's hands and he carries it home. Drawn right after Kai, so the house never covers it
-// while he is in front of the house; it disappears with him when he goes inside.
-function drawCarriedScroll() {
-  if (!G || L.boss || L.vault || !(mode === 'win' || mode === 'done') || P.x > (L.castleC + 2.2) * T) return;
-  let { x, y } = scrollSpot();
-  const t = Math.min(1, G.winT / 40), hx = P.x + P.w / 2, hy = P.y - 16;
-  x += (hx - x) * t; y += (hy - y) * t - Math.sin(t * Math.PI) * 50;
-  glowAt(x, y, 34, 'rgba(255,230,120,.5)');
-  drawScroll(x, y, 1.3);
 }
 
 // ---------------------------------------------------------------- drawing: characters
@@ -6077,7 +5962,7 @@ function drawEnemy(e) {
 function drawBoss() {
   const b = L.boss; if (!b || (b.dead && !b.friendly)) return;
   if (b.flash > 0 && Math.floor(b.flash / 3) % 2) return;
-  const box = { x: b.x + (b.dying && !b.gentle ? (Math.random() - 0.5) * 6 : 0) + (b.shakeX || 0), y: b.y, w: b.w, h: b.h };
+  const box = { x: b.x + (b.dying ? (Math.random() - 0.5) * 6 : 0) + (b.shakeX || 0), y: b.y, w: b.w, h: b.h };
   if (b.alpha !== undefined) ctx.globalAlpha = b.alpha;
   if (b.alpha !== 0) drawBaked(BOSS_SPR[b.kind], b.outro ? 'a' : Math.floor(b.t / 12) % 2 ? 'b' : 'a', b.outro ? P.x < b.x : b.face > 0, box);
   ctx.globalAlpha = 1;
@@ -6204,7 +6089,6 @@ function kaiPose() {
   }
   if (G.power && G.power.kind === 'sensei' && !P.onGround) return G.power.pose;
   if (G.flourish && G.flourish.t > 0) { G.flourish.t--; return G.flourish.pose; }
-  if (G.hand && (G.hand.t > 15 || G.hand.reached)) return HAND_POSE;
   return null;
 }
 const poseFace = (p, pose) => (p.face < 0 ? -1 : 1) * (pose.flip ? -1 : 1);
@@ -6422,12 +6306,12 @@ function drawTip() {
   wrapLines(t.txt, w - 92).slice(0, 3).forEach((ln, i) => ctx.fillText(ln, x + 76, y + 32 + i * 20));
   if (t.pic) drawTipPic(t.pic, x + 14, y + 96, w - 28, h - 106);
 }
-function drawTipPic(pic, x, y, w, h, big = 18) {   // big: the largest ten-frame cell
+function drawTipPic(pic, x, y, w, h) {
   const dot = (cx, cy, r, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill(); };
   ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   if (pic.k === 'frames') {   // ten frames: red dots, then blue (or ghost) dots, so "make 10" shows itself
     const red = pic.red || 0, more = pic.blue || pic.ghost || 0, total = red + more, frames = total > 10 || red > 10 ? 2 : 1;
-    const cell = Math.min(big, h / 2 - 2, (w - 20) / (frames * 5 + 1)), fw = cell * 5;
+    const cell = Math.min(18, h / 2 - 2, (w - 20) / (frames * 5 + 1)), fw = cell * 5;
     const x0 = x + (w - (frames * fw + (frames - 1) * cell)) / 2, y0 = y + (h - cell * 2) / 2;
     for (let f = 0; f < frames; f++) for (let i = 0; i < 10; i++) {
       const n = f * 10 + i, cx = x0 + f * (fw + cell) + (i % 5) * cell, cy = y0 + Math.floor(i / 5) * cell;
@@ -6521,25 +6405,20 @@ function drawDrill(rm, y) {
     keyTag(ANS_KEYS(3)[i], t.x + t.w - 6, t.y + 4);
   });
 }
-// Kindergarten math (tier 1 skills) shows its picture right with the question: ten frames, so 2 + 3 is dots, not just digits.
-// Only in levels (gates, animals, math boxes), never in boss fights, and hidden while Sensei's tip (which has the picture) is up.
-// A gate's question shows on the HUD only once Kai is near it (about when its sign comes into view).
-const stationNear = st => st.s === undefined || P.x > (st.s - 8) * T;   // bosses: always
-function kidPic() {
-  if (!G || L.boss || L.vault || G.tip || !L.skill || L.skill.tier !== 1 || activeBridge()) return null;
-  const m = miniTarget(), cs = currentStation(), q = m ? m.q : cs && stationNear(cs) && cs.q;
-  return q ? picFor(q) : null;
-}
 function drawHUD() {
-  const narrow = VW < 700, st = STAGES[G.idx], pic = kidPic(), picH = pic ? (narrow ? 46 : 56) : 0;
-  if (L.twist && G.time < 300 && !L.vault) hudText(TWIST_HINT[L.twist], VW / 2, (narrow ? 92 : 10) + 104 + (pic ? picH + 6 : 0), narrow ? 15 : 19, '#ffd23f', 'center');
+  const narrow = VW < 700, st = STAGES[G.idx];
+  if (L.twist && G.time < 300 && !L.vault) hudText(TWIST_HINT[L.twist], VW / 2, (narrow ? 92 : 10) + 104, narrow ? 15 : 19, '#ffd23f', 'center');
   for (let i = 0; i < G.maxHearts; i++) heart(30 + i * 36, 16, 13, i < G.hearts ? '#ff4d6d' : 'rgba(0,0,0,.35)');
   drawGem(34, 64, 1, tick * 0.06);
   hudText('× ' + G.coins, 54, 65, 22 + G.pulse);
   if (G.streak >= 2) hudText(`🔥 ${G.streak} in a row`, 20, 100, 18, '#ffb627');
   if (G.power) { const pw = POWERS[G.power.kind]; drawPix(pw.pix, 18, 112, 2); hudText(`${G.power.name || pw.name} ${Math.ceil(G.power.t / 60)}s`, 50, 126, 17, '#7df9ff'); }
   const label = st.boss ? `World ${st.w + 1}: Boss` : `Level ${st.label}: ${st.name}`;
-  if (!narrow) hudText(label, VW - 70, 26, 18, '#fff', 'right');   // no score on screen (still kept for badges)
+  if (narrow) hudText('Score ' + G.score, VW - 72, 64, 20, '#ffd23f', 'right');
+  else {
+    hudText(label, VW - 70, 26, 18, '#fff', 'right');
+    hudText('Score ' + G.score, VW - 70, 52, 20, '#ffd23f', 'right');
+  }
 
   const cur = currentStation(), by = narrow ? 92 : 10;   // banner sits below the hearts on narrow screens
   const br = activeBridge();
@@ -6548,18 +6427,15 @@ function drawHUD() {
   else if (L.room) txt = L.room.open ? 'Treasure!' : { scale: 'Balance the scale!', square: 'Magic square!', machine: 'Number machine!' }[L.room.kind];
   else if (br) txt = `Make ${br.target}!`;
   else if (miniTarget()) txt = qShow(miniTarget().q);
-  else if (cur && stationNear(cur)) txt = qShow(cur.q);
-  else if (cur && !L.boss) txt = null;   // between gates: no question until Kai gets near the next one
-  else if (L.boss) txt = G.hand ? 'Take my hand?' : L.boss.outro && !L.boss.outro.done ? L.boss.name : L.boss.dead || L.boss.dying || L.boss.outro ? 'Grab the scroll!' : L.arena.wait ? 'Nice hit!' : `Dodge! ${Math.ceil(L.arena.phaseT / 60)}`;
+  else if (cur) txt = qShow(cur.q);
+  else if (L.boss) txt = L.boss.outro && !L.boss.outro.done ? L.boss.name : L.boss.dead || L.boss.dying || L.boss.outro ? 'Grab the scroll!' : L.arena.wait ? 'Nice hit!' : `Dodge! ${Math.ceil(L.arena.phaseT / 60)}`;
   else txt = 'Get the scroll piece!';
-  if (txt) {
-    ctx.font = '38px "Lilita One", "Trebuchet MS", sans-serif';
-    const w = Math.max(240, ctx.measureText(txt).width + 50);
-    ctx.fillStyle = 'rgba(20,20,50,.75)'; rrect(VW / 2 - w / 2, by, w, 64, 14); ctx.fill();
-    ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 3; ctx.stroke();
-    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(txt, VW / 2, by + 34);
-  }
+  ctx.font = '38px "Lilita One", "Trebuchet MS", sans-serif';
+  const w = Math.max(240, ctx.measureText(txt).width + 50);
+  ctx.fillStyle = 'rgba(20,20,50,.75)'; rrect(VW / 2 - w / 2, by, w, 64, 14); ctx.fill();
+  ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 3; ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(txt, VW / 2, by + 34);
 
   if (L.boss) {
     const b = L.boss, bw = Math.min(320, VW - 60), bx = VW / 2 - bw / 2, segW = bw / b.max;
@@ -6580,17 +6456,14 @@ function drawHUD() {
     if (rm.kind === 'train' && !rm.open && !rm.show && !(rm.intro > 0)) drawDrill(rm, by + 98);
     hudText(rm.open && rm.kind === 'train' ? `${isTouch ? 'Tap the move button' : 'Press X'} to try the ${rm.move.name}! Smash the boards, then exit ➜` : rm.open ? 'Grab the gems, then exit ➜' : rm.kind === 'train' ? (rm.show ? '' : `Fill the power bar to learn the ${rm.move.name}!`) : rm.kind === 'scale' ? 'Bonk the number that makes both sides the same'
       : rm.kind === 'square' ? `Every row, column and diagonal adds up to ${rm.sq.sum}` : 'Find the rule, then bonk what comes out', VW / 2, by + 80, 16, '#fff', 'center');
+  } else if (wallAt()) {
+    const w = wallAt();
+    hudText(wallInfo(w.kind).rule + (w.kind === 'prime' ? '' : isTouch ? '  Tap the right number.' : '  Bonk or press the right number.'), VW / 2, by + 80, 16, '#fff', 'center');
   } else if (br) {
     hudText(`Bonk stones to pick up (one or more), carry to the altar · so far ${br.total}${G.carry ? ` · holding ${G.carry.stones.reduce((a, t) => a + t.val, 0)}` : ''}`, VW / 2, by + 80, 16, '#fff', 'center');
-  } else if (!cur || stationNear(cur)) {
+  } else {
     const done = L.stations.filter(s => s.solved).length;
-    hudText(cur && cur.puzzle ? `${PUZZLES[cur.puzzle.type].name} puzzle: part ${Math.min(cur.got + 1, cur.need)} of ${cur.need}` : cur ? `${isTouch ? 'Tap' : 'Bonk'} the right answer!  (${done}/${L.stations.length})` : `All ${L.stations.length} gates open!`, VW / 2, by + 80, 16, '#fff', 'center');
-  }
-  if (pic) {   // the picture in a small panel under the banner, same style as the banner
-    const pw = narrow ? 210 : 250, px = VW / 2 - pw / 2, py = by + 92;
-    ctx.fillStyle = 'rgba(20,20,50,.75)'; rrect(px, py, pw, picH, 12); ctx.fill();
-    ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2; ctx.stroke();
-    drawTipPic(pic, px + 4, py + 3, pw - 8, picH - 6, 24);
+    hudText(cur ? `${isTouch ? 'Tap' : 'Bonk'} the right answer!  (${done}/${L.stations.length})` : `All ${L.stations.length} gates open!`, VW / 2, by + 80, 16, '#fff', 'center');
   }
   if (L.room && L.room.kind === 'train' && L.room.intro > 150) drawTrainIntro(L.room);   // covers everything
 }
@@ -6614,6 +6487,7 @@ function render() {
   if (L.twist) drawTwist();
   if (L.flavor) drawFlavor();
   drawSteps();
+  if (G) drawWalls();
   if (G) drawMini();
   for (const c of L.coins) if (c.gold && !c.taken && Math.abs(c.x - cam - VW / 2) < VW) {   // the golden gem is on fire
     glowAt(c.x, c.y, 60, 'rgba(255,170,40,.6)');
@@ -6624,7 +6498,7 @@ function render() {
   drawPits(c0, c1);   // after enemies, so lava blobs rise out of the lava
   drawBoss();
   if (L.boss) { drawOrbs(); }
-  if (G) { drawPet(); drawPlayer(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
+  if (G) { drawPet(); drawPlayer(); drawProjectiles(); drawParticles(); }
   if (L.twist && G) drawTwistFront();
   if (L.flavor && G) drawFlavorFront();
   if (L.boss && G) drawOutro();
@@ -6750,15 +6624,6 @@ function buildMenu() {
   $('dojoBtn').innerHTML = dl.last === today() ? `${pixImg('flame', 'pix sm')} ${live} ✔` : `${pixImg('flame', 'pix sm')} Daily Dojo${live ? ` · ${live}` : ''}`;
   $('dojoBtn').classList.toggle('done', dl.last === today());
   $('bankMenu').textContent = `${prog.bank}💎`;
-  // The clue row: one slot per boss of worlds 1-4, filled once that boss is beaten; tap to reread its story page.
-  const cr = $('clueRow'); cr.innerHTML = '';
-  CLUES.forEach((ic, w) => {
-    const won = !!prog.best[bossOf(w)], b = document.createElement('button'); b.type = 'button';
-    b.className = 'clue' + (won ? ' on' : ''); b.disabled = !won; b.innerHTML = won ? pixImg(ic, 'pix') : '';
-    b.setAttribute('aria-label', won ? `Clue from ${WORLDS[w].boss.name}` : 'A clue still to find');
-    if (won) b.onclick = () => { audio(); const at = storyPages().findIndex(([t]) => t === WORLDS[w].boss.name); if (at >= 0) storyBook(at); };
-    cr.appendChild(b);
-  });
   $('badgeMenu').textContent = `${BADGES.filter(x => prog.badges[x.id]).length}/${BADGES.length}`;
   countUp($('bankMenu'), prog.bank);
   // The world map: four coloured zones with a winding path; Kai stands on the newest level.
@@ -6841,7 +6706,7 @@ function showHowTo() {
     ${row('🌉', 'Bridges: bonk number stones to pick them up (you can carry up to 4) and take them to the altar to make the exact number. Bonk a stone again to put it back.')}
     ${row('👹', 'Bosses: dodge first. When the boss gets tired, tap the right answer to throw a shuriken.')}
     ${row('🧮', 'Pick any math for any level. Harder math ★ earns more gems and belt points.')}
-    ${row('🔥', 'Daily Dojo: 15 quick questions a day. Keep your streak going and your pet grows!')}
+    ${row('🔥', 'Daily Dojo: 10 quick questions a day. Keep your streak going and your pet grows!')}
     ${row('📒', 'Fact Book: answer a fact right and fast to make it silver, then again on another day to make it gold.')}
     ${row('🐣', 'Easy mode (in Settings): no holes, slower enemies, more time and 5 hearts.')}</div>`,
     [{ label: 'Got it!', fn: () => { hide('msg'); show('menu'); }, primary: true }]);
@@ -6955,11 +6820,6 @@ $('autoBtn').onclick = () => { audio(); prog.auto = !prog.auto; save(); renderSk
 // 12×12 pixel pictures (with the same dark outline as the game's sprites) instead of emoji.
 const PIX_COL = { w: '#f4f4f4', d: '#3a3a4a', r: '#e63946', y: '#ffd23f', Y: '#c9961a', b: '#5b6bd6', g: '#9aa7b8', G: '#2f8a4a', p: '#ff9cc4', P: '#ffd6e8', o: '#c9a24f', W: '#fff6c8', q: '#8b5a2b', c: '#7df9ff' };
 const PIX = {
-  // the four clues to who the Shogun is (clue row on the home screen, and the Morning page)
-  hop: ['', '.www', 'wwwww', 'wwwww', '.www....www', '.www...wwwww', '..w....wwwww', '........www', '........www', '.........w'],
-  woodninja: ['....oooo', '...rrrrrr', '....odod', '....oooo', '..qqqqqqqq', '.q.qqqqqq.q', '.q.qqqqqq.q', '...qqqqqq', '...qq..qq', '...qq..qq', '..qqq..qqq'],
-  file: ['gggggggggggg', 'gddddddddddg', 'gdccccdddddg', 'gddddddddddg', 'gdccccccccdg', 'gddddddddddg', 'gdccccccdddg', 'gddddddddddg', 'gggggggggggg', '.....gg', '...gggggg'],
-  headband: ['', '', '', 'rrrrrrrrr', 'rrrrrrrrrr', 'rrrrrrrrr.r', '.......r..r', '......r....r', '.....r.....r'],
   race: ['qdddwwwddd', 'qdddwwwddd', 'qwwwdddwww', 'qwwwdddwww', 'qdddwwwddd', 'qdddwwwddd', 'q', 'q', 'q', 'q', 'q', 'qq'],
   pagoda: ['.....yy', '....rrrr', '..rrrrrrrr', '.r..wwww..r', '....wddw', '...rrrrrr', '.rrrrrrrrrr', 'r..wwwwww..r', '...wdwwdw', '...wdwwdw', '...wwwwww', '.GGGGGGGGGG'],
   book: ['', '.bbbbb.bbbbb', '.bwwwwbwwwwb', '.bwddwbwddwb', '.bwwwwbwwwwb', '.bwddwbwddwb', '.bwwwwbwwwwb', '.bwddwbwddwb', '.bwwwwbwwwwb', '.bbbbbbbbbbb', '......b'],
@@ -7200,13 +7060,14 @@ const SCENES = {
       tufts(c, SH, '#4f8a3e', 5, t);
       petals(c, t, 16, 3);
     } },
-    { cap: 'An old picture hangs on the dojo wall: a tall boy holding a baby. Sensei never talks about it.', draw(c, t, p) {
+    { cap: 'An old picture hangs on the dojo wall: young Sensei holding a baby, with Kuro beside him. Sensei never talks about it.', draw(c, t, p) {
       dot(c, 0, 0, SW, SH, '#e8d6b4');
       for (let x = 0; x < SW; x += 12) dot(c, x, 0, 1, 84, '#dcc8a2');
       dot(c, 0, 0, SW, 4, '#6e4627'); dot(c, 0, 80, SW, 4, '#6e4627'); dot(c, 14, 0, 5, 84, '#6e4627'); dot(c, 174, 0, 5, 84, '#6e4627');
       dot(c, 0, 84, SW, 24, '#c9b27a'); for (let x = 0; x < SW; x += 24) dot(c, x, 84, 1, 24, '#b39c66');
       dot(c, 72, 6, 56, 50, '#3a2416'); dot(c, 74, 8, 52, 46, '#6e4627'); dot(c, 77, 11, 46, 40, '#f0dfb6'); dot(c, 77, 40, 46, 11, '#e2cd9c');   // the picture
-      sPut(c, scSpr.kuro().a[0], 100, 50); baby(c, 96, 38);   // young Kuro holding baby Kai
+      senseiFig(c, 90, 50, false, true); baby(c, 91, 36);   // young Sensei holding the baby
+      sPut(c, scSpr.kuro().a[0], 112, 50);
       dot(c, 30, 30, 22, 2, '#4a3020'); dot(c, 30, 52, 22, 2, '#4a3020');   // a rack of practice staffs
       for (let i = 0; i < 4; i++) dot(c, 33 + i * 5, 22, 2, 40, i % 2 ? '#b0794a' : '#8b5a2b');
       dot(c, 134, 12, 14, 2, '#3a2416'); dot(c, 135, 14, 12, 30, '#f4ead5'); dot(c, 134, 44, 14, 2, '#3a2416');   // a hanging scroll: "love"
@@ -7629,7 +7490,8 @@ Object.assign(SCENES, {
     } },
     { cap: '<i>"He was very dear to me. He will not thank you."</i>', draw(c, t) {
       dot(c, 0, 0, SW, SH, '#e8d6b4'); dot(c, 46, 8, 100, 82, '#3a2416'); dot(c, 49, 11, 94, 76, '#6e4627'); dot(c, 53, 15, 86, 68, '#f0dfb6');
-      sPut(c, scSpr.kuro().a[0], 96, 80); baby(c, 92, 68);   // the dojo picture: young Kuro holding baby Kai
+      sPut(c, youngSensei().a[0], 84, 62); dot(c, 77, 62, 14, 18, '#4a5a7a'); baby(c, 86, 66);
+      sPut(c, scSpr.kuro().a[0], 116, 80);
     } },
     { cap: '<i>"Love him anyway."</i>', draw(c, t, p) {
       nightSky(c, t); castle(c, 150, 92); ground(c, 92, '#141030', '#2a2050');
@@ -7677,9 +7539,9 @@ Object.assign(SCENES, {
       const my = Math.min(96, 72 + p * 60); dot(c, 102, Math.round(my) - 6, 5, 5, '#c0182f'); dot(c, 108, Math.round(my) - 5, 4, 4, '#7a0a18');   // the broken mask on the ground
       tear(c, 103, 82, t, 8);
     } },
-    { cap: 'You know that face. It\'s the tall boy in the picture. It\'s <b>Kuro, your big brother</b>.', draw(c, t) {
+    { cap: 'You know that face. It\'s the boy in the picture. It\'s <b>Kuro, your big brother</b>.', draw(c, t) {
       dot(c, 0, 0, SW, SH, '#fff0c8'); dot(c, 22, 10, 66, 70, '#6e4627'); dot(c, 25, 13, 60, 64, '#f0dfb6');
-      sPut(c, scSpr.kuro().a[0], 55, 74); baby(c, 51, 62);   // the dojo picture: young Kuro holding baby Kai
+      sPut(c, youngSensei().a[0], 46, 58); dot(c, 39, 58, 14, 16, '#4a5a7a'); baby(c, 48, 62); sPut(c, scSpr.kuro().a[0], 72, 74);
       sPut(c, scSpr.kuro().a[0], 150, 100);
     } },
     { cap: '"I thought I had to earn Father\'s love. I made this for you, a long time ago."', draw(c, t) {
@@ -7736,8 +7598,6 @@ function renderFacts() {
   const learned = MOVES.filter(m => prog.moves[m.name]);
   let html = `<div class="expert">🥋 Moves learned: ${learned.length} of ${MOVES.length}${learned.length ? ': ' + learned.map(m => m.name).join(', ') : ' (find the door in each level!)'}</div>`;
   html += pr.mature ? '<div class="expert">⚡ Expert mode: 5 answer blocks and a keypad for bosses</div>' : '';
-  const nb = Object.keys(PUZZLES), found = nb.filter(t => prog.notebook[t]);   // Sensei's notebook: a page for each puzzle solved
-  html += `<div class="expert">📜 Sensei's notebook: ${found.length} of ${nb.length} pages${found.length ? '' : ' (solve the puzzle gate in a level!)'}</div><div class="nbook">${nb.map(t => `<div class="nbpage${prog.notebook[t] ? '' : ' dim'}"><canvas data-nb="${t}" width="162" height="90"></canvas><span>${prog.notebook[t] ? PUZZLES[t].line : '?'}</span></div>`).join('')}</div>`;
   if (pr.list && (k.id === 'xall' || k.id === 'dmix' || k.id === 'xmix69' || k.id === 'xmix25')) {
     // a times-table grid that fills in gold
     const lo = k.id === 'xmix69' ? 6 : 2, hi = k.id === 'xmix25' ? 5 : k.id === 'xmix69' ? 9 : k.id === 'dmix' ? 10 : 12, cols = k.id === 'xall' || k.id === 'dmix' ? 12 : 10;
@@ -7758,7 +7618,6 @@ function renderFacts() {
     html += `<p>Last 10 answers</p><div class="winrow">${range(0, 9).map(i => (i < w.length ? (w[i] ? '🟡' : '🔴') : '⚪')).join('')}</div><p>${pr.done ? 'Learned!' : '9 right and fast means learned.'}</p>`;
   }
   $('fbBody').innerHTML = html;
-  $('fbBody').querySelectorAll('canvas[data-nb]').forEach(cv => { if (prog.notebook[cv.dataset.nb]) drawNotebookPic(cv, cv.dataset.nb); });
 }
 $('factBtn').onclick = () => { audio(); openFacts(); };
 $('fbPrev').onclick = () => { audio(); fbAt = (fbAt + PATH.length - 1) % PATH.length; renderFacts(); };
@@ -7766,67 +7625,48 @@ $('fbNext').onclick = () => { audio(); fbAt = (fbAt + 1) % PATH.length; renderFa
 $('fbClose').onclick = () => { audio(); hide('facts'); toMenu(); };
 
 // ---------------------------------------------------------------- daily dojo
-// Fifteen quick questions: facts to practice first, then ones due for review (this is what turns silver into
+// Ten quick questions: facts to practice first, then ones due for review (this is what turns silver into
 // gold on a new day), then new facts from the current math. Once a day it grows the streak and pays gems.
-const DOJO_N = 15, DOJO_MORE = 5, DOJO_TIME = 10;
+const DOJO_N = 10, DOJO_TIME = 10;
 let dojo = null;
-function dojoQuestions(n = DOJO_N) {
+function dojoQuestions() {
   const d = today(), seen = new Set(), out = [];
-  const add = q => { const k = factKey(q); if (!seen.has(k) && out.length < n) { seen.add(k); out.push(q); } };
+  const add = q => { const k = factKey(q); if (!seen.has(k) && out.length < DOJO_N) { seen.add(k); out.push(q); } };
   const all = Object.values(prog.facts);
   shuffle(all.filter(f => f.weak)).slice(0, 4).forEach(f => add(f.q));
   shuffle(all.filter(f => !f.weak && f.days.length === 1 && f.days[0] < d)).slice(0, 4).forEach(f => add(f.q));
   shuffle(all.filter(f => !f.weak && f.days.length >= 2 && d - f.last >= 4)).slice(0, 2).forEach(f => add(f.q));
-  for (let i = 0; out.length < n && i < 60; i++) add(curSkill().gen());
-  shuffle(all.filter(f => f.days.length)).forEach(f => add(f.q));   // a small skill (one times table has 9 facts): top up with older facts the kid knows
+  for (let i = 0; out.length < DOJO_N && i < 60; i++) add(curSkill().gen());
   return shuffle(out);
 }
-function startDojo(n = DOJO_N) {
-  hide('menu'); hide('msg');
+function startDojo() {
+  hide('menu');
   const before = new Map(Object.entries(prog.facts).map(([k]) => [k, factStatus(k)]));
-  dojo = { qs: dojoQuestions(n), i: 0, right: 0, before, lock: false };
+  dojo = { qs: dojoQuestions(), i: 0, right: 0, before, lock: false };
   show('dojo'); dojoNext();
 }
-// Gold facts (remembered on two days) are typed, not picked: recall, not recognition. Everything else is a row of five.
 function dojoNext() {
   if (dojo.i >= dojo.qs.length) { finishDojo(); return; }
   const q = dojo.qs[dojo.i];
-  const typed = factStatus(factKey(q)) === 'gold';
-  dojo.q = q; dojo.typed = typed ? '' : null; dojo.opts = typed ? [] : rowChoices(q, 5); dojo.time = DOJO_TIME * (typed ? 1.5 : 1); dojo.left = dojo.time; dojo.lock = false; dojo.sel = 2;
+  dojo.q = q; dojo.opts = rowChoices(q, 5); dojo.left = DOJO_TIME; dojo.lock = false; dojo.sel = 2;
   $('djProg').textContent = `${dojo.i + 1} / ${dojo.qs.length}`;
-  $('djQ').innerHTML = q.missing ? q.text.replace('?', '<span class="padin" id="djIn">?</span>') : `${q.text} = <span class="padin" id="djIn">?</span>`;
-  $('djMsg').textContent = typed ? 'You know this one. Type it!' : '';
-  const box = $('djKeys'); box.innerHTML = ''; box.classList.toggle('keypad', typed);
-  if (typed) ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', '✓'].forEach(k => {
-    const b = document.createElement('button'); b.type = 'button'; b.textContent = k; if (k === '✓') b.className = 'ok';
-    b.onclick = () => dojoType(k); box.appendChild(b);
-  });
-  else dojo.opts.forEach((v, i) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = v; b.onclick = () => dojoPick(i); box.appendChild(b); });
+  $('djQ').innerHTML = q.missing ? q.text.replace('?', '<span class="padin">?</span>') : `${q.text} = <span class="padin">?</span>`;
+  $('djMsg').textContent = '';
+  const box = $('djKeys'); box.innerHTML = '';
+  dojo.opts.forEach((v, i) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = v; b.onclick = () => dojoPick(i); box.appendChild(b); });
   dojoMark();
 }
-function dojoType(k) {
-  if (!dojo || dojo.lock || dojo.typed == null) return;
-  audio();
-  if (k === '⌫') dojo.typed = dojo.typed.slice(0, -1);
-  else if (k === '✓') { if (dojo.typed) dojoAnswer(Number(dojo.typed) === dojo.q.ans, -1); return; }
-  else if (dojo.typed.length < 4) { dojo.typed += k; tone(600 + Number(k) * 40, 0.05, 'square', 0.03); }
-  $('djIn').textContent = dojo.typed || '?';
-}
-function dojoMark() { if (dojo.typed == null) [...$('djKeys').children].forEach((b, i) => b.classList.toggle('sel', i === dojo.sel)); }
+function dojoMark() { [...$('djKeys').children].forEach((b, i) => b.classList.toggle('sel', i === dojo.sel)); }
 function dojoPick(i) {
   if (!dojo || dojo.lock) return;
-  if (dojo.typed != null) { if (i < 0) dojoAnswer(false, -1, true); return; }   // typing: only the time-out comes here
-  dojoAnswer(i >= 0 && dojo.opts[i] === dojo.q.ans, i, i < 0);
-}
-function dojoAnswer(ok, i, late = false) {
   audio(); dojo.lock = true;
-  const q = dojo.q, btns = [...$('djKeys').children], typed = dojo.typed != null;
-  noteFact(q, ok, dojo.time - dojo.left <= fastFrames(null, q, typed) / 60, null);   // typing gets the longer limit
-  if (ok) { dojo.right++; sfx.correct(); if (i >= 0) btns[i].classList.add('right'); }
+  const q = dojo.q, ok = i >= 0 && dojo.opts[i] === q.ans, btns = [...$('djKeys').children];
+  noteFact(q, ok, DOJO_TIME - dojo.left <= fastFrames(null, q, false) / 60, null);
+  if (ok) { dojo.right++; sfx.correct(); btns[i].classList.add('right'); }
   else {
     sfx.wrong(); if (i >= 0) btns[i].classList.add('wrong');
     const j = dojo.opts.indexOf(q.ans); if (j >= 0) btns[j].classList.add('right');
-    $('djMsg').textContent = late ? `Time's up! ${qSolved(q)}` : qSolved(q);
+    $('djMsg').textContent = i < 0 ? `Time's up! ${qSolved(q)}` : qSolved(q);
   }
   $('djQ').innerHTML = qSolved(q);
   setTimeout(() => { if (dojo) { dojo.i++; dojoNext(); } }, ok ? 650 : 1500);
@@ -7834,19 +7674,13 @@ function dojoAnswer(ok, i, late = false) {
 function dojoTick(dt) {
   if (!dojo || dojo.lock || $('dojo').classList.contains('hidden')) return;
   dojo.left -= dt;
-  $('djFuse').style.width = `${Math.max(0, dojo.left / dojo.time) * 100}%`;
+  $('djFuse').style.width = `${Math.max(0, dojo.left / DOJO_TIME) * 100}%`;
   $('djFuse').classList.toggle('low', dojo.left <= 3);
   if (dojo.left <= 0) dojoPick(-1);
 }
 function dojoKey(e) {
   e.preventDefault();
   if (!dojo || e.repeat) return;
-  if (dojo.typed != null) {   // typing: number keys, Backspace, Enter
-    if (/^[0-9]$/.test(e.key)) dojoType(e.key);
-    else if (e.key === 'Backspace') dojoType('⌫');
-    else if (e.code === 'Enter' || e.code === 'NumpadEnter') dojoType('✓');
-    return;
-  }
   if (/^[1-5]$/.test(e.key)) dojoPick(Number(e.key) - 1);
   else if (e.code === 'ArrowLeft' || e.code === 'KeyA') { dojo.sel = clamp(dojo.sel - 1, 0, 4); dojoMark(); }
   else if (e.code === 'ArrowRight' || e.code === 'KeyD') { dojo.sel = clamp(dojo.sel + 1, 0, 4); dojoMark(); }
@@ -7865,7 +7699,7 @@ function finishDojo() {
   const right = dojo.right, n = dojo.qs.length; dojo = null; hide('dojo');
   let body = `<div class="bigicon">${pixImg('flame', 'pix big')}<small>${dl.streak}</small></div><div class="statrow"><span>✔ ${right}/${n}</span>${gems ? `<span>${pixImg('gem', 'pix sm')} +${gems}</span>` : ''}${golds ? `<span>🥇 +${golds}</span>` : ''}</div>`;
   body += first ? `<div class="promo">${dl.streak > 1 ? `${dl.streak} days in a row!` : 'Come back tomorrow to grow your streak!'}</div>` : '<p>Extra practice! Your streak counts once a day.</p>';
-  showMsg(first ? 'Dojo done!' : 'Nice practice!', body, [{ label: 'Play ▶', fn: toMenu, primary: true }, { label: 'One more round', fn: () => { audio(); startDojo(DOJO_MORE); }, alt: true }, { label: '📒 Facts', fn: () => { hide('msg'); openFacts(); }, alt: true }]);
+  showMsg(first ? 'Dojo done!' : 'Nice practice!', body, [{ label: 'Play ▶', fn: toMenu, primary: true }, { label: '📒 Facts', fn: () => { hide('msg'); openFacts(); }, alt: true }]);
 }
 $('dojoBtn').onclick = () => { audio(); startDojo(); };
 
