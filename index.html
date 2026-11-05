@@ -397,7 +397,7 @@
   </div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 5, 2026 3:05 PM PT · auto-update</div>
+  <div class="build">Updated Nov 5, 2026 3:31 PM PT · karate poses in pixel art</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1421,7 +1421,7 @@ function balanceQ(tier, times) {
 const ENTRANCES = ['door', 'bamboo', 'torii', 'cave', 'ledge', 'crack', 'hatch', 'crate', 'vent', 'igloo', 'drift', 'ledge', 'roof', 'banner', 'brick'];
 const TRAIN_SIGN = { japan: 'Dojo', lava: 'Training Cave', robot: 'Training Lab', snow: 'Ice Temple', castle: 'Tower Hall' };
 const TRAIN_ROOM = { japan: 'the Dojo', lava: 'the Training Cave', robot: 'the Training Lab', snow: 'the Ice Temple', castle: 'the Tower Hall' };
-const GUARD = { arm: [35, 10], arm2: [60, 7] };
+const GUARD = { arm: [-5, 15], arm2: [25, 15] };
 const MOVES = [
   { name: 'Bow', fx: 'bow', intro: 'Every ninja starts with a bow.', lesson: 'Respect comes first.', steps: [
     { say: 'Stand tall, feet together.', pose: {} }, { say: 'Hands at your sides.', pose: { arm: [90, 12] } }, { say: 'Now bow!', pose: { r: 25, arm: [90, 12] } }] },
@@ -1716,7 +1716,8 @@ function bake(sheet, names, px = PX) {
   const { w, h, pal, frames } = sheet;
   let minX = w, maxX = 0, bottom = 0;
   frames[0].forEach((row, y) => row.forEach((k, x) => { if (k) { minX = Math.min(minX, x); maxX = Math.max(maxX, x); bottom = Math.max(bottom, y + 1); } }));
-  const out = { cx: (minX + maxX + 1) / 2 * px, cxFlip: (w - (minX + maxX + 1) / 2) * px, bottom: bottom * px };
+  const out = { cx: (minX + maxX + 1) / 2 * px, cxFlip: (w - (minX + maxX + 1) / 2) * px, bottom: bottom * px,
+    px, src: sheet, idx: Object.fromEntries(names.map((n, i) => [n, i])) };   // the cell grids are kept for posed figures
   frames.forEach((g, i) => {
     out[names[i]] = [false, true].map(flip => {
       const c = document.createElement('canvas'); c.width = w * px; c.height = h * px;
@@ -1737,6 +1738,7 @@ function drawBaked(set, name, flip, box) {
 // Kai, the classic shinobi. Frames: stand, stride, jump. Faces right.
 const KAI_PAL = { n: '#2c3a6b', N: '#5a72c2', s: '#f6c79c', w: '#ffffff', e: '#16121f', r: '#e63946', R: '#a91d2b', b: '#f4f4f4', f: '#3b3552' };
 function drawKai({ P, R, E }, f) {
+  const m = f >= 3 ? f - 3 : 0; if (f >= 3) f = 0;   // pose bodies: the hands / front leg that the pose draws itself are left off
   E(8.5, 5, 4.6, 4.3, 'n');
   P(6, 2, 'N'); P(7, 2, 'N'); P(5, 3, 'N');
   R(4, 3, 10, 1, 'r'); P(3, 3, 'R');
@@ -1745,11 +1747,12 @@ function drawKai({ P, R, E }, f) {
   R(8, 5, 6, 2, 's');
   P(9, 5, 'w'); P(9, 6, 'w'); P(10, 5, 'e'); P(10, 6, 'e'); P(12, 5, 'w'); P(12, 6, 'w'); P(13, 5, 'e'); P(13, 6, 'e');
   R(5, 10, 7, 3, 'n'); P(10, 10, 'N'); R(5, 11, 7, 1, 'b');
-  if (f === 2) { P(12, 9, 's'); P(4, 9, 's'); } else { P(12, 10, 's'); P(4, 11, 's'); }
-  if (f === 0) { R(5, 13, 2, 1, 'n'); R(9, 13, 2, 1, 'n'); R(4, 14, 3, 1, 'f'); R(9, 14, 3, 1, 'f'); }
+  if (f === 2) { P(12, 9, 's'); P(4, 9, 's'); } else { if (!(m & 1)) P(12, 10, 's'); if (!(m & 2)) P(4, 11, 's'); }
+  if (f === 0) { R(5, 13, 2, 1, 'n'); R(4, 14, 3, 1, 'f'); if (!(m & 4)) { R(9, 13, 2, 1, 'n'); R(9, 14, 3, 1, 'f'); } }
   else { R(4, 13, 2, 1, 'n'); R(10, 13, 2, 1, 'n'); R(3, 14, 3, 1, 'f'); R(10, 14, 3, 1, 'f'); }
 }
-const bakeNinja = pal => bake(makeFrames(16, 16, { ...KAI_PAL, ...pal }, drawKai, 3), ['stand', 'walkA', 'jump']);
+const POSE_BODIES = [0, 1, 2, 3, 4, 5, 6, 7].map(m => 'p' + m);
+const bakeNinja = pal => bake(makeFrames(16, 16, { ...KAI_PAL, ...pal }, drawKai, 11), ['stand', 'walkA', 'jump', ...POSE_BODIES]);
 let SPR = bakeNinja({});
 const ENEMY_SPR = {
   ninja: bakeNinja({ n: '#a3242f', N: '#d0485a', r: '#1a1a1a', R: '#000000', b: '#1a1a1a' }),
@@ -6067,7 +6070,7 @@ function drawPlayer() {
 // ---------------------------------------------------------------- karate poses (training rooms, gate flourish)
 const TRAIN_INTRO = 320;
 const BOW_POSE = { r: 25, arm: [90, 12] };
-const TRAIN_READY = { arm: [35, 10], arm2: [60, 7] };
+const TRAIN_READY = GUARD;
 function mixPose(a, b, e) {
   const n = (x, y) => (x || 0) + ((y || 0) - (x || 0)) * e;
   const limb = k => (a[k] && b[k] ? [n(a[k][0], b[k][0]), n(a[k][1], b[k][1])] : e < 0.5 ? a[k] : b[k]);
@@ -6095,43 +6098,113 @@ function kaiPose() {
 }
 const poseFace = (p, pose) => (p.face < 0 ? -1 : 1) * (pose.flip ? -1 : 1);
 // Where the striking hand or foot ends up (for boards and swooshes).
+// Kai's shoulders and hips sit where his small body is (under the big head); limbs are short to match.
+const KAI_LIMBS = { arm: 16, arm2: 15, leg: 8, sc: 0.75 };
 function limbEnd(p, pose) {
-  const face = poseFace(p, pose), feet = p.y + p.h - (pose.y || 0), cx = p.x + p.w / 2;
-  const [base, l] = pose.leg ? [feet - 14, pose.leg] : [feet - 28, pose.arm || [0, 10]];
-  const a = l[0] * Math.PI / 180;
-  return { x: cx + face * (6 + Math.cos(a) * l[1]), y: base + Math.sin(a) * l[1] };
+  const face = poseFace(p, pose), feet = p.y + p.h - (pose.y || 0), cx = p.x + p.w / 2, K = KAI_LIMBS;
+  const [ox, oy, l] = pose.leg ? [4, K.leg, pose.leg] : [6, K.arm, pose.arm || [0, 10]];
+  const th = (pose.r || 0) * Math.PI / 180, a = l[0] * Math.PI / 180 + th, len = l[1] * K.sc;
+  const sx = ox * Math.cos(th) + oy * Math.sin(th), sy = ox * Math.sin(th) - oy * Math.cos(th);   // the shoulder or hip, leaned with the body
+  return { x: cx + face * (sx + Math.cos(a) * len), y: feet + sy + Math.sin(a) * len };
 }
 // Sensei, full body (faces right), a head taller than Kai; he demonstrates each step with the same pose system.
-const SENSEI_BODY = bake(makeFrames(18, 22, { s: '#f2c49b', w: '#f4f4f4', W: '#f4f4f4', V: '#c9cdd8', e: '#16121f', b: '#151515' }, ({ P, R, E }) => {
+const SENSEI_BODY = bake(makeFrames(18, 22, { s: '#f2c49b', w: '#f4f4f4', W: '#f4f4f4', V: '#c9cdd8', e: '#16121f', b: '#151515' }, ({ P, R, E }, m) => {
   E(9, 4, 3.6, 3.8, 's'); P(5, 4, 'w'); P(13, 4, 'w'); P(5, 5, 'w'); P(13, 5, 'w');
   R(7, 3, 2, 1, 'w'); R(10, 3, 2, 1, 'w'); P(8, 5, 'e'); P(11, 5, 'e');
   E(9.5, 8.5, 2.8, 2.4, 'w'); R(8, 10, 3, 2, 'w');
   R(5, 10, 9, 5, 'W'); R(5, 10, 1, 5, 'V'); P(8, 10, 'V'); P(9, 11, 'V'); P(10, 12, 'V');
-  R(4, 10, 1, 4, 'W'); R(14, 10, 1, 4, 'W'); P(4, 14, 's'); P(14, 14, 's');
-  R(5, 15, 9, 1, 'b'); P(12, 16, 'b'); P(13, 17, 'b');
-  R(6, 16, 3, 4, 'W'); R(10, 16, 3, 4, 'W'); R(6, 16, 1, 4, 'V'); R(10, 16, 1, 4, 'V');
-  R(5, 20, 4, 1, 's'); R(10, 20, 4, 1, 's');
-}, 1), ['a']);
-const SENSEI_FIG = { set: SENSEI_BODY, frames: ['a', 'a'], arm: 36, arm2: 35, leg: 20, sc: 1.25, cols: ['#f4f4f4', '#d8dce6'], skin: '#f2c49b', foot: '#f2c49b' };
-function drawKaiPose(p, pose, fig = null) {
-  const face = poseFace(p, pose), lift = pose.y || 0, feet = p.y + p.h - lift, cx = p.x + p.w / 2, hp = heroPal();
-  const F = fig || { set: SPR, frames: ['stand', 'jump'], arm: 28, arm2: 27, leg: 14, sc: 1, cols: [hp.n, hp.N], skin: KAI_PAL.s, foot: KAI_PAL.f };
-  const pal = { n: F.cols[0], N: F.cols[1] };
-  ctx.save(); ctx.translate(cx, feet); ctx.rotate(face * (pose.r || 0) * Math.PI / 180); ctx.translate(-cx, -feet);
-  drawBaked(F.set, pose.leg ? F.frames[1] : F.frames[0], face < 0, { x: p.x, y: p.y - lift, w: p.w, h: p.h });
-  const sc = F.sc, sl = l => l && [l[0], l[1] * sc];
-  const limb = (ox, oy, l, col, end, es) => {
-    if (!l) return;
-    const a = l[0] * Math.PI / 180, x1 = cx + face * (ox + Math.cos(a) * l[1]), y1 = oy + Math.sin(a) * l[1];
-    ctx.strokeStyle = OUTLINE; ctx.lineWidth = 9; ctx.lineCap = 'square'; ctx.beginPath(); ctx.moveTo(cx + face * ox, oy); ctx.lineTo(x1, y1); ctx.stroke();
-    ctx.strokeStyle = col; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(cx + face * ox, oy); ctx.lineTo(x1, y1); ctx.stroke();
-    ctx.fillStyle = OUTLINE; ctx.fillRect(x1 - es / 2 - 1, y1 - es / 2 - 1, es + 2, es + 2);
-    ctx.fillStyle = end; ctx.fillRect(x1 - es / 2, y1 - es / 2, es, es);
+  if (!(m & 1)) { R(14, 10, 1, 4, 'W'); P(14, 14, 's'); }   // front arm (he faces right on the sheet)
+  if (!(m & 2)) { R(4, 10, 1, 4, 'W'); P(4, 14, 's'); }     // back arm
+  R(5, 15, 9, 1, 'b');
+  R(6, 16, 3, 4, 'W'); R(6, 16, 1, 4, 'V'); R(5, 20, 4, 1, 's');
+  if (!(m & 4)) { R(10, 16, 3, 4, 'W'); R(10, 16, 1, 4, 'V'); R(10, 20, 4, 1, 's'); P(12, 16, 'b'); P(13, 17, 'b'); }   // front leg (the belt ends hang over it)
+}, 8), POSE_BODIES);
+const SENSEI_FIG = { set: SENSEI_BODY, arm: 36, arm2: 35, leg: 17, sc: 0.9, near: '#f4f4f4', back: '#d8dce6', inner: '#a9aebb', cloth: ['#f4f4f4', '#c9cdd8', '#d8dce6', '#a9aebb'], skin: '#f2c49b', foot: '#f2c49b' };
+// Posed figures are pixel art on the sprite's own grid: the body (leaned by pose.r, nearest cell) and the limbs
+// (2 cells thick, each with its own 1-cell outline) are put together cell by cell, then blown up like any sprite.
+// Side view, back to front: far arm behind the body, then the body (without the hands and leg the pose draws
+// itself, so nobody grows extra hands or a third leg), then the kicking leg and the near arm in front.
+const POSE_CACHE = new WeakMap();
+function posedFigure(F, pose) {
+  const body = 'p' + ((pose.arm ? 1 : 0) | (pose.arm2 ? 2 : 0) | (pose.leg ? 4 : 0));
+  const q = l => (l ? Math.round(l[0]) + ':' + Math.round(l[1] * 2) : '-');
+  const key = `${body},${Math.round(pose.r || 0)},${q(pose.arm)},${q(pose.arm2)},${q(pose.leg)}`;
+  let cache = POSE_CACHE.get(F.set); if (!cache) POSE_CACHE.set(F.set, cache = new Map());
+  let img = cache.get(key); if (img) return img;
+  if (cache.size > 800) cache.clear();
+  const S = F.set, px = S.px, src = S.src, cells = src.frames[S.idx[body]], M = 20;
+  const W = src.w + 2 * M, H = src.h + 2 * M, ax = S.cx / px + M, ay = S.bottom / px + M;   // the feet, in cells
+  const th = (pose.r || 0) * Math.PI / 180, co = Math.cos(th), si = Math.sin(th);
+  const g = new Array(W * H).fill(null);
+  const paint = (layer, inner = OUTLINE, soft = false) => {   // layer: Map cell index -> colour; outline ring first, then the layer
+    for (const i of layer.keys()) {
+      const x = i % W, y = (i - x) / W;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy, n = ny * W + nx;
+        if (nx < 0 || nx >= W || ny < 0 || ny >= H || layer.has(n)) continue;
+        if (soft && F.cloth.includes(g[n])) { if (inner) g[n] = inner; }   // across the figure's own clothes: a softer edge (none for Kai)
+        else g[n] = OUTLINE;                                                // against the background, face or hands: the usual dark outline
+      }
+    }
+    for (const [i, c] of layer) g[i] = c;
   };
-  limb(2, feet - F.arm2, sl(pose.arm2), pal.N, F.skin, 6);
-  limb(4, feet - F.leg, sl(pose.leg), pal.n, F.foot, 8);
-  limb(6, feet - F.arm, sl(pose.arm), pal.n, F.skin, 7);
-  ctx.restore();
+  const limb = (ox, oy, l, col, end, es, inner) => {
+    if (!l) return;
+    const sx0 = ox / px, sy0 = -oy / px;   // shoulder or hip, from the feet, before the lean
+    const x0 = ax + sx0 * co - sy0 * si, y0 = ay + sx0 * si + sy0 * co;
+    const a = l[0] * Math.PI / 180 + th, len = l[1] * F.sc / px, x1 = x0 + Math.cos(a) * len, y1 = y0 + Math.sin(a) * len;
+    const layer = new Map(), dx = x1 - x0, dy = y1 - y0, d2 = dx * dx + dy * dy || 1;
+    for (let y = Math.floor(Math.min(y0, y1) - 2); y <= Math.max(y0, y1) + 2; y++) for (let x = Math.floor(Math.min(x0, x1) - 2); x <= Math.max(x0, x1) + 2; x++) {
+      if (x < 0 || y < 0 || x >= W || y >= H) continue;
+      const cx = x + 0.5, cy = y + 0.5, t = Math.max(0, Math.min(1, ((cx - x0) * dx + (cy - y0) * dy) / d2));
+      const ex = cx - x0 - t * dx, ey = cy - y0 - t * dy;
+      if (Math.abs(cx - x1) < es / 2 && Math.abs(cy - y1) < es / 2) layer.set(y * W + x, end);
+      else if (ex * ex + ey * ey <= 0.9 && t < 1) layer.set(y * W + x, col);
+    }
+    paint(layer, inner, true);
+  };
+  limb(2, F.arm2, pose.arm2, F.back, F.skin, 2);
+  {   // the body, leaned around the feet (nearest cell), its outline drawn fresh
+    const layer = new Map(), big = th ? scale2x(cells) : null;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const rx = x + 0.5 - ax, ry = y + 0.5 - ay, u = ax + rx * co + ry * si - M, v = ay - rx * si + ry * co - M;
+      const k = big ? big[Math.floor(v * 2)] && big[Math.floor(v * 2)][Math.floor(u * 2)] : cells[Math.floor(v)] && cells[Math.floor(v)][Math.floor(u)];
+      if (k && k !== 'k') layer.set(y * W + x, src.pal[k]);
+    }
+    paint(layer);
+  }
+  limb(4, F.leg, pose.leg, F.near, F.foot, 2, F.inner);
+  limb(6, F.arm, pose.arm, F.near, F.skin, 2, F.inner);
+  const c = [0, 1].map(flip => {
+    const cv = document.createElement('canvas'); cv.width = W * px; cv.height = H * px;
+    const x = cv.getContext('2d');
+    g.forEach((col, i) => { if (!col) return; const gx = i % W; x.fillStyle = col; x.fillRect((flip ? W - 1 - gx : gx) * px, (i - gx) / W * px, px, px); });
+    return cv;
+  });
+  img = { c, W, ax, ay, px };
+  cache.set(key, img);
+  return img;
+}
+// Scale2x (EPX): doubles a cell grid and rounds its corners, so a leaned body keeps clean edges (as in RotSprite).
+function scale2x(src) {
+  const h = src.length, w = src[0].length, out = Array.from({ length: h * 2 }, () => Array(w * 2).fill(null));
+  const at = (x, y) => (x < 0 || y < 0 || x >= w || y >= h ? null : src[y][x]);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const P = at(x, y), A = at(x, y - 1), B = at(x + 1, y), C = at(x - 1, y), D = at(x, y + 1);
+    let e0 = P, e1 = P, e2 = P, e3 = P;
+    if (C === A && C !== D && A !== B) e0 = A;
+    if (A === B && A !== C && B !== D) e1 = B;
+    if (D === C && D !== B && C !== A) e2 = C;
+    if (B === D && B !== A && D !== C) e3 = D;
+    out[y * 2][x * 2] = e0; out[y * 2][x * 2 + 1] = e1; out[y * 2 + 1][x * 2] = e2; out[y * 2 + 1][x * 2 + 1] = e3;
+  }
+  return out;
+}
+function drawKaiPose(p, pose, fig = null) {
+  const face = poseFace(p, pose), feet = p.y + p.h - (pose.y || 0), cx = p.x + p.w / 2, hp = heroPal();
+  const F = fig || { set: SPR, ...KAI_LIMBS, near: hp.N, back: hp.n, inner: null, cloth: [hp.n, hp.N], skin: KAI_PAL.s, foot: KAI_PAL.f };
+  const im = posedFigure(F, pose);
+  ctx.drawImage(im.c[face < 0 ? 1 : 0], Math.round(cx - (face < 0 ? im.W - im.ax : im.ax) * im.px), Math.round(feet - im.ay * im.px));
 }
 // The moment the move lands: boards crack, wind whooshes.
 function trainStrike(room) {
@@ -6181,7 +6254,7 @@ function drawTrainIntro(rm) {
       ctx.font = '16px "Lilita One", "Trebuchet MS", sans-serif'; ctx.fillStyle = '#8b5a2b'; ctx.fillText(`Lesson ${idx} of ${MOVES.length}`, cx, cy - sh / 2 + 30);
       ctx.font = `${narrow ? 32 : 40}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.fillStyle = '#8b1a1a'; ctx.fillText(rm.move.name.toUpperCase(), cx, cy - sh / 2 + 66);
       glowAt(cx, cy + 40, 90 + Math.sin(tick * 0.12) * 6, 'rgba(255,190,60,.55)');
-      const k = Math.min(1, (t - 78) / 25), pose = mixPose(TRAIN_READY, fin, k * k * (3 - 2 * k)), sc = 2.6;
+      const k = Math.min(1, (t - 78) / 25), pose = mixPose(TRAIN_READY, fin, k * k * (3 - 2 * k)), sc = 3;
       ctx.save(); ctx.translate(cx, cy + 92); ctx.scale(sc, sc);
       drawKaiPose({ x: -12, y: -44 + (fin.y || 0), w: 24, h: 44, face: 1 }, pose);
       ctx.restore();
