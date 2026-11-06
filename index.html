@@ -425,7 +425,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 6, 2026 12:04 AM PT · guard behind the wall + final kick; grade test-out</div>
+  <div class="build">Updated Nov 6, 2026 8:49 AM PT · smaller Sensei tips, tap to close</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -570,6 +570,8 @@ cv.addEventListener('pointerdown', e => {   // click / tap the big answer tiles 
   if (!L || mode !== 'play') return;
   const rm = L.room, tr = G && G.rescue ? G.rescue.tiles : rm && rm.tiles;
   const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) * VW / r.width, y = (e.clientY - r.top) * VH / r.height;
+  const tb = G && G.tip && G.tip.box;
+  if (tb && x >= tb.x && x <= tb.x + tb.w && y >= tb.y && y <= tb.y + tb.h) { G.tip.t = Math.min(G.tip.t, 14); return; }   // tap Sensei's tip to close it
   if (G && G.rescue && !tr) return;
   if (tr) { const i = tr.findIndex(t => x >= t.x && x <= t.x + t.w && y >= t.y && y <= t.y + t.h); if (i >= 0) { audio(); tapAnswer(i); } return; }
   if (G && G.swing) { const t = G.swing.tiles, i = t ? t.findIndex(o => x + cam >= o.x && x + cam <= o.x + o.w && y >= o.y && y <= o.y + o.h) : -1; if (i >= 0) { audio(); tapAnswer(i); } return; }
@@ -1296,6 +1298,18 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     const e = flat(3) + 2;
     (L.swings || (L.swings = [])).push({ s, e, l0, pm, l1, done: false });
   }
+  // The snow world's crossing is a classic ski lift instead: a boarding station on the ground, open ground under the
+  // cable with a tower halfway, a 6-block cliff with the top station, and stairs back down.
+  function liftChunk() {
+    const s = flat(3), b = flat(2);
+    flat(3); flat(3); flat(2);
+    const cl = flat(3); flat(1);
+    for (let c = cl; c < cl + 4; c++) for (let r = GR - 6; r < GR; r++) map[r][c] = 'S';
+    const d = flat(3); flat(2);
+    for (let k = 0; k < 5; k++) for (let r = GR - (5 - k); r < GR; r++) map[r][d + k] = 'S';
+    const e = flat(3) + 2;
+    (L.swings || (L.swings = [])).push({ lift: true, s, e, b, cl, ph: 0, done: false });
+  }
   function stepsChunk() {
     const n = easy ? 4 : 5, w = 3 * (n - 1) + 3;   // n numbers in the pattern: the first stone, then n - 1 answers
     flat(5); const c0 = addCols(w); flat(4);
@@ -1423,7 +1437,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     if (useBridge && (i === 2 || (i === 5 && def.w >= 2))) { bridgeChunk(); run(); }
     if (i === doorAt) doorChunk();
     if (stepsAt.includes(i)) { stepsChunk(); run(); }
-    if (i === def.n - 2) { swingChunk(); run(); }   // one swing crossing per level
+    if (i === def.n - 2) { if (W.key === 'snow') liftChunk(); else swingChunk(); run(); }   // one swing crossing per level (a ski lift in the snow)
     if (twist && (i % 2 === 0 || twist === 'walljump')) twistChunk();   // wall-jump levels get one before every gate
     if (i === wallGate) { wallChunk(wk[(def.w * 3 + def.k) % wk.length]); run(); continue; }
     // Question station: sign, answer blocks, and a locked gate.
@@ -2827,15 +2841,18 @@ function picFor(q) {
   if (op === '÷' && a <= 100) return { k: 'groups', g: b, each: ans };
   return null;
 }
+// Sensei's tip: a small card in the top-left corner (owner: the big one covered the screen at key moments).
+// 6 s, and it goes away early when tapped (its ✕) or after the next right answer.
+const TIP_T = 360;
 function senseiTip(txt, q = null) {
-  G.tip = { txt, t: 480, pic: q ? picFor(q) : null };
+  G.tip = { txt, t: TIP_T, pic: q ? picFor(q) : null };
   [392, 523, 659].forEach((f, i) => tone(f, 0.25, 'triangle', 0.04, null, i * 0.1));
 }
 function missed(q) {
   petSay('sad');
   if (++G.wrongRun >= (G.tipSoon ? 1 : 2)) { senseiTip(tipFor(q), q); G.wrongRun = 0; }   // a step-back level: help after one miss
 }
-function gotIt() { petSay('happy'); G.wrongRun = 0; }
+function gotIt() { petSay('happy'); G.wrongRun = 0; if (G.tip) G.tip.t = Math.min(G.tip.t, 14); }   // the tip helped: it slides away
 
 // ---------------------------------------------------------------- streak power-ups
 // Every 5 answers in a row grants a power for a while: double jump, a shield, or a fire aura.
@@ -3395,11 +3412,75 @@ const SWING_LOOK = {
 };
 const swingTop = () => (GR - 3) * T;   // the ledges and the perch are 3 blocks high
 const swingEnds = (sw, h) => (h === 0 ? [(sw.l0 + 1.6) * T, (sw.pm + 1) * T] : [(sw.pm + 1) * T, (sw.l1 + 0.6) * T]);
+// ---- the ski lift (snow world): always running. Six chairs loop: up the cable (0..1), back down empty (1..2).
+// Answer 1 at the bottom: Kai hops into the next chair. Answer 2 while he rides: the chair carries him past the
+// tower to the top. If it isn't answered yet, the lift slows down near the tower and waits there. He never falls.
+const LIFT_SPD = 1 / 360, LIFT_CHAIRS = 6;
+const liftX = sw => [(sw.b + 1) * T, (sw.cl + 1.5) * T];
+function liftSeat(sw, p) {   // where a chair's seat is at p (0 bottom .. 1 top) on the up cable
+  const [x0, x1] = liftX(sw), y0 = GR * T - 18, y1 = (GR - 6) * T - 18;
+  return [x0 + (x1 - x0) * p, y0 + (y1 - y0) * p + Math.sin(Math.PI * p) * 16];
+}
+const liftPos = (sw, i) => (sw.ph + i * 2 / LIFT_CHAIRS) % 2;   // 0..1 going up, 1..2 coming down
+function liftsMove() {
+  const g = G.swing;
+  for (const sw of L.swings || []) {
+    if (!sw.lift) continue;
+    let f = 1;
+    if (g && g.sw === sw && g.ph === 'ride' && g.need) {   // waiting for the 2nd answer: slow down near the tower, and wait there
+      const p = liftPos(sw, g.ci);
+      f = p >= 0.495 ? 0 : Math.max(0.15, clamp((0.5 - p) / 0.12, 0, 1));
+    }
+    sw.ph = (sw.ph + LIFT_SPD * f) % 2;
+  }
+}
+function liftTick(g) {
+  const sw = g.sw, p = P;
+  if (g.wob > 0) g.wob--;
+  if (g.wait > 0 && --g.wait === 0) swingNext(g);
+  keys.jumpPressed = false;
+  if (g.ph === 'ask' || g.ph === 'board') {   // at the bottom station
+    const [x0] = liftX(sw);
+    p.vx = p.vy = 0; p.onGround = true; p.y = GR * T - p.h; p.x = x0 - p.w / 2 - 14 + (g.wob ? Math.sin(g.wob * 0.9) * 3 : 0); p.face = 1;
+    if (g.ph === 'ask' && keys.left && !g.wait) { G.swing = null; p.x = (sw.b - 1) * T; p.face = -1; return; }   // changed his mind
+    if (g.ph === 'board') {   // hop in when the next chair comes round the bottom
+      const i = [...Array(LIFT_CHAIRS).keys()].find(k => liftPos(sw, k) < LIFT_SPD * 1.5);
+      if (i !== undefined) { g.ci = i; g.ph = 'ride'; g.t = 0; g.half = 1; g.need = true; swingNext(g); tone(330, 0.15, 'triangle', 0.04, 500); }
+    }
+    return;
+  }
+  if (g.ph === 'ride') {
+    g.t++;
+    const q = liftPos(sw, g.ci), [sx, sy] = liftSeat(sw, Math.min(1, q)), hop = g.t < 10 ? -Math.sin(Math.PI * g.t / 10) * 16 : 0;
+    p.x = sx - p.w / 2; p.y = sy - p.h + 16 + hop; p.vx = p.vy = 0; p.onGround = false; p.face = 1;
+    if (q >= 0.995 && q < 1.5 && !g.need) { g.ph = 'off'; g.t = 0; g.fromX = p.x; g.fromY = p.y; tone(440, 0.15, 'triangle', 0.04, 700); }
+    return;
+  }
+  if (g.ph === 'off') {   // hops off onto the top station
+    g.t++;
+    const u = Math.min(1, g.t / 18), tx = (sw.cl + 2.6) * T - p.w / 2, ty = (GR - 6) * T - p.h;
+    p.x = g.fromX + (tx - g.fromX) * u; p.y = g.fromY + (ty - g.fromY) * u - Math.sin(Math.PI * u) * 30;
+    if (u >= 1) {
+      p.y = ty; p.onGround = true; p.squash = 6; sw.done = true; G.swing = null;
+      confetti(p.x + p.w / 2, p.y); sfx.win(); floatText(p.x + p.w / 2, p.y - 40, 'Made it to the top!', '#3ae374', 26);
+    }
+  }
+}
 function updateSwings() {
+  liftsMove();
   if (G.swing || G.cross) return;
   const p = P, cx = p.x + p.w / 2;
   for (const sw of L.swings || []) {
     if (sw.done) continue;
+    if (sw.lift) {   // anywhere on the ground between the bottom station and the cliff
+      if (p.onGround && Math.abs(p.y + p.h - GR * T) < 4 && cx > sw.b * T && cx < sw.cl * T) {
+        G.swing = { sw, lift: true, ph: 'ask', half: 0, t: 0, wait: 0, wob: 0, tiles: null, need: false };
+        p.vx = 0; swingNext(G.swing);
+        if (!sw.told) { sw.told = true; floatText(p.x + p.w / 2, p.y - 140, 'Answer to ride the ski lift!', '#ffd23f', 24); }
+        return;
+      }
+      continue;
+    }
     const onLedge = p.onGround && Math.abs(p.y + p.h - swingTop()) < 4 && cx > sw.l0 * T && cx < (sw.l0 + 2) * T;   // anywhere on the start ledge
     const leaping = !p.onGround && p.y + p.h < swingTop() + 12 && cx > (sw.l0 + 1) * T && cx < (sw.l0 + 5) * T;   // jumped out over the gap: he grabs the rope
     if (onLedge || leaping) { swingStart(sw); return; }
@@ -3415,6 +3496,7 @@ function swingStart(sw) {
 }
 function swingNext(g) { g.q = L.gen(); g.opts = choices(g.q, 3); g.shownAt = G.time; g.pick = -1; }
 function swingTick() {
+  if (G.swing.lift) { liftsMove(); liftTick(G.swing); return; }
   const g = G.swing, sw = g.sw, p = P; g.t++;
   if (g.wob > 0) g.wob--;
   if (g.ph === 'ask') {
@@ -3436,16 +3518,17 @@ function swingTick() {
     else { sw.done = true; G.swing = null; confetti(p.x + p.w / 2, p.y); sfx.win(); floatText(p.x + p.w / 2, p.y - 40, 'Made it across!', '#3ae374', 26); }
   }
 }
-const swingTarget = g => (g.ph === 'ask' && !g.wait && g.q ? { kind: 'swing', q: g.q, vals: g.opts, off: g.opts.map(() => false), ref: g } : null);
+const swingTarget = g => ((g.ph === 'ask' || (g.lift && g.ph === 'ride' && g.need)) && !g.wait && g.q ? { kind: 'swing', q: g.q, vals: g.opts, off: g.opts.map(() => false), ref: g } : null);
 function swingPick(g, i) {
-  if (g.ph !== 'ask' || g.wait || !g.q) return;
+  if (!(g.ph === 'ask' || (g.lift && g.ph === 'ride' && g.need)) || g.wait || !g.q) return;
   const q = g.q, right = g.opts[i] === q.ans, fast = G.time - g.shownAt <= fastFrames(L.skill, q), x = P.x + P.w / 2, y = P.y;
   noteFact(q, right, right && fast, L.skill); g.pick = i;
   if (right) {
     G.solved++; if (fast) G.fastN++;
     payGems(x, y - 20, 1); sfx.correct(); streakUp(x, y); gotIt();
     floatText(x, y - 56, `${qSolved(q)}!`, '#3ae374', 24);
-    g.ph = 'go'; g.t = 0;
+    if (g.lift) { if (g.ph === 'ask') { g.ph = 'board'; g.q = null; } else { g.need = false; g.q = null; } }
+    else { g.ph = 'go'; g.t = 0; }
   } else {
     G.mistakes++; G.streak = 0; remember(q); missed(q); sfx.wrong();
     g.wob = 30; g.wait = 90;
@@ -3455,7 +3538,7 @@ function swingPick(g, i) {
 // A fall into a swing gap (a jump instead of answering): back on the start ledge, no heart lost.
 function swingCatch(p) {
   if (p.y < GR * T + T) return false;
-  const cx = p.x + p.w / 2, sw = (L.swings || []).find(w => cx > (w.l0 + 1) * T && cx < (w.l1 + 1) * T);
+  const cx = p.x + p.w / 2, sw = (L.swings || []).find(w => !w.lift && cx > (w.l0 + 1) * T && cx < (w.l1 + 1) * T);
   if (!sw) return false;
   p.x = (sw.l0 + 0.5) * T - p.w / 2; p.y = swingTop() - p.h; p.vx = p.vy = 0; p.inv = 30;
   tone(300, 0.25, 'sine', 0.06, 700); floatText(p.x + p.w / 2, p.y - 30, sw.done ? 'Whoops!' : 'Answer to swing!', '#ffffff', 22);
@@ -7409,8 +7492,58 @@ function drawRescue() {
 }
 // The swing frames: posts on the two ledges and the perch, a beam (or rope, or lift cable) across the top, and the
 // ropes / chains / hooks / chairs, one over each gap. Drawn behind Kai.
+function drawLift(sw) {
+  const [x0, x1] = liftX(sw), g = G && G.swing && G.swing.sw === sw ? G.swing : null;
+  if (x1 + 3 * T < cam || x0 - 3 * T > cam + VW) return;
+  const cab = (p, back) => { const [x, y] = liftSeat(sw, p); return [x, y - 44 - (back ? 12 : 0)]; };
+  const post = '#5a6b7a', dark = '#2b2b38';
+  // towers: bottom station, the middle tower, the top station on the cliff
+  const [tx, ty] = cab(0.5, true), [bx, by] = cab(0, true), [hx, hy] = cab(1, true);
+  ctx.fillStyle = post;
+  ctx.fillRect(tx - 5, ty - 6, 10, GR * T - ty + 6); ctx.fillRect(tx - 18, ty - 8, 36, 6);
+  ctx.fillRect(bx - 18, by - 4, 8, GR * T - by + 4); ctx.fillRect(hx + 10, hy - 4, 8, (GR - 6) * T - hy + 4);
+  ctx.fillStyle = dark; ctx.fillRect(bx - 34, GR * T - 46, 36, 46); ctx.fillStyle = '#e63946'; ctx.fillRect(bx - 38, GR * T - 52, 44, 8);   // little stations
+  ctx.fillStyle = dark; ctx.fillRect(hx + 4, (GR - 6) * T - 40, 34, 40); ctx.fillStyle = '#e63946'; ctx.fillRect(hx, (GR - 6) * T - 46, 42, 8);
+  for (const [wx, wy] of [[bx - 10, (by + cab(0)[1]) / 2], [hx + 10, (hy + cab(1)[1]) / 2]]) {   // the big wheels at each end
+    ctx.strokeStyle = dark; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(wx, wy, 9, 0, 7); ctx.stroke();
+    ctx.save(); ctx.translate(wx, wy); ctx.rotate(sw.ph * 20); ctx.fillStyle = dark; ctx.fillRect(-9, -1, 18, 2); ctx.restore();
+  }
+  // two cables: the return one behind, a little higher
+  for (const back of [true, false]) {
+    ctx.strokeStyle = back ? 'rgba(43,43,56,.6)' : dark; ctx.lineWidth = back ? 2 : 3; ctx.beginPath();
+    for (let k = 0; k <= 20; k++) { const [x, y] = cab(k / 20, back); if (k) ctx.lineTo(x, y); else ctx.moveTo(x, y); }
+    ctx.stroke();
+  }
+  // the chairs: the ones coming down are behind and empty
+  for (let i = 0; i < LIFT_CHAIRS; i++) {
+    const L0 = liftPos(sw, i), up = L0 < 1, p = up ? L0 : 2 - L0, [cx, cy] = cab(p, !up), [sx, sy] = liftSeat(sw, p);
+    const seatY = up ? sy : sy - 12, rock = Math.sin(tick * 0.08 + i) * 2;
+    ctx.globalAlpha = up ? 1 : 0.55;
+    ctx.strokeStyle = dark; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(sx + rock, seatY - 6); ctx.stroke();
+    ctx.fillStyle = '#e63946'; ctx.fillRect(sx + rock - 16, seatY - 6, 32, 6); ctx.fillRect(sx + rock - 16, seatY - 22, 5, 16);
+    ctx.globalAlpha = 1;
+  }
+  // the answers, over Kai's head (at the bottom, and while he rides)
+  if (g) g.tiles = null;
+  if (g && g.q && (g.ph === 'ask' || (g.ph === 'ride' && g.need))) {
+    const mx = P.x + P.w / 2, y = P.y - 74;
+    g.tiles = g.opts.map((v, j) => ({ x: mx + (j - 1) * 64 - 26, y, w: 52, h: 40 }));
+    g.tiles.forEach((t, j) => {
+      const [c1, c2] = ansCol(j), right = g.opts[j] === g.q.ans, done = g.wait > 0;
+      ctx.globalAlpha = done && j !== g.pick && !right ? 0.35 : 1;
+      ctx.fillStyle = c2; rrect(t.x, t.y + 3, t.w, t.h, 10); ctx.fill();
+      ctx.fillStyle = done && right ? '#c4ffd8' : done && j === g.pick ? '#ffc9d4' : '#ffffff'; rrect(t.x, t.y, t.w, t.h, 10); ctx.fill();
+      ctx.strokeStyle = c1; ctx.lineWidth = 3; ctx.stroke();
+      ctx.fillStyle = '#22224a'; ctx.font = `${String(g.opts[j]).length > 3 ? 17 : 21}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(g.opts[j], t.x + t.w / 2, t.y + t.h / 2 + 1);
+      if (!isTouch) keyTag(ANS_KEYS(3)[j], t.x + t.w - 4, t.y + 2);
+      ctx.globalAlpha = 1;
+    });
+  }
+}
 function drawSwings() {
   for (const sw of L.swings || []) {
+    if (sw.lift) { drawLift(sw); continue; }
     const xA = (sw.l0 + 0.3) * T, xM = (sw.pm + 1) * T, xB = (sw.l1 + 1.7) * T;
     if (xB < cam - 60 || xA > cam + VW + 60) continue;
     const look = SWING_LOOK[L.world.key] || SWING_LOOK.japan, top = Math.round((GR - 8.4) * T), base = swingTop(), g = G && G.swing && G.swing.sw === sw ? G.swing : null;
@@ -7810,17 +7943,19 @@ function wrapLines(txt, maxW) {
   return lines;
 }
 function drawTip() {
-  // slides down under the question banner, so it never covers the ninja
-  const t = G.tip, w = Math.min(560, VW - 24), h = t.pic ? 196 : 100, x = (VW - w) / 2, slide = Math.min(1, (480 - t.t) / 14, t.t / 14);
-  const top = VW < 700 ? 196 : 104, y = top - (1 - slide) * (top + h + 20);
-  ctx.fillStyle = 'rgba(20,20,50,.92)'; rrect(x, y, w, h, 14); ctx.fill();
-  ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 3; ctx.stroke();
-  ctx.drawImage(SENSEI_SPR.a[0], x + 10, y + 22);
-  ctx.font = '15px "Lilita One", "Trebuchet MS", sans-serif'; ctx.fillStyle = '#ffd23f'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-  ctx.fillText("Sensei's tip", x + 76, y + 10);
-  ctx.font = '16px "Lilita One", "Trebuchet MS", sans-serif'; ctx.fillStyle = '#ffffff';
-  wrapLines(t.txt, w - 92).slice(0, 3).forEach((ln, i) => ctx.fillText(ln, x + 76, y + 32 + i * 20));
-  if (t.pic) drawTipPic(t.pic, x + 14, y + 96, w - 28, h - 106);
+  // a small card in the top-left corner, under the hearts; slides in from the left
+  const t = G.tip, w = Math.min(330, VW - 24), h = t.pic ? 114 : 70, slide = Math.min(1, (TIP_T - t.t) / 14, t.t / 14);
+  const x = 10 - (1 - slide) * (w + 20), y = VW < 700 ? 200 : 84;
+  t.box = { x, y, w, h };
+  ctx.globalAlpha = 0.95; ctx.fillStyle = 'rgba(20,20,50,.92)'; rrect(x, y, w, h, 12); ctx.fill(); ctx.globalAlpha = 1;
+  ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.save(); ctx.translate(x + 6, y + 14); ctx.scale(0.6, 0.6); ctx.drawImage(SENSEI_SPR.a[0], 0, 0); ctx.restore();
+  ctx.font = '12px "Lilita One", "Trebuchet MS", sans-serif'; ctx.fillStyle = '#ffd23f'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText("Sensei's tip", x + 48, y + 7);
+  ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.font = '15px "Lilita One", "Trebuchet MS", sans-serif'; ctx.textAlign = 'right'; ctx.fillText('✕', x + w - 8, y + 5);   // tap to close
+  ctx.textAlign = 'left'; ctx.font = '13px "Lilita One", "Trebuchet MS", sans-serif'; ctx.fillStyle = '#ffffff';
+  wrapLines(t.txt, w - 58).slice(0, 3).forEach((ln, i) => ctx.fillText(ln, x + 48, y + 23 + i * 15));
+  if (t.pic) drawTipPic(t.pic, x + 8, y + 66, w - 16, h - 70, 12);
 }
 function drawTipPic(pic, x, y, w, h, big = 18) {   // big: the largest ten-frame cell
   const dot = (cx, cy, r, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill(); };
@@ -7968,6 +8103,7 @@ function drawHUD() {
   ctx.fillText(txt, VW / 2, by + 34);
 
   if (G.rescue) hudText(rescueHint(G.rescue), VW / 2, by + 80, 16, '#fff', 'center');
+  else if (G.swing && G.swing.lift) hudText(G.swing.ph === 'board' ? 'Here comes a chair!' : G.swing.ph === 'ride' && !G.swing.need ? 'Riding up!' : G.swing.ph === 'ride' ? `${isTouch ? 'Tap' : 'Pick'} the right answer to ride past the tower!  (1/2)` : `${isTouch ? 'Tap' : 'Pick'} the right answer to get on the lift!  (0/2)`, VW / 2, by + 80, 16, '#fff', 'center');
   else if (G.swing) hudText(`${isTouch ? 'Tap' : 'Pick'} the right answer to swing!  (${G.swing.half}/2)`, VW / 2, by + 80, 16, '#fff', 'center');
   else if (L.boss) {
     const b = L.boss, bw = Math.min(320, VW - 60), bx = VW / 2 - bw / 2, segW = bw / b.max;
