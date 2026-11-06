@@ -313,6 +313,14 @@
   .ibtn { font: inherit; font-weight: 800; font-size: 13px; color: #fff; background: rgba(255,255,255,.1); border: none; border-radius: 14px;
     padding: 8px 2px; cursor: pointer; display: grid; justify-items: center; gap: 2px; }
   .ibtn span { font-size: 26px; line-height: 1; }
+  .friendrow { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin: 8px 0 2px; }
+  .friendrow span { display: grid; justify-items: center; gap: 2px; width: 74px; font-size: 12px; line-height: 1.2; text-align: center; }
+  .kidimg { width: 40px; height: 40px; image-rendering: pixelated; }
+  .kidq { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 8px; background: rgba(0,0,0,.3); font-style: normal; font-size: 22px; color: rgba(255,255,255,.5); }
+  .scrollrow { display: flex; justify-content: center; gap: 8px; margin: 2px 0 4px; }
+  .scrl { width: 40px; height: 40px; padding: 0; border: 2px solid rgba(255,255,255,.22); background: rgba(0,0,0,.25); border-radius: 8px; display: grid; place-items: center; }
+  .scrl.on { border-color: #ffd23f; background: rgba(255,210,63,.12); cursor: pointer; }
+  .scrl .pix { width: 30px; height: 30px; image-rendering: pixelated; }
   .ibtn b { color: #ffd23f; }
   .ibtn:hover { background: rgba(255,255,255,.18); }
   .setlist { display: grid; gap: 8px; margin: 10px 0 14px; }
@@ -406,9 +414,10 @@
     <button class="ibtn" id="settingsBtn" type="button"><span data-pix="gear"></span>Settings</button>
     <button class="ibtn" id="helpBtn" type="button"><span data-pix="help"></span>How to</button>
   </div>
+  <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 5, 2026 3:48 PM PT · worlds favour a kind of math; no mashing in the dojo</div>
+  <div class="build">Updated Nov 5, 2026 9:10 PM PT · swing crossings: answer to swing across (a ski lift in the snow)</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -550,9 +559,11 @@
 const cv = document.getElementById('game');
 cv.addEventListener('pointerdown', e => {   // click / tap the big answer tiles in the dojo, or the blocks of a pattern wall
   if (!L || mode !== 'play') return;
-  const rm = L.room, tr = rm && rm.tiles;
+  const rm = L.room, tr = G && G.rescue ? G.rescue.tiles : rm && rm.tiles;
   const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) * VW / r.width, y = (e.clientY - r.top) * VH / r.height;
+  if (G && G.rescue && !tr) return;
   if (tr) { const i = tr.findIndex(t => x >= t.x && x <= t.x + t.w && y >= t.y && y <= t.y + t.h); if (i >= 0) { audio(); tapAnswer(i); } return; }
+  if (G && G.swing) { const t = G.swing.tiles, i = t ? t.findIndex(o => x + cam >= o.x && x + cam <= o.x + o.w && y >= o.y && y <= o.y + o.h) : -1; if (i >= 0) { audio(); tapAnswer(i); } return; }
   if (L.walls && L.walls.length && wallTap(x + cam, y)) { audio(); syncAnsBar(); }
 });
 let ctx = cv.getContext('2d');
@@ -579,54 +590,45 @@ const hash = i => { const s = Math.sin(i * 127.1) * 43758.5453; return s - Math.
 const mk = (a, op, b, ans) => ({ a, op, b, ans, text: `${a} ${op} ${b}` });
 
 // ---------------------------------------------------------------- story & worlds
-const STORY = `Sensei is your father, and he loves every one of his students, even the one who ran away. Long ago, his oldest student Kuro
-  took the five Magic Math Scrolls, put on a dark mask and became the <b>Shadow Shogun</b>. His shadow spread over the land.
-  <br><br>On the dojo wall is an old picture of a tall boy holding a baby. Sensei never talks about it.
-  <br><br>"You don't have to earn my love," Sensei tells you. "You already have it. Go and bring the scrolls home.
-  And if you can, bring Kuro home too, whatever it costs."`;
-const MORNING = `When the sun comes up, you open your eyes. The Shogun is kneeling beside you, crying. His dark mask has cracked and fallen away.
-  <br><br>You know that face. It's the tall boy in the picture on the dojo wall. It's <b>Kuro, your big brother.</b>
-  <br><br>"When you were born, I thought Father's love was all used up," he whispers. "I thought I had to earn it. So I took the scrolls to show I was strong.
-  But the more I took, the emptier I felt." He opens his hand. In it is a little wooden ninja. "I made this for you, a long time ago."
-  <br><br>"I was your enemy. Why would you save me?"
-  <br><br>You tie the red headband back on his wrist. "Because you're my brother. And you never had to earn it."`;
-const HOME = `Far away, the children are home, the Golem keeps his mountain, the robots rest and the Snowman has friends.
-  <br><br>Sensei sees you both coming and <b>runs</b> down the path. He throws his arms around his two sons. "Welcome home."
-  <br><br>The five scrolls shine again. They were never meant to be kept. They were meant to be shared.`;
-const ENDING = `The Shogun is beaten, and his dark castle begins to crumble. A huge beam falls toward him.
-  <br><br>He fought you the whole way here. But you don't stop to think: you push him out of the way, and the beam falls on you instead.
-  <br><br>Everything goes dark.`;
+// The story, kept very short so kids can read it (STORY.md is the source). Kuro is Kai's brother from page one.
+const STORY = `Kuro is Kai's big brother. He took the five Math Scrolls and ran away.
+  <br><br>He put on a mask. Now he is the <b>Shadow Shogun</b>.
+  <br><br>Sensei says: <i>"Bring the scrolls home, Kai. And bring your brother home too."</i>`;
+const MORNING = `Kuro cries. <i>"Why did you save me?"</i>
+  <br><br>Kai smiles. <i>"Because you're my brother."</i>`;
+const HOME = `Sensei runs to hug his two sons. <b>"Welcome home!"</b>`;
+const ENDING = `The castle falls! Kai pushes Kuro out of the way.`;
 
 const WORLDS = [
   { key: 'japan', name: 'Japan Village', scroll: 'Scroll of Adding', walker: 'ninja', pit: 'water', flag: '#e63946',
     skies: [['#7cc6ff', '#ffe3ef'], ['#ff9a8b', '#ffe0b5'], ['#6fb4f0', '#ffd6e8']],
     brick: ['#c0392b', '#7b1f16'], pipe: ['#7cb342', '#33691e', '#c5e1a5'], stair: ['#b0794a', '#6e4627', '#d8a679'],
     gate: ['#d63a2f', '#7b1610', '#ff8a7a', '#ffd23f'], dojo: ['#f1e0c5', '#7b1610', '#3a2a20'],
-    intro: `The village children chased the bandits into the bamboo forest and got lost. Sensei says: <i>"Go and find them. Every single one matters."</i> <b>Kage the Shadow Blade</b> leads the bandits, and he guards the Scroll of Adding.`,
+    intro: `Bandits are in the bamboo forest. Be brave!`,
     boss: { kind: 'kage', name: 'Kage the Shadow Blade', hp: 5, taunt: 'No one gets past my blade... unless they can add!' } },
   { key: 'lava', name: 'Lava Volcano', scroll: 'Scroll of Taking Away', walker: 'rock', pit: 'lava', flag: '#ff8c1a',
     skies: [['#1a0505', '#7a1f0a'], ['#2a0707', '#9a3a0a'], ['#150303', '#6b1a0a']],
     brick: ['#5a3a34', '#2a1a16'], pipe: ['#4a3530', '#241815', '#7a5a50'], stair: ['#4b3a36', '#221816', '#6e5a54'],
     gate: ['#2a1a1a', '#0d0606', '#ff6a00', '#ff8c1a'], dojo: ['#3a2a26', '#1a0d0a', '#ff6a00'],
-    intro: `A rumbling cry comes from the volcano. The <b>Magma Golem</b> was once the gentle keeper of the mountain, until the shadow filled him with anger. Sensei says: <i>"No one is too far gone. Carry your light into the fire."</i>`,
+    intro: `The Golem is angry. Be kind to him.`,
     boss: { kind: 'golem', name: 'Magma Golem', hp: 6, taunt: 'ROCK SMASH! You will never take away my scroll!' } },
   { key: 'robot', name: 'Robot Factory', scroll: 'Scroll of Times', walker: 'robot', pit: 'void', flag: '#4cc9f0',
     skies: [['#1c2533', '#3b4a5e'], ['#2a1c24', '#5e3b46'], ['#16202c', '#334255']],
     brick: ['#6c7a89', '#3b4552'], pipe: ['#8395a7', '#4a5868', '#c8d3de'], stair: ['#5d6d7e', '#2f3846', '#95a5b6'],
     gate: ['#2c3e50', '#141d26', '#4cc9f0', '#4cc9f0'], dojo: ['#5d6d7e', '#2f3846', '#4cc9f0'],
-    intro: `The Shogun built this factory. Its robots work day and night and never rest. Sensei says: <i>"They were made for more than work. Set them free."</i> <b>Mega-Bot 3000</b> runs the factory and guards the Scroll of Times.`,
+    intro: `The robots work all day. Set them free!`,
     boss: { kind: 'bot', name: 'Mega-Bot 3000', hp: 7, taunt: 'BEEP BOOP. CALCULATING... YOUR DEFEAT.' } },
   { key: 'snow', name: 'Frozen Peaks', scroll: 'Scroll of Patterns', walker: 'penguin', pit: 'ice', flag: '#7df9ff',
     skies: [['#9fd4ff', '#eaf6ff'], ['#0b1a3a', '#2a5a7a'], ['#c9b6e8', '#ffe2d0']],
     brick: ['#a8d8f0', '#5a8ab0'], pipe: ['#cfefff', '#7ab8d8', '#ffffff'], stair: ['#dbe9f5', '#8aa4c0', '#ffffff'],
     gate: ['#8fd3f4', '#3a7aa8', '#e8fbff', '#ffd23f'], dojo: ['#eaf6ff', '#5a8ab0', '#7df9ff'],
-    intro: `High on the frozen peaks lives a lonely giant. Everyone ran away from him, so his heart froze as cold as the snow. Sensei says: <i>"Cold hearts melt with kindness."</i> The <b>Abominable Snowman</b> guards the Scroll of Patterns.`, boss: { kind: 'yeti', name: 'The Abominable Snowman', hp: 7, taunt: 'ROOOAR! Everyone runs from me. You will too!' } },
+    intro: `The Snowman is all alone.`, boss: { kind: 'yeti', name: 'The Abominable Snowman', hp: 7, taunt: 'ROOOAR! Everyone runs from me. You will too!' } },
   { key: 'castle', name: 'Night Castle', scroll: 'Scroll of Sharing', walker: 'shadow', pit: 'void', flag: '#b388ff',
     skies: [['#070b24', '#1f2a5a'], ['#0a0820', '#2a1f5a'], ['#05071a', '#1a1f48']],
     brick: ['#4a4f7a', '#252845'], pipe: ['#6b4a35', '#3a2618', '#9a7050'], stair: ['#3c4470', '#1c2140', '#5a64a0'],
     gate: ['#4b2a6b', '#22113a', '#a678ff', '#ffd23f'], dojo: ['#2a3152', '#141830', '#ffd23f'],
-    intro: `This is it: the Shadow Shogun's castle. Sensei holds you close for a long time. <i>"There's something I should have told you long ago,"</i> he starts, then stops. <i>"He was very dear to me. He will not thank you. Love him anyway."</i>`,
-    boss: { kind: 'shogun', name: 'The Shadow Shogun', hp: 8, taunt: 'So the old man sent the little one after all. Have you come to punish me?' } },
+    intro: `Kuro is in the castle. Sensei says: <i>"Love him anyway."</i>`,
+    boss: { kind: 'shogun', name: 'The Shadow Shogun', hp: 8, taunt: 'Go home, little brother!' } },
 ];
 
 // ---------------------------------------------------------------- math skills
@@ -770,8 +772,9 @@ function noteFact(q, right, fast, skill) {
   const { retry, review, ...keep } = q;
   const f = prog.facts[key] || (prog.facts[key] = { q: keep, days: [], ok: 0, miss: 0, last: d });
   f.last = d;
-  if (right && fast) { f.ok++; f.weak = false; if (!f.days.includes(d)) f.days = [...f.days, d].slice(-3); }
-  else if (!right) { f.miss++; f.weak = true; f.days = []; }
+  if (right && fast) { f.ok++; f.weak = false; f.slow = 0; f.practice = false; if (!f.days.includes(d)) f.days = [...f.days, d].slice(-3); }
+  else if (!right) { f.miss++; f.weak = true; f.days = []; f.slow = 0; }
+  else if (fast === false && (f.slow = (f.slow || 0) + 1) >= 2) f.practice = true;   // right but slow twice in a row: probably counted out, so it comes back to practise (fast = null: time unknown)
   if (skill && !review && !factList(skill)) {
     const w = prog.win[skill.id] || (prog.win[skill.id] = []);
     w.push(right && fast ? d : 0); if (w.length > 10) w.shift();
@@ -790,7 +793,7 @@ function skillProgress(k) {
 // Facts to bring back: missed ones first, then ones learned on an earlier day that are due again.
 function reviewPool(exclude) {
   const d = today();
-  return Object.entries(prog.facts).filter(([k, f]) => k !== exclude && (f.weak || (f.days.length === 1 && f.days[0] < d) || (f.days.length >= 2 && d - f.last >= 4))).map(([, f]) => f);
+  return Object.entries(prog.facts).filter(([k, f]) => k !== exclude && (f.weak || f.practice || (f.days.length === 1 && f.days[0] < d) || (f.days.length >= 2 && d - f.last >= 4))).map(([, f]) => f);
 }
 // In auto mode about 1 question in 5 is a review: a fact to practice, or one due again.
 // Each level, boss or race gets its own generator that never asks the same fact twice
@@ -885,9 +888,13 @@ function choices(q, n = 3) {
   return shuffle(out);
 }
 // Answers in a sorted row, with the right one at a random spot so "pick the middle" never works.
+// The row is the closest numbers around the answer, so it can't be guessed by size.
 function rowChoices(q, n) {
-  const a = q.ans, pool = choices(q, n * 2).filter(v => v !== a);
-  const lows = pool.filter(v => v < a), highs = pool.filter(v => v > a);
+  const a = q.ans, st = q.step || 1, times = q.op === '×' && st === 1;
+  const pool = choices(q, n * 2).filter(v => v !== a && (!times || Math.abs(v - a) <= Math.max(q.a, q.b)));   // times: a table row away at most
+  for (let k = 1; k < n; k++) for (const v of [a - k * st, a + k * st])   // fill with the nearest numbers (times rows keep their table neighbours first)
+    if (v >= 0 && !pool.includes(v) && (!times || pool.filter(u => (u < a) === (v < a)).length < n - 1)) pool.push(v);
+  const lows = pool.filter(v => v < a).sort((x, y) => y - x), highs = pool.filter(v => v > a).sort((x, y) => x - y);
   const below = clamp(R(0, n - 1), n - 1 - highs.length, lows.length);
   return [...lows.slice(0, below), a, ...highs.slice(0, n - 1 - below)].sort((x, y) => x - y);
 }
@@ -1150,8 +1157,40 @@ function drawWalls() {
 const ANIMALS = [['rabbit', 'carrot'], ['panda', 'bamboo'], ['duck', 'bread'], ['salamander', 'bug'], ['lizard', 'chili'], ['mole', 'mushroom'],
   ['robodog', 'bolt'], ['robocat', 'battery'], ['drone', 'spark'], ['penguin', 'fish'], ['seal', 'fish'], ['fox', 'berries'],
   ['cat', 'riceball'], ['moonrabbit', 'dango'], ['raccoon', 'apple']];
+// One short story per level at the hungry animal (shown to readers, 2nd grade and up): same numbers, same answer,
+// so choosing the operation is practised without touching the Fact Book. Think skills and missing numbers stay plain.
+const WORD_ANIMAL = { robodog: 'robot dog', robocat: 'robot cat', moonrabbit: 'moon rabbit' };
+const WORD_FOOD = { carrot: ['carrot', 'carrots'], bamboo: ['bamboo', 'bamboo'], bread: ['bread', 'bread'], bug: ['bug', 'bugs'], chili: ['chili', 'chilis'],
+  mushroom: ['mushroom', 'mushrooms'], bolt: ['bolt', 'bolts'], battery: ['battery', 'batteries'], spark: ['spark', 'sparks'], fish: ['fish', 'fish'],
+  berries: ['berry', 'berries'], riceball: ['rice ball', 'rice balls'], dango: ['dango', 'dango'], apple: ['apple', 'apples'] };
+function wordQ(q, animal, food) {
+  if (!q || q.missing || q.step || q.puzzle || !['+', '−', '×', '÷'].includes(q.op)) return q;
+  const an = WORD_ANIMAL[animal] || animal, [one, many] = WORD_FOOD[food] || [food, food + 's'], f = n => (n === 1 ? one : many);
+  const ans = /(s|x|sh|ch)$/.test(an) ? an + 'es' : an + 's', { a, b } = q;
+  const story = q.op === '+' ? `The ${an} has ${a} ${f(a)} and finds ${b} more. How many?`
+    : q.op === '−' ? `The ${an} had ${a} ${f(a)} and ate ${b}. How many left?`
+    : q.op === '×' ? `The ${an} finds ${a} piles of ${b} ${f(b)}. How many?`
+    : `${a} ${f(a)} shared by ${b} ${ans}. How many each?`;
+  return { ...q, story };
+}
+function reader() { return ['2', '3', '4', '5'].includes(curPlayer().grade); }
 const stepX = (st, k) => (st.c0 + 1 + 3 * k) * T + T / 2;
 const STONE_TOPS = [1, 3.3, 5.6];   // the three choice blocks, tiles above the ground (room for Kai between them)
+// ---------------------------------------------------------------- lost friends
+// Five little students from Sensei's dojo got lost, one in a level of each world (world, level k). Each hides behind a
+// secret way in: a key block that opens a trapdoor, an ash vent that blows Kai up out of sight, a blinking crate,
+// a frozen waterfall, a ladder past the top of the screen. The screen slides into a small scene where three right
+// answers, taken from the kid's own tricky facts (missed or slow ones), free the friend (rescue*). Each friend gives a
+// power for good (hasFriend); all five earn the "Every One Matters" badge, and they wait at the Welcome Home page.
+// dir: 1 = the scene is below the level (the screen slides down), -1 = above it (slides up).
+const FRIENDS = [
+  { id: 'hana', name: 'Hana', w: 0, k: 2, way: 'key', dir: 1, power: 'glide', pname: 'Fan glide', ptip: 'Hold jump to float down slowly.' },
+  { id: 'tomo', name: 'Tomo', w: 1, k: 0, way: 'vent', dir: -1, power: 'brave', pname: 'Brave heart', ptip: "The first hit in each level won't hurt." },
+  { id: 'niko', name: 'Niko', w: 2, k: 1, way: 'crate', dir: 1, power: 'magnet', pname: 'Gem magnet', ptip: 'Gems near you fly to you.' },
+  { id: 'yuki', name: 'Yuki', w: 3, k: 1, way: 'falls', dir: 1, power: 'spring', pname: 'Spring feet', ptip: 'You jump a little higher.' },
+  { id: 'mei', name: 'Mei', w: 4, k: 1, way: 'ladder', dir: -1, power: 'eyes', pname: 'Night eyes', ptip: 'Secret spots sparkle.' },
+];
+const friendOf = def => (def.boss ? null : FRIENDS.find(f => f.w === def.w && f.k === def.k) || null);
 const FLAVORS = ['sakura', 'grove', 'frogs', 'vents', 'bubbles', 'shrooms', 'steam', 'boxes', 'lab', 'snowmen', 'chimes', 'wind', 'lanterns', 'owls', 'bats'];   // addFlavor
 const TWISTS = ['kite', 'spring', 'koi', 'rocks', 'chase', 'dark', 'gears', 'conveyor', 'lasers', 'ice', 'icicles', 'avalanche', 'walljump', 'ladders', 'sneak'];
 // ---------------------------------------------------------------- level builders
@@ -1230,6 +1269,19 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     b.c0 = addCols(7);
     flat(2);
     L.bridges.push(b);
+  }
+  // A swing crossing: two steps up to a ledge, a gap, a perch (the world's pillar), a gap, a ledge and two steps down.
+  function swingChunk() {
+    const s = flat(3), st1 = flat(1), st2 = flat(1), l0 = flat(2);
+    map[GR - 1][st1] = 'S'; map[GR - 1][st2] = 'S'; map[GR - 2][st2] = 'S';
+    for (let c = l0; c < l0 + 2; c++) for (let r = GR - 3; r < GR; r++) map[r][c] = 'S';
+    addCols(6); const pm = flat(2);
+    for (let c = pm; c < pm + 2; c++) for (let r = GR - 3; r < GR; r++) map[r][c] = 'O';
+    addCols(6); const l1 = flat(2), d1 = flat(1), d2 = flat(1);
+    for (let c = l1; c < l1 + 2; c++) for (let r = GR - 3; r < GR; r++) map[r][c] = 'S';
+    map[GR - 1][d1] = 'S'; map[GR - 2][d1] = 'S'; map[GR - 1][d2] = 'S';
+    const e = flat(3) + 2;
+    (L.swings || (L.swings = [])).push({ s, e, l0, pm, l1, done: false });
   }
   function stepsChunk() {
     const n = easy ? 4 : 5, w = 3 * (n - 1) + 3;   // n numbers in the pattern: the first stone, then n - 1 answers
@@ -1335,20 +1387,32 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
   const doorAt = def.n > 6 ? 4 : 3;
   flat(10);
   L.squads = []; L.steps = [];
-  const feedAt = Math.floor(def.n / 2), stepsAt = [1];   // one set of stepping stones per level
+  // Bridges and stepping stones take turns, level by level (each is in about half the levels). Kindergarten math never
+  // gets a number-stone bridge (carrying stones to an exact sum is the trickiest thing in the game): stones every level.
+  const young = skill.tier === 1, useBridge = !young && (def.w * 3 + def.k) % 2 === 1;
+  const feedAt = Math.floor(def.n / 2), stepsAt = useBridge ? [] : [1];   // one set of stepping stones in a stones level
+  // Breathing room: after each big moment a long stretch of plain running. The first two also get a pair of ledges
+  // up in the sky (the world's own blocks, one higher than the other) with gems on top, just for jumping.
+  let skyLeft = 2;
+  const sky = c => {
+    for (let i = 0; i < 3; i++) { map[GR - 4][c + i] = 'S'; map[GR - 7][c + 5 + i] = 'S'; coin(c + i, GR - 5); coin(c + 5 + i, GR - 8); }
+  };
+  const run = () => { const s = flat(ri(rng, 14, 18)); if (skyLeft > 0 && !def.boss) { skyLeft--; sky(s + 3); } };
   const wk = def.boss ? [] : wallKinds(skill), wallGate = wk.length && def.n >= 3 ? feedAt : -1;   // older players: the middle gate is a pattern wall
   for (let i = 0; i < def.n; i++) {
     if (i === feedAt) {   // one hungry animal per level, mid-way, with three numbered foods floating ahead of it
-      const s0 = flat(11), q = L.gen(), [kind, food] = ANIMALS[def.w * 3 + def.k] || ANIMALS[0];
+      const s0 = flat(11), [kind, food] = ANIMALS[def.w * 3 + def.k] || ANIMALS[0], q = wordQ(L.gen(), kind, food);
       L.squads.push({ s: s0, q, done: false, kind, food, ax: (s0 + 9) * T + T / 2, foods: choices(q, 3).map((val, j) => ({ x: (s0 + 3 + j * 2) * T + T / 2, y: GR * T - 2.1 * T, val })) });
+      run();
     }
     const n = ri(rng, 1, 2);   // short runs between gates: more math, less walking
     for (let k = 0; k < n; k++) chunk(kinds[ri(rng, 0, kinds.length - 1)]);
-    if (i === 2 || (i === 5 && def.w >= 2)) bridgeChunk();
+    if (useBridge && (i === 2 || (i === 5 && def.w >= 2))) { bridgeChunk(); run(); }
     if (i === doorAt) doorChunk();
-    if (stepsAt.includes(i)) stepsChunk();
+    if (stepsAt.includes(i)) { stepsChunk(); run(); }
+    if (i === def.n - 2) { swingChunk(); run(); }   // one swing crossing per level
     if (twist && (i % 2 === 0 || twist === 'walljump')) twistChunk();   // wall-jump levels get one before every gate
-    if (i === wallGate) { wallChunk(wk[(def.w * 3 + def.k) % wk.length]); continue; }
+    if (i === wallGate) { wallChunk(wk[(def.w * 3 + def.k) % wk.length]); run(); continue; }
     // Question station: sign, answer blocks, and a locked gate.
     const s = flat(16), q = L.gen(), five = L.expert;
     // Answer blocks hang over the run-up; the answer bar's buttons match them (same order and colour).
@@ -1361,7 +1425,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
   // missing ones turn bricks over solid ground into ? boxes, then go over open flat ground.
   {
     const want = [3, 4, 5, 5, 6][def.w], boxes = [], spare = [];
-    const nearGate = c => L.steps.some(z => c >= z.c0 - 6 && c <= z.c0 + z.w + 2) || L.squads.some(q => c >= q.s && c <= q.s + 10) || L.stations.some(st => c >= st.s - 1 && c <= st.gate[1] + 1) || L.walls.some(w => c >= w.s - 1 && c <= w.gate[1] + 1) || L.bridges.some(b => c >= b.signC - 1 && c <= b.altarC + 1) || L.doors.some(d => Math.abs(c - d.c) <= 2);
+    const nearGate = c => (L.swings || []).some(w => c >= w.s - 2 && c <= w.e + 2) || L.steps.some(z => c >= z.c0 - 6 && c <= z.c0 + z.w + 2) || L.squads.some(q => c >= q.s && c <= q.s + 10) || L.stations.some(st => c >= st.s - 1 && c <= st.gate[1] + 1) || L.walls.some(w => c >= w.s - 1 && c <= w.gate[1] + 1) || L.bridges.some(b => c >= b.signC - 1 && c <= b.altarC + 1) || L.doors.some(d => Math.abs(c - d.c) <= 2);
     for (let c = 0; c < L.w; c++) for (let r = 0; r < GR; r++) {
       if (map[r][c] === '?') boxes.push([r, c]);
       else if (map[r][c] === 'B' && r === GR - 4 && map[GR][c] === '#') spare.push([r, c]);
@@ -1396,6 +1460,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
   coin(s + 8, GR - 8, 10);   // a red gem for climbing to the top
   L.flagC = s + 13; L.castleC = s + 17;
   addFlavor(L);
+  addFriend(L);
   return L;
 }
 
@@ -1959,7 +2024,8 @@ const sfx = {
 
 
 // ---------------------------------------------------------------- music
-// Little chiptune loops: one per world, plus boss, race and menu themes. Each token is a 16th note.
+// Little chiptune loops: one theme per world, plus race and menu themes. Each token is a 16th note. A world's theme
+// grows stronger level by level (arrange): same tune, more drive. Bosses play their world's theme at full strength.
 const NOTE = n => {
   const m = /^([A-G])(#|b)?(\d)$/.exec(n);
   const k = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
@@ -1992,11 +2058,6 @@ const SONGS = {
               D5 . . . F5 . G5 . A5 . . . G5 . F5 .   E5 . . . C#5 . . . D5 . . . . . . .`),
     bass: seq(`D2 . . . . . . . D3 . . . . . . .   Bb1 . . . . . . . Bb2 . . . . . . .
                G1 . . . . . . . G2 . . . . . . .   A1 . . . . . . . A2 . . . . . . .`) },
-  boss: { bpm: 150, lead: 'square', vol: 0.02, drum: 'k.hsk.hsk.hsk.hs',
-    mel: seq(`A4 A4 . C5 . A4 . E5 . D5 C5 . B4 . G4 .   A4 A4 . C5 . A4 . E5 . F5 E5 . D5 . E5 .
-              F5 F5 . E5 . D5 . C5 . D5 E5 . C5 . B4 .   A4 . . E4 . A4 . B4 . C5 . B4 . G#4 . .`),
-    bass: seq(`A2 . A3 . A2 . A3 . A2 . A3 . A2 . A3 .   A2 . A3 . A2 . A3 . A2 . A3 . A2 . A3 .
-               F2 . F3 . F2 . F3 . G2 . G3 . G2 . G3 .   A2 . A3 . A2 . A3 . E2 . E3 . E2 . E3 .`) },
   race: { bpm: 144, lead: 'square', vol: 0.02, drum: 'k.hhs.hhk.hhs.hh',
     mel: seq(`G5 . D5 . B4 . D5 . G5 . A5 . B5 . . .   A5 . G5 . E5 . G5 . D5 . . . . . . .
               C6 . B5 . A5 . G5 . A5 . B5 . G5 . E5 .   D5 . . . A5 . . . G5 . . . . . . .`),
@@ -2004,8 +2065,30 @@ const SONGS = {
                C3 . C3 C3 . . C3 . G2 . G2 G2 . . G2 .   D3 . D3 D3 . . D3 . G2 . G2 G2 . . . .`) },
 };
 SONGS.menu = { ...SONGS.japan, bpm: 84, drum: 'k...............' };
+// Intensity k: 0 = level 1 (the theme as written); 1 = level 2 (6% faster, soft 8th-note hats, bass pulsing in 8ths);
+// 2 = level 3 (12% faster, kick on every beat, 16th hats, octave-bouncing bass, an echo of the melody 3 steps behind);
+// 3 = boss (20% faster, square lead, pumping 16th bass, echo, melody doubled an octave down).
+function arrange(base, k) {
+  const len = base.bass.length, hold = new Array(len).fill(0);
+  let last = 0; for (let i = 0; i < len * 2; i++) { if (base.bass[i % len]) last = base.bass[i % len]; if (i >= len) hold[i % len] = last; }
+  const bass = k === 0 ? base.bass : hold.map((f, i) => (k === 1 ? (i % 2 ? 0 : f) : k === 2 ? (i % 2 ? 0 : i % 4 ? f * 2 : f) : (i % 2 ? f * 2 : f)));
+  const drum = k === 0 ? base.drum : Array.from({ length: 16 }, (_, i) => {
+    const b = base.drum[i] || '.';
+    if (k === 1) return b !== '.' ? b : i % 2 ? '.' : 'x';
+    if (k === 2) return i % 8 === 4 ? 's' : i % 4 === 0 ? 'k' : i % 2 ? 'x' : 'h';
+    return i % 8 === 4 ? 's' : i % 4 === 0 || i % 8 === 6 ? 'k' : 'h';
+  }).join('');
+  const lead = k === 3 ? 'square' : base.lead, vol = k === 3 && base.lead !== 'square' ? base.vol * 0.4 : base.vol * (k === 3 ? 1.15 : 1);
+  const voices = [{ type: lead, notes: base.mel, vol, dur: 1.8 }, { type: 'triangle', notes: bass, vol: k === 3 ? 0.04 : 0.05, dur: k === 3 ? 0.9 : k ? 1.3 : 1.6 }];
+  if (k >= 2) voices.push({ type: lead, notes: base.mel.map((_, i) => base.mel[(i - 3 + base.mel.length) % base.mel.length]), vol: vol * 0.35, dur: 1.4 });
+  if (k === 3) voices.push({ type: 'triangle', notes: base.mel.map(f => f / 2), vol: 0.025, dur: 1.6 });
+  return { bpm: base.bpm * [1, 1.06, 1.12, 1.2][k], drum, voices };
+}
 let musicOn = true, song = null, songName = null, songStep = 0, songNext = 0, noiseBuf = null;
-function playMusic(name) { if (songName === name) return; songName = name; song = SONGS[name] || null; songStep = 0; songNext = 0; }
+function playMusic(name, k = 0) {
+  const id = `${name}:${k}`; if (songName === id) return;
+  songName = id; song = SONGS[name] ? arrange(SONGS[name], k) : null; songStep = 0; songNext = 0;
+}
 function stopMusic() { songName = null; song = null; }
 function noise() {
   if (!noiseBuf) {
@@ -2029,9 +2112,9 @@ function drumHit(kind, t) {
     o.connect(g).connect(AC.destination); o.start(t); o.stop(t + 0.15);
     return;
   }
-  const src = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain(), len = kind === 'h' ? 0.04 : 0.12;
-  src.buffer = noise(); f.type = kind === 'h' ? 'highpass' : 'bandpass'; f.frequency.value = kind === 'h' ? 7000 : 1800;
-  g.gain.setValueAtTime(kind === 'h' ? 0.022 : 0.045, t); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+  const hat = kind === 'h' || kind === 'x', src = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain(), len = hat ? 0.04 : 0.12;
+  src.buffer = noise(); f.type = hat ? 'highpass' : 'bandpass'; f.frequency.value = hat ? 7000 : 1800;
+  g.gain.setValueAtTime(kind === 'x' ? 0.011 : kind === 'h' ? 0.022 : 0.045, t);   // x = soft hat g.gain.exponentialRampToValueAtTime(0.0001, t + len);
   src.connect(f).connect(g).connect(AC.destination); src.start(t); src.stop(t + len + 0.01);
 }
 // Schedules notes a little ahead of time so the music keeps steady time.
@@ -2040,9 +2123,8 @@ setInterval(() => {
   const step = 60 / song.bpm / 4;
   if (songNext < AC.currentTime) songNext = AC.currentTime + 0.05;
   while (songNext < AC.currentTime + 0.25) {
-    const i = songStep, m = song.mel[i % song.mel.length], b = song.bass[i % song.bass.length], d = song.drum[i % song.drum.length];
-    if (m) voice(song.lead, m, songNext, step * 1.8, song.vol);
-    if (b) voice('triangle', b, songNext, step * 1.6, 0.05);
+    const i = songStep, d = song.drum[i % song.drum.length];
+    for (const v of song.voices) { const f = v.notes[i % v.notes.length]; if (f) voice(v.type, f, songNext, step * v.dur, v.vol); }
     if (d !== '.') drumHit(d, songNext);
     songNext += step; songStep++;
   }
@@ -2196,7 +2278,7 @@ const keyFor = id => (id === 'p1' ? SAVE_KEY : `${SAVE_KEY}:${id}`);
 const curPlayer = () => players.list.find(x => x.id === players.cur) || players.list[0];
 function savePlayers() { try { localStorage.setItem(PLAYERS_KEY, JSON.stringify(players)); } catch (e) { /* no storage */ } }
 const freshProg = () => ({ best: {}, skill: 'add10', ride: 'panda', track: 'cherry', mastery: {}, easy: null, allOpen: false, seenIntro: false, seenWorld: {}, bank: 0, music: true, layout: 5, auto: true, facts: {}, win: {}, trophies: {}, daily: { last: 0, streak: 0, best: 0 },
-  badges: {}, golden: {}, moves: {}, dojoRpm: {}, stats: { bridges: 0, gems: 0 },
+  badges: {}, golden: {}, friends: {}, moves: {}, dojoRpm: {}, stats: { bridges: 0, gems: 0 },
   owned: ['band-red', 'suit-navy'], equip: { band: 'band-red', suit: 'suit-navy', trail: null, pet: null }, raceBest: {} });
 let prog;
 function loadProg(id) {
@@ -2359,6 +2441,7 @@ function bump(c, r) {
       e.dead = 'flip'; e.vy = -7; G.score += 200; floatText(e.x + 15, e.y, '+200');
     }
   }
+  bumpFriendKey(c, r);
   if (t === '?') boxPrize(c, r);
   else if (t === 'A') answer(c, r);
   else if (t === 'B') {
@@ -2452,6 +2535,7 @@ function barTarget() { return isTouch ? answerTarget() : null; }
 const ANS_KEYS = n => (n > 3 ? ['N', 'M', ',', '.', '/'] : [',', '.', '/']);
 function answerTarget() {
   if (mode !== 'play') return null;
+  if (G && (G.rescue || G.swing)) return miniTarget();
   const m = miniTarget(); if (m) return m;
   const st = currentStation();
   if (!st) return null;
@@ -2572,22 +2656,23 @@ function openBossPad() {
       noteFact(ar.q, true, took <= 8, L.skill);
       const [cx, cy] = here();
       ar.wait = 1;
-      G.shots.push({ x: cx, y: P.y + 10, spin: 0 });
-      P.throwT = 14; sfx.correct(); sfx.throw(); streakUp(cx, cy); gotIt();
-      floatText(cx, cy - 20, ar.q.retry ? 'You remembered it!' : 'Shuriken!', '#ffd23f', 28);
+      const last = L.boss.hp <= 1;   // the last answer: no shuriken, Kai holds out his hand
+      if (last) offerHand(); else { G.shots.push({ x: cx, y: P.y + 10, spin: 0 }); P.throwT = 14; sfx.throw(); }
+      sfx.correct(); streakUp(cx, cy); gotIt();
+      floatText(cx, cy - 20, last ? 'Right!' : ar.q.retry ? 'You remembered it!' : 'Shuriken!', '#ffd23f', 28);
     },
     onWrong() {
       const [cx, cy] = here();
       noteFact(ar.q, false, false, L.skill);
       G.mistakes++; G.streak = 0; remember(ar.q); missed(ar.q);
       sfx.wrong(); floatText(cx, cy - 20, `Oops! ${qSolved(ar.q)}`, '#ff6b6b', 30);
-      ar.q = freshQ(ar.q.text); startDodge(); L.boss.atk = 1;
+      ar.q = freshQ(ar.q.text); startDodge(true);
     },
     onTimeout() {
       const [cx, cy] = here();
       noteFact(ar.q, false, false, L.skill);
       G.streak = 0; sfx.wrong(); floatText(cx, cy - 20, `Too slow! ${qSolved(ar.q)}`, '#ff9a3c', 30);
-      ar.q = freshQ(ar.q.text); startDodge(); L.boss.atk = 1;
+      ar.q = freshQ(ar.q.text); startDodge(true);
     },
   });
 }
@@ -2614,6 +2699,7 @@ const BADGES = [
   { id: 'black-belt', icon: '🥋', name: 'Black Belt', text: 'Reach the Black Belt rank.' },
   { id: 'gold-medal', icon: '🥇', name: 'Gold Medal', text: 'Win a gold medal in a math skill (no mistakes).' },
   { id: 'brave', icon: '🧠', name: 'Brave Brain', text: 'Finish a level with ★★★★ math or harder.' },
+  { id: 'friends', icon: '🤝', name: 'Every One Matters', text: 'Find all five lost friends and bring them home.' },
 ];
 let toastTimer = null;
 function award(id) {
@@ -2629,7 +2715,9 @@ function award(id) {
 function openBadges() {
   hide('menu');
   const got = BADGES.filter(b => prog.badges[b.id]).length;
-  $('badgeCount').textContent = `${got} of ${BADGES.length} badges · 🌟 ${Object.keys(prog.golden).length} of 15 golden gems`;
+  $('badgeCount').innerHTML = `${got} of ${BADGES.length} badges · 🌟 ${Object.keys(prog.golden).length} of 15 golden gems
+    <div class="friendrow">${FRIENDS.map(f => (prog.friends || {})[f.id] ? `<span>${kidImg(f.id)}<small><b>${f.name}</b> ${f.pname}</small></span>`
+      : `<span><i class="kidq">?</i><small>Lost in ${WORLDS[f.w].name}</small></span>`).join('')}</div>`;
   $('badgeGrid').innerHTML = BADGES.map(b => `<div class="badge ${prog.badges[b.id] ? 'got' : ''}"><div class="bi">${prog.badges[b.id] ? b.icon : '❔'}</div>
     <div class="bn">${b.name}</div><div class="bt">${b.text}</div></div>`).join('');
   show('badges');
@@ -2669,11 +2757,14 @@ function tipFor(q) {
   if (op === '+') {
     if (a === b) return `Doubles! ${a} + ${a} is double ${a}, which is ${ans}.`;
     if (Math.abs(a - b) === 1) { const m = Math.min(a, b); return `Near double: ${m} + ${m} = ${m * 2}, plus 1 more is ${ans}.`; }
+    { const big = Math.max(a, b), small = Math.min(a, b);
+      if (big >= 10 && big < 100 && small < 10 && big % 10 + small >= 10) { const ten = big + 10 - big % 10, need = ten - big; return `Make the next ten first: ${big} + ${need} = ${ten}, then ${small - need} more is ${ans}.`; } }
     if (a < 10 && b < 10 && ans > 10) { const big = Math.max(a, b), small = Math.min(a, b), need = 10 - big; return `Make 10 first: ${big} + ${need} = 10, then ${small - need} more is ${ans}.`; }
     if (a >= 10 && b >= 10) { const t = Math.floor(a / 10) * 10 + Math.floor(b / 10) * 10, o = a % 10 + b % 10; return `Add the tens, then the ones: ${t} + ${o} = ${ans}.`; }
     return `Start at the bigger number and count on ${Math.min(a, b)} more: ${ans}.`;
   }
   if (op === '−') {
+    if (a >= 10 && a < 100 && b < 10 && a % 10 && a % 10 < b) { const ten = a - a % 10; return `Take away to the ten first: ${a} − ${a % 10} = ${ten}, then ${b - a % 10} more is ${ans}.`; }
     if (b <= 3) return `Count back ${b} from ${a}: ${ans}.`;
     if (a >= 20 && b >= 10) { const t = Math.floor(b / 10) * 10; return `Take away the tens, then the ones: ${a} − ${t} = ${a - t}, then take away ${b % 10} more: ${ans}.`; }
     return `Count up from ${b} to ${a}. That's ${ans} steps.`;
@@ -2845,11 +2936,214 @@ function leaveVault() {
   }
 }
 
+function hasFriend(power) { return !!(prog && prog.friends) && FRIENDS.some(f => f.power === power && prog.friends[f.id]); }
+function friendNear() { const fr = L.friend; return !!fr && !fr.done && Math.abs(P.x + P.w / 2 - (fr.c + 0.5) * T) < 10 * T; }
+// The secret ways in, during play.
+function updateFriend() {
+  const fr = L.friend; if (!fr || fr.done || G.rescue) return;
+  const p = P, cx = p.x + p.w / 2, X = (fr.c + 0.5) * T; fr.t++;
+  if (friendNear() && !fr.heard) { fr.heard = true; tone(880, 0.12, 'sine', 0.04); tone(988, 0.14, 'sine', 0.04, null, 0.16); }   // a small cry for help
+  switch (fr.f.way) {
+    case 'key':
+      if (fr.open > 0 && fr.open < 1) fr.open = Math.min(1, fr.open + 0.035);
+      if (fr.open >= 1 && p.onGround && cx > fr.hole * T + 8 && cx < (fr.hole + 2) * T - 8) startRescue(fr);
+      break;
+    case 'vent':
+      if (p.onGround && Math.abs(cx - X) < T * 0.55) {   // a huge puff: up and out of sight
+        p.vy = -26; p.onGround = false; p.bounce = true; p.y -= 2; p.vx = 0;
+        tone(140, 0.6, 'sawtooth', 0.04, 700);
+        for (let i = 0; i < 16; i++) G.parts.push({ k: 'bit', x: X + (Math.random() - 0.5) * T, y: GR * T - 4, vx: (Math.random() - 0.5) * 2, vy: -3 - Math.random() * 5, life: 40, col: ['#9a8f88', '#d8cfc8', '#ff8c1a'][i % 3], s: 7 });
+      }
+      if (p.y + p.h < -6 && Math.abs(cx - X) < 2.5 * T) startRescue(fr);
+      break;
+    case 'crate':
+      if (p.onGround && Math.abs(p.y + p.h - (GR - 1) * T) < 3 && Math.abs(cx - X) < T * 0.6) startRescue(fr);
+      break;
+    case 'falls':
+      if (!fr.crack && overlap(p, { x: fr.c * T, y: GR * T - 4 * T, w: 2 * T, h: 4 * T })) fr.crack = 1;
+      if (fr.crack) {
+        if (fr.crack % 13 === 1) { sfx.brick(); for (let i = 0; i < 6; i++) G.parts.push({ k: 'bit', x: X + T / 2 + (Math.random() - 0.5) * 2 * T, y: GR * T - Math.random() * 4 * T, vx: (Math.random() - 0.5) * 4, vy: -2, life: 30, col: ['#e8fbff', '#9fd8f5'][i % 2], s: 5 }); }
+        if (++fr.crack > 42) startRescue(fr);
+      }
+      break;
+    case 'ladder':
+      if (G.climb && Math.floor(cx / T) === fr.c && p.y < 6) startRescue(fr);
+      break;
+  }
+}
+function bumpFriendKey(c, r) {
+  const fr = L.friend; if (!fr || fr.done || fr.kc !== c || fr.kr !== r || fr.open) return;
+  fr.open = 0.01; sfx.gate(); shake(4, 2);
+  floatText(c * T + T / 2, r * T - 20, 'A secret door!', '#ffd23f', 24);
+}
+
+// ---------------------------------------------------------------- the rescue scene
+const RESCUE_SLIDE = 32;
+function startRescue(fr) {
+  const f = fr.f, p = P, X = (fr.c + 0.5) * T;
+  const backX = { key: X, vent: X - T, crate: X + T, falls: (fr.c + 2.5) * T, ladder: X + T }[f.way];   // back out on the same clear ground
+  const pool = shuffle(Object.values(prog.facts).filter(x => x.weak || x.practice).map(x => ({ ...x.q })));
+  G.rescue = { fr, f, dir: f.dir, phase: 'in', t: 0, step: 0, pool, tricky: pool.length > 0, asked: new Set(), wait: 0, msg: '', msgT: 0, bits: [], fx: 0, backX, tiles: null };
+  G.mbox = null; keys.left = keys.right = keys.jump = false; keys.jumpPressed = false;
+  p.vx = p.vy = 0; p.inv = 9999;
+  sfx.gate(); tone(330, 0.3, 'triangle', 0.05, 160);
+}
+function rescueNext(r) {
+  let q = r.pool.find(x => !r.asked.has(factKey(x)));
+  if (q) r.pool = r.pool.filter(x => x !== q);
+  else { q = L.gen(); for (let i = 0; i < 20 && r.asked.has(factKey(q)); i++) q = L.gen(); }
+  r.asked.add(factKey(q)); r.q = q; r.opts = choices(q, 3); r.shownAt = G.time; r.pick = -1;
+}
+function rescueTick() {
+  const r = G.rescue; r.t++;
+  keys.jumpPressed = false; P.vx = P.vy = 0;
+  if (r.msgT > 0) r.msgT--;
+  if (r.fx > 0) r.fx--;
+  for (const b of r.bits) { b.x += b.vx; b.y += b.vy; b.vy += 0.25; b.life--; }
+  r.bits = r.bits.filter(b => b.life > 0);
+  if (r.phase === 'in' && r.t >= RESCUE_SLIDE) { r.phase = 'ask'; r.t = 0; rescueNext(r); }
+  else if (r.phase === 'ask' && r.wait > 0 && --r.wait === 0) rescueNext(r);
+  else if (r.phase === 'free' && r.t >= 230) { r.phase = 'out'; r.t = 0; sfx.gate(); }
+  else if (r.phase === 'out' && r.t >= RESCUE_SLIDE) endRescue(r);
+}
+const rescueTarget = r => (r.phase === 'ask' && !r.wait && r.q ? { kind: 'rescue', q: r.q, vals: r.opts, off: r.opts.map(() => false), ref: r } : null);
+// Where things stand in the scene (screen pixels): Kai on the left, the friend on the right.
+function rescueSpots() {
+  const fy = VH - 2 * T;
+  return { fy, kx: Math.round(VW * 0.22), fx: Math.round(VW * 0.7) };
+}
+function rescueBits(r, n, cols, x, y) {
+  for (let i = 0; i < n; i++) r.bits.push({ x, y, vx: (Math.random() - 0.5) * 6, vy: -Math.random() * 5 - 1, life: 40, col: cols[i % cols.length], s: 5 + (i % 3) });
+}
+function rescuePick(r, i) {
+  if (r.phase !== 'ask' || r.wait || !r.q) return;
+  const q = r.q, right = r.opts[i] === q.ans, fast = G.time - r.shownAt <= fastFrames(L.skill, q), { fy, fx, kx } = rescueSpots();
+  noteFact(q, right, right && fast, L.skill);
+  r.pick = i;
+  if (right) {
+    G.solved++; if (fast) G.fastN++;
+    r.step++; r.fx = 40; sfx.correct(); gotIt();
+    payGems(cam + fx, fy - 90, 2);
+    r.msg = `${qSolved(q)}!`; r.msgT = 60; r.msgCol = '#3ae374';
+    const way = r.f.way, k = r.step;
+    if (way === 'key') { tone(1100, 0.06, 'square', 0.05); tone(500, 0.12, 'square', 0.04, 200, 0.05); rescueBits(r, 10, ['#c9a24f', '#8b5a2b'], fx - 40, fy - 70 + k * 18); }
+    if (way === 'vent') { sfx.brick(); rescueBits(r, 14, ['#6b625e', '#3a3432', '#8f8580'], fx - 60, fy - 20 - (3 - k) * T); }
+    if (way === 'crate') { tone(660, 0.08, 'square', 0.05); tone(990, 0.12, 'square', 0.05, null, 0.08); rescueBits(r, 8, ['#3ae374', '#c4ffd8'], fx - 54, fy - 30 - (k - 1) * 22); }
+    if (way === 'falls') { tone(CHIME_TUNE[k * 2], 0.9, 'triangle', 0.06); rescueBits(r, 12, ['#e8fbff', '#9fd8f5'], fx, fy - 40); }
+    if (way === 'ladder') { tone([523, 659, 784][k - 1], 0.5, 'sine', 0.05); rescueBits(r, 10, ['#ffd23f', '#fff6c9'], kx + 70 + (k - 1) * ((fx - T - kx - 100) / 2), fy - 5.2 * T + 12); }
+    if (r.step >= 3) { r.phase = 'free'; r.t = 0; freeFriend(r); } else r.wait = 45;
+  } else {
+    G.mistakes++; G.streak = 0; remember(q); missed(q); sfx.wrong();
+    r.msg = `Oops! ${qSolved(q)}`; r.msgT = 110; r.msgCol = '#ff6b6b'; r.wait = 100;
+  }
+}
+function freeFriend(r) {
+  const f = r.f;
+  prog.friends = prog.friends || {}; prog.friends[f.id] = true; r.fr.done = true; save();
+  sfx.win();
+  if (f.way === 'falls') CHIME_TUNE.slice(0, 8).forEach((n, i) => tone(n, 0.5, 'triangle', 0.05, null, 0.4 + i * 0.32));   // Amazing Grace
+  if (FRIENDS.every(x => prog.friends[x.id])) award('friends');
+}
+function endRescue(r) {
+  G.rescue = null;
+  P.x = r.backX - P.w / 2; P.y = GR * T - P.h; P.vx = P.vy = 0; P.inv = 60; P.onGround = false;
+  floatText(P.x + P.w / 2, P.y - 30, `${r.f.pname}! ${r.f.ptip}`, '#7df9ff', 22);
+  syncAnsBar();
+}
+const rescueTitle = r => (r.phase === 'ask' && r.q ? qShow(r.q) : r.phase === 'in' ? `Find ${r.f.name}!` : `${r.f.name} is free!`);
+const rescueHint = r => (r.phase === 'ask' ? `${r.tricky ? 'Your tricky facts free' : 'Right answers free'} ${r.f.name}!  (${r.step}/3)` : r.phase === 'in' ? '' : `New power: ${r.f.pname}`);
+
+// ---------------------------------------------------------------- swing crossings
+// One per level: two steps up to a ledge, a wide gap, a perch in the middle, another gap. Each right answer swings
+// Kai across one half (the math is the move, no timing); a miss wobbles him, shows the answer and asks again.
+// What he swings on is tied to something real in each world (nothing hangs from the sky): ropes from a torii beam,
+// chains from a rock arch, crane hooks on a rail, a ski lift that stops at its tower, lantern ropes between roofs.
+const SWING_FRAMES = 64;
+const SWING_LOOK = {
+  japan: { post: '#c0392b', beam: '#2a1a1a', rope: '#8b5a2b', tell: 'Answer to swing across!' },
+  lava: { post: '#3a2f2c', beam: '#2a201e', rope: '#9aa7b8', chain: true, tell: 'Answer to swing on the chains!' },
+  robot: { post: '#6c7a89', beam: '#ffd23f', rope: '#2b2b38', hook: true, tell: 'Answer to ride the crane hooks!' },
+  snow: { post: '#5a6b7a', beam: '#2b2b38', rope: '#2b2b38', lift: true, tell: 'Answer to ride the ski lift!' },
+  castle: { post: '#3a2a20', beam: '#8b5a2b', rope: '#8b5a2b', lantern: true, tell: 'Answer to swing across!' },
+};
+const swingTop = () => (GR - 3) * T;   // the ledges and the perch are 3 blocks high
+const swingEnds = (sw, h) => (h === 0 ? [(sw.l0 + 1.6) * T, (sw.pm + 1) * T] : [(sw.pm + 1) * T, (sw.l1 + 0.6) * T]);
+function updateSwings() {
+  if (G.swing || G.cross) return;
+  const p = P, cx = p.x + p.w / 2;
+  for (const sw of L.swings || []) {
+    if (sw.done) continue;
+    const onLedge = p.onGround && Math.abs(p.y + p.h - swingTop()) < 4 && cx > sw.l0 * T && cx < (sw.l0 + 2) * T;   // anywhere on the start ledge
+    const leaping = !p.onGround && p.y + p.h < swingTop() + 12 && cx > (sw.l0 + 1) * T && cx < (sw.l0 + 5) * T;   // jumped out over the gap: he grabs the rope
+    if (onLedge || leaping) { swingStart(sw); return; }
+  }
+}
+function swingStart(sw) {
+  const p = P;
+  G.swing = { sw, ph: 'ask', half: 0, t: 0, wait: 0, wob: 0, bx: (sw.l0 + 1.6) * T - p.w / 2, tiles: null };
+  p.vx = p.vy = 0; p.face = 1; p.x = G.swing.bx; p.y = swingTop() - p.h; p.onGround = true;
+  swingNext(G.swing);
+  if (!sw.told) { sw.told = true; floatText(p.x + p.w / 2, p.y - 46, (SWING_LOOK[L.world.key] || SWING_LOOK.japan).tell, '#ffd23f', 24); }
+}
+function swingNext(g) { g.q = L.gen(); g.opts = choices(g.q, 3); g.shownAt = G.time; g.pick = -1; }
+function swingTick() {
+  const g = G.swing, sw = g.sw, p = P; g.t++;
+  if (g.wob > 0) g.wob--;
+  if (g.ph === 'ask') {
+    p.vx = p.vy = 0; p.onGround = true; p.y = swingTop() - p.h;
+    p.x = g.bx + (g.wob ? Math.sin(g.wob * 0.9) * 3 : 0);
+    if (g.wait > 0 && --g.wait === 0) swingNext(g);
+    if (keys.jumpPressed) { keys.jumpPressed = false; if (G.time - (g.told || -999) > 90) { g.told = G.time; floatText(p.x + p.w / 2, p.y - 30, 'Pick a number!', '#ffd23f', 22); } }
+    if (keys.left && g.half === 0 && !g.wait) { G.swing = null; p.x = (sw.l0 + 0.4) * T - p.w / 2; p.face = -1; }   // changed his mind: steps back
+    return;
+  }
+  keys.jumpPressed = false;
+  const u = Math.min(1, g.t / SWING_FRAMES), [x0, x1] = swingEnds(sw, g.half), e = u * u * (3 - 2 * u);
+  const look = SWING_LOOK[L.world.key] || SWING_LOOK.japan, depth = look.lift ? 0.6 * T : 1.8 * T;
+  p.x = x0 + (x1 - x0) * e - p.w / 2; p.y = swingTop() - p.h + depth * Math.sin(Math.PI * e); p.onGround = false; p.face = 1;
+  if (g.t === 1) tone(240, 0.5, 'sine', 0.04, 520);   // whoosh
+  if (u >= 1) {
+    p.y = swingTop() - p.h; p.onGround = true; p.squash = 6;
+    if (g.half === 0) { g.half = 1; g.ph = 'ask'; g.t = 0; g.bx = x1 - p.w / 2; swingNext(g); }
+    else { sw.done = true; G.swing = null; confetti(p.x + p.w / 2, p.y); sfx.win(); floatText(p.x + p.w / 2, p.y - 40, 'Made it across!', '#3ae374', 26); }
+  }
+}
+const swingTarget = g => (g.ph === 'ask' && !g.wait && g.q ? { kind: 'swing', q: g.q, vals: g.opts, off: g.opts.map(() => false), ref: g } : null);
+function swingPick(g, i) {
+  if (g.ph !== 'ask' || g.wait || !g.q) return;
+  const q = g.q, right = g.opts[i] === q.ans, fast = G.time - g.shownAt <= fastFrames(L.skill, q), x = P.x + P.w / 2, y = P.y;
+  noteFact(q, right, right && fast, L.skill); g.pick = i;
+  if (right) {
+    G.solved++; if (fast) G.fastN++;
+    payGems(x, y - 20, 1); sfx.correct(); streakUp(x, y); gotIt();
+    floatText(x, y - 56, `${qSolved(q)}!`, '#3ae374', 24);
+    g.ph = 'go'; g.t = 0;
+  } else {
+    G.mistakes++; G.streak = 0; remember(q); missed(q); sfx.wrong();
+    g.wob = 30; g.wait = 90;
+    floatText(x, y - 56, `Oops! ${qSolved(q)}`, '#ff6b6b', 24);
+  }
+}
+// A fall into a swing gap (a jump instead of answering): back on the start ledge, no heart lost.
+function swingCatch(p) {
+  if (p.y < GR * T + T) return false;
+  const cx = p.x + p.w / 2, sw = (L.swings || []).find(w => cx > (w.l0 + 1) * T && cx < (w.l1 + 1) * T);
+  if (!sw) return false;
+  p.x = (sw.l0 + 0.5) * T - p.w / 2; p.y = swingTop() - p.h; p.vx = p.vy = 0; p.inv = 30;
+  tone(300, 0.25, 'sine', 0.06, 700); floatText(p.x + p.w / 2, p.y - 30, sw.done ? 'Whoops!' : 'Answer to swing!', '#ffffff', 22);
+  return true;
+}
+
 function hurt() {
-  if (P.inv > 0 || mode !== 'play' || hasPower('star')) return;
+  if (P.inv > 0 || mode !== 'play' || hasPower('star') || G.swing) return;
   if (hasPower('shield')) {
     G.power = null; P.inv = 60; sfx.stomp();
     burst(P.x + P.w / 2, P.y + P.h / 2, '#7df9ff', 16, 5); floatText(P.x + P.w / 2, P.y - 20, 'Shield blocked it!', '#7df9ff', 24);
+    return;
+  }
+  if (hasFriend('brave') && !G.braveUsed) {   // Tomo's brave heart: the first hit in a level doesn't hurt
+    G.braveUsed = true; P.inv = 90; sfx.stomp();
+    burst(P.x + P.w / 2, P.y + P.h / 2, '#ffd23f', 14, 4); floatText(P.x + P.w / 2, P.y - 20, 'Brave heart!', '#ffd23f', 24);
     return;
   }
   G.hearts--; sfx.hurt(); shake(10, 5); petSay('hurt'); G.hit = true;
@@ -2867,12 +3161,24 @@ function fell() {
   P.x = G.checkpoint; P.y = GR * T - P.h; P.vx = P.vy = 0; P.inv = 100;
   if (first) floatText(P.x + P.w / 2, P.y - 30, `Too far to jump! Build a bridge: ${b.target}`, '#ffd23f', 24);
 }
+// Out of hearts: the level starts over, like most games. Kindergarten and 1st grade players instead go on from the
+// last gate they opened (the level stays as it was), with "Restart level" as the other choice. Bosses always start over.
 function gameOver() {
   mode = 'over'; stopMusic(); sfx.over(); showTouch(false); hide('pauseBtn');
-  setTimeout(() => showMsg('Out of hearts!', '<p>Every ninja falls sometimes. Get up and try again!</p>', [
+  const young = ['K', '1'].includes(curPlayer().grade) && !L.boss;
+  setTimeout(() => showMsg('Out of hearts!', '<p>Every ninja falls sometimes. Get up and try again!</p>', young ? [
+    { label: 'Try again', fn: continueLevel, primary: true },
+    { label: 'Restart level', fn: () => startStage(G.idx), alt: true },
+    { label: 'Levels', fn: toMenu, alt: true },
+  ] : [
     { label: 'Try again', fn: () => startStage(G.idx), primary: true },
     { label: 'Levels', fn: toMenu, alt: true },
   ]), 900);
+}
+function continueLevel() {
+  G.hearts = G.maxHearts; G.streak = 0; G.power = null; G.dash = 0; G.cross = null; G.mbox = null; G.tip = null; G.wrongRun = 0;
+  P.x = G.checkpoint; P.y = GR * T - P.h; P.vx = P.vy = 0; P.inv = 120;
+  const st = STAGES[G.idx]; playMusic(L.world.key, st.boss ? 3 : st.k); begin();
 }
 
 // ---------------------------------------------------------------- skip-count stepping stones
@@ -2899,6 +3205,8 @@ function stepsSet(st, lv = L) {
   st.k = 0; st.missed = false; st.opts = [];
   st.path = [{ x: stepX(st, 0), top: GR * T - T, val: s.seq[0] }];
 }
+const kEasy = () => !!prog.easy && (curPlayer().grade === 'K' || (L.skill && L.skill.tier === 1));   // Easy mode for a kindergartner (grade K or K math)
+const stepTimed = () => !kEasy();   // no stepping-stone timer in Easy mode for kindergarten
 function stepsOpts(st) {   // three stones for the next number
   const ans = st.seq[st.k + 1], d = st.step;
   const near = [ans + 1, ans - 1, ans + d, ans - d, ans + 2, ans - 2, ans + 3, ans - 3, ans + 2 * d, ans + 5].filter(v => v > 0 && !st.seq.includes(v));
@@ -2925,7 +3233,7 @@ function crossHop(x1, feet1, done, dur = 22) {
 function crossStart(st) {
   G.cross = { st, hop: null }; P.vx = P.vy = 0; P.face = 1;
   crossHop(st.path[0].x, st.path[0].top, () => { stepsOpts(st); });
-  if (!st.told) { st.told = true; floatText(st.c0 * T, GR * T - 4 * T, st.back ? `Count back by ${st.step}s!` : `Count by ${st.step}s!`, '#ffd23f', 26); }
+  if (!st.told) { st.told = true; floatText(st.c0 * T, GR * T - 4 * T, st.back ? `Count back! Each one is ${st.step} less.` : `Count up! Each one is ${st.step} more.`, '#ffd23f', 26); }
 }
 function crossTick() {
   const c = G.cross, st = c.st, p = P;
@@ -2944,7 +3252,7 @@ function crossTick() {
     return;
   }
   p.onGround = true;
-  if (st.opts.length && st.opts.every(o => o.state === 'idle') && G.time - st.shownAt > STEP_TIME()) { stepsCrumble(st); return; }
+  if (stepTimed() && st.opts.length && st.opts.every(o => o.state === 'idle') && G.time - st.shownAt > STEP_TIME()) { stepsCrumble(st); return; }
   if (keys.left && !st.k) {   // changed your mind on the first stone: hop back to the edge
     st.opts = [];
     crossHop((st.c0 - 1.5) * T, GR * T, () => { G.cross = null; });
@@ -2961,6 +3269,8 @@ function stepsPick(st, i) {
       G.solved++; if (fast) G.fastN++;
       o.state = 'path'; st.path.push(o); st.opts = []; st.k++;
       payGems(x, y - 20, 1); sfx.correct(); streakUp(x, y); gotIt();
+      const prev = st.path[st.k - 1];
+      floatText((prev.x + x) / 2, Math.min(prev.top, y) - 1.2 * T, `${st.back ? '−' : '+'}${st.step}`, st.back ? '#ff8a3c' : '#3ae374', 26);   // the jump, said out loud
       floatText(x, y - 50, st.seq.slice(0, st.k + 1).join(', '), '#3ae374', 24);
       if (st.k < st.n - 1) stepsOpts(st);
       else crossHop((st.c0 + st.w + 0.8) * T, GR * T, () => {   // made it across: a bridge appears behind
@@ -3003,11 +3313,15 @@ function drawSteps() {
   for (const st of L.steps || []) {
     const x0 = st.c0 * T, x1 = (st.c0 + st.w) * T;
     if (x1 < cam - 60 || x0 > cam + VW + 60 || st.done) continue;
-    const sx = x0 - 2.4 * T, txt = st.back ? `Count back by ${st.step}s` : `Count by ${st.step}s`;   // the rule on a sign
-    ctx.font = '20px "Lilita One", "Trebuchet MS", sans-serif'; const w = ctx.measureText(txt).width + 26;
+    const sx = x0 - 2.4 * T, txt = st.back ? `Count back by ${st.step}s` : `Count up by ${st.step}s`;   // the rule on a sign, with an arrow
+    ctx.font = '20px "Lilita One", "Trebuchet MS", sans-serif'; const w = ctx.measureText(txt).width + 26 + 22;
     ctx.fillStyle = '#6b4a2e'; ctx.fillRect(sx - 3, GR * T - 70, 6, 70);
     ctx.fillStyle = '#f3e3c3'; rrect(sx - w / 2, GR * T - 106, w, 38, 8); ctx.fill(); ctx.strokeStyle = '#6b4a2e'; ctx.lineWidth = 3; ctx.stroke();
-    ctx.fillStyle = '#3a2614'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, sx, GR * T - 86);
+    ctx.fillStyle = '#3a2614'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, sx - 11, GR * T - 86);
+    const ax = Math.round(sx + w / 2 - 22), ay = GR * T - 87;   // pixel arrow: down for back, up for up
+    ctx.fillStyle = st.back ? '#e8590c' : '#2f9e44';
+    ctx.fillRect(ax - 2, ay - 9, 4, 18);
+    for (let i = 0; i < 5; i++) { const yy = st.back ? ay + 9 - i * 2 : ay - 11 + i * 2; ctx.fillRect(ax - 1 - i * 2 + 1, yy, i * 4 + 2, 2); }
     const sq = (x, top, val, fill, dark, light, a = 1) => {   // a plain square block with its number
       ctx.globalAlpha = a; block(x - T / 2, top, fill, dark, light);
       ctx.font = `${String(val).length > 2 ? 15 : 19}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -3022,7 +3336,7 @@ function drawSteps() {
       sq(o.x, o.top, o.val, c1, c2, '#ffffff', o.state === 'fade' ? 1 - o.t / 20 : 1);
       if (!isTouch && o.state === 'idle') keyTag(ANS_KEYS(3)[j], o.x + T / 2 - 2, o.top - 2);
     });
-    if (G.cross && G.cross.st === st && !G.cross.hop && st.opts.length && st.opts.every(o => o.state === 'idle')) {   // the time bar
+    if (stepTimed() && G.cross && G.cross.st === st && !G.cross.hop && st.opts.length && st.opts.every(o => o.state === 'idle')) {   // the time bar
       const left = clamp(1 - (G.time - st.shownAt) / STEP_TIME(), 0, 1), bx = stepX(st, st.k + 1) - T, by = GR * T - STONE_TOPS[2] * T - 20;
       ctx.fillStyle = 'rgba(0,0,0,.45)'; rrect(bx - 2, by - 2, 2 * T + 4, 12, 6); ctx.fill();
       ctx.fillStyle = left > 0.5 ? '#3ae374' : left > 0.25 ? '#ffd23f' : (G.time % 20 < 10 ? '#ff4d4d' : '#ff9a9a');
@@ -3042,6 +3356,8 @@ function startDash(x, y) {
 // its favourite food float ahead with numbers. Feed it the answer (jump into the food, or button / key) and it gives gems.
 // Some ? boxes ask a quick question first (touch the right bubble). All of these also answer with the buttons / keys.
 function miniTarget() {
+  if (G && G.rescue) return rescueTarget(G.rescue);
+  if (G && G.swing) return swingTarget(G.swing);
   if (G && L.vault && L.room && L.room.kind === 'train') {
     const rm = L.room;
     return rm.open || rm.show || rm.intro > 0 ? null : { kind: 'train', q: rm.q, vals: rm.opts, off: rm.opts.map(() => false), ref: rm };
@@ -3067,6 +3383,8 @@ function miniAnswer(m, i) {
   if (m.kind === 'feed') { feedPick(m.ref, i); return; }
   if (m.kind === 'wall') { wallPick(m.ref, i); return; }
   if (m.kind === 'train') { trainAnswer(m.ref, i); return; }
+  if (m.kind === 'rescue') { rescuePick(m.ref, i); return; }
+  if (m.kind === 'swing') { swingPick(m.ref, i); return; }
   P.throwT = 14; sfx.throw(); boxPick(m.ref, i);
 }
 function feedPick(fd, i) {
@@ -3130,7 +3448,14 @@ function drawMini() {
     if (fd.ax < cam - 6 * T || fd.foods[0].x > cam + VW + 60) continue;
     const g = GR * T, chew = fd.mood === 'yum' && fd.moodT > 20 && fd.moodT < 80 ? Math.abs(Math.sin(fd.moodT * 0.4)) : 0;
     drawAnimal(fd.kind, fd.ax, g - (fd.mood === 'yum' && fd.moodT > 80 && fd.moodT < 140 ? Math.abs(Math.sin(fd.moodT * 0.2)) * 14 : 0), fd.mood, chew);
-    if (!fd.done) {   // a thought bubble with the problem
+    if (!fd.done && fd.q.story && reader()) {   // a readers' thought bubble: the story in two short lines (the banner keeps the numbers)
+      ctx.font = '16px "Lilita One", "Trebuchet MS", sans-serif';
+      const lines = wrapLines(fd.q.story, 210), w = Math.max(...lines.map(l => ctx.measureText(l).width)) + 24, h = lines.length * 19 + 14, bx = clamp(fd.ax + 14, cam + w / 2 + 6, cam + VW - w / 2 - 6), by = g - 108 - h;
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(fd.ax + 8, g - 62, 4, 0, 7); ctx.arc(fd.ax + 6, g - 76, 6, 0, 7); ctx.arc(fd.ax + 8, g - 94, 8, 0, 7); ctx.fill();
+      rrect(bx - w / 2, by, w, h, 16); ctx.fill(); ctx.strokeStyle = '#cfd6e4'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#22224a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      lines.forEach((l, k) => ctx.fillText(l, bx, by + 16 + k * 19));
+    } else if (!fd.done) {   // a thought bubble with the problem
       const txt = qShow(fd.q); ctx.font = '22px "Lilita One", "Trebuchet MS", sans-serif'; const w = ctx.measureText(txt).width + 26, bx = fd.ax - 10, by = g - 112;
       ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(fd.ax + 8, g - 62, 4, 0, 7); ctx.arc(fd.ax + 2, g - 74, 6, 0, 7); ctx.fill();
       rrect(bx - w / 2, by - 20, w, 40, 18); ctx.fill(); ctx.strokeStyle = '#cfd6e4'; ctx.lineWidth = 2; ctx.stroke();
@@ -3267,11 +3592,56 @@ function drawFood(kind, x, y) {
 // One extra thing per level that fits its name (on top of the level twist). Mostly scenery; a few you can touch.
 // Kept apart from the twists: buildLevel calls addFlavor at the end with its own random seed, so level layouts don't change.
 const CHIME_TUNE = [293.7, 392, 493.9, 392, 493.9, 440, 392, 329.6, 293.7, 293.7, 392, 493.9, 392, 493.9, 440, 587.3];   // Amazing Grace
+// The secret way in to the level's lost friend (none once that friend is home). It goes in the most "boring" stretch
+// of flat ground: the spot farthest from anything Kai has to deal with (pits, gates, animals, stones, walls, bridges,
+// doors, things in his way and the level's hazards), so it never sits right next to a jump or a puzzle.
+// (Runs while the level is built: it must use the level passed in, not the global L.)
+function addFriend(L) {
+  L.friend = null;
+  const f = friendOf(L.def); if (!f || (prog.friends || {})[f.id]) return;
+  const map = L.map, end = L.flagC - 12, W = L.w;
+  const clear = (c, h) => c >= 1 && c < W - 1 && map[GR][c] === '#' && map[GR + 1][c] === '#' && map.slice(GR - h, GR).every(row => row[c] === '.');
+  const [wide, high] = { key: [4, 6], vent: [3, GR], crate: [3, 3], falls: [4, 5], ladder: [3, GR] }[f.way];
+  const mid = L.flagC / 2;
+  // Everything Kai has to deal with, column by column (each thing at its real width, signs and cave mouths included).
+  const busy = new Array(W).fill(false), mark = (a, b) => { for (let c = Math.max(0, Math.floor(a)); c <= Math.min(W - 1, Math.ceil(b)); c++) busy[c] = true; };
+  for (let c = 0; c < W; c++) {
+    if (map[GR][c] !== '#') busy[c] = true;   // pits, bridges, conveyors, ice...
+    for (let r = GR - 3; r < GR; r++) if (map[r][c] !== '.') busy[c] = true;   // pillars, stairs, ladders: things in Kai's way
+  }
+  for (const z of L.steps || []) mark(z.c0 - 5, z.c0 + z.w);   // with its wide sign
+  for (const w of L.swings || []) mark(w.s, w.e);
+  for (const q of L.squads || []) mark(q.s, q.s + 10);
+  for (const st of L.stations) mark(st.s - 3, st.gate[1]);   // the question sign is wide too
+  for (const w of L.walls || []) mark(w.s - 3, w.gate[1]);
+  for (const b of L.bridges) mark(b.signC - 1, b.c0 + b.w);
+  for (const d of L.doors) mark(d.c - 2, d.c + 3);   // caves and doors are wide
+  for (const o of L.fx || []) if (o.x != null) mark(o.x / T - 0.5, o.x / T + 0.5);   // the level's hazards (icicles, koi, guards...); the extras (frogs, chimes, snowmen) are just scenery
+  const dist = new Array(W).fill(99);   // how far each column is from the nearest busy one
+  for (let c = 0, last = -99; c < W; c++) { if (busy[c]) last = c; dist[c] = c - last; }
+  for (let c = W - 1, next = 999; c >= 0; c--) { if (busy[c]) next = c; dist[c] = Math.min(dist[c], next - c); }
+  let best = null, bestScore = -1e9;
+  for (let c = 14; c <= end; c++) {
+    let ok = true;
+    for (let d = 0; d < wide && ok; d++) if (!clear(c + d, high) || busy[c + d]) ok = false;
+    if (!ok) continue;
+    const room = Math.min(dist[c], dist[c + wide - 1]) - 1;   // empty tiles on both sides of the whole spot
+    const score = Math.min(room, 10) * 100 - Math.abs(c - mid) / L.flagC;   // as quiet as possible (10 tiles is plenty), then nearer the middle
+    if (score > bestScore) { best = c; bestScore = score; }
+  }
+  if (best == null) return;
+  const c = best, fr = { f, c: c + 1, t: 0, open: 0, room: Math.max(0, Math.round(bestScore / 100)) };
+  if (f.way === 'key') { fr.c = c; fr.kc = c + 1; fr.kr = GR - 4; map[fr.kr][fr.kc] = 'U'; fr.hole = c + 2; }   // the key block, and a trapdoor two tiles wide beside it
+  L.coins = L.coins.filter(g => g.gold || Math.abs(g.x - (fr.c + 0.5) * T) > 2 * T || g.y < (GR - 6) * T);   // no gem hiding the key block or the crate
+  if (f.way === 'crate') map[GR - 1][fr.c] = 'U';   // a solid crate (drawn over the tile)
+  if (f.way === 'ladder') for (let r = 0; r < GR; r++) map[r][fr.c] = 'L';   // past the top of the screen
+  L.friend = fr;
+}
 function addFlavor(L) {
   L.flavor = L.def.boss ? null : FLAVORS[L.def.w * 3 + L.def.k]; L.fl = []; L.chimeN = 0; L.windT = 0;
   if (!L.flavor) return;
   const rng = mulberry32(777 + L.idx * 131), map = L.map, end = L.flagC - 14, Y = GR * T;
-  const busy = c => (L.steps || []).some(z => c >= z.c0 - 6 && c <= z.c0 + z.w + 2) || (L.squads || []).some(q => c >= q.s && c <= q.s + 10) || L.stations.some(st => c >= st.s - 1 && c <= st.gate[1] + 1) || (L.walls || []).some(w => c >= w.s - 1 && c <= w.gate[1] + 1) || L.bridges.some(b => c >= b.signC - 1 && c <= b.c0 + b.w + 1) || L.doors.some(d => Math.abs(c - d.c) <= 2);
+  const busy = c => (L.swings || []).some(w => c >= w.s - 2 && c <= w.e + 2) || (L.steps || []).some(z => c >= z.c0 - 6 && c <= z.c0 + z.w + 2) || (L.squads || []).some(q => c >= q.s && c <= q.s + 10) || L.stations.some(st => c >= st.s - 1 && c <= st.gate[1] + 1) || (L.walls || []).some(w => c >= w.s - 1 && c <= w.gate[1] + 1) || L.bridges.some(b => c >= b.signC - 1 && c <= b.c0 + b.w + 1) || L.doors.some(d => Math.abs(c - d.c) <= 2);
   const clear = (c, h) => { if (c < 1 || c >= L.w - 1 || map[GR][c] !== '#') return false; for (let r = GR - h; r < GR; r++) if (map[r][c] !== '.') return false; return true; };
   const spots = (gap, h, wide = 0) => {
     const out = []; let last = -99;
@@ -3623,7 +3993,7 @@ function updateTwist() {
       G.hidden = hidden;
       if (!f.seen && !hidden && dx > 0 && dx < 4.5 * T && dy < dx * 0.45 + 24) {
         f.seen = true; G.alarm = 120; sfx.wrong(); floatText(f.x, GR * T - 80, '❗ Spotted!', '#ff4d4d', 26);
-        for (const k of [7, 9]) L.enemies.push(walkerFor('shadow', Math.floor(p.x / T) + k * (p.face || 1), 1.4));
+        if (!kEasy()) for (const k of [7, 9]) L.enemies.push(walkerFor('shadow', Math.floor(p.x / T) + k * (p.face || 1), 1.4));   // none for kindergarten in Easy mode
       }
     }
   }
@@ -3678,10 +4048,14 @@ function twistMove(p, feetBefore, fallSpeed) {
 
 function updatePlayer() {
   const p = P;
+  if (G.rescue) { rescueTick(); petTick(); return; }   // in a lost friend's scene
+  if (G.swing) { swingTick(); petTick(); return; }   // on a swing crossing
   updateTwist();
   updateFlavor();
+  updateFriend();
   updateMini();
   updateSteps();
+  updateSwings();
   if (G.cross) { crossTick(); if (G.dash > 0) G.dash--; petTick(); return; }
   if (keys.move && !G.moveHeld) doMove();
   G.moveHeld = keys.move;
@@ -3703,12 +4077,13 @@ function updatePlayer() {
   if (hasPower('speed') && p.onGround && Math.abs(p.vx) > 4 && tick % 3 === 0) burst(p.x + p.w / 2, p.y + p.h, '#ffffff', 2, 1);
   if (G.dash > 0 && Math.abs(p.vx) > 3) G.parts.push({ k: 'bit', x: p.x + p.w / 2 - p.face * 14, y: p.y + 8 + Math.random() * (p.h - 12), vx: -p.face * 3, vy: 0, life: 14, col: G.dash < 60 && tick % 8 < 4 ? '#ffffff' : '#7df9ff', s: 4 });   // wind trail
   if (hasPower('star') && tick % 3 === 0) G.parts.push({ k: 'bit', x: p.x + Math.random() * p.w, y: p.y + Math.random() * p.h, vx: 0, vy: -1, life: 20, col: ['#ff5a8a', '#ffd23f', '#7df9ff', '#3ae374'][R(0, 3)], s: 4 });
-  if (hasPower('magnet')) for (const c of L.coins) if (!c.taken && !c.gold) { const dx = p.x + p.w / 2 - c.x, dy = p.y + p.h / 2 - c.y, d = Math.hypot(dx, dy); if (d < 200) { c.x += dx / d * 6; c.y += dy / d * 6; } }
+  const mag = hasPower('magnet') ? 200 : hasFriend('magnet') ? 110 : 0;   // Niko's magnet pulls from closer
+  if (mag) for (const c of L.coins) if (!c.taken && !c.gold) { const dx = p.x + p.w / 2 - c.x, dy = p.y + p.h / 2 - c.y, d = Math.hypot(dx, dy); if (d < mag) { c.x += dx / d * 6; c.y += dy / d * 6; } }
 
   if (keys.jumpPressed) { p.jbuf = 8; keys.jumpPressed = false; }
   if (p.jbuf > 0) p.jbuf--;
   if (p.onGround) p.coyote = 7; else if (p.coyote > 0) p.coyote--;
-  if (p.jbuf > 0 && p.coyote > 0) { p.vy = hasPower('jump') ? -16.5 : -13.2; p.onGround = false; p.coyote = 0; p.jbuf = 0; p.squash = -8; sfx.jump(); }
+  if (p.jbuf > 0 && p.coyote > 0) { p.vy = hasPower('jump') ? -16.5 : hasFriend('spring') ? -14.2 : -13.2; p.onGround = false; p.coyote = 0; p.jbuf = 0; p.squash = -8; sfx.jump(); }
   if (p.onGround) p.usedDouble = false;
   else if (p.jbuf > 0 && p.coyote === 0 && hasPower('double') && !p.usedDouble) {
     p.vy = -12; p.usedDouble = true; p.jbuf = 0; sfx.jump(); burst(p.x + p.w / 2, p.y + p.h, '#ffffff', 8, 2);
@@ -3720,6 +4095,9 @@ function updatePlayer() {
     if (p.vy >= 0) p.bounce = false;
     if (!keys.jump && p.vy < -4.5 && !G.climb && !p.bounce) p.vy = -4.5;   // short hop when jump is released early
     p.vy = Math.min(p.vy + 0.55, 12);
+    if (keys.jump && p.vy > 2.2 && !G.climb && hasFriend('glide')) {   // Hana's fan: hold jump to float down
+      p.vy = 2.2; if (tick % 5 === 0) G.parts.push({ k: 'bit', x: p.x + p.w / 2 + (Math.random() - 0.5) * 20, y: p.y - 4, vx: 0, vy: 0.5, life: 20, col: '#ff8fbf', s: 4 });
+    }
   }
 
   moveX(p);
@@ -3734,6 +4112,7 @@ function updatePlayer() {
   p.anim += Math.abs(p.vx) * 0.06;
 
   if (stepsCatch(p)) return;
+  if (swingCatch(p)) return;
   if (p.y > VH + 60) fell();
 
   if (G.power && --G.power.t <= 0) { G.power = null; floatText(p.x + p.w / 2, p.y - 20, 'Power faded', '#cccccc', 20); }
@@ -3849,8 +4228,9 @@ function pauseFx(b) {
 }
 const DODGE_FRAMES = () => (prog.easy ? 200 : 260);
 const OPEN_FRAMES = () => (prog.easy ? 900 : 600);
-function startDodge() {
-  const ar = L.arena; ar.phase = 'dodge'; ar.phaseT = DODGE_FRAMES(); L.boss.atk = 30;
+// After a miss the dodge is half as long and the first attack waits a moment, so a struggling kid isn't drained.
+function startDodge(miss = false) {
+  const ar = L.arena; ar.phase = 'dodge'; ar.phaseT = miss ? Math.round(DODGE_FRAMES() / 2) : DODGE_FRAMES(); L.boss.atk = miss ? 40 : 30;
 }
 function updateArena() {
   const ar = L.arena, b = L.boss;
@@ -3893,16 +4273,17 @@ function hitOrb(o) {
       o.state = 'thrown'; ar.orbs.forEach(q => { if (q !== o) q.state = 'gone'; });
       noteFact(ar.q, true, G.time - ar.askedAt <= 480, L.skill); G.solved++; if (G.time - ar.askedAt <= 480) G.fastN++;
       payGems(o.x, oy, G.time - ar.askedAt <= 480 ? 2 : 1);
-      ar.wait = 1; G.shots.push({ x: o.x, y: oy, spin: 0 });
-      P.throwT = 14; sfx.correct(); sfx.throw(); streakUp(o.x, oy); gotIt();
-      floatText(P.x + P.w / 2, P.y - 30, ar.q.retry ? 'You remembered it!' : 'Shuriken!', '#ffd23f', 28);
+      const last = L.boss.hp <= 1;   // the last answer: no shuriken, Kai holds out his hand
+      ar.wait = 1; if (last) offerHand(); else { G.shots.push({ x: o.x, y: oy, spin: 0 }); P.throwT = 14; sfx.throw(); }
+      sfx.correct(); streakUp(o.x, oy); gotIt();
+      floatText(P.x + P.w / 2, P.y - 30, last ? 'Right!' : ar.q.retry ? 'You remembered it!' : 'Shuriken!', '#ffd23f', 28);
       setTimeout(() => { if (L.arena === ar) ar.orbs = []; }, 300);
     } else {
       o.state = 'gone'; burst(o.x, oy, '#ff6b6b', 12, 4);
       noteFact(ar.q, false, false, L.skill);
       G.mistakes++; G.streak = 0; remember(ar.q); missed(ar.q);
       sfx.wrong(); floatText(P.x + P.w / 2, P.y - 20, `Oops! ${qSolved(ar.q)}`, '#ff6b6b', 30);
-      ar.q = freshQ(ar.q.text); ar.orbs = []; startDodge(); L.boss.atk = 1;
+      ar.q = freshQ(ar.q.text); ar.orbs = []; startDodge(true);
     }
   }
 }
@@ -3922,9 +4303,29 @@ function drawOrbs() {
 }
 
 // ---------------------------------------------------------------- after the boss falls
-// Each boss acts out what happens next: Kage refuses and fades into shadow, the Golem cools and gives the
-// scroll, Mega-Bot shows its secret file and switches the factory off, the Snowman melts and gives the headband, and the
-// Shogun's castle falls in. Kai can't move during these little scenes.
+// Each boss acts out what happens next: Kage refuses and runs, the Golem cools and gives the scroll, Mega-Bot lets
+// the robots rest, the Snowman melts and has a friend, and the Shogun's castle falls in. Kai can't move during these little scenes.
+// Grace, played: the last right answer in a boss fight is not a final blow. Kai walks up and holds out his hand;
+// when he reaches the boss it calms (gold sparkles, not fire) and the boss's own ending follows. Kage refuses it.
+const HAND_POSE = { arm: [8, 22] };
+function offerHand() {
+  const ar = L.arena; ar.wait = 9999; L.proj = []; G.hand = { t: 0, reached: 0 };
+  say('kai', 'Take my hand?', 150);
+  setTimeout(() => { if (L.arena === ar) ar.orbs = []; }, 300);
+}
+function updateHand() {
+  const h = G.hand, b = L.boss;
+  if (!b || b.outro || b.dead) { G.hand = null; return; }
+  h.t++;
+  keys.jump = false; keys.jumpPressed = false;
+  if (b.dying) { keys.left = keys.right = false; return; }   // holding the hand out while the boss calms
+  const right = b.x + b.w / 2 > P.x + P.w / 2, tx = right ? b.x - P.w - 8 : b.x + b.w + 8, d = tx - P.x;
+  if (Math.abs(d) > 12 && h.t < 360) { keys.right = d > 0; keys.left = d < 0; return; }
+  keys.left = keys.right = false; P.vx = 0; P.face = right ? 1 : -1;
+  if (++h.reached === 1 && ['golem', 'bot', 'yeti'].includes(b.kind)) floatText(b.x + b.w / 2, b.y - 20, '♥', '#ff5a8a', 34);   // they take it
+  if (h.reached < 40) return;
+  b.hp = 0; b.dying = 70; b.gentle = true; L.proj = []; sfx.bossDown(); shake(8, 3); G.slow = 60; G.flash = 0.4;
+}
 function say(who, txt, t = 120) { (who === 'kai' ? G : L.boss).say = { txt, t }; }
 function dropPrize(b, x) { L.prize = { x: (x ?? b.x + b.w / 2) - 20, y: b.y + 10, w: 40, h: 30, vy: -8 }; }
 function runOutro(b) {
@@ -3935,31 +4336,26 @@ function runOutro(b) {
   b.t++; b.vy = Math.min(b.vy + 0.55, 12); moveY(b);
   if (o.done) return;
   if (k === 'kage') {
-    if (t === 20) say('kai', 'Take my hand?');
-    if (t === 110) say('boss', 'Never.', 80);
-    if (t === 190) say('boss', 'You fight just like him. Same moves, same little hop.', 150);
-    if (t > 330) { b.alpha = Math.max(0, 1 - (t - 330) / 70); if (t % 3 === 0) burst(b.x + Math.random() * b.w, b.y + Math.random() * b.h, '#2a2838', 4, 2); }
-    if (t === 400) { o.done = true; b.dead = true; dropPrize(b); }
+    if (t === 30) say('boss', 'Never!', 90);   // Kai already held out his hand ("Take my hand?")
+    if (t > 130) { b.alpha = Math.max(0, 1 - (t - 130) / 70); if (t % 3 === 0) burst(b.x + Math.random() * b.w, b.y + Math.random() * b.h, '#2a2838', 4, 2); }
+    if (t === 200) { o.done = true; b.dead = true; dropPrize(b); }
   } else if (k === 'golem') {
-    if (t === 20) say('kai', "You don't have to be angry anymore.");
+    if (t === 20) say('kai', "You don't have to be angry.");
     if (t > 90 && t % 6 === 0) G.parts.push({ k: 'bit', x: b.x + Math.random() * b.w, y: b.y + 20, vx: 0, vy: -1.2, life: 40, col: 'rgba(230,230,240,.8)', s: 8 });
-    if (t === 120) { b.calm = true; say('boss', 'The Shogun once cried here...', 110); }
-    if (t === 240) say('boss', 'He held a little wooden ninja he carved for someone he left behind.', 160);
-    if (t === 410) { floatText(cx, b.y - 30, '♥', '#ff5a8a', 40); o.done = true; b.friendly = true; dropPrize(b, (P.x + cx) / 2); }
+    if (t === 120) { b.calm = true; say('boss', 'Thank you, little ninja.', 110); }
+    if (t === 250) { floatText(cx, b.y - 30, '♥', '#ff5a8a', 40); o.done = true; b.friendly = true; dropPrize(b, (P.x + cx) / 2); }
   } else if (k === 'bot') {
-    if (t < 400 && t % 9 === 0) burst(b.x + Math.random() * b.w, b.y + Math.random() * b.h, '#7df9ff', 3, 3);
-    if (t === 20) say('kai', 'You were made for more than work.');
-    if (t === 110) say('boss', '...MORE THAN WORK?', 90);
-    if (t === 200) say('boss', 'FILE: KURO · FAMILY: 1 FATHER, 1 LITTLE BROTHER', 190);
-    if (t === 400) { b.calm = true; say('boss', 'NEW ORDER: EVERYONE REST.', 130); }
-    if (t === 540) { floatText(cx, b.y - 30, '♥', '#ff5a8a', 40); o.done = true; b.friendly = true; dropPrize(b, (P.x + cx) / 2); }
+    if (t < 200 && t % 9 === 0) burst(b.x + Math.random() * b.w, b.y + Math.random() * b.h, '#7df9ff', 3, 3);
+    if (t === 20) say('kai', 'You can rest now.');
+    if (t === 110) say('boss', '...REST?', 80);
+    if (t === 200) { b.calm = true; say('boss', 'EVERYONE REST!', 120); }
+    if (t === 330) { floatText(cx, b.y - 30, '♥', '#ff5a8a', 40); o.done = true; b.friendly = true; dropPrize(b, (P.x + cx) / 2); }
   } else if (k === 'yeti') {
     if (t === 20) say('kai', 'Nobody should be alone.');
-    if (t === 130) say('boss', "...You're not running away?", 110);
+    if (t === 130) say('boss', "You're not running away?", 110);
     if (t > 130 && t % 4 === 0) G.parts.push({ k: 'bit', x: b.x + Math.random() * b.w, y: b.y + b.h * 0.6, vx: 0, vy: 1.5, life: 30, col: '#9fd8f5', s: 4 });
-    if (t === 250) { floatText(cx, b.y - 30, '♥', '#ff5a8a', 40); say('boss', 'The Shogun dropped this. It looks just like yours.', 150); o.band = { x: cx, y: b.y + 20 }; }
-    if (o.band) { o.band.x += (P.x + P.w / 2 - o.band.x) * 0.04; o.band.y += (P.y - 10 - o.band.y) * 0.04; }
-    if (t === 420) { o.done = true; b.friendly = true; o.band = null; dropPrize(b, (P.x + cx) / 2); }
+    if (t === 250) { floatText(cx, b.y - 30, '♥', '#ff5a8a', 40); say('boss', 'A friend!', 100); }
+    if (t === 340) { o.done = true; b.friendly = true; dropPrize(b, (P.x + cx) / 2); }
   } else if (k === 'shogun') {
     if (t % 8 === 0 && t < 330) { shake(4, 2); L.proj.push({ k: 'rock', x: R(40, L.w * T - 40), y: -20, vx: 0, vy: 2, g: 0.3, r: 8, deco: true }); }
     if (t === 30) say('boss', "Why... why didn't you finish me?", 120);
@@ -3986,7 +4382,6 @@ function drawOutro() {
   const o = b.outro;
   if (b.say) drawSay(b.x + b.w / 2, b.y - 6, b.say.txt, b.kind === 'bot');
   if (G.say) drawSay(P.x + P.w / 2, P.y - 8, G.say.txt);
-  if (o.band) { ctx.fillStyle = '#e63946'; ctx.fillRect(o.band.x - 12, o.band.y - 3, 24, 6); ctx.fillRect(o.band.x + 8, o.band.y, 10, 4); }
   if (o.beam && o.t < 330) { ctx.fillStyle = '#4a3220'; ctx.fillRect(o.beam.x, o.beam.y, 120, 26); ctx.fillStyle = '#6b4a2e'; ctx.fillRect(o.beam.x, o.beam.y, 120, 6); }
   if (b.calm && !b.friendly) { glowAt(b.x + b.w / 2, b.y + b.h / 2, b.w, 'rgba(120,180,255,.25)'); }
 }
@@ -3994,7 +4389,7 @@ function updateBoss() {
   const b = L.boss; if (!b || b.dead) return;
   if (b.dying > 0) {
     b.dying--;
-    if (b.dying % 6 === 0) burst(b.x + Math.random() * b.w, b.y + Math.random() * b.h, ['#ffd23f', '#ff6a00', '#fff'][R(0, 2)], 6, 5);
+    if (b.dying % 6 === 0) burst(b.x + Math.random() * b.w, b.y + Math.random() * b.h, b.gentle ? ['#ffffff', '#ffd23f', '#ffe8a0'][R(0, 2)] : ['#ffd23f', '#ff6a00', '#fff'][R(0, 2)], b.gentle ? 4 : 6, b.gentle ? 2 : 5);
     if (b.dying === 0) { b.outro = { t: 0 }; b.vy = 0; }
     return;
   }
@@ -4138,7 +4533,7 @@ function finishLevel() {
   const found = [0, 1, 2].filter(k => prog.best[st.w * PER_WORLD + k]).length;
   const title = st.boss ? 'Scroll won!' : G.mistakes === 0 ? 'Perfect!' : 'Level complete!';
   let body = st.boss ? `<div class="bigicon">${pixImg('scroll', 'pix big')}</div>` : `<div class="bigicon">${pixImg('piece', 'pix big')}<small>${found}/3</small></div>`;
-  // Each boss leaves a clue about who the Shogun really is; the last one is revealed in the ending.
+  // Each boss's win card (the Shogun's is the ending).
   if (st.boss && BOSS_CARD[W.boss.kind]) body = sceneHTML(W.boss.kind) + `<p class="freed">${BOSS_CARD[W.boss.kind]}</p>`;
   body += `<div class="medalrow"><span class="dots">${'●'.repeat(dots) + '○'.repeat(3 - dots)}</span> ${medalImg(dots, 'pix sm')}</div>`;
   const earned = Math.round((G.coins + (st.boss ? 20 : 0)) * TIER_GEMS[sk.tier - 1]);
@@ -4174,20 +4569,26 @@ function finishLevel() {
   showMsg(title, body, btns);
 }
 
-// What each boss leaves behind: a clue about who the Shogun really is (the last one is the ending).
+// The win card after each boss (the Shogun's is the ending).
 const BOSS_CARD = {
-  kage: "Kage won't take your hand. As he fades into the shadows he laughs: <i>\"You fight just like him. Same moves, same little hop.\"</i> The bandits run away, and the lost children find their way home.",
-  golem: "The Golem's fire cools. He is gentle again. <i>\"The Shogun once cried here,\"</i> he rumbles. <i>\"He was holding a little wooden ninja, carved for someone he left behind.\"</i>",
-  bot: "Mega-Bot 3000 switches off the factory. For the first time, every robot gets to rest. Its screen showed a secret file: <b>KURO · FAMILY: 1 FATHER, 1 LITTLE BROTHER</b>.",
-  yeti: "The snowman's frozen heart melts. Now he has a friend. He hands you a red headband the Shogun dropped. It looks exactly like yours.",
+  kage: 'Kage runs away. You got the Scroll of Adding!',
+  golem: 'The Golem is gentle again. He gives you a scroll.',
+  bot: 'The robots can rest now.',
+  yeti: 'The Snowman has a friend now: you!',
   shogun: '',
 };
 
+// The lost friends who are home wait with Sensei on the last page.
+function friendsHomeHTML() {
+  const got = FRIENDS.filter(f => (prog.friends || {})[f.id]); if (!got.length) return '';
+  return `<div class="friendrow">${got.map(f => `<span>${kidImg(f.id)}<small>${f.name}</small></span>`).join('')}</div>
+    <p>${got.length === FRIENDS.length ? 'Every one came home!' : `${got.map(f => f.name).join(', ')} came home too!`}</p>`;
+}
 // The ending comes in three pages: the castle falls, morning, then home.
 const endBody = {
   falls: () => `${sceneHTML('falls')}<p>${ENDING}</p>`,
   morning: () => `${sceneHTML('morning')}<p>${MORNING}</p>`,
-  home: () => `${sceneHTML('home')}<p>${HOME}</p>`,
+  home: () => `${sceneHTML('home')}<p>${HOME}</p>${friendsHomeHTML()}`,
 };
 function showEnding() {
   showMsg('The Castle Falls', endBody.falls(), [{ label: 'Next ▶', fn: showMorning, primary: true }]);
@@ -4212,7 +4613,7 @@ function storyPages() {
   return pages;
 }
 function storyBook(i) {
-  const pages = storyPages(), [title, body] = pages[i], close = () => { hide('msg'); show('menu'); };
+  const pages = storyPages(), [title, body] = pages[i], close = () => { stopReading(); hide('msg'); show('menu'); };
   const btns = [];
   if (i > 0) btns.push({ label: '◀ Back', fn: () => storyBook(i - 1), alt: true });
   btns.push(i < pages.length - 1 ? { label: 'Next ▶', fn: () => storyBook(i + 1), primary: true } : { label: 'The end', fn: close, primary: true });
@@ -4226,6 +4627,7 @@ function update() {
   if (!G) { cam = (tick * 1.2) % (L.w * T - VW); return; }
   G.time++;
   { const cs = currentStation(); if (cs && cs.answers && cs.shownAt == null) cs.shownAt = G.time; }
+  if (G.hand && mode === 'play') updateHand();
   if (mode === 'play') { updatePlayer(); updateEnemies(); }
   else if (mode === 'win') { updateWin(); updateEnemies(); }
   if (mode === 'play' || mode === 'win') { updateBoss(); if (L.boss) { updateArena(); updateOrbs(); updateShotsAndProjectiles(); } }
@@ -4362,7 +4764,7 @@ function startRace(travel = null) {
   const slow = prog.easy ? 0.82 : 1;   // Easy mode: everyone rides slower, so there is more time to think
   RC = {
     topic, length, curves, gates, z: 0, speed: 0, cruise: 4600 * slow, maxSpeed: 8200 * slow, boost: 3000, slow,   // full boost even in Easy, so all right answers always wins
-    lane: 1, laneX: 0, time: 0, count: 3.99, goT: 0, anim: 0, bg: 0, right: 0, wrong: 0, streak: 0, finished: false, place: 0,
+    lane: 1, laneX: 0, laneT: -1, fastN: 0, time: 0, count: 3.99, goT: 0, anim: 0, bg: 0, right: 0, wrong: 0, streak: 0, finished: false, place: 0,
     travel: typeof travel === 'number' ? travel : null, missed: new Map(), texts: [], spr: bakeRide(prog.ride, pickRiderPal()), ride: prog.ride, track: TRACKS[prog.track] ? prog.track : 'cherry',
     rivals: RIVALS.map((v, k) => ({ ...v, z: 0, speed: 0, base: v.speed * slow, lane: k === 0 ? 0 : k === 1 ? 2 : 1, laneX: LANES[k === 0 ? 0 : k === 1 ? 2 : 1], switchT: R(3, 6) })),
   };
@@ -4374,15 +4776,19 @@ function pickRiderPal() { const hp = heroPal(); return { n: hp.n, N: hp.N, R: hp
 function raceSteer(d) {
   if (!RC || mode !== 'race' || RC.finished) return;
   const lane = clamp(RC.lane + d, 0, 2);
-  if (lane !== RC.lane) { RC.lane = lane; tone(500 + lane * 120, 0.05, 'triangle', 0.04); }
+  if (lane !== RC.lane) { RC.lane = lane; RC.laneT = RC.time; tone(500 + lane * 120, 0.05, 'triangle', 0.04); }
 }
 function raceText(txt, col) { RC.texts.push({ txt, col, t: 1.4 }); }
 
 function judgeGate(g) {
   const r = RC; g.done = true;
-  noteFact(g.q, g.opts[r.lane] === g.q.ans, true, r.topic);
-  if (g.opts[r.lane] === g.q.ans) {
-    r.right++; r.streak++;
+  // fast = the lane was picked within the walking-pace limit after this gate came up; no steering since then = time
+  // unknown (already in the right lane), which gives no silver but doesn't count as slow either
+  const took = r.laneT >= (g.shownAt ?? 0) ? r.laneT - (g.shownAt ?? 0) : null, ok = g.opts[r.lane] === g.q.ans;
+  const fast = took === null ? null : took <= fastFrames(r.topic, g.q, true) / 60;
+  noteFact(g.q, ok, ok && fast, r.topic);
+  if (ok) {
+    r.right++; r.streak++; if (fast) r.fastN++;
     r.speed = Math.min(r.maxSpeed, Math.max(r.speed, r.cruise) + r.boost);
     sfx.correct(); tone(300, 0.35, 'sawtooth', 0.03, 900);
     raceText(r.streak >= 3 ? `Hyah! ${r.streak} in a row!` : ['Hyah! Boost!', 'Zoom!', 'Speed up!'][R(0, 2)], '#3ae374');
@@ -4409,6 +4815,7 @@ function updateRace(dt) {
   if (!r.finished) r.time += dt;
   r.bg += (r.curves[Math.floor(r.z / SEG)] || 0) * r.speed * dt * 0.00004;
   for (const g of r.gates) if (!g.done && r.z >= g.z) judgeGate(g);
+  { const nx = r.gates.find(g => !g.done); if (nx && nx.shownAt == null) nx.shownAt = r.time; }   // its question is up now
   for (const v of r.rivals) {
     v.speed = Math.min(v.base, v.speed + 1500 * dt);
     v.z += v.speed * dt * (1 + Math.sin(r.time * 0.6 + v.base) * 0.04);
@@ -4435,7 +4842,7 @@ function finishRace() {
     if (RC !== r) return;
     mode = 'racedone'; hide('pauseBtn'); showTouch(false);
     const medal = r.place === 4 ? pixImg('race', 'pix big') : medalImg(4 - r.place);
-    const path = pathRound(r.topic, { right: r.right, wrong: GATES - r.right, fast: r.right, race: true }), up = path.startsWith('<div');
+    const path = pathRound(r.topic, { right: r.right, wrong: GATES - r.right, fast: r.fastN, race: true }), up = path.startsWith('<div');
     let body = `<div class="bigicon">${medal}</div><div class="statrow"><span>${pixImg('clock', 'pix sm')} ${r.time.toFixed(1)}s${best ? ' NEW!' : ''}</span><span>✔ ${r.right}/${GATES}</span><span>💎 +${reward}</span>${up ? '' : path}</div>`;
     if (up) body += path;
     if (r.missed.size) body += `<div class="practice">🔁 ${[...r.missed.values()].slice(0, 3).map(q => `<span>${qSolved(q)}</span>`).join('')}</div>`;
@@ -6056,18 +6463,24 @@ function drawGoal() {
   const inside = G && (mode === 'win' || mode === 'done') && P.x > (L.castleC + 2.2) * T;
   if (px > cam - 300 && px < cam + VW + 300) {
     HOLDERS[L.world.key][L.def.k % 2](px, b);
-    if (!inside) {
-      let { x, y } = scrollSpot();
-      if (G && (mode === 'win' || mode === 'done')) {   // the scroll flies into the ninja's hands
-        const t = Math.min(1, G.winT / 40), hx = P.x + P.w / 2, hy = P.y - 16;
-        x += (hx - x) * t; y += (hy - y) * t - Math.sin(t * Math.PI) * 50;
-      }
+    if (!inside && !(G && (mode === 'win' || mode === 'done'))) {   // waiting on its holder (once Kai has it, drawCarriedScroll draws it)
+      const { x, y } = scrollSpot();
       glowAt(x, y, 34, 'rgba(255,230,120,.5)');
       drawScroll(x, y, 1.3);
     }
   }
   const cx = L.castleC * T;
   if (cx < cam + VW + 60 && cx + 5 * T > cam - 60) HOMES[L.world.key](cx, b);
+}
+// The scroll flies into Kai's hands and he carries it home. Drawn right after Kai, so the house never covers it
+// while he is in front of the house; it disappears with him when he goes inside.
+function drawCarriedScroll() {
+  if (!G || L.boss || L.vault || !(mode === 'win' || mode === 'done') || P.x > (L.castleC + 2.2) * T) return;
+  let { x, y } = scrollSpot();
+  const t = Math.min(1, G.winT / 40), hx = P.x + P.w / 2, hy = P.y - 16;
+  x += (hx - x) * t; y += (hy - y) * t - Math.sin(t * Math.PI) * 50;
+  glowAt(x, y, 34, 'rgba(255,230,120,.5)');
+  drawScroll(x, y, 1.3);
 }
 
 // ---------------------------------------------------------------- drawing: characters
@@ -6133,7 +6546,7 @@ function drawEnemy(e) {
 function drawBoss() {
   const b = L.boss; if (!b || (b.dead && !b.friendly)) return;
   if (b.flash > 0 && Math.floor(b.flash / 3) % 2) return;
-  const box = { x: b.x + (b.dying ? (Math.random() - 0.5) * 6 : 0) + (b.shakeX || 0), y: b.y, w: b.w, h: b.h };
+  const box = { x: b.x + (b.dying && !b.gentle ? (Math.random() - 0.5) * 6 : 0) + (b.shakeX || 0), y: b.y, w: b.w, h: b.h };
   if (b.alpha !== undefined) ctx.globalAlpha = b.alpha;
   if (b.alpha !== 0) drawBaked(BOSS_SPR[b.kind], b.outro ? 'a' : Math.floor(b.t / 12) % 2 ? 'b' : 'a', b.outro ? P.x < b.x : b.face > 0, box);
   ctx.globalAlpha = 1;
@@ -6194,6 +6607,250 @@ function drawPet() {
   }
 }
 
+// The lost friends: little dojo students on Kai's 16 × 16 grid (same size and outline), each with one thing of
+// their own. Frames: stand, cheer (arms up).
+const KID_PAL = { s: '#f6c79c', w: '#ffffff', e: '#16121f', m: '#c0504d', f: '#3b3552' };
+const KID_LOOK = {
+  hana: { h: '#2a1d1a', o: '#ff8fbf', O: '#d9608f', y: '#ffd23f', p: '#ff5a8a', r: '#e63946' },
+  tomo: { h: '#6b4423', o: '#d07a2e', O: '#8e4d17', y: '#ffd23f', Y: '#c99a1a', l: '#fff6c9' },
+  niko: { h: '#e8742a', o: '#2aa198', O: '#17675f', K: '#2b2b38', c: '#7df9ff', g: '#9aa7b8' },
+  yuki: { h: '#5a3a24', o: '#3a6fd8', O: '#244a99', u: '#f2efe6', U: '#c9c2b2', r: '#e63946' },
+  mei: { h: '#1d1a2a', o: '#b58be0', O: '#7d5aa8', l: '#f7f5ee', L: '#d8d2c0', K: '#3a3040' },
+};
+let KID_SPR = null;
+function kidSpr(id) {
+  if (!KID_SPR) KID_SPR = {};
+  if (!KID_SPR[id]) KID_SPR[id] = bake(makeFrames(16, 16, { ...KID_PAL, ...KID_LOOK[id] }, ({ P, R, E }, f) => {
+    E(8.5, 5, 4.6, 4.3, 'h');   // hair
+    if (id === 'yuki') { E(8.5, 2.6, 5.4, 2.6, 'u'); R(3, 4, 12, 1, 'U'); }   // a big furry hat
+    if (id === 'tomo') { R(4, 1, 10, 3, 'y'); R(3, 3, 12, 1, 'Y'); P(12, 2, 'l'); P(13, 2, 'l'); }   // miner's helmet with a lamp
+    if (id === 'mei') { E(4.6, 2.4, 1.6, 1.6, 'h'); E(12.4, 2.4, 1.6, 1.6, 'h'); }   // two buns
+    R(8, 5, 6, 3, 's'); P(7, 7, 's');   // face
+    P(9, 5, 'w'); P(9, 6, 'w'); P(10, 5, 'e'); P(10, 6, 'e'); P(12, 5, 'w'); P(12, 6, 'w'); P(13, 5, 'e'); P(13, 6, 'e');
+    P(11, 7, 'm');   // a small smile
+    if (id === 'niko') { R(5, 3, 9, 1, 'K'); P(9, 3, 'c'); P(10, 3, 'c'); P(12, 3, 'c'); P(13, 3, 'c'); }   // goggles up on her forehead
+    if (id === 'hana') { P(6, 2, 'p'); P(5, 3, 'p'); P(7, 3, 'p'); P(6, 4, 'p'); P(6, 3, 'y'); }   // a flower in her hair
+    R(5, 9, 7, 4, 'o'); P(10, 9, 'O'); P(10, 10, 'O'); R(5, 12, 7, 1, 'O');   // clothes
+    if (id === 'hana') R(5, 11, 7, 1, 'y');   // kimono sash
+    if (id === 'yuki') { R(6, 9, 7, 1, 'r'); P(5, 10, 'r'); P(5, 11, 'r'); }   // scarf
+    if (id === 'mei') { E(11, 10.5, 2.6, 1.7, 'l'); P(9, 11, 'L'); P(13, 9, 'K'); P(14, 9, 'K'); P(14, 10, 'K'); }   // her lamb in her arms
+    if (f === 1) { P(4, 7, 's'); P(4, 8, 'o'); P(13, 7, 's'); P(13, 8, 'o'); }   // arms up
+    else { P(4, 11, 's'); if (id !== 'mei') P(12, 10, 's'); }
+    if (id === 'niko') { if (f === 1) { P(14, 6, 'g'); P(13, 6, 'g'); P(14, 5, 'g'); } else { P(13, 10, 'g'); P(13, 11, 'g'); P(14, 9, 'g'); } }   // wrench
+    if (id === 'hana' && f === 1) { P(14, 6, 'r'); P(15, 5, 'r'); P(15, 6, 'w'); P(15, 7, 'r'); P(14, 7, 'w'); }   // her fan
+    R(5, 13, 2, 1, 'O'); R(9, 13, 2, 1, 'O'); R(4, 14, 3, 1, 'f'); R(9, 14, 3, 1, 'f');   // legs and shoes
+  }, 2), ['stand', 'cheer']);
+  return KID_SPR[id];
+}
+function kidImg(id, cls = 'kidimg') {
+  const s = kidSpr(id).stand[0], cv = document.createElement('canvas'); cv.width = 40; cv.height = 40;
+  const x = cv.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(s, Math.round((40 - s.width) / 2), Math.round(40 - s.height));
+  return `<img class="${cls}" src="${cv.toDataURL()}" alt="">`;
+}
+
+// The secret way in, drawn in the level (after the tiles), with a small "Help!" when Kai is near.
+function drawFriendSpot() {
+  const fr = L.friend;
+  if (fr && !fr.done) {
+    const X = (fr.c + 0.5) * T, g = GR * T, way = fr.f.way;
+    if (way === 'key') {
+      if (!fr.open) {   // a golden block with a key on it
+        const x = fr.kc * T, y = fr.kr * T - (G && G.bumps.get(fr.kc + ',' + fr.kr) ? 6 : 0);
+        block(x, y, '#ffd23f', '#c99a1a', '#fff6c9');
+        ctx.fillStyle = '#6b4a10'; ctx.fillRect(x + 9, y + 14, 6, 6); ctx.fillRect(x + 15, y + 16, 12, 3); ctx.fillRect(x + 23, y + 19, 3, 4); ctx.fillStyle = '#ffd23f'; ctx.fillRect(x + 11, y + 16, 2, 2);
+      }
+      const hx = fr.hole * T, o = fr.open;   // the trapdoor: a stone slab that slides aside
+      ctx.fillStyle = '#0b0a10'; ctx.fillRect(hx + 2, g, 2 * T - 4, 10 + o * 20);
+      ctx.save(); ctx.beginPath(); ctx.rect(hx, g - 1, 2 * T, 14); ctx.clip();
+      ctx.fillStyle = '#7d7a86'; ctx.fillRect(hx + 2 + o * 2 * T, g, 2 * T - 4, 9); ctx.fillStyle = '#5a5762'; ctx.fillRect(hx + 2 + o * 2 * T, g + 7, 2 * T - 4, 2);
+      ctx.fillStyle = '#3a3842'; ctx.fillRect(hx + T - 4 + o * 2 * T, g + 2, 8, 3);
+      ctx.restore();
+    } else if (way === 'vent') {   // a glowing vent, bigger than the others
+      glowAt(X, g, 46, `rgba(255,120,30,${0.35 + 0.15 * Math.sin(tick * 0.08)})`);
+      ctx.fillStyle = '#3a2f2c'; rrect(X - 26, g - 10, 52, 12, 5); ctx.fill(); ctx.fillStyle = '#120c0a'; rrect(X - 18, g - 7, 36, 7, 3); ctx.fill();
+      if (tick % 14 === 0 && G) G.parts.push({ k: 'bit', x: X + (Math.random() - 0.5) * 20, y: g - 10, vx: 0, vy: -2.5, life: 34, col: '#b8aca5', s: 6 });
+    } else if (way === 'crate') {   // a crate with a blinking light
+      const x = fr.c * T, y = g - T;
+      block(x, y, '#b0794a', '#6e4627', '#d8a679'); ctx.fillStyle = '#6e4627'; ctx.fillRect(x + 4, y + T / 2 - 2, T - 8, 4);
+      ctx.fillStyle = Math.floor(tick / 20) % 2 ? '#3ae374' : '#ff4d6d'; ctx.fillRect(x + T / 2 - 4, y - 6, 8, 6);
+      glowAt(x + T / 2, y - 3, 14, Math.floor(tick / 20) % 2 ? 'rgba(58,227,116,.6)' : 'rgba(255,77,109,.6)');
+    } else if (way === 'falls') {   // a frozen waterfall against the cave wall
+      const x = fr.c * T, top = g - 4 * T, sh = fr.crack ? (Math.random() - 0.5) * 3 : 0;
+      ctx.globalAlpha = 0.85; ctx.fillStyle = '#9fd8f5'; ctx.fillRect(x + sh, top, 2 * T, 4 * T);
+      ctx.fillStyle = '#e8fbff'; for (let i = 0; i < 5; i++) ctx.fillRect(x + 6 + i * 13 + sh, top + (i % 2) * 10, 4, 4 * T - 14 - (i % 2) * 10);
+      ctx.globalAlpha = 1;
+      if (fr.crack) { ctx.strokeStyle = '#2a5a7a'; ctx.lineWidth = 2; ctx.beginPath(); const n = Math.min(4, 1 + Math.floor(fr.crack / 10)); for (let i = 0; i < n; i++) { ctx.moveTo(x + T + sh, top + 2 * T); ctx.lineTo(x + T + Math.cos(i * 1.7) * 30 + sh, top + 2 * T + Math.sin(i * 1.7) * 50); } ctx.stroke(); }
+    }
+    if (friendNear()) {   // "Help!" from where the friend is
+      const up = fr.f.dir < 0, bx = way === 'key' ? (fr.hole + 1) * T : way === 'falls' ? (fr.c + 1) * T : X;
+      const by = (up ? 210 : way === 'falls' ? g - 4 * T - 26 : way === 'crate' ? g - T - 32 : g - 46) + Math.sin(tick * 0.1) * 3;
+      ctx.font = '16px "Lilita One", "Trebuchet MS", sans-serif'; const w = ctx.measureText('Help!').width + 18;
+      ctx.fillStyle = '#ffffff'; rrect(bx - w / 2, by - 13, w, 26, 10); ctx.fill(); ctx.strokeStyle = '#cfd6e4'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(bx - 5, by + (up ? -13 : 13)); ctx.lineTo(bx, by + (up ? -21 : 21)); ctx.lineTo(bx + 5, by + (up ? -13 : 13)); ctx.fill();
+      ctx.fillStyle = '#22224a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('Help!', bx, by + 1);
+    }
+  }
+  if (G && hasFriend('eyes') && tick % 9 === 0) {   // Night eyes: secret spots sparkle
+    const spots = [];
+    if (fr && !fr.done) spots.push([(fr.c + 0.5) * T, GR * T - T]);
+    for (const d of L.doors || []) if (d.hidden) spots.push([(d.c + 0.7) * T, (d.r || GR) * T - T]);
+    const c0 = Math.max(0, Math.floor(cam / T)), c1 = Math.min(L.w - 1, c0 + Math.ceil(VW / T) + 1);
+    for (let r = 0; r < GR; r++) for (let c = c0; c <= c1; c++) if (L.map[r][c] === 'H' || L.map[r][c] === 'W') spots.push([(c + 0.5) * T, (r + 0.5) * T]);
+    for (const [x, y] of spots) G.parts.push({ k: 'bit', x: x + (Math.random() - 0.5) * T, y: y + (Math.random() - 0.5) * T, vx: 0, vy: -0.4, life: 26, col: Math.random() < 0.5 ? '#fff6c9' : '#ffd23f', s: 3 });
+  }
+}
+
+// The rescue scene: slides in over the level (down for a cave or chute, up for a ledge or roof), built from the
+// world's own blocks. Kai on the left, the friend on the right behind three things that the right answers clear.
+function drawRescue() {
+  const r = G.rescue, f = r.f, W = L.world, way = f.way, { fy, kx, fx } = rescueSpots();
+  const s = r.phase === 'in' ? r.t / RESCUE_SLIDE : r.phase === 'out' ? 1 - r.t / RESCUE_SLIDE : 1, e = 1 - (1 - clamp(s, 0, 1)) ** 3;
+  ctx.fillStyle = `rgba(0,0,0,${0.55 * e})`; ctx.fillRect(0, 0, VW, VH);
+  ctx.save(); ctx.translate(0, Math.round(r.dir * (1 - e) * VH));
+  if (r.dir < 0) {   // up: open sky (ash clouds over the volcano, the moon over the castle roofs)
+    const sky = W.skies[L.def.k], gr = ctx.createLinearGradient(0, 0, 0, VH); gr.addColorStop(0, sky[0]); gr.addColorStop(1, sky[1]); ctx.fillStyle = gr; ctx.fillRect(0, 0, VW, VH);
+    if (way === 'ladder') { ctx.fillStyle = '#fff6d8'; ctx.beginPath(); ctx.arc(VW * 0.82, 110, 46, 0, 7); ctx.fill(); glowAt(VW * 0.82, 110, 110, 'rgba(255,246,216,.25)'); }
+    else for (let i = 0; i < 5; i++) { ctx.fillStyle = 'rgba(80,60,55,.55)'; ctx.beginPath(); ctx.arc((i * 230 + tick * 0.3) % (VW + 200) - 100, 120 + (i % 2) * 60, 70, 0, 7); ctx.fill(); }
+  } else {   // down: a cave of the world's bricks
+    for (let y = 0; y < fy; y += T) for (let x = 0; x < VW; x += T) block(x, y, W.brick[0], W.brick[1], W.brick[0]);
+    ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(0, 0, VW, fy);
+    glowAt(fx, fy - 60, 200, way === 'falls' ? 'rgba(160,220,255,.25)' : 'rgba(255,220,160,.22)');
+  }
+  for (let x = 0; x < VW; x += T) { block(x, fy, W.stair[0], W.stair[1], W.stair[2]); block(x, fy + T, W.stair[0], W.stair[1], W.stair[2]); }
+  const freeT = r.phase === 'free' || r.phase === 'out' ? (r.phase === 'out' ? 230 : r.t) : -1;
+  // where the friend stands (Mei comes down the steps the lanterns light; everyone walks over to Kai once free)
+  const ledgeX = fx - T, ledgeTop = fy - 4 * T;
+  let px = fx, py = fy;
+  if (way === 'ladder') py = ledgeTop;   // Mei is up on a ledge
+  if (way === 'ladder') for (let h = 1; h <= 4; h++) { block(ledgeX, fy - h * T, W.stair[0], W.stair[1], W.stair[2]); block(ledgeX + T, fy - h * T, W.stair[0], W.stair[1], W.stair[2]); }
+  if (way === 'ladder') for (let k = 0; k < Math.min(3, r.step); k++) for (let h = 1; h <= k + 1; h++) block(ledgeX - (3 - k) * T, fy - h * T, W.stair[0], W.stair[1], W.stair[2]);
+  if (freeT > 40) {
+    const u = clamp((freeT - 40) / 90, 0, 1), tx = kx + 56;
+    px = fx + (tx - fx) * u;
+    if (way === 'ladder') { const col = Math.floor((px - (ledgeX - 3 * T)) / T); py = col >= 3 ? ledgeTop : col >= 0 ? fy - (col + 1) * T : fy; }
+  }
+  const hop = freeT > 0 && freeT < 40 ? -Math.abs(Math.sin(freeT * 0.25)) * 14 : freeT >= 130 ? -Math.abs(Math.sin(freeT * 0.2)) * 8 : 0;
+  // what holds the friend
+  const n = 3 - r.step, gone = freeT >= 0 ? clamp(freeT / 30, 0, 1) : 0;
+  if (way === 'falls') for (let i = 0; i < 3; i++) {   // ice chimes on the wall, lit as they ring
+    const cx = fx - 110 + i * 18, lit = i < r.step;
+    ctx.fillStyle = '#6b5a4a'; ctx.fillRect(cx - 9, fy - 168, 18 * 3, 3);
+    ctx.fillStyle = lit ? '#ffffff' : '#9fd8f5'; ctx.fillRect(cx - 3, fy - 165, 6, 40 + i * 10);
+    if (lit) glowAt(cx, fy - 140, 22, 'rgba(200,240,255,.6)');
+  }
+  if (way === 'ladder') for (let i = 0; i < 3; i++) {   // lanterns on a rope, lit one by one
+    const lx = kx + 70 + i * ((ledgeX - kx - 100) / 2), ly = fy - 5.2 * T + Math.sin(i * 1.3) * 6, lit = i < r.step;
+    if (i === 0) { ctx.strokeStyle = '#3a2a20'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, fy - 5.8 * T); ctx.quadraticCurveTo(VW * 0.4, fy - 4.9 * T, ledgeX + T, fy - 5.6 * T); ctx.stroke(); }
+    if (lit) glowAt(lx, ly + 10, 40, 'rgba(255,200,80,.55)');
+    ctx.fillStyle = lit ? '#ffb627' : '#5a2a2a'; rrect(lx - 10, ly, 20, 24, 6); ctx.fill(); ctx.fillStyle = '#2a1a1a'; ctx.fillRect(lx - 6, ly - 3, 12, 3); ctx.fillRect(lx - 6, ly + 24, 12, 3);
+  }
+  // the friend
+  const spr = kidSpr(f.id), pose = freeT >= 0 ? (Math.floor(freeT / 16) % 2 ? 'cheer' : 'stand') : 'stand';
+  drawBaked(spr, pose, true, { x: px - 12, y: py - 44 + hop, w: 24, h: 44 });
+  ctx.globalAlpha = 1 - gone;
+  if (way === 'key') {   // a bamboo cage tied with three ropes
+    for (let i = 0; i < 4; i++) { ctx.fillStyle = '#7cb342'; ctx.fillRect(fx - 33 + i * 20, fy - 74 + gone * 40, 6, 74); ctx.fillStyle = '#33691e'; ctx.fillRect(fx - 33 + i * 20, fy - 50 + gone * 40, 6, 3); }
+    for (let i = 0; i < n; i++) { ctx.fillStyle = '#8b5a2b'; ctx.fillRect(fx - 38, fy - 64 + i * 22, 76, 5); }
+  } else if (way === 'vent') {   // fallen rocks in front of him
+    for (let i = 0; i < n; i++) block(fx - 66, fy - (i + 1) * T, '#6b625e', '#3a3432', '#8f8580');
+  } else if (way === 'crate') {   // a broken lift: bars, and three battery slots that fill
+    ctx.fillStyle = '#4a5868'; ctx.fillRect(fx - 34, fy - 84, 68, 6);
+    for (let i = 0; i < 5; i++) ctx.fillRect(fx - 32 + i * 15, fy - 80 + gone * -60, 4, 80);
+    for (let i = 0; i < 3; i++) { ctx.fillStyle = '#2b2b38'; ctx.fillRect(fx - 62, fy - 28 - i * 22, 18, 18); ctx.fillStyle = i < r.step ? '#3ae374' : '#555a66'; ctx.fillRect(fx - 59, fy - 25 - i * 22, 12, 12); }
+  } else if (way === 'falls') {   // a block of ice, thinner with each chime
+    ctx.globalAlpha = (1 - gone) * (0.35 + 0.2 * n); ctx.fillStyle = '#bfe9ff'; ctx.fillRect(fx - 30, fy - 76, 60, 76);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(fx - 24, fy - 70, 5, 50); ctx.fillRect(fx + 12, fy - 60, 4, 40);
+  }
+  ctx.globalAlpha = 1;
+  // Kai
+  drawBaked(SPR, freeT > 130 && Math.floor(freeT / 16) % 2 ? 'jump' : 'stand', false, { x: kx - 12, y: fy - 44 + (freeT > 130 ? hop : 0), w: 24, h: 44 });
+  // speech
+  const say = r.phase === 'ask' && r.step === 0 && r.t < 150 ? 'Help me, Kai!' : freeT >= 30 && freeT < 130 ? 'Thank you, Kai!' : freeT >= 130 ? 'See you at the dojo!' : '';
+  if (say) {
+    ctx.font = '18px "Lilita One", "Trebuchet MS", sans-serif'; const w = ctx.measureText(say).width + 22, bx = clamp(px, w / 2 + 6, VW - w / 2 - 6), by = py - 82 + hop;
+    ctx.fillStyle = '#ffffff'; rrect(bx - w / 2, by - 15, w, 30, 12); ctx.fill(); ctx.beginPath(); ctx.moveTo(px - 5, by + 15); ctx.lineTo(px, by + 23); ctx.lineTo(px + 5, by + 15); ctx.fill();
+    ctx.fillStyle = '#22224a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(say, bx, by + 1);
+  }
+  if (freeT >= 130) {   // the power, said big
+    hudText(`New power: ${f.pname}!`, VW / 2, VH * 0.42, 28, '#ffd23f', 'center');
+    hudText(f.ptip, VW / 2, VH * 0.42 + 34, 19, '#ffffff', 'center');
+  }
+  // answer tiles (computers; phones use the buttons)
+  r.tiles = null;
+  if (r.phase === 'ask' && r.q && !isTouch) {
+    const tw = 86, th = 58, gap = 22, x0 = VW / 2 - (tw * 3 + gap * 2) / 2, ty = Math.round(VH * 0.34);
+    r.tiles = r.opts.map((v, i) => ({ x: x0 + i * (tw + gap), y: ty, w: tw, h: th }));
+    r.tiles.forEach((t, i) => {
+      const v = r.opts[i], [c1, c2] = ansCol(i), done = r.wait > 0, right = v === r.q.ans;
+      ctx.globalAlpha = done && i !== r.pick && !right ? 0.35 : 1;
+      ctx.fillStyle = c2; rrect(t.x, t.y + 4, t.w, t.h, 12); ctx.fill();
+      ctx.fillStyle = done && right ? '#c4ffd8' : done && i === r.pick ? '#ffc9d4' : '#ffffff'; rrect(t.x, t.y, t.w, t.h, 12); ctx.fill();
+      ctx.strokeStyle = c1; ctx.lineWidth = 4; ctx.stroke();
+      ctx.fillStyle = '#22224a'; ctx.font = `${String(v).length > 3 ? 24 : 30}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(v, t.x + t.w / 2, t.y + t.h / 2 + 2);
+      keyTag(ANS_KEYS(3)[i], t.x + t.w - 6, t.y + 4);
+      ctx.globalAlpha = 1;
+    });
+  }
+  if (r.msgT > 0) hudText(r.msg, VW / 2, Math.round(VH * 0.34) + 92, 26, r.msgCol, 'center');
+  for (const b of r.bits) { ctx.globalAlpha = Math.min(1, b.life / 15); ctx.fillStyle = b.col; ctx.fillRect(b.x, b.y, b.s, b.s); }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+// The swing frames: posts on the two ledges and the perch, a beam (or rope, or lift cable) across the top, and the
+// ropes / chains / hooks / chairs, one over each gap. Drawn behind Kai.
+function drawSwings() {
+  for (const sw of L.swings || []) {
+    const xA = (sw.l0 + 0.3) * T, xM = (sw.pm + 1) * T, xB = (sw.l1 + 1.7) * T;
+    if (xB < cam - 60 || xA > cam + VW + 60) continue;
+    const look = SWING_LOOK[L.world.key] || SWING_LOOK.japan, top = Math.round((GR - 8.4) * T), base = swingTop(), g = G && G.swing && G.swing.sw === sw ? G.swing : null;
+    for (const x of [xA, xM, xB]) { ctx.fillStyle = look.post; ctx.fillRect(x - 5, top, 10, base - top); ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(x + 2, top, 3, base - top); }
+    const anchors = [(xA + xM) / 2, (xM + xB) / 2];
+    if (look.lift) {   // a ski lift: a cable that sags between the poles, a chair on each span
+      ctx.strokeStyle = look.beam; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(xA, top + 6);
+      ctx.quadraticCurveTo(anchors[0], top + 46, xM, top + 6); ctx.quadraticCurveTo(anchors[1], top + 46, xB, top + 6); ctx.stroke();
+      for (const x of [xA, xM, xB]) { ctx.fillStyle = look.post; ctx.fillRect(x - 14, top, 28, 6); }
+    } else if (look.lantern) {   // a rope strung roof to roof, with small lanterns
+      ctx.strokeStyle = look.beam; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(xA, top + 4); ctx.quadraticCurveTo((xA + xB) / 2, top + 30, xB, top + 4); ctx.stroke();
+      for (let k = 1; k < 8; k++) { const x = xA + (xB - xA) * k / 8, y = top + 4 + Math.sin(Math.PI * k / 8) * 13; ctx.fillStyle = '#e63946'; rrect(x - 5, y, 10, 13, 4); ctx.fill(); glowAt(x, y + 6, 12, 'rgba(255,180,80,.35)'); }
+    } else {   // a beam: torii, rock arch or crane rail
+      ctx.fillStyle = look.beam; ctx.fillRect(xA - 14, top - 8, xB - xA + 28, 12);
+      if (look.post === '#c0392b') { ctx.fillStyle = '#c0392b'; ctx.fillRect(xA - 8, top + 10, xB - xA + 16, 7); }   // torii: a red tie-beam under the black top
+      if (look.hook) for (let x = xA - 14; x < xB + 14; x += 20) { ctx.fillStyle = '#16121f'; ctx.fillRect(x, top - 8, 10, 12); }   // yellow and black stripes
+      if (look.chain) { ctx.fillStyle = '#ff6a00'; for (let x = xA; x < xB; x += 46) ctx.fillRect(x, top - 2, 14, 2); }   // glowing cracks in the rock
+    }
+    anchors.forEach((ax, h) => {   // what Kai holds on to: hanging still, or holding Kai as he swings
+      const ay = look.lift ? top + 6 + 28 : top + 4, riding = g && g.ph === 'go' && g.half === h;
+      const hx = riding ? P.x + P.w / 2 : ax + Math.sin(tick * 0.03 + h) * (look.lift ? 0 : 6), hy = riding ? P.y + 6 : base - 1.4 * T;
+      if (look.lift) {   // a chair on a short bar
+        const cy = riding ? P.y + P.h - 10 : hy + 10;
+        ctx.strokeStyle = look.rope; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(riding ? hx : ax, riding ? P.y - 24 : ay); ctx.lineTo(hx, cy - 6); ctx.stroke();
+        ctx.fillStyle = '#e63946'; ctx.fillRect(hx - 16, cy - 6, 32, 6); ctx.fillRect(hx - 16, cy - 20, 5, 16);
+        return;
+      }
+      ctx.strokeStyle = look.rope; ctx.lineWidth = look.chain ? 4 : 3; if (look.chain) ctx.setLineDash([5, 3]);
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(hx, hy); ctx.stroke(); ctx.setLineDash([]);
+      if (look.hook && !riding) { ctx.strokeStyle = '#9aa7b8'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(hx, hy + 6, 7, -0.5, Math.PI); ctx.stroke(); }
+      if (!look.hook && !riding) { ctx.fillStyle = look.rope; ctx.fillRect(hx - 4, hy - 2, 8, 6); }   // a knot to grab
+    });
+    // the three answers, over the gap Kai is about to swing across
+    if (g) g.tiles = null;
+    if (g && g.ph === 'ask' && g.q) {
+      const mx = anchors[g.half], y = (GR - 7.3) * T;
+      g.tiles = g.opts.map((v, j) => ({ x: mx + (j - 1) * 1.9 * T - 26, y, w: 52, h: 40 }));
+      g.tiles.forEach((t, j) => {
+        const [c1, c2] = ansCol(j), right = g.opts[j] === g.q.ans, done = g.wait > 0;
+        ctx.globalAlpha = done && j !== g.pick && !right ? 0.35 : 1;
+        ctx.fillStyle = c2; rrect(t.x, t.y + 3, t.w, t.h, 10); ctx.fill();
+        ctx.fillStyle = done && right ? '#c4ffd8' : done && j === g.pick ? '#ffc9d4' : '#ffffff'; rrect(t.x, t.y, t.w, t.h, 10); ctx.fill();
+        ctx.strokeStyle = c1; ctx.lineWidth = 3; ctx.stroke();
+        ctx.fillStyle = '#22224a'; ctx.font = `${String(g.opts[j]).length > 3 ? 17 : 21}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(g.opts[j], t.x + t.w / 2, t.y + t.h / 2 + 1);
+        if (!isTouch) keyTag(ANS_KEYS(3)[j], t.x + t.w - 4, t.y + 2);
+        ctx.globalAlpha = 1;
+      });
+    }
+  }
+}
 function drawPlayer() {
   const p = P;
   if (p.inv > 0 && Math.floor(p.inv / 4) % 2 === 0) return;
@@ -6261,6 +6918,7 @@ function kaiPose() {
   }
   if (G.power && G.power.kind === 'sensei' && !P.onGround) return G.power.pose;
   if (G.flourish && G.flourish.t > 0) { G.flourish.t--; return G.flourish.pose; }
+  if (G.hand && (G.hand.t > 15 || G.hand.reached)) return HAND_POSE;
   return null;
 }
 const poseFace = (p, pose) => (p.face < 0 ? -1 : 1) * (pose.flip ? -1 : 1);
@@ -6548,12 +7206,12 @@ function drawTip() {
   wrapLines(t.txt, w - 92).slice(0, 3).forEach((ln, i) => ctx.fillText(ln, x + 76, y + 32 + i * 20));
   if (t.pic) drawTipPic(t.pic, x + 14, y + 96, w - 28, h - 106);
 }
-function drawTipPic(pic, x, y, w, h) {
+function drawTipPic(pic, x, y, w, h, big = 18) {   // big: the largest ten-frame cell
   const dot = (cx, cy, r, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill(); };
   ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   if (pic.k === 'frames') {   // ten frames: red dots, then blue (or ghost) dots, so "make 10" shows itself
     const red = pic.red || 0, more = pic.blue || pic.ghost || 0, total = red + more, frames = total > 10 || red > 10 ? 2 : 1;
-    const cell = Math.min(18, h / 2 - 2, (w - 20) / (frames * 5 + 1)), fw = cell * 5;
+    const cell = Math.min(big, h / 2 - 2, (w - 20) / (frames * 5 + 1)), fw = cell * 5;
     const x0 = x + (w - (frames * fw + (frames - 1) * cell)) / 2, y0 = y + (h - cell * 2) / 2;
     for (let f = 0; f < frames; f++) for (let i = 0; i < 10; i++) {
       const n = f * 10 + i, cx = x0 + f * (fw + cell) + (i % 5) * cell, cy = y0 + Math.floor(i / 5) * cell;
@@ -6649,9 +7307,18 @@ function drawDrill(rm, y) {
   });
   ctx.globalAlpha = 1;
 }
+// Kindergarten math (tier 1 skills) shows its picture right with the question: ten frames, so 2 + 3 is dots, not just digits.
+// Only in levels (gates, animals, math boxes), never in boss fights or rooms, and hidden while Sensei's tip (which has the picture) is up.
+// Mixed levels judge each question by its own skill (q.sk).
+function kidPic() {
+  if (!G || L.boss || L.vault || G.tip || activeBridge()) return null;
+  const m = miniTarget(), q = m ? m.q : G.rescue ? null : currentStation() && currentStation().q;   // a lost friend's scene: only its own question
+  const sk = q && (q.sk ? SKILL[q.sk] : L.skill);
+  return sk && sk.tier === 1 ? picFor(q) : null;
+}
 function drawHUD() {
-  const narrow = VW < 700, st = STAGES[G.idx];
-  if (L.twist && G.time < 300 && !L.vault) hudText(TWIST_HINT[L.twist], VW / 2, (narrow ? 92 : 10) + 104, narrow ? 15 : 19, '#ffd23f', 'center');
+  const narrow = VW < 700, st = STAGES[G.idx], pic = kidPic(), picH = pic ? (narrow ? 46 : 56) : 0;
+  if (L.twist && G.time < 300 && !L.vault && !G.rescue) hudText(TWIST_HINT[L.twist], VW / 2, (narrow ? 92 : 10) + 104 + (pic ? picH + 6 : 0), narrow ? 15 : 19, '#ffd23f', 'center');
   for (let i = 0; i < G.maxHearts; i++) heart(30 + i * 36, 16, 13, i < G.hearts ? '#ff4d6d' : 'rgba(0,0,0,.35)');
   drawGem(34, 64, 1, tick * 0.06);
   hudText('× ' + G.coins, 54, 65, 22 + G.pulse);
@@ -6667,12 +7334,13 @@ function drawHUD() {
   const cur = currentStation(), by = narrow ? 92 : 10;   // banner sits below the hearts on narrow screens
   const br = activeBridge();
   let txt;
-  if (L.room && L.room.kind === 'train') txt = L.room.open || L.room.show ? L.room.move.name : L.room.intro > 0 ? (L.room.intro > 150 ? L.room.move.name : L.room.intro > 90 ? 'Bow to Sensei' : L.room.intro > 40 ? 'Ready...' : 'Begin!') : qShow(L.room.q);
+  if (G.rescue) txt = rescueTitle(G.rescue);
+  else if (L.room && L.room.kind === 'train') txt = L.room.open || L.room.show ? L.room.move.name : L.room.intro > 0 ? (L.room.intro > 150 ? L.room.move.name : L.room.intro > 90 ? 'Bow to Sensei' : L.room.intro > 40 ? 'Ready...' : 'Begin!') : qShow(L.room.q);
   else if (L.room) txt = L.room.open ? 'Treasure!' : { scale: 'Balance the scale!', square: 'Magic square!', machine: 'Number machine!' }[L.room.kind];
   else if (br) txt = `Make ${br.target}!`;
   else if (miniTarget()) txt = qShow(miniTarget().q);
   else if (cur) txt = qShow(cur.q);
-  else if (L.boss) txt = L.boss.outro && !L.boss.outro.done ? L.boss.name : L.boss.dead || L.boss.dying || L.boss.outro ? 'Grab the scroll!' : L.arena.wait ? 'Nice hit!' : `Dodge! ${Math.ceil(L.arena.phaseT / 60)}`;
+  else if (L.boss) txt = G.hand ? 'Take my hand?' : L.boss.outro && !L.boss.outro.done ? L.boss.name : L.boss.dead || L.boss.dying || L.boss.outro ? 'Grab the scroll!' : L.arena.wait ? 'Nice hit!' : `Dodge! ${Math.ceil(L.arena.phaseT / 60)}`;
   else txt = 'Get the scroll piece!';
   ctx.font = '38px "Lilita One", "Trebuchet MS", sans-serif';
   const w = Math.max(240, ctx.measureText(txt).width + 50);
@@ -6681,7 +7349,9 @@ function drawHUD() {
   ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(txt, VW / 2, by + 34);
 
-  if (L.boss) {
+  if (G.rescue) hudText(rescueHint(G.rescue), VW / 2, by + 80, 16, '#fff', 'center');
+  else if (G.swing) hudText(`${isTouch ? 'Tap' : 'Pick'} the right answer to swing!  (${G.swing.half}/2)`, VW / 2, by + 80, 16, '#fff', 'center');
+  else if (L.boss) {
     const b = L.boss, bw = Math.min(320, VW - 60), bx = VW / 2 - bw / 2, segW = bw / b.max;
     hudText(b.name, VW / 2, by + 80, 16, '#ffb3b3', 'center');
     ctx.fillStyle = 'rgba(0,0,0,.55)'; rrect(bx - 3, by + 91, bw + 6, 16, 6); ctx.fill();
@@ -6709,6 +7379,12 @@ function drawHUD() {
     const done = L.stations.filter(s => s.solved).length;
     hudText(cur ? `${isTouch ? 'Tap' : 'Bonk'} the right answer!  (${done}/${L.stations.length})` : `All ${L.stations.length} gates open!`, VW / 2, by + 80, 16, '#fff', 'center');
   }
+  if (pic) {   // the picture in a small panel under the banner, same style as the banner
+    const pw = narrow ? 210 : 250, px = VW / 2 - pw / 2, py = by + 92;
+    ctx.fillStyle = 'rgba(20,20,50,.75)'; rrect(px, py, pw, picH, 12); ctx.fill();
+    ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2; ctx.stroke();
+    drawTipPic(pic, px + 4, py + 3, pw - 8, picH - 6, 24);
+  }
   if (L.room && L.room.kind === 'train' && L.room.intro > 150) drawTrainIntro(L.room);   // covers everything
 }
 
@@ -6730,7 +7406,9 @@ function render() {
   drawTiles();
   if (L.twist) drawTwist();
   if (L.flavor) drawFlavor();
+  if (G) drawFriendSpot();
   drawSteps();
+  drawSwings();
   if (G) drawWalls();
   if (G) drawMini();
   for (const c of L.coins) if (c.gold && !c.taken && Math.abs(c.x - cam - VW / 2) < VW) {   // the golden gem is on fire
@@ -6742,7 +7420,7 @@ function render() {
   drawPits(c0, c1);   // after enemies, so lava blobs rise out of the lava
   drawBoss();
   if (L.boss) { drawOrbs(); }
-  if (G) { drawPet(); drawPlayer(); drawProjectiles(); drawParticles(); }
+  if (G) { drawPet(); drawPlayer(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
   if (L.twist && G) drawTwistFront();
   if (L.flavor && G) drawFlavorFront();
   if (L.boss && G) drawOutro();
@@ -6750,6 +7428,7 @@ function render() {
   if (L.twist === 'dark' && G) drawDarkness();
   if (G && G.blackout) { ctx.fillStyle = `rgba(0,0,0,${G.blackout})`; ctx.fillRect(0, 0, VW, VH); }
   if (G && G.alarm > 0) { ctx.fillStyle = `rgba(255,0,0,${0.18 * Math.abs(Math.sin(G.alarm * 0.2))})`; ctx.fillRect(0, 0, VW, VH); }
+  if (G && G.rescue) drawRescue();
   if (G) {
     drawHUD();
     // gems fly up into the counter
@@ -6770,7 +7449,18 @@ const hide = id => $(id).classList.add('hidden');
 const beltHTML = b => `<span class="belt" style="background:${b.col}"></span>`;
 let msgPrimary = null;
 
+// Read to me: pages with a story picture get a 🔊 button that reads the page out loud with the device's own voice,
+// so a kindergartner can follow the story. Any new page (or starting to play) stops the reading.
+function stopReading() { if (window.speechSynthesis) speechSynthesis.cancel(); }
+function readAloud() {
+  if (!window.speechSynthesis) return;
+  stopReading();
+  const txt = [...$('msgBody').querySelectorAll('p')].map(p => p.innerText).join(' ').replace(/[“”"]/g, '');
+  const u = new SpeechSynthesisUtterance(txt); u.rate = 0.9; u.pitch = 1.05; speechSynthesis.speak(u);
+}
 function showMsg(title, body, btns) {
+  stopReading();
+  if (window.speechSynthesis && body.includes('scenebox')) btns = [...btns, { label: '🔊 Read to me', fn: readAloud, alt: true }];
   $('msgTitle').textContent = title;
   $('msgBody').innerHTML = body;
   const box = $('msgBtns'); box.innerHTML = ''; msgPrimary = null;
@@ -6789,7 +7479,7 @@ function startStage(i) {
   puff();
   const st = STAGES[i], W = WORLDS[st.w];
   RC = null; document.body.classList.remove('racing');
-  playMusic(st.boss ? 'boss' : W.key);
+  playMusic(W.key, st.boss ? 3 : st.k);   // the world's theme, stronger each level; the boss at full strength
   const plan = planStage(i, true); if (plan) plan.stage = i; else prog.trackNow = null;
   prog.pickOnce = false; LEVEL_MIX = plan;
   L = st.boss ? buildArena(i, prog.easy) : buildLevel(i, prog.easy);
@@ -6803,14 +7493,14 @@ function startStage(i) {
   hide('menu');
   if (st.boss) {
     intro(`BOSS: ${W.boss.name}`, `<p class="taunt">“${W.boss.taunt}”</p>
-      <p>First <b>dodge</b> the attacks. When the boss gets tired, tap the right answer to throw a shuriken to throw it!</p>`, 'Fight!');
+      <p><b>Dodge!</b> Then grab the right answer.</p>`, 'Fight!');
   } else if (!prog.seenWorld[st.w]) {
     prog.seenWorld[st.w] = true; save();
     intro(`World ${st.w + 1}: ${W.name}`, `${sceneHTML(W.key)}<p>${W.intro}</p>`, "Let's go!");
   } else begin();
 }
 function intro(title, body, label) { mode = 'intro'; hide('pauseBtn'); showTouch(false); showMsg(title, body, [{ label, fn: begin, primary: true }]); }
-function begin() { mode = 'play'; hide('msg'); show('pauseBtn'); showTouch(true); }
+function begin() { stopReading(); mode = 'play'; hide('msg'); show('pauseBtn'); showTouch(true); }
 
 function unlockedCount() {
   if (prog.allOpen) return STAGES.length;
@@ -6871,6 +7561,15 @@ function buildMenu() {
   $('dojoBtn').innerHTML = dl.last === today() ? `${pixImg('flame', 'pix sm')} ${live} ✔` : `${pixImg('flame', 'pix sm')} Daily Dojo${live ? ` · ${live}` : ''}`;
   $('dojoBtn').classList.toggle('done', dl.last === today());
   $('bankMenu').textContent = `${prog.bank}💎`;
+  // The scroll row: one slot per world, filled once its boss is beaten; tap to reread that part of the story.
+  const sr = $('scrollRow'); sr.innerHTML = '';
+  WORLDS.forEach((W, w) => {
+    const won = !!prog.best[bossOf(w)], b = document.createElement('button'); b.type = 'button';
+    b.className = 'scrl' + (won ? ' on' : ''); b.disabled = !won; b.innerHTML = won ? pixImg('scroll', 'pix') : '';
+    b.setAttribute('aria-label', won ? W.scroll : 'A scroll still to find');
+    if (won) b.onclick = () => { audio(); const at = storyPages().findIndex(([t]) => t === (BOSS_CARD[W.boss.kind] ? W.boss.name : 'The Castle Falls')); if (at >= 0) storyBook(at); };
+    sr.appendChild(b);
+  });
   $('badgeMenu').textContent = `${BADGES.filter(x => prog.badges[x.id]).length}/${BADGES.length}`;
   countUp($('bankMenu'), prog.bank);
   // The world map: four coloured zones with a winding path; Kai stands on the newest level.
@@ -7293,51 +7992,10 @@ function scroll(c, x, y) {   // 9 × 5
   dot(c, x - 4, y - 2, 9, 5, '#120f1a'); dot(c, x - 3, y - 1, 7, 3, '#f4e4bc');
   dot(c, x - 4, y - 2, 1, 5, '#8b5a2b'); dot(c, x + 4, y - 2, 1, 5, '#8b5a2b'); dot(c, x, y - 1, 1, 3, '#e63946');
 }
-function baby(c, x, y) {   // a bundled baby, 7 × 5
-  dot(c, x - 3, y - 2, 7, 5, '#120f1a'); dot(c, x - 2, y - 1, 5, 3, '#f4f4f4'); dot(c, x, y - 1, 2, 2, '#f6c79c'); dot(c, x + 1, y - 1, 1, 1, '#16121f');
-}
 
 const SCENES = {
   opening: [
-    { cap: 'Long ago, on a quiet hill, Sensei trained a boy named <b>Kuro</b>.', draw(c, t) {
-      bands(c, ['#ffb88a', '#ffc796', '#ffd6a2', '#ffe3b0', '#ffeec0'], 0, 64);
-      disc(c, 150, 44, 8, '#fff3c4');
-      mountains(c, [[40, 34, 60], [120, 40, 60], [176, 30, 50]], '#c98fa8', '#b37f98', '#ffe8f0');
-      scHills(c, 4, 62, 4, '#9c7aa0');
-      scHills(c, 7, 74, 3, '#6fa85a', '#8fc87a');
-      for (const [x, h] of [[104, 18], [114, 24], [168, 22], [178, 16], [186, 26]]) pine(c, x, 86, h, '#2f6a3a', '#3f8a4a');
-      dot(c, 0, 86, SW, 22, '#5f9a4c'); dot(c, 0, 93, SW, 15, '#c9a77a');
-      for (let x = 0; x < SW; x += 7) dot(c, x + (x % 14 ? 0 : 3), 98, 3, 1, '#b8966a');
-      birds(c, t, 4, 9, 14);
-      scCherry(c, 18, 94, t);
-      scDojo(c, 140, 92);
-      baby(c, 126, 87);   // a baby asleep on the porch
-      senseiFig(c, 54, 96, false, true);
-      const hop = t % 1.6 > 1.1 ? Math.round(Math.sin((t % 1.6 - 1.1) / 0.5 * Math.PI) * 7) : 0;   // the little hop
-      sPut(c, scSpr.kuro().a[0], 78, 96 - hop);
-      tufts(c, SH, '#4f8a3e', 5, t);
-      petals(c, t, 16, 3);
-    } },
-    { cap: 'An old picture hangs on the dojo wall: young Sensei holding a baby, with Kuro beside him. Sensei never talks about it.', draw(c, t, p) {
-      dot(c, 0, 0, SW, SH, '#e8d6b4');
-      for (let x = 0; x < SW; x += 12) dot(c, x, 0, 1, 84, '#dcc8a2');
-      dot(c, 0, 0, SW, 4, '#6e4627'); dot(c, 0, 80, SW, 4, '#6e4627'); dot(c, 14, 0, 5, 84, '#6e4627'); dot(c, 174, 0, 5, 84, '#6e4627');
-      dot(c, 0, 84, SW, 24, '#c9b27a'); for (let x = 0; x < SW; x += 24) dot(c, x, 84, 1, 24, '#b39c66');
-      dot(c, 72, 6, 56, 50, '#3a2416'); dot(c, 74, 8, 52, 46, '#6e4627'); dot(c, 77, 11, 46, 40, '#f0dfb6'); dot(c, 77, 40, 46, 11, '#e2cd9c');   // the picture
-      senseiFig(c, 90, 50, false, true); baby(c, 91, 36);   // young Sensei holding the baby
-      sPut(c, scSpr.kuro().a[0], 112, 50);
-      dot(c, 30, 30, 22, 2, '#4a3020'); dot(c, 30, 52, 22, 2, '#4a3020');   // a rack of practice staffs
-      for (let i = 0; i < 4; i++) dot(c, 33 + i * 5, 22, 2, 40, i % 2 ? '#b0794a' : '#8b5a2b');
-      dot(c, 134, 12, 14, 2, '#3a2416'); dot(c, 135, 14, 12, 30, '#f4ead5'); dot(c, 134, 44, 14, 2, '#3a2416');   // a hanging scroll: "love"
-      dot(c, 140, 18, 2, 4, '#16121f'); dot(c, 137, 22, 8, 1, '#16121f'); dot(c, 139, 25, 4, 6, '#16121f'); dot(c, 137, 33, 8, 1, '#16121f'); dot(c, 138, 36, 2, 4, '#16121f'); dot(c, 142, 36, 2, 4, '#16121f');
-      dot(c, 96, 88, 22, 5, '#a3241a'); dot(c, 96, 88, 22, 1, '#c8423a');   // a cushion where Sensei sits
-      dot(c, 144, 70, 18, 3, '#4a3020');   // a candle on a low shelf
-      ring(c, 153, 60, 16, '#ffd27a', 0.18); ring(c, 153, 60, 9, '#ffd27a', 0.2);
-      dot(c, 152, 63, 3, 7, '#f4f4f4'); dot(c, 152, t % 0.5 < 0.25 ? 59 : 60, 3, 4, t % 0.5 < 0.25 ? '#ffd23f' : '#ff9a3c');
-      senseiFig(c, 54, 104, true);
-      if (p > 0.5) dot(c, 56, 81 + Math.min(6, Math.floor((p - 0.5) * 24)), 1, 2, '#9fd8ff');   // a tear
-    } },
-    { cap: 'One night, Kuro took the five Magic Math Scrolls...', draw(c, t, p) {
+    { cap: 'Kuro took the Math Scrolls.', draw(c, t, p) {
       dot(c, 0, 0, SW, SH, '#141a3a');
       for (let x = 0; x < SW; x += 12) dot(c, x, 0, 1, 84, '#0d1230');
       dot(c, 0, 84, SW, 24, '#2a2040');
@@ -7352,7 +8010,7 @@ const SCENES = {
       sPut(c, scSpr.kuro()[x < 68 ? (walkF(t) ? 'b' : 'a') : 'a'][1], x, 88);
       for (let i = 0; i < took; i++) scroll(c, x + 4, 76 - i * 2);
     } },
-    { cap: '...put on a dark mask and became the <b>Shadow Shogun</b>. His shadow spread over the land.', draw(c, t, p) {
+    { cap: 'Now he is the <b>Shadow Shogun</b>.', draw(c, t, p) {
       dot(c, 0, 0, SW, SH, '#0c0718'); starfield(c, 40, 4, 70, t);
       disc(c, 96, 46, 26, '#e8e0c8'); disc(c, 96, 46, 24, '#f4eed8'); dot(c, 84, 38, 4, 3, '#e0d6b8'); dot(c, 104, 52, 5, 3, '#e0d6b8');   // a huge moon behind him
       mountains(c, [[20, 70, 50], [170, 66, 60]], '#1a1030', '#140c26');
@@ -7370,7 +8028,7 @@ const SCENES = {
         for (let i = 0; i < 5; i++) { const a = -2.6 + i * 0.55, r = 14 + k * 110; scroll(c, Math.round(96 + Math.cos(a) * r), Math.round(56 + Math.sin(a) * r * 0.6)); }
       }
     } },
-    { cap: 'Now Sensei sends you: <i>"Bring the scrolls home. And if you can, bring Kuro home too."</i>', draw(c, t, p) {
+    { cap: '"Bring your brother home, Kai."', draw(c, t, p) {
       bands(c, ['#ff8f7a', '#ffa88a', '#ffc59c', '#ffdcb0', '#ffecc4'], 0, 80);
       disc(c, 146, 62, 13, '#fff1b8');
       for (let i = 0; i < 5; i++) { c.globalAlpha = 0.2; dot(c, 112 + i * 16, 0, 3, 60, '#fff0b4'); c.globalAlpha = 1; }
@@ -7399,7 +8057,7 @@ function downS(img, k) {   // a baked sprite (k screen pixels per cell) back to 
 }
 const bossS = (kind, f = 'a', flip = 0) => downS(BOSS_SPR[kind][f][flip], 4);   // bosses face left; flip 1 faces right
 const banditS = (f = 'stand', flip = 0) => downS(ENEMY_SPR.ninja[f][flip], 3);
-let YS = null, WOODEN = null;
+let YS = null;
 // Sensei when he was younger: dark topknot, dark brows and a short dark beard
 const youngSensei = () => YS || (YS = bake(makeFrames(18, 18, { s: '#f2c49b', S: '#d9a273', d: '#3a3040', D: '#55485e', e: '#16121f', g: '#4a5a7a', G: '#6b7fa8' }, ({ P, R, E }) => {
   R(3, 12, 12, 6, 'g'); R(4, 12, 2, 6, 'G');
@@ -7407,8 +8065,6 @@ const youngSensei = () => YS || (YS = bake(makeFrames(18, 18, { s: '#f2c49b', S:
   R(5, 5, 3, 1, 'd'); R(10, 5, 3, 1, 'd'); R(6, 6, 1, 2, 'e'); R(11, 6, 1, 2, 'e');
   E(9, 10.2, 3, 1.6, 'D'); R(7, 9, 5, 1, 'd'); P(8, 8, 'S'); P(9, 8, 'S');
 }, 1), ['a'], 1));
-// the little wooden ninja Kuro carved: Kai's own shape, in wood
-const woodenNinja = () => WOODEN || (WOODEN = bake(makeFrames(16, 16, { ...KAI_PAL, n: '#b0794a', N: '#d8a679', r: '#e63946', R: '#a91d2b', s: '#d8a679', w: '#d8a679', e: '#3a2416', b: '#8b5a2b', f: '#6e4627' }, drawKai, 1), ['a'], 1).a[0]);
 function animal(c, kind, x, by, flip = false) {   // the level animals, 1 pixel per cell, with 1 × 2 eyes
   const sp = ANIMAL_SPR[kind]; if (!sp) return;
   const img = bakeSpr(kind + '-story', sp, 1), x0 = Math.round(x - img.width / 2), y0 = by - img.height;
@@ -7475,16 +8131,7 @@ const factorySky = c => bands(c, ['#1c2533', '#222c3c', '#2a3546', '#334255', '#
 
 Object.assign(SCENES, {
   japan: [
-    { cap: 'In Japan Village, the children loved to play.', draw(c, t) {
-      dayJapan(c); ground(c, 86, '#8fbf5a', '#a5d46a'); dot(c, 0, 94, SW, 14, '#c9a77a');
-      house(c, 8, 86, 30, '#f1e0c5', '#c0392b'); house(c, 130, 86, 26, '#f1e0c5', '#c0392b'); house(c, 164, 86, 24, '#e8d3a8', '#7b1610');
-      scCherry(c, 54, 88, t); torii(c, 112, 92);
-      const bx = 80 + Math.round(Math.sin(t * 2) * 14), by = 86 - Math.round(Math.abs(Math.sin(t * 4)) * 10);
-      disc(c, bx, by, 2, '#e63946');
-      child(c, 64, 98, '#3a86ff', Math.floor(t * 4) % 2); child(c, 96, 98, '#ffd23f', Math.floor(t * 4 + 1) % 2, true); child(c, 82, 102, '#2ecc71', 0);
-      birds(c, t, 3, 2, 10); petals(c, t, 10, 4);
-    } },
-    { cap: 'One day, bandits ran off with the village rice, and the children chased after them...', draw(c, t) {
+    { cap: 'Bandits ran into the bamboo.', draw(c, t) {
       dayJapan(c); ground(c, 86, '#8fbf5a', '#a5d46a'); dot(c, 0, 94, SW, 14, '#c9a77a');
       house(c, 4, 86, 28, '#f1e0c5', '#c0392b');
       for (let i = 0; i < 6; i++) bamboo(c, 150 + i * 8, '#5f9e3a', '#8fcf5a', 0);
@@ -7493,75 +8140,33 @@ Object.assign(SCENES, {
       dot(c, 124 + run, 82, 7, 6, '#d9c39a');   // the rice sack
       for (let i = 0; i < 3; i++) child(c, 50 + run + i * 12, 102, ['#3a86ff', '#ffd23f', '#2ecc71'][i], Math.floor(t * 6 + i) % 2);
     } },
-    { cap: '...deep into the bamboo forest. Now they are lost and scared.', draw(c, t) {
-      bands(c, ['#0f2a1c', '#143322', '#1a3d28', '#22482e'], 0, SH);
-      for (let i = 0; i < 12; i++) bamboo(c, 4 + i * 16 + (i % 2) * 5, i % 2 ? '#2f5a2a' : '#3f7a34', '#5a9a46', Math.round(Math.sin(t + i) * 1));
-      ground(c, 94, '#1e3a1a', '#2f5a2a');
-      for (let i = 0; i < 3; i++) child(c, 84 + i * 9, 100, ['#3a86ff', '#ffd23f', '#2ecc71'][i], 0, i === 2);
-      tear(c, 82, 92, t); tear(c, 101, 92, t + 0.4);
-      for (const [x, y] of [[30, 30], [160, 22]]) if (t % 2 < 1.7) { dot(c, x, y, 1, 2, '#ffd23f'); dot(c, x + 3, y, 1, 2, '#ffd23f'); }   // eyes in the dark
-    } },
-    { cap: '<b>Kage the Shadow Blade</b> leads the bandits. He guards the Scroll of Adding.', draw(c, t) {
+    { cap: '<b>Kage</b> leads the bandits.', draw(c, t) {
       nightSky(c, t); disc(c, 140, 34, 16, '#f4eed8');
       for (let i = 0; i < 8; i++) bamboo(c, i * 26, '#0f1a14', '#16261c', 0);
       house(c, 96, 90, 64, '#1a1a2a', '#2a2838'); ground(c, 90, '#0c0c18');
       sPut(c, bossS('kage', t % 1 < 0.5 ? 'a' : 'b'), 128, 76 - 0);
       dot(c, 112, 72, 1, 1, '#ffd23f'); scroll(c, 112, 68);
     } },
-    { cap: 'Sensei says: <i>"Go and find them. Every single one matters."</i>', draw(c, t, p) {
-      dayJapan(c); ground(c, 86, '#8fbf5a', '#a5d46a');
-      for (let i = 0; i < 6; i++) bamboo(c, 146 + i * 8, '#5f9e3a', '#8fcf5a', 0);
-      for (let y = 86; y < SH; y++) dot(c, 30 + (y - 86) * 0, y, 120 - (y - 86), 1, '#c9a77a');
-      torii(c, 30, 100); senseiFig(c, 50, 102);
-      const x = 70 + Math.max(0, p - 0.3) * 120;
-      sPut(c, scSpr.kai()[p > 0.3 && walkF(t) ? 'walkA' : 'stand'][0], x, 100);
-      tufts(c, SH, '#6a9a3e', 2, t); petals(c, t, 8, 9);
-    } },
   ],
   kage: [
-    { cap: 'You hold out your hand. "Take my hand?"', draw(c, t) {
+    { cap: '"Take my hand?"', draw(c, t) {
       nightSky(c, t); disc(c, 96, 36, 18, '#f4eed8'); ground(c, 88, '#1a1a2a', '#2a2838');
       sPut(c, scSpr.kai().stand[0], 76, 88); dot(c, 84, 79, 3, 1, '#f6c79c');
       sPut(c, bossS('kage'), 118, 88);
     } },
-    { cap: 'Kage turns away. "Never."', draw(c, t) {
+    { cap: '"Never!"', draw(c, t) {
       nightSky(c, t); disc(c, 96, 36, 18, '#f4eed8'); ground(c, 88, '#1a1a2a', '#2a2838');
       sPut(c, scSpr.kai().stand[0], 76, 88); sPut(c, bossS('kage', 'a', 1), 120, 88);
     } },
-    { cap: '"You fight just like <b>him</b>. Same moves, same little hop."', draw(c, t) {
-      bands(c, ['#2a2838', '#3a3650', '#4a4762'], 0, SH); ground(c, 90, '#1a1a2a', '#2a2838');
-      const h = t % 1.4 > 0.9 ? Math.round(Math.sin((t % 1.4 - 0.9) / 0.5 * Math.PI) * 7) : 0;
-      sPut(c, scSpr.kuro().a[1], 66, 90 - h); sPut(c, scSpr.kai()[h ? 'jump' : 'stand'][0], 126, 90 - h);   // the same hop, side by side
-      dot(c, 94, 40, 4, 4, '#ffd23f'); dot(c, 94, 46, 4, 1, '#ffd23f');
-    } },
-    { cap: 'Then he fades into the shadows. The bandits run away.', draw(c, t, p) {
+    { cap: 'Kage runs away.', draw(c, t, p) {
       nightSky(c, t); disc(c, 96, 36, 18, '#f4eed8'); ground(c, 88, '#1a1a2a', '#2a2838');
       c.globalAlpha = Math.max(0, Math.ceil((1 - p * 1.6) * 4) / 4); sPut(c, bossS('kage'), 118, 88); c.globalAlpha = 1;
       for (let i = 0; i < 3; i++) sPut(c, banditS(walkF(t + i * 0.3) ? 'walkA' : 'stand', 1), 150 + p * 60 + i * 12, 88);
       sPut(c, scSpr.kai().stand[0], 76, 88);
     } },
-    { cap: 'The lost children find their way home. Every single one.', draw(c, t) {
-      bands(c, ['#ff9a8b', '#ffb59c', '#ffd0b0', '#ffe0b5'], 0, 70); scHills(c, 3, 72, 3, '#7cb342', '#9ccf5a');
-      ground(c, 86, '#8fbf5a', '#a5d46a'); house(c, 20, 86, 30, '#f1e0c5', '#c0392b'); house(c, 140, 86, 30, '#f1e0c5', '#c0392b');
-      for (let i = 0; i < 3; i++) { const x = 70 + i * 20; dot(c, x + 4, 76, 6, 12, '#7b4a2a'); dot(c, x + 5, 72, 4, 4, '#f6c79c'); dot(c, x + 6, 73, 1, 2, '#16121f');   // a parent
-        child(c, x, 98, ['#3a86ff', '#ffd23f', '#2ecc71'][i], Math.floor(t * 3 + i) % 2); }
-      scHeart(c, 96, 60 - Math.floor(t * 4) % 4); petals(c, t, 10, 12);
-    } },
   ],
   lava: [
-    { cap: 'Long ago, the <b>Magma Golem</b> was the gentle keeper of the mountain.', draw(c, t) {
-      bands(c, ['#ffb88a', '#ffc796', '#ffd6a2', '#ffe3b0'], 0, SH); scVolcano(c, 120, 18, 90, '#6b4a3a', '#5a3a2e');
-      ground(c, 88, '#6fa85a', '#8fc87a');
-      for (let i = 0; i < 9; i++) { const x = 20 + i * 9; dot(c, x, 94, 1, 4, '#3f8a4a'); disc(c, x, 92, 1, ['#ff6fb5', '#ffd23f', '#ffffff'][i % 3]); }
-      sPut(c, bossS('golem', t % 1 < 0.5 ? 'a' : 'b', 1), 120, 102);
-      birds(c, t, 3, 4, 10);
-    } },
-    { cap: 'But the shadow crept into the volcano...', draw(c, t, p) {
-      lavaSky(c); scVolcano(c, 96, 22, 100, '#3a2420', '#2a1a16', '#ff6a00');
-      for (let i = 0; i < 16; i++) { const a = i * 0.4 + t, r = 50 - p * 30; ring(c, Math.round(96 + Math.cos(a) * r), Math.round(28 + Math.sin(a) * r * 0.3), 5, '#46207a', 0.6); }
-      ground(c, 96, '#2a1a16');
-    } },
-    { cap: '...and filled the Golem with anger.', draw(c, t) {
+    { cap: 'The Golem is angry.', draw(c, t) {
       lavaSky(c); scVolcano(c, 96, 26, 110, '#3a2420', '#2a1a16', '#ff6a00');
       for (let i = 0; i < 8; i++) { const k = (t * 1.5 + i * 0.37) % 1.6; dot(c, 96 + (i - 4) * 6 * k, 26 - 30 * k + 22 * k * k, 2, 2, i % 2 ? '#ff6a00' : '#ffd23f'); }
       ground(c, 94, '#2a1a16', '#ff6a00');
@@ -7569,14 +8174,7 @@ Object.assign(SCENES, {
       sPut(c, bossS('golem', 'a'), 96 + sh, 96);
       dot(c, 89, 76, 3, 2, '#ff2a2a'); dot(c, 100, 76, 3, 2, '#ff2a2a');
     } },
-    { cap: 'He guards the Scroll of Taking Away. Rocks fall all around.', draw(c, t) {
-      lavaSky(c); scVolcano(c, 150, 20, 90, '#3a2420', '#2a1a16', '#ff6a00');
-      ground(c, 92, '#2a1a16', '#ff6a00'); dot(c, 60, 92, 50, 3, '#ff6a00'); dot(c, 64, 95, 40, 2, '#ffd23f');
-      for (let i = 0; i < 6; i++) { const y = (t * 40 + i * 19) % 100; dot(c, 20 + i * 30, y, 4, 4, '#5a3a34'); }
-      sPut(c, scSpr.kai().stand[0], 30, 92);
-      scroll(c, 150, 40); ring(c, 150, 40, 8, '#ffd23f', 0.3);
-    } },
-    { cap: 'Sensei says: <i>"No one is too far gone. Carry your light into the fire."</i>', draw(c, t, p) {
+    { cap: '"Be kind to him."', draw(c, t, p) {
       lavaSky(c); scVolcano(c, 140, 24, 90, '#3a2420', '#2a1a16', '#ff6a00');
       ground(c, 92, '#2a1a16', '#4a2a20');
       const x = 30 + p * 80;
@@ -7585,30 +8183,18 @@ Object.assign(SCENES, {
     } },
   ],
   golem: [
-    { cap: '"You don\'t have to be angry anymore."', draw(c, t) {
+    { cap: '"You don\'t have to be angry."', draw(c, t) {
       lavaSky(c); ground(c, 92, '#2a1a16', '#ff6a00');
       sPut(c, scSpr.kai().stand[0], 60, 92); sPut(c, bossS('golem'), 124, 92);
       for (let i = 0; i < 5; i++) dot(c, 112 + i * 6, 50 - ((t * 10 + i * 5) % 16), 2, 2, '#cfcfd8');   // steam
     } },
-    { cap: 'His fire cools. He is gentle again.', draw(c, t, p) {
+    { cap: 'He is gentle again.', draw(c, t, p) {
       bands(c, ['#4a3a5a', '#6a5a7a', '#9a8aa0', '#c9b0b8'], 0, SH); ground(c, 92, '#5a4a44', '#7f6c63');
       sPut(c, scSpr.kai().stand[0], 60, 92); sPut(c, bossS('golem'), 124, 92);
       c.globalAlpha = 0.5; dot(c, 0, 0, SW, SH, `rgba(80,140,255,${Math.round(p * 4) / 10})`); c.globalAlpha = 1;
       if (p > 0.6) scHeart(c, 124, 50);
     } },
-    { cap: '"The Shogun once cried here..."', draw(c, t) {
-      lavaSky(c); ground(c, 92, '#2a1a16', '#4a2a20');
-      dot(c, 80, 80, 34, 12, '#4a3530'); dot(c, 82, 78, 30, 2, '#5a4a44');   // a rock
-      sPut(c, scSpr.shogun().a[0], 96, 80); tear(c, 93, 62, t, 8); tear(c, 98, 62, t + 0.5, 8);
-    } },
-    { cap: '"...holding a little wooden ninja he carved for someone he left behind."', draw(c, t) {
-      bands(c, ['#2a0707', '#3a0f08', '#4a1a0a'], 0, SH);
-      dot(c, 60, 70, 72, 38, '#5a3a8f'); dot(c, 64, 74, 64, 34, '#3d2466');   // his big gloved hands
-      dot(c, 70, 66, 52, 10, '#4a2a6a');
-      sPut(c, woodenNinja(), 96, 74);
-      for (let i = 0; i < 3; i++) dot(c, 86 + i * 8, 40 + ((t * 12 + i * 9) % 22), 1, 2, '#9fd8ff');
-    } },
-    { cap: 'The Golem keeps his mountain again, and gives you the scroll.', draw(c, t) {
+    { cap: 'He gives you a scroll.', draw(c, t) {
       bands(c, ['#ffb88a', '#ffc796', '#ffd6a2', '#ffe3b0'], 0, SH); scVolcano(c, 150, 26, 80, '#6b4a3a', '#5a3a2e');
       ground(c, 92, '#6fa85a', '#8fc87a');
       for (let i = 0; i < 9; i++) { const x = 14 + i * 8; dot(c, x, 96, 1, 4, '#3f8a4a'); disc(c, x, 94, 1, ['#ff6fb5', '#ffd23f', '#ffffff'][i % 3]); }
@@ -7617,11 +8203,7 @@ Object.assign(SCENES, {
     } },
   ],
   robot: [
-    { cap: 'The Shogun built a great factory.', draw(c, t) {
-      factorySky(c); starfield(c, 20, 5, 40, t);
-      scHills(c, 9, 82, 3, '#2a3340', '#3b4552'); factory(c, 60, 90, t); ground(c, 90, '#232b36', '#4a5868');
-    } },
-    { cap: 'Its robots work day and night, and never rest.', draw(c, t) {
+    { cap: 'The robots work all day.', draw(c, t) {
       dot(c, 0, 0, SW, SH, '#2a3546'); for (let x = 0; x < SW; x += 16) dot(c, x, 0, 2, 80, '#334255');
       dot(c, 0, 80, SW, 6, '#4a5868'); for (let x = 0; x < SW; x += 6) dot(c, (x + Math.floor(t * 20)) % SW, 82, 3, 2, '#2c3e50');
       for (let i = 0; i < 6; i++) { const x = (i * 34 + t * 20) % (SW + 20) - 10; dot(c, x, 74, 8, 6, '#b0794a'); }
@@ -7629,47 +8211,22 @@ Object.assign(SCENES, {
       ground(c, 100, '#232b36', '#4a5868');
       dot(c, 160, 10, 16, 16, '#120f1a'); dot(c, 161, 11, 14, 14, '#f4f4f4'); dot(c, 167, 12, 2, 6, '#16121f'); dot(c, 168, 17, 5, 1, '#16121f');   // the clock never stops
     } },
-    { cap: 'The robots are very, very tired.', draw(c, t) {
-      dot(c, 0, 0, SW, SH, '#2a3546'); ground(c, 96, '#232b36', '#4a5868');
-      robo(c, 96, 96, '#8395a7', '#4cc9f0', 'tired', t);
-      dot(c, 104, 70 - Math.floor(t * 4) % 6, 3, 1, '#c8d3de'); dot(c, 108, 64 - Math.floor(t * 4) % 6, 4, 1, '#c8d3de');   // z z
-      for (let i = 0; i < 2; i++) robo(c, 50 + i * 92, 96, '#6c7a89', '#4cc9f0', 'tired', t);
-    } },
-    { cap: '<b>Mega-Bot 3000</b> runs the factory and guards the Scroll of Times.', draw(c, t) {
-      factorySky(c); ground(c, 94, '#232b36', '#4a5868');
-      for (let i = 0; i < 4; i++) robo(c, 14 + i * 18, 94, '#6c7a89', '#4cc9f0', 'work', t + i * 0.3);
-      sPut(c, bossS('bot', t % 1 < 0.5 ? 'a' : 'b'), 140, 94);
-      if (t % 1 < 0.5) dot(c, 120, 80, 4, 1, '#ff3355');
-    } },
-    { cap: 'Sensei says: <i>"They were made for more than work. Set them free."</i>', draw(c, t, p) {
+    { cap: '"Set them free!"', draw(c, t, p) {
       factorySky(c); starfield(c, 20, 5, 40, t); factory(c, 110, 92, t); ground(c, 92, '#232b36', '#4a5868');
       senseiFig(c, 30, 98); sPut(c, scSpr.kai()[p > 0.3 && walkF(t) ? 'walkA' : 'stand'][0], 50 + Math.max(0, p - 0.3) * 80, 96);
     } },
   ],
   bot: [
-    { cap: '"You were made for more than work."', draw(c, t) {
+    { cap: '"You can rest now."', draw(c, t) {
       factorySky(c); ground(c, 94, '#232b36', '#4a5868');
       sPut(c, scSpr.kai().stand[0], 60, 94); sPut(c, bossS('bot'), 128, 94);
     } },
-    { cap: 'Its screen flickers: <b>KURO · FAMILY: 1 FATHER, 1 LITTLE BROTHER</b>', draw(c, t) {
-      dot(c, 0, 0, SW, SH, '#1c2533'); dot(c, 40, 14, 112, 76, '#5d6d7e'); dot(c, 44, 18, 104, 68, '#0b1a10');
-      if (t % 0.3 < 0.27) {
-        sPut(c, youngSensei().a[0], 68, 70); dot(c, 61, 70, 14, 10, '#4a5a7a');
-        sPut(c, scSpr.kuro().a[0], 100, 80); baby(c, 128, 74);
-        dot(c, 50, 22, 92, 1, '#3ae374'); dot(c, 50, 82, 92, 1, '#3ae374');
-      }
-    } },
-    { cap: '"...MORE THAN WORK?" Its eyes turn from red to blue.', draw(c, t, p) {
-      factorySky(c); ground(c, 94, '#232b36', '#4a5868');
-      sPut(c, bossS('bot'), 110, 94);
-      const col = p < 0.5 ? '#ff3355' : '#4cc9f0'; dot(c, 98, 62, 3, 2, col); dot(c, 106, 62, 3, 2, col);
-    } },
-    { cap: '"NEW ORDER: EVERYONE REST." The machines go quiet.', draw(c, t) {
+    { cap: '"EVERYONE REST!"', draw(c, t) {
       dot(c, 0, 0, SW, SH, '#2a3546'); ground(c, 96, '#232b36', '#4a5868');
       for (let i = 0; i < 5; i++) robo(c, 20 + i * 38, 96, '#8395a7', '#4cc9f0', 'rest', t);
       dot(c, 0, 80, SW, 6, '#4a5868');
     } },
-    { cap: 'For the first time, every robot gets to rest.', draw(c, t) {
+    { cap: 'The robots rest.', draw(c, t) {
       bands(c, ['#1f2a5a', '#3a3a7a', '#7a5a9a', '#ff9a8b', '#ffd0a0'], 0, 80); factory(c, 120, 86, t, false);
       ground(c, 86, '#3b4552', '#5d6d7e');
       for (let i = 0; i < 4; i++) robo(c, 18 + i * 22, 98, '#8395a7', '#4cc9f0', 'rest', t);
@@ -7677,52 +8234,27 @@ Object.assign(SCENES, {
     } },
   ],
   snow: [
-    { cap: 'High on the frozen peaks lives a lonely giant.', draw(c, t) {
+    { cap: 'The Snowman lives up here.', draw(c, t) {
       snowSky(c); mountains(c, [[40, 20, 70], [140, 14, 80]], '#8aa4c0', '#7a94b0', '#ffffff');
       ground(c, 90, '#eaf6ff', '#ffffff'); pine(c, 20, 92, 18, '#2f6a5a', '#3f8a6a'); pine(c, 176, 92, 22, '#2f6a5a', '#3f8a6a');
       sPut(c, bossS('yeti'), 110, 96); snowfall(c, t, 30, 3);
     } },
-    { cap: 'Everyone ran away from him.', draw(c, t, p) {
+    { cap: 'He is all alone.', draw(c, t, p) {
       snowSky(c); ground(c, 90, '#eaf6ff', '#ffffff');
       sPut(c, bossS('yeti'), 50, 96);
       for (let i = 0; i < 4; i++) animal(c, 'penguin', 90 + p * 90 + i * 16, 98, false);
       snowfall(c, t, 20, 5);
-    } },
-    { cap: 'So his heart froze as cold as the snow.', draw(c, t, p) {
-      bands(c, ['#5a8ab0', '#6f9ac0', '#8fb0d0'], 0, SH); ground(c, 90, '#cfe0ee', '#eaf6ff');
-      sPut(c, bossS('yeti'), 96, 96);
-      tear(c, 90, 66, t, 6); c.globalAlpha = 0.35; dot(c, 0, 0, SW, Math.round(SH * p), '#cfefff'); c.globalAlpha = 1;
-      snowfall(c, t, 40, 7);
-    } },
-    { cap: 'The <b>Abominable Snowman</b> guards the Scroll of Patterns.', draw(c, t) {
-      iceCave(c); scroll(c, 150, 60); ring(c, 150, 60, 8, '#ffd23f', 0.3);
-      sPut(c, bossS('yeti', t % 1 < 0.5 ? 'a' : 'b'), 120, 94); sPut(c, scSpr.kai().stand[0], 30, 94);
-    } },
-    { cap: 'Sensei says: <i>"Cold hearts melt with kindness."</i>', draw(c, t, p) {
-      snowSky(c); mountains(c, [[150, 16, 70]], '#8aa4c0', '#7a94b0', '#ffffff'); ground(c, 90, '#eaf6ff', '#ffffff');
-      senseiFig(c, 30, 98); sPut(c, scSpr.kai()[p > 0.3 && walkF(t) ? 'walkA' : 'stand'][0], 50 + Math.max(0, p - 0.3) * 90, 96);
-      snowfall(c, t, 24, 9);
     } },
   ],
   yeti: [
     { cap: '"Nobody should be alone."', draw(c, t) {
       iceCave(c); sPut(c, scSpr.kai().stand[0], 66, 94); sPut(c, bossS('yeti'), 124, 94);
     } },
-    { cap: '"...You\'re not running away?" The ice begins to melt.', draw(c, t) {
+    { cap: '"You\'re not running away?"', draw(c, t) {
       iceCave(c); sPut(c, scSpr.kai().stand[0], 66, 94); sPut(c, bossS('yeti'), 124, 94);
       for (let i = 0; i < 10; i++) dot(c, 8 + i * 18, (t * 30 + i * 13) % 60, 1, 2, '#9fd8ff');
     } },
-    { cap: 'Long ago, the Shogun walked past in the snow, and something slipped off...', draw(c, t, p) {
-      snowSky(c); ground(c, 90, '#eaf6ff', '#ffffff');
-      const x = 20 + p * 160; sPut(c, scSpr.shogun()[walkF(t) ? 'a' : 'b'][1], x, 92);
-      const bx = p < 0.4 ? x + 4 : 84; dot(c, bx, p < 0.4 ? 70 : Math.min(88, 70 + (p - 0.4) * 80), 6, 2, '#e63946');   // the red headband
-      snowfall(c, t, 40, 11);
-    } },
-    { cap: 'The Snowman gives you a red headband. It looks just like yours.', draw(c, t) {
-      iceCave(c); sPut(c, scSpr.kai().stand[0], 80, 94); sPut(c, bossS('yeti'), 124, 94);
-      dot(c, 96, 74, 8, 2, '#e63946'); dot(c, 102, 76, 3, 2, '#e63946'); scHeart(c, 124, 52);
-    } },
-    { cap: 'Now he has friends.', draw(c, t) {
+    { cap: 'Now he has a friend!', draw(c, t) {
       snowSky(c); mountains(c, [[40, 20, 70], [150, 14, 80]], '#8aa4c0', '#7a94b0', '#ffffff'); ground(c, 90, '#eaf6ff', '#ffffff');
       sPut(c, bossS('yeti', t % 1 < 0.5 ? 'a' : 'b'), 96, 96);
       for (let i = 0; i < 4; i++) animal(c, 'penguin', 40 + i * 12 + (i > 1 ? 70 : 0), 100 - (Math.floor(t * 4 + i) % 2) * 2, i > 1);
@@ -7730,26 +8262,16 @@ Object.assign(SCENES, {
     } },
   ],
   castle: [
-    { cap: 'At last, the Shadow Shogun\'s castle.', draw(c, t) {
+    { cap: 'Kuro\'s castle.', draw(c, t) {
       nightSky(c, t); disc(c, 40, 26, 10, '#f4eed8');
       mountains(c, [[150, 50, 70]], '#141030', '#100c26');
       castle(c, 110, 70); dot(c, 60, 70, 120, 38, '#100c26');
       for (let i = 0; i < 12; i++) ring(c, 30 + i * 14, 70 + Math.round(Math.sin(t + i) * 2), 6, '#46207a', 0.5);
       sPut(c, scSpr.kai().stand[0], 24, 100); ground(c, 100, '#141030');
     } },
-    { cap: 'Sensei holds you close for a long time.', draw(c, t) {
+    { cap: 'Sensei hugs Kai.', draw(c, t) {
       bands(c, ['#1f2a5a', '#2a3060', '#3a3a70'], 0, SH); ground(c, 92, '#2a3152', '#3a4270');
       senseiFig(c, 92, 94); sPut(c, scSpr.kai().stand[1], 102, 94);
-    } },
-    { cap: '<i>"There\'s something I should have told you long ago..."</i>', draw(c, t) {
-      bands(c, ['#1f2a5a', '#2a3060', '#3a3a70'], 0, SH); ground(c, 92, '#2a3152', '#3a4270');
-      senseiFig(c, 70, 94, true); sPut(c, scSpr.kai().stand[1], 110, 94);
-      if (t % 2 < 1.4) { dot(c, 74, 46, 1, 2, '#9fd8ff'); }
-    } },
-    { cap: '<i>"He was very dear to me. He will not thank you."</i>', draw(c, t) {
-      dot(c, 0, 0, SW, SH, '#e8d6b4'); dot(c, 46, 8, 100, 82, '#3a2416'); dot(c, 49, 11, 94, 76, '#6e4627'); dot(c, 53, 15, 86, 68, '#f0dfb6');
-      sPut(c, youngSensei().a[0], 84, 62); dot(c, 77, 62, 14, 18, '#4a5a7a'); baby(c, 86, 66);
-      sPut(c, scSpr.kuro().a[0], 116, 80);
     } },
     { cap: '<i>"Love him anyway."</i>', draw(c, t, p) {
       nightSky(c, t); castle(c, 150, 92); ground(c, 92, '#141030', '#2a2050');
@@ -7757,88 +8279,56 @@ Object.assign(SCENES, {
     } },
   ],
   falls: [
-    { cap: 'The Shogun is beaten, and his dark castle begins to crumble.', draw(c, t) {
-      nightSky(c, t); const sh = t % 0.2 < 0.1 ? 1 : 0;
-      c.save(); c.translate(sh, 0); castle(c, 96, 96); c.restore();
-      for (let i = 0; i < 8; i++) dot(c, 40 + i * 16, (t * 50 + i * 23) % 100, 4, 4, '#3c4470');
-      ground(c, 96, '#141030');
-    } },
-    { cap: 'A huge beam falls toward him.', draw(c, t, p) {
+    { cap: 'A beam falls!', draw(c, t, p) {
       dot(c, 0, 0, SW, SH, '#1a1030'); ground(c, 92, '#2a2050', '#3a3070');
       sPut(c, scSpr.shogun().a[0], 130, 92); sPut(c, scSpr.kai().stand[0], 60, 92);
       dot(c, 106, Math.round(-10 + p * 40), 50, 7, '#4a3220'); dot(c, 106, Math.round(-10 + p * 40), 50, 2, '#6b4a2e');
     } },
-    { cap: 'You don\'t stop to think. You push him out of the way...', draw(c, t, p) {
+    { cap: 'Kai pushes Kuro away.', draw(c, t, p) {
       dot(c, 0, 0, SW, SH, '#1a1030'); ground(c, 92, '#2a2050', '#3a3070');
       const sx = 130 + Math.min(1, p * 2) * 40; sPut(c, scSpr.shogun().a[0], sx, 92);
       sPut(c, scSpr.kai().jump[0], 120 + Math.min(1, p * 2) * 6, 92);
       dot(c, 106, 30, 50, 7, '#4a3220'); dot(c, 106, 30, 50, 2, '#6b4a2e');
     } },
-    { cap: '...and the beam falls on you instead.', draw(c, t, p) {
+    { cap: 'The beam hits Kai.', draw(c, t, p) {
       dot(c, 0, 0, SW, SH, '#1a1030'); ground(c, 92, '#2a2050', '#3a3070');
       sPut(c, scSpr.shogun().a[0], 170, 92); lieDown(c, scSpr.kai().stand[0], 128, 92);
       dot(c, 106, Math.min(78, 30 + p * 120), 50, 7, '#4a3220');
       if (p > 0.35 && p < 0.45) dot(c, 0, 0, SW, SH, '#ffffff');
     } },
-    { cap: 'Everything goes dark.', draw(c, t, p) {
-      dot(c, 0, 0, SW, SH, '#000000');
-      c.globalAlpha = Math.max(0, 1 - p * 1.4); disc(c, 96, 54, 3, '#ffd23f'); c.globalAlpha = 1;
-    } },
   ],
   morning: [
-    { cap: 'When the sun comes up, you open your eyes.', draw(c, t) {
+    { cap: 'Kai wakes up.', draw(c, t) {
       bands(c, ['#ff9a8b', '#ffb59c', '#ffd0b0', '#ffe0b5', '#fff0c8'], 0, 80); disc(c, 96, 78, 14, '#fff3c4');
       ground(c, 80, '#5a5a7a', '#7a7aa0'); for (let i = 0; i < 6; i++) dot(c, 10 + i * 32, 74, 14, 6, '#3c4470');   // rubble
       lieDown(c, scSpr.kai().stand[0], 80, 96); sPut(c, scSpr.shogun().a[0], 116, 96); tear(c, 112, 80, t, 8);
     } },
-    { cap: 'The Shogun is kneeling beside you, crying. His mask has cracked and fallen away.', draw(c, t, p) {
+    { cap: 'Kuro is crying.', draw(c, t, p) {
       bands(c, ['#ffb59c', '#ffd0b0', '#ffe0b5', '#fff0c8'], 0, 80); ground(c, 80, '#5a5a7a', '#7a7aa0');
       sPut(c, scSpr.kuro().a[0], 110, 96);
       const my = Math.min(96, 72 + p * 60); dot(c, 102, Math.round(my) - 6, 5, 5, '#c0182f'); dot(c, 108, Math.round(my) - 5, 4, 4, '#7a0a18');   // the broken mask on the ground
       tear(c, 103, 82, t, 8);
     } },
-    { cap: 'You know that face. It\'s the boy in the picture. It\'s <b>Kuro, your big brother</b>.', draw(c, t) {
-      dot(c, 0, 0, SW, SH, '#fff0c8'); dot(c, 22, 10, 66, 70, '#6e4627'); dot(c, 25, 13, 60, 64, '#f0dfb6');
-      sPut(c, youngSensei().a[0], 46, 58); dot(c, 39, 58, 14, 16, '#4a5a7a'); baby(c, 48, 62); sPut(c, scSpr.kuro().a[0], 72, 74);
-      sPut(c, scSpr.kuro().a[0], 150, 100);
-    } },
-    { cap: '"I thought I had to earn Father\'s love. I made this for you, a long time ago."', draw(c, t) {
-      bands(c, ['#ffd0b0', '#ffe0b5', '#fff0c8'], 0, SH);
-      dot(c, 50, 64, 92, 44, '#f2c39a'); dot(c, 50, 64, 92, 2, '#d99b72');   // his open hand
-      sPut(c, woodenNinja(), 96, 70);
-    } },
-    { cap: 'You tie the red headband back on his wrist. "Because you\'re my brother. And you never had to earn it."', draw(c, t) {
+    { cap: '"Because you\'re my brother."', draw(c, t) {
       bands(c, ['#ffb59c', '#ffd0b0', '#ffe0b5', '#fff0c8'], 0, 80); disc(c, 96, 80, 16, '#fff3c4'); ground(c, 80, '#5f9a4c', '#7fba5c');
       sPut(c, scSpr.kai().stand[0], 84, 100); sPut(c, scSpr.kuro().a[0], 112, 100);
       dot(c, 98, 83, 4, 2, '#e63946'); scHeart(c, 98, 60 - Math.floor(t * 2) % 3);
     } },
   ],
   home: [
-    { cap: 'Far away, the children are home...', draw(c, t) {
-      bands(c, ['#7cc6ff', '#9ad3ff', '#b8e0ff', '#ffe3ef'], 0, 80); ground(c, 86, '#8fbf5a', '#a5d46a');
-      house(c, 20, 86, 30, '#f1e0c5', '#c0392b'); house(c, 140, 86, 30, '#f1e0c5', '#c0392b'); scCherry(c, 100, 88, t);
-      for (let i = 0; i < 3; i++) child(c, 70 + i * 14, 100 - (Math.floor(t * 4 + i) % 2) * 2, ['#3a86ff', '#ffd23f', '#2ecc71'][i]);
-      petals(c, t, 12, 2);
-    } },
-    { cap: '...the Golem keeps his mountain, the robots rest, and the Snowman has friends.', draw(c, t) {
-      bands(c, ['#ffc796', '#ffe3b0'], 0, SH); dot(c, 0, 80, 64, 28, '#6fa85a'); sPut(c, bossS('golem'), 32, 100);
-      dot(c, 64, 0, 64, SH, '#3b4a5e'); dot(c, 64, 80, 64, 28, '#4a5868'); robo(c, 84, 100, '#8395a7', '#4cc9f0', 'rest', t); robo(c, 108, 100, '#8395a7', '#4cc9f0', 'rest', t);
-      dot(c, 128, 0, 64, SH, '#cde9ff'); dot(c, 128, 80, 64, 28, '#ffffff'); sPut(c, bossS('yeti'), 160, 104); animal(c, 'penguin', 140, 104);
-      dot(c, 63, 0, 2, SH, '#120f1a'); dot(c, 127, 0, 2, SH, '#120f1a');
-    } },
-    { cap: 'Two brothers walk the long road home.', draw(c, t, p) {
+    { cap: 'Two brothers walk home.', draw(c, t, p) {
       bands(c, ['#ff9a8b', '#ffb59c', '#ffd0b0', '#ffe0b5'], 0, 76); mountains(c, [[150, 36, 70]], '#a77aa0', '#94698e', '#ffe8f0');
       scHills(c, 2, 78, 2, '#7a9a6a'); ground(c, 84, '#5f9a4c', '#7fba5c'); dot(c, 0, 92, SW, 8, '#c9a77a');
       const x = 30 + p * 120; sPut(c, scSpr.kai()[walkF(t) ? 'walkA' : 'stand'][0], x, 98); sPut(c, scSpr.kuro()[walkF(t + 0.25) ? 'a' : 'b'][1], x + 20, 98);
       birds(c, t, 3, 8, 12);
     } },
-    { cap: 'Sensei sees you both coming, and he <b>runs</b> down the path.', draw(c, t, p) {
+    { cap: 'Sensei runs to them.', draw(c, t, p) {
       dayJapan(c); ground(c, 86, '#8fbf5a', '#a5d46a'); dot(c, 0, 94, SW, 10, '#c9a77a');
       scDojo(c, 160, 92);
       senseiFig(c, 150 - p * 50, 102, true); dot(c, 92 - p * 0, 0, 0, 0, '#000');
       sPut(c, scSpr.kai().stand[0], 40, 100); sPut(c, scSpr.kuro().a[1], 60, 100); petals(c, t, 12, 5);
     } },
-    { cap: 'He throws his arms around his two sons. <b>"Welcome home."</b>', draw(c, t) {
+    { cap: '<b>"Welcome home!"</b>', draw(c, t) {
       dayJapan(c); ground(c, 86, '#8fbf5a', '#a5d46a'); scDojo(c, 160, 92);
       sPut(c, scSpr.kai().stand[0], 80, 100); senseiFig(c, 96, 102); sPut(c, scSpr.kuro().a[0], 114, 100);
       for (let i = 0; i < 5; i++) { const a = t * 0.8 + i * 1.256; scroll(c, Math.round(96 + Math.cos(a) * 34), Math.round(40 + Math.sin(a) * 10)); }
@@ -7891,8 +8381,8 @@ function dojoQuestions() {
   const d = today(), seen = new Set(), out = [];
   const add = q => { const k = factKey(q); if (!seen.has(k) && out.length < DOJO_N) { seen.add(k); out.push(q); } };
   const all = Object.values(prog.facts);
-  shuffle(all.filter(f => f.weak)).slice(0, 4).forEach(f => add(f.q));
-  shuffle(all.filter(f => !f.weak && f.days.length === 1 && f.days[0] < d)).slice(0, 4).forEach(f => add(f.q));
+  shuffle(all.filter(f => f.weak || f.practice)).slice(0, 4).forEach(f => add(f.q));
+  shuffle(all.filter(f => !f.weak && !f.practice && f.days.length === 1 && f.days[0] < d)).slice(0, 4).forEach(f => add(f.q));
   shuffle(all.filter(f => !f.weak && f.days.length >= 2 && d - f.last >= 4)).slice(0, 2).forEach(f => add(f.q));
   for (let i = 0; out.length < DOJO_N && i < 60; i++) add(curSkill().gen());
   return shuffle(out);
@@ -7903,28 +8393,48 @@ function startDojo() {
   dojo = { qs: dojoQuestions(), i: 0, right: 0, before, lock: false };
   show('dojo'); dojoNext();
 }
+// Facts the player already knows (silver or gold) are TYPED on a keypad: pulling the answer from memory builds it
+// better than spotting it in a row of choices. New and practice facts are still picked. Typing gets 1.5 s more
+// before it stops counting as fast.
+const DOJO_TYPE_EXTRA = 1.5;
 function dojoNext() {
   if (dojo.i >= dojo.qs.length) { finishDojo(); return; }
-  const q = dojo.qs[dojo.i];
-  dojo.q = q; dojo.opts = rowChoices(q, 5); dojo.left = DOJO_TIME; dojo.lock = false; dojo.sel = 2;
+  const q = dojo.qs[dojo.i], st = factStatus(factKey(q));
+  dojo.q = q; dojo.opts = rowChoices(q, 5); dojo.lock = false; dojo.sel = 2;
+  dojo.typing = st === 'silver' || st === 'gold'; dojo.typed = '';
+  dojo.left = dojo.full = DOJO_TIME + (dojo.typing ? DOJO_TYPE_EXTRA : 0);
   $('djProg').textContent = `${dojo.i + 1} / ${dojo.qs.length}`;
-  $('djQ').innerHTML = q.missing ? q.text.replace('?', '<span class="padin">?</span>') : `${q.text} = <span class="padin">?</span>`;
-  $('djMsg').textContent = '';
-  const box = $('djKeys'); box.innerHTML = '';
-  dojo.opts.forEach((v, i) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = v; b.onclick = () => dojoPick(i); box.appendChild(b); });
+  $('djQ').innerHTML = q.missing ? q.text.replace('?', '<span class="padin" id="djIn">?</span>') : `${q.text} = <span class="padin" id="djIn">?</span>`;
+  $('djMsg').textContent = dojo.typing ? 'You know this one. Type it!' : '';
+  const box = $('djKeys'); box.innerHTML = ''; box.classList.toggle('keypad', dojo.typing);
+  if (dojo.typing) {
+    ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', '✓'].forEach(k => {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = k; if (k === '✓') b.className = 'ok';
+      b.onclick = () => dojoType(k); box.appendChild(b);
+    });
+  } else dojo.opts.forEach((v, i) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = v; b.onclick = () => dojoPick(i); box.appendChild(b); });
   dojoMark();
 }
-function dojoMark() { [...$('djKeys').children].forEach((b, i) => b.classList.toggle('sel', i === dojo.sel)); }
+function dojoType(k) {
+  if (!dojo || dojo.lock || !dojo.typing) return;
+  audio();
+  if (k === '⌫') dojo.typed = dojo.typed.slice(0, -1);
+  else if (k === '✓') { if (dojo.typed) dojoPick(Number(dojo.typed) === dojo.q.ans ? -2 : -3); return; }
+  else if (dojo.typed.length < 4) { dojo.typed += k; tone(600 + Number(k) * 40, 0.05, 'square', 0.03); }
+  $('djIn').textContent = dojo.typed || '?';
+}
+function dojoMark() { if (!dojo.typing) [...$('djKeys').children].forEach((b, i) => b.classList.toggle('sel', i === dojo.sel)); }
+// i: a choice, -1 time's up, -2 typed right, -3 typed wrong
 function dojoPick(i) {
   if (!dojo || dojo.lock) return;
   audio(); dojo.lock = true;
-  const q = dojo.q, ok = i >= 0 && dojo.opts[i] === q.ans, btns = [...$('djKeys').children];
-  noteFact(q, ok, DOJO_TIME - dojo.left <= fastFrames(null, q, false) / 60, null);
-  if (ok) { dojo.right++; sfx.correct(); btns[i].classList.add('right'); }
+  const q = dojo.q, ok = i === -2 || (i >= 0 && dojo.opts[i] === q.ans), btns = [...$('djKeys').children];
+  noteFact(q, ok, dojo.full - dojo.left <= fastFrames(null, q, false) / 60 + (dojo.typing ? DOJO_TYPE_EXTRA : 0), null);
+  if (ok) { dojo.right++; sfx.correct(); if (i >= 0) btns[i].classList.add('right'); else btns[btns.length - 1].classList.add('right'); }
   else {
     sfx.wrong(); if (i >= 0) btns[i].classList.add('wrong');
-    const j = dojo.opts.indexOf(q.ans); if (j >= 0) btns[j].classList.add('right');
-    $('djMsg').textContent = i < 0 ? `Time's up! ${qSolved(q)}` : qSolved(q);
+    const j = dojo.typing ? -1 : dojo.opts.indexOf(q.ans); if (j >= 0) btns[j].classList.add('right');
+    $('djMsg').textContent = i === -1 ? `Time's up! ${qSolved(q)}` : i === -3 ? `You typed ${dojo.typed}. ${qSolved(q)}` : qSolved(q);
   }
   $('djQ').innerHTML = qSolved(q);
   setTimeout(() => { if (dojo) { dojo.i++; dojoNext(); } }, ok ? 650 : 1500);
@@ -7932,13 +8442,19 @@ function dojoPick(i) {
 function dojoTick(dt) {
   if (!dojo || dojo.lock || $('dojo').classList.contains('hidden')) return;
   dojo.left -= dt;
-  $('djFuse').style.width = `${Math.max(0, dojo.left / DOJO_TIME) * 100}%`;
+  $('djFuse').style.width = `${Math.max(0, dojo.left / dojo.full) * 100}%`;
   $('djFuse').classList.toggle('low', dojo.left <= 3);
   if (dojo.left <= 0) dojoPick(-1);
 }
 function dojoKey(e) {
   e.preventDefault();
   if (!dojo || e.repeat) return;
+  if (dojo.typing) {   // number keys type; Backspace deletes; Enter checks
+    if (/^[0-9]$/.test(e.key)) dojoType(e.key);
+    else if (e.key === 'Backspace') dojoType('⌫');
+    else if (e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Space') dojoType('✓');
+    return;
+  }
   if (/^[1-5]$/.test(e.key)) dojoPick(Number(e.key) - 1);
   else if (e.code === 'ArrowLeft' || e.code === 'KeyA') { dojo.sel = clamp(dojo.sel - 1, 0, 4); dojoMark(); }
   else if (e.code === 'ArrowRight' || e.code === 'KeyD') { dojo.sel = clamp(dojo.sel + 1, 0, 4); dojoMark(); }
@@ -7957,7 +8473,7 @@ function finishDojo() {
   const right = dojo.right, n = dojo.qs.length; dojo = null; hide('dojo');
   let body = `<div class="bigicon">${pixImg('flame', 'pix big')}<small>${dl.streak}</small></div><div class="statrow"><span>✔ ${right}/${n}</span>${gems ? `<span>${pixImg('gem', 'pix sm')} +${gems}</span>` : ''}${golds ? `<span>🥇 +${golds}</span>` : ''}</div>`;
   body += first ? `<div class="promo">${dl.streak > 1 ? `${dl.streak} days in a row!` : 'Come back tomorrow to grow your streak!'}</div>` : '<p>Extra practice! Your streak counts once a day.</p>';
-  showMsg(first ? 'Dojo done!' : 'Nice practice!', body, [{ label: 'Play ▶', fn: toMenu, primary: true }, { label: '📒 Facts', fn: () => { hide('msg'); openFacts(); }, alt: true }]);
+  showMsg(first ? 'Dojo done!' : 'Nice practice!', body, [{ label: 'Play ▶', fn: toMenu, primary: true }, { label: '🔁 One more round', fn: () => { hide('msg'); startDojo(); }, alt: true }, { label: '📒 Facts', fn: () => { hide('msg'); openFacts(); }, alt: true }]);
 }
 $('dojoBtn').onclick = () => { audio(); startDojo(); };
 
