@@ -63,6 +63,7 @@
   .btn { background: #2ecc71; color: #fff; border: none; border-bottom: 4px solid #1e8449; border-radius: 10px;
     padding: 10px 20px; font: inherit; font-weight: 800; font-size: 18px; cursor: pointer; }
   .btn.alt { background: #5b6bd6; border-bottom-color: #3a46a0; }
+  .card p.readtip { font-size: 14px; opacity: .75; margin: 4px 0 0; }
   .btn.ghost { background: transparent; border: 2px solid rgba(255,255,255,.4); font-size: 14px; padding: 6px 12px; }
   .card { background: #22224a; border: 4px solid #ffd23f; border-radius: 16px; padding: 20px 26px; max-width: 540px; }
   .card h2 { margin: 0 0 8px; color: #ffd23f; font-size: clamp(24px, 5vw, 32px); }
@@ -100,6 +101,7 @@
   #ansbar button:disabled { opacity: .3; }
   #ansbar.drill .ab { gap: 18px; }
   #ansbar.drill button { min-width: 104px; height: 88px; font-size: 38px; }
+  body:not(.portrait) #ansbar.drill button { min-width: 88px; height: 70px; font-size: 32px; }   /* phone sideways: a bit smaller so the dojo shows */
   #ansbar.stun button { opacity: .35; }
   body.drilling .tbtn { display: none !important; }
   #ansbar.arc { left: 0; top: 0; bottom: auto; transform: none; }
@@ -250,7 +252,7 @@
   .pix { image-rendering: pixelated; width: 36px; height: 36px; display: block; }
   .pix.big { width: 64px; height: 64px; display: inline-block; margin: 0 2px; }
   .scenebox { width: min(100%, 520px); margin: 0 auto 12px; }
-  canvas.scene { display: block; width: 100%; image-rendering: pixelated; border: 3px solid #c9a24f; border-radius: 8px; background: #000; cursor: pointer; }
+  canvas.scene { display: block; margin: 0 auto; width: 100%; image-rendering: pixelated; border: 3px solid #c9a24f; border-radius: 8px; background: #000; cursor: pointer; }
   .scenecap { min-height: 2.6em; margin: 8px 4px 4px; font-size: 19px; line-height: 1.3; color: #ffe9a8; }
   .scenedots { display: flex; justify-content: center; gap: 6px; }
   .scenedots i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.25); }
@@ -419,7 +421,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 5, 2026 11:00 PM PT · rescues: samurai sword, hammer, laser, fire torch, flaming throwing stars</div>
+  <div class="build">Updated Nov 5, 2026 11:18 PM PT · new rescue guards: sumo, golem, bot, penguin, watchman</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1659,11 +1661,29 @@ function moveNow() {
   if (rm && rm.kind === 'train') return rm.open ? rm.move : null;
   return G.power && G.power.kind === 'sensei' ? G.power.move : null;
 }
+// Hana's samurai sword works in the world where Kai found it (Japan, not the boss): the same button slashes
+// bricks and enemies just in front of him. Learned moves (training room, Sensei power) come first.
+const swordOn = () => !!(G && mode === 'play' && !L.boss && L.world && L.world.key === 'japan' && prog.friends && prog.friends.hana && !L.room && !G.rescue && !G.swing && !G.cross);
+const SLASH_T = 18, SLASH_HIT = 10;
+function swordStrike() {
+  const f = P.face < 0 ? -1 : 1, cx = P.x + P.w / 2, x0 = f > 0 ? cx : cx - 78, x1 = f > 0 ? cx + 78 : cx, y0 = P.y - 12, y1 = P.y + P.h - 6;
+  let hit = false;
+  for (let r = Math.max(0, Math.floor(y0 / T)); r <= Math.floor(y1 / T); r++) for (let c = Math.floor(x0 / T); c <= Math.floor(x1 / T); c++) {
+    if (L.map[r] && L.map[r][c] === 'B') { L.map[r][c] = '.'; G.score += 50; hit = true; sfx.brick(); burst(c * T + T / 2, r * T + T / 2, L.world.brick[0], 10); }
+  }
+  for (const e of L.enemies || []) {
+    if (!e.dead && e.x + e.w > x0 && e.x < x1 && e.y + e.h > y0 && e.y < y1) { e.dead = 'flip'; e.vy = -8; e.vx = f * 4; G.score += 200; hit = true; sfx.stomp(); }
+  }
+  if (hit) { shake(5, 3); floatText(cx + f * 40, P.y - 10, 'SLASH!', '#ffd23f', 24); }
+}
 function doMove() {
-  const mv = moveNow(); if (!mv || G.moveT > 0) return;
+  const mv = moveNow();
+  if (!mv) { if (swordOn() && !(G.slashT > 0)) { G.slashT = SLASH_T; tone(700, 0.12, 'sawtooth', 0.03, 1600); } return; }
+  if (G.moveT > 0) return;
   G.moveT = 28; G.moveOf = mv; sfx.throw();
 }
 function moveTick() {
+  if (G.slashT > 0 && --G.slashT === SLASH_HIT) swordStrike();
   if (!(G.moveT > 0)) return;
   if (P.onGround) P.vx *= 0.7;
   if (--G.moveT !== 16) return;
@@ -2564,7 +2584,10 @@ function syncAnsBar() {
   bar.classList.toggle('drill', drill);
   const arc = !drill && !portrait && jb.width > 0;   // phone held sideways: fan the buttons out around the jump button, under the right thumb
   bar.classList.toggle('arc', arc);
-  if (drill) { const r = $('stage').getBoundingClientRect(); bar.style.top = (r.top + r.height * (portrait ? 0.46 : 0.3)) + 'px'; bar.style.bottom = 'auto'; }
+  if (drill) {   // upright phone: in the empty space under the dojo (where the thumbs are), so Sensei, the words and the scroll rack stay in view
+    const r = $('stage').getBoundingClientRect(), below = window.innerHeight - r.bottom > 120;
+    bar.style.top = (portrait && below ? r.bottom + 24 : r.top + r.height * (portrait ? 0.46 : 0.26)) + 'px'; bar.style.bottom = 'auto';
+  }
   else if (arc || portrait) bar.style.top = bar.style.bottom = '';
   else {   // computer: up in the sky, above where Kai jumps
     const r = $('stage').getBoundingClientRect(); bar.style.top = (r.top + r.height * 0.26) + 'px'; bar.style.bottom = 'auto';
@@ -2852,7 +2875,7 @@ function boxPrize(c, r, asked = false) {
   G.power = { kind: k, t: POWERS[k].time }; sfx.power(); petSay('wow');
   floatText(x, y - 50, `${POWERS[k].name}!`, '#7df9ff', 26);
 }
-const canMoveBtn = () => !!moveNow();
+const canMoveBtn = () => !!moveNow() || swordOn();
 const hasPower = k => !!(G && G.power && (G.power.kind === k || (G.power.kind === 'sensei' && (k === 'star' || k === 'speed' || (k === 'jump' && G.power.kick)))));
 function grantPower() {
   const kinds = ['double', 'shield', 'fire'], kind = kinds[G.powerN++ % kinds.length];
@@ -3012,27 +3035,219 @@ const RESCUE_TOOL = {
   ladder: { kind: 'star', name: 'flaming throwing stars', short: 'Throwing stars', word: 'SHING!' },
 };
 const RESCUE_FIND = 56, RESCUE_HIT = 14, RESCUE_ACT = 34;
+// The last hit is a finishing move: a slow wind-up (screen dims, Kai glows), then one huge strike.
+const FIN_HIT = 60, FIN_ACT = 130;
+const FIN_WORD = { sword: 'MEGA SLASH!', hammer: 'GROUND POUND!', laser: 'STAR LASER!', torch: 'RING OF FIRE!', star: 'FIREWORKS!' };
+// Where the hit animation is, on the normal 0..RESCUE_ACT clock (the finishing move holds the wind-up, then stretches the end).
+const actEff = a => (!a.fin ? a.t : a.t < FIN_HIT - RESCUE_HIT ? 0 : a.t < FIN_HIT ? a.t - (FIN_HIT - RESCUE_HIT) : RESCUE_HIT + (a.t - FIN_HIT) * (RESCUE_ACT - RESCUE_HIT) / (FIN_ACT - FIN_HIT));
+// One guard in each rescue room: big and grumpy, but he never hurts Kai. He leaps in after Kai finds the treasure,
+// gets knocked back by each hit, laughs and steps closer on a miss, and runs away after the finishing move.
+// Each world has its own funny guard, drawn at Kai's own pixel size (more pixels, not bigger ones) with makeFrames,
+// facing left at Kai. Frames: a stand, b (stomp / bounce / siren / lantern up), c (laugh / beep / whistle),
+// d (golem ball / penguin belly-slide). Each comes in and gets away in his own way.
+const GUARD_STYLE = {
+  japan: { kind: 'sumo', w: 22, h: 20, enter: 'leap', run: 'waddle', say: 'Nobody gets past my belly!', miss: 'Ho ho! Belly bounce!', bye: 'Wobble wobble!' },
+  lava: { kind: 'golem', w: 20, h: 23, enter: 'roll', run: 'roll', say: 'Rumble rumble! Stay out!', miss: 'Hee hee! Rumble!', bye: 'Roll away!' },
+  robot: { kind: 'bot', w: 18, h: 22, enter: 'zoom', run: 'zoom', say: 'BEEP. ACCESS DENIED.', miss: 'BEEP BOOP! Try again!', bye: 'BEEP BOOP! BYE!' },
+  snow: { kind: 'penguin', w: 18, h: 20, enter: 'slide', run: 'slide', say: 'Ahem. Members only.', miss: 'TWEET! Not that one!', bye: 'Wheee!' },
+  castle: { kind: 'watch', w: 18, h: 20, enter: 'drop', run: 'poof', say: 'Who goes there?!', miss: 'Nice try, little ninja!', bye: 'Poof!' },
+};
+const guardStyle = () => GUARD_STYLE[L.world.key] || GUARD_STYLE.japan;
+const GUARD_PAL = {
+  sumo: { h: '#1a1426', s: '#f2c49b', S: '#d9a47a', e: '#1a1426', p: '#ff9aa8', m: '#a8323e', b: '#2f5bbd', B: '#1d3d8a' },
+  golem: { g: '#9a8b80', G: '#7a6c62', q: '#c2b4a8', v: '#5fae4a', V: '#3f8a34', e: '#1a1426', m: '#4a3f3a', p: '#ff8fb8', y: '#ffd23f' },
+  bot: { a: '#a9b6c6', A: '#6c7a89', S: '#1b2430', c: '#7df9ff', r: '#ff3355', u: '#3a86ff', y: '#ffd23f', W: '#2b2b38', g: '#3ae374' },
+  penguin: { B: '#1f2533', W: '#f4f8ff', o: '#ff9a1a', G: '#2b2b38', w: '#ffffff', r: '#e63946', R: '#a91d2b', y: '#ffd23f' },
+  watch: { n: '#2f3566', N: '#4a5296', H: '#d8b25a', h: '#a8833a', s: '#f2c49b', e: '#1a1426', l: '#ffb627', z: '#5a2a1a', y: '#ffd23f', f: '#1a1426', m: '#a8323e' },
+};
+function drawGuardArt(kind, { P, R, E, L }, f) {
+  if (kind === 'sumo') {   // round, smiling, topknot, blue belt
+    E(4, 12, 2.2, 2.6, 's'); E(18.5, 12, 2.2, 2.6, 's');   // arms
+    E(11, 14, 8.2, 5.6, 's');   // the belly
+    P(11, 13, 'S'); R(3, 15, 17, 2, 'b'); R(8, 17, 7, 2, 'B'); P(6, 16, 'B');   // belly button, belt
+    if (f === 1) { R(5, 18, 4, 2, 's'); R(15, 13, 4, 3, 's'); P(14, 13, 'S'); }   // one leg up: the sumo stomp
+    else { R(5, 18, 4, 2, 's'); R(14, 18, 4, 2, 's'); }
+    E(11, 6, 4.3, 3.9, 's'); E(11.6, 3, 4.1, 1.8, 'h'); R(11, 0, 3, 2, 'h');   // head, hair, topknot
+    P(7, 8, 'p'); P(12, 8, 'p');   // rosy cheeks
+    if (f === 2) { R(7, 6, 2, 1, 'e'); R(10, 6, 2, 1, 'e'); R(8, 8, 3, 2, 'm'); }   // eyes shut, big laugh
+    else { P(8, 5, 'e'); P(8, 6, 'e'); P(11, 5, 'e'); P(11, 6, 'e'); R(9, 8, 2, 1, 'm'); }
+  } else if (kind === 'golem') {   // a friendly rock buddy: boulders stacked up, moss and a little flower on top
+    const p = (x, y, c) => P(x, y + 2, c), rr = (x, y, w, h, c) => R(x, y + 2, w, h, c), ee = (x, y, a, b, c) => E(x, y + 2, a, b, c);
+    if (f === 3) {   // curled up into a ball to roll
+      ee(10, 11.5, 8.6, 8.6, 'g'); ee(12.5, 14.5, 4, 3, 'G'); p(5, 7, 'q'); p(6, 6, 'q'); p(4, 9, 'q');
+      rr(7, 3, 6, 1, 'v'); p(8, 2, 'v'); p(10, 2, 'p'); p(11, 2, 'V'); rr(13, 9, 3, 1, 'v');
+      p(7, 9, 'e'); p(7, 10, 'e'); p(11, 9, 'e'); p(11, 10, 'e'); rr(8, 13, 3, 1, 'm');
+      return;
+    }
+    ee(6, 19, 2.7, 1.8, 'G'); ee(14, 19, 2.7, 1.8, 'G');   // little rock feet
+    ee(2.6, 13, 2.2, 2.6, 'g'); ee(17.4, 13, 2.2, 2.6, 'g'); p(2, 11, 'q');   // rock hands
+    ee(10, 13.5, 7, 5, 'g'); ee(12, 15.8, 4, 2.2, 'G'); p(6, 11, 'q'); p(7, 10, 'q');
+    rr(13, 9, 3, 1, 'v'); p(14, 10, 'v'); rr(4, 15, 2, 1, 'v');   // moss patches
+    const up = f === 1 ? -2 : 0;   // the head rock bounces
+    ee(9.5, 5.2 + up, 4.6, 3.8, 'g'); p(6, 3 + up, 'q'); p(7, 2 + up, 'q');
+    rr(7, 1 + up, 5, 1, 'v'); p(8, up, 'v'); p(11, up, 'V'); p(10, -1 + up, 'p'); p(9, up, 'y');   // moss tuft and a flower
+    p(7, 4 + up, 'e'); p(7, 5 + up, 'e'); p(10, 4 + up, 'e'); p(10, 5 + up, 'e');
+    if (f) rr(7, 7 + up, 4, 1, 'm'); else { p(7, 7, 'm'); rr(8, 8, 2, 1, 'm'); p(10, 7, 'm'); }   // a smile, or a big laugh
+  } else if (kind === 'bot') {   // a security bot on one wheel: siren on top, radar dish, smiley screen
+    const lit = f === 1 ? 'u' : 'r';
+    R(7, 2, 5, 1, 'A'); R(8, 0, 3, 2, lit);
+    if (f === 1) { R(12, 1, 3, 1, 'a'); P(13, 2, 'A'); } else { R(14, 0, 1, 3, 'a'); P(13, 2, 'A'); }   // radar dish turns
+    R(5, 3, 9, 7, 'a'); R(6, 4, 7, 5, 'S');
+    if (f === 2) { P(7, 5, 'c'); P(6, 6, 'c'); P(8, 6, 'c'); P(10, 5, 'c'); P(9, 6, 'c'); P(11, 6, 'c'); }   // ^ ^
+    else { P(7, 5, 'c'); P(7, 6, 'c'); P(10, 5, 'c'); P(10, 6, 'c'); }
+    R(8, 8, 2, 1, 'c');
+    R(8, 10, 3, 1, 'A');
+    R(4, 11, 11, 7, 'a'); R(4, 14, 11, 1, 'y'); P(6, 12, 'r'); P(8, 12, 'y'); P(10, 12, 'g');
+    R(2, 12, 2, 4, 'A'); R(15, 12, 2, 4, 'A');
+    R(8, 18, 3, 1, 'A'); E(9.5, 19.6, 2.5, 2.4, 'W'); P(9, 19, 'a');
+  } else if (kind === 'penguin') {   // a penguin bouncer: sunglasses, bow tie, a whistle
+    if (f === 3) {   // flat on his belly, sliding
+      E(9.5, 15.5, 8.6, 3.6, 'B'); E(10, 17.4, 6.5, 1.8, 'W');
+      R(1, 13, 4, 1, 'G'); P(2, 13, 'w'); R(0, 15, 2, 1, 'o'); R(17, 13, 1, 2, 'o'); P(16, 12, 'o');
+      return;
+    }
+    E(2.6, 12, 1.6, 3.6, 'B'); E(15.4, 12, 1.6, 3.6, 'B');
+    E(9, 11.2, 7, 8.4, 'B'); E(8, 13.4, 4.6, 6, 'W'); E(7.5, 7.2, 4.2, 2.6, 'W');   // white face and belly
+    R(3, 6, 4, 2, 'G'); R(8, 6, 4, 2, 'G'); P(7, 6, 'G'); P(4, 6, 'w'); P(9, 6, 'w');   // cool shades
+    R(2, 8, 3, 2, 'o'); P(1, 9, 'o');
+    R(6, 11, 2, 2, 'r'); R(9, 11, 2, 2, 'r'); P(8, 11, 'R'); P(8, 12, 'R');
+    if (f === 2) { R(0, 9, 2, 1, 'y'); } else { L(9, 13, 11, 15, 'G'); R(11, 15, 2, 1, 'y'); }   // whistle: blowing / hanging
+    R(4, 19, 4, 1, 'o'); R(10, 19, 4, 1, 'o');
+  } else if (kind === 'watch') {   // the night watchman: big straw hat, a paper lantern
+    R(3, 3, 13, 1, 'H'); R(5, 2, 9, 1, 'H'); R(7, 1, 5, 1, 'H'); P(9, 0, 'h'); R(4, 3, 11, 1, 'h');
+    R(3, 3, 13, 1, 'H');
+    E(9.5, 6.2, 4, 2.8, 'n'); R(6, 5, 6, 3, 's');
+    P(7, 5, 'e'); P(7, 6, 'e'); P(10, 5, 'e'); P(10, 6, 'e'); P(8, 7, 'm');
+    R(5, 9, 9, 7, 'n'); R(5, 9, 9, 1, 'N'); R(5, 12, 9, 1, 'y');
+    R(6, 16, 3, 3, 'n'); R(11, 16, 3, 3, 'n'); R(5, 19, 4, 1, 'f'); R(10, 19, 4, 1, 'f');
+    R(14, 10, 2, 3, 'n'); P(15, 13, 's');
+    const ly = f === 1 ? -2 : 0;   // the lantern hand, held out (raised when he shakes it)
+    R(3, 10 + ly, 2, 2, 'n'); P(2, 10 + ly, 's');
+    P(1, 11 + ly, 'z'); R(0, 12 + ly, 3, 1, 'z'); R(0, 13 + ly, 3, 3, 'l'); R(0, 16 + ly, 3, 1, 'z'); P(1, 14 + ly, 'y');
+  }
+}
+const GUARD_SETS = {};
+function guardSet(kind) {
+  if (GUARD_SETS[kind]) return GUARD_SETS[kind];
+  const st = Object.values(GUARD_STYLE).find(x => x.kind === kind);
+  return (GUARD_SETS[kind] = bake(makeFrames(st.w, st.h, GUARD_PAL[kind], (api, f) => drawGuardArt(kind, api, f), 4), ['a', 'b', 'c', 'd']));
+}
+const GUARD_HURT = ['Oof!', 'Hey!', 'Grrr...'];
+const GUARD_IN = 36, GUARD_PHASE = GUARD_IN + 84;   // leap in, then the threat
+function guardSay(g, txt, t = 80) { g.say = txt; g.sayT = t; }
+function guardTick(r) {
+  const g = r.g; if (!g || g.gone) return;
+  g.t++;
+  if (g.hurt > 0) g.hurt--;
+  if (g.laugh > 0) g.laugh--;
+  if (g.sayT > 0) g.sayT--;
+  const st = guardStyle(), { fy } = rescueSpots();
+  if (g.stomp > 0 && --g.stomp === 12) { r.shk = 12; tone(70, 0.45, 'square', 0.09, 35); rescueBits(r, 14, ['#b8aca5', '#d8cfc8'], g.x + 10, fy - 4, 6); }   // sumo stomp
+  if (g.enter < GUARD_IN) {   // his own way in
+    const u = ++g.enter / GUARD_IN, e = 1 - (1 - u) ** 2;
+    if (st.enter === 'leap') { g.x = VW + 80 + (g.x0 - VW - 80) * u; g.y = -Math.sin(Math.PI * u) * 170; }
+    else if (st.enter === 'drop') { g.x = g.x0; g.y = -(1 - u * u) * 520; }   // drops down from the roof above
+    else { g.x = VW + 80 + (g.x0 - VW - 80) * e; g.y = 0; g.spin = (g.spin || 0) - 0.35 * (1 - u); }   // rolls / zooms / slides in
+    if (st.enter === 'zoom' && g.enter % 5 === 0) r.bits.push({ x: g.x + 30, y: fy - 8, vx: 2, vy: -1, life: 18, col: '#ffd23f', s: 4 });
+    if (st.enter === 'slide' && g.enter % 3 === 0) r.bits.push({ x: g.x + 26, y: fy - 4, vx: 1.5, vy: -2, life: 20, col: '#ffffff', s: 5 });
+    if (g.enter === GUARD_IN) {
+      g.y = 0; g.spin = 0;
+      if (st.enter === 'leap') { g.stomp = 34; r.shk = 10; tone(80, 0.3, 'square', 0.07, 40); }
+      else { r.shk = st.enter === 'drop' ? 12 : 6; tone(st.enter === 'zoom' ? 300 : 90, 0.3, st.enter === 'zoom' ? 'square' : 'sine', 0.07, st.enter === 'zoom' ? 120 : 45); }
+      if (st.enter === 'zoom') [880, 660, 880, 660].forEach((n, i) => tone(n, 0.1, 'square', 0.03, null, 0.1 + i * 0.12));   // siren
+      rescueBits(r, 14, ['#b8aca5', '#8f8580', '#d8cfc8'], g.x, fy - 4, 6);
+      guardSay(g, st.say, 120);
+    }
+    return;
+  }
+  if (g.fall > 0) {   // knocked flat by the finishing move, dizzy, then up and away
+    g.fall++;
+    if (g.fall < 12) { g.x += 4; g.rot = Math.min(1.45, g.rot + 0.13); }
+    if (g.fall >= 70 && g.fall < 82) g.rot = Math.max(0, g.rot - 0.13);
+    if (g.fall === 82) { g.rot = 0; g.run = 0; guardSay(g, st.bye, 90); tone(500, 0.4, 'square', 0.04, 1200); }
+  }
+  if (g.run >= 0) {   // his own getaway
+    g.run++;
+    if (st.run === 'poof') {   // the watchman vanishes in a puff of smoke
+      if (g.run === 1) { for (let i = 0; i < 26; i++) { const an = Math.random() * 7, sp = 1 + Math.random() * 3; r.bits.push({ x: g.x + (Math.random() - 0.5) * 30, y: fy - 30 + (Math.random() - 0.5) * 40, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp - 1, life: 50, col: ['#e8e8f0', '#cfcfdc', '#b8b8c8'][i % 3], s: 10 + (i % 3) * 4, up: true }); } tone(200, 0.4, 'sawtooth', 0.04, 900); }
+      if (g.run >= 5) g.gone = true;
+      return;
+    }
+    const sp = st.run === 'zoom' ? Math.min(14, 2 + g.run * 0.8) : st.run === 'slide' ? Math.min(11, 3 + g.run * 0.5) : Math.min(8, 2 + g.run * 0.35);
+    g.x += sp;
+    if (st.run === 'roll') g.spin = (g.spin || 0) + sp / 30;
+    if (g.run % (st.run === 'zoom' ? 3 : 6) === 0) r.bits.push({ x: g.x - 24, y: fy - 6, vx: -1, vy: -1, life: 20, col: st.run === 'zoom' ? '#ffd23f' : st.run === 'slide' ? '#ffffff' : '#d8cfc8', s: st.run === 'zoom' ? 4 : 6 });
+    if (g.x > VW + 140) g.gone = true;
+    return;
+  }
+  if (!g.fall) g.x += (g.tx - g.x) * 0.15;
+}
+function drawGuard(r) {
+  const g = r.g; if (!g || g.gone) return;
+  const { fy } = rescueSpots(), st = guardStyle(), set = guardSet(st.kind), H = st.h * PX, Wd = st.w * PX;
+  const entering = g.enter < GUARD_IN, running = g.run >= 0, slow = Math.floor(g.t / 5) % 2;
+  let fr = 'a';
+  if ((entering && (st.enter === 'roll' || st.enter === 'slide')) || (running && (st.run === 'roll' || st.run === 'slide'))) fr = 'd';
+  else if (g.stomp > 12) fr = 'b';
+  else if (g.laugh > 0) fr = st.kind === 'golem' || st.kind === 'watch' ? (slow ? 'b' : 'a') : 'c';
+  else if (running) fr = slow ? 'b' : 'a';
+  else if (st.kind === 'bot' && !g.fall) fr = Math.floor(g.t / 15) % 2 ? 'b' : 'a';   // siren and radar
+  const bob = g.laugh > 0 && st.kind === 'sumo' ? -Math.abs(Math.sin(g.laugh * 0.45)) * 5 : running && st.run === 'waddle' ? -Math.abs(Math.sin(g.run * 0.5)) * 4 : 0;
+  const lean = g.hurt > 0 && !g.fall ? 0.18 * (g.hurt / 18) : running && st.run === 'waddle' ? Math.sin(g.run * 0.5) * 0.12 : 0;
+  const lift = g.fall ? (g.rot / 1.45) * (Wd / 2) : 0;   // lying flat, he rests on the floor, not in it
+  if (!(g.hurt > 6 && g.hurt % 4 < 2)) {   // blinks when hit
+    ctx.save();
+    ctx.translate(Math.round(g.x), Math.round(fy + g.y + bob - lift));
+    if (fr === 'd' && st.kind === 'golem') { ctx.translate(0, -H / 2); ctx.rotate(g.spin || 0); ctx.translate(0, H / 2); }   // rolling
+    ctx.rotate(g.fall ? g.rot : lean);
+    if (g.laugh > 0 && st.kind === 'bot') ctx.scale(Math.cos(g.laugh * 0.35) || 0.05, 1);   // a happy little spin
+    drawBaked(set, fr, running, { x: -1, y: -1, w: 2, h: 1 });
+    ctx.restore();
+    if (st.kind === 'watch' && !g.fall) glowAt(g.x - (running ? -1 : 1) * (set.cx - 1.5 * PX), fy + g.y - (st.h - 14 + (fr === 'b' ? 2 : 0)) * PX, 30, 'rgba(255,190,80,.4)');
+  }
+  if (g.fall >= 12 && g.fall < 82) for (let i = 0; i < 3; i++) {   // dizzy stars over his head
+    const a = g.t * 0.15 + i * 2.1, sx = g.x + H * 0.8 + Math.cos(a) * 16, sy = fy - lift - 12 + Math.sin(a) * 5;
+    ctx.fillStyle = '#ffd23f'; ctx.fillRect(sx - 4, sy - 1, 8, 2); ctx.fillRect(sx - 1, sy - 4, 2, 8);
+  }
+  if (g.sayT > 0 && g.say) rescueBubble(g.say, g.fall ? g.x + H * 0.5 : g.x, fy - (g.fall ? Wd * 0.6 : H) - 22 + g.y, '#ffffff');
+}
+function rescueBubble(say, px, py, bg = '#ffffff') {
+  ctx.font = '18px "Lilita One", "Trebuchet MS", sans-serif'; const w = ctx.measureText(say).width + 22, bx = clamp(px, w / 2 + 6, VW - w / 2 - 6), by = py;
+  ctx.fillStyle = bg; rrect(bx - w / 2, by - 15, w, 30, 12); ctx.fill(); ctx.beginPath(); ctx.moveTo(px - 5, by + 15); ctx.lineTo(px, by + 23); ctx.lineTo(px + 5, by + 15); ctx.fill();
+  ctx.fillStyle = '#22224a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(say, bx, by + 1);
+}
 function rescueTick() {
   const r = G.rescue; r.t++;
   keys.jumpPressed = false; P.vx = P.vy = 0;
   if (r.msgT > 0) r.msgT--;
   if (r.flash > 0) r.flash = Math.max(0, r.flash - 0.1);
   if (r.shk > 0) r.shk--;
+  guardTick(r);
   for (const b of r.bits) { b.x += b.vx; b.y += b.vy; b.vy += b.up ? 0.05 : 0.25; b.life--; }
   r.bits = r.bits.filter(b => b.life > 0);
   for (const w of r.words) w.t++;
   r.words = r.words.filter(w => w.t < 60);
   if (r.act) {   // a hit in progress
     const a = r.act; a.t++;
-    if (r.f.way === 'falls' && a.t < RESCUE_HIT + 4) rescueFlame(r);
-    if (a.t === RESCUE_HIT) rescueImpact(r, a);
-    if (a.t >= RESCUE_ACT) { r.act = null; if (r.step >= 3) { r.phase = 'free'; r.t = 0; freeFriend(r); } }
+    const eff = actEff(a);
+    if (r.f.way === 'falls' && eff < RESCUE_HIT + 4 && (!a.fin || a.t >= FIN_HIT - RESCUE_HIT)) rescueFlame(r);
+    if (a.fin && a.t < FIN_HIT && a.t % 10 === 0) tone(220 + a.t * 12, 0.12, 'triangle', 0.035);   // powering up
+    if (a.t === (a.fin ? FIN_HIT : RESCUE_HIT)) rescueImpact(r, a);
+    if (a.t >= (a.fin ? FIN_ACT : RESCUE_ACT)) { r.act = null; if (r.step >= 3) { r.phase = 'free'; r.t = 0; freeFriend(r); } }
   }
-  if (r.phase === 'in' && r.t >= RESCUE_SLIDE) { r.t = 0; r.phase = r.f.way === 'vent' ? 'arrive' : 'find'; }
+  if (r.phase === 'in' && r.t >= RESCUE_SLIDE) { r.t = 0; r.phase = 'arrive'; }   // first Kai gets in, the way he really came
+  else if (r.phase === 'arrive' && (r.f.way === 'key' || r.f.way === 'crate') && r.t === Math.round(RESCUE_ARRIVE / 2)) { tone(110, 0.2, 'square', 0.05, 60); r.shk = 6; }   // lands with a thud
   else if (r.phase === 'arrive' && r.t >= RESCUE_ARRIVE) { r.phase = 'find'; r.t = 0; }   // Kai has floated up and landed
   else if (r.phase === 'find') {
     if (r.t === 20) { r.flash = 0.6; [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.18, 'triangle', 0.05, null, i * 0.07)); }   // got it!
-    if (r.t >= RESCUE_FIND) { r.phase = 'ask'; r.t = 0; rescueNext(r); }
+    if (r.t >= RESCUE_FIND) {   // ...and here comes the guard
+      const { kx, fx } = rescueSpots(), x0 = Math.round(kx + (fx - 62 - kx) * 0.55);
+      r.phase = 'guard'; r.t = 0;
+      r.g = { x: VW + 80, y: 0, x0, tx: x0, t: 0, enter: 0, hurt: 0, laugh: 0, say: '', sayT: 0, fall: 0, rot: 0, run: -1, gone: false, stomp: 0, spin: 0 };
+    }
+  }
+  else if (r.phase === 'guard') {
+    if (r.t >= GUARD_PHASE) { r.phase = 'ask'; r.t = 0; rescueNext(r); }
   }
   else if (r.phase === 'ask' && r.wait > 0 && --r.wait === 0) rescueNext(r);
   else if (r.phase === 'free' && r.t >= 230) { r.phase = 'out'; r.t = 0; sfx.gate(); }
@@ -3063,7 +3278,21 @@ function rescueFlame(r) {   // the torch's stream of fire
 function rescueImpact(r, a) {   // the hit lands
   const [x, y] = rescueAim(r, a.k - 1), way = r.f.way, last = a.k >= 3, big = last ? 1.5 : 1;
   r.vis = a.k; r.flash = last ? 0.8 : 0.45; r.shk = last ? 18 : 10;
-  r.words.push({ txt: RESCUE_TOOL[way].word, x: x - 30, y: y - 50, t: 0, size: last ? 54 : 40 });
+  const kind = RESCUE_TOOL[way].kind;
+  if (a.fin) { r.flash = 1; r.shk = 26; r.words.push({ txt: FIN_WORD[kind], x: VW / 2, y: VH * 0.3, t: 0, size: 64 }); tone(60, 0.8, 'sawtooth', 0.07, 30); tone(880, 0.5, 'triangle', 0.05, 1760); }
+  else r.words.push({ txt: RESCUE_TOOL[way].word, x: x - 30, y: y - 50, t: 0, size: last ? 54 : 40 });
+  const g = r.g;
+  if (g && !g.gone) {
+    g.hurt = 18;
+    if (a.fin) { g.fall = 1; guardSay(g, 'OWWW!', 60); }
+    else { g.tx = Math.min(g.x0 + 44, g.tx + 22); guardSay(g, guardStyle().kind === 'bot' ? 'BZZT!' : GUARD_HURT[(a.k - 1) % 3], 50); }
+  }
+  if (a.fin && kind === 'star') for (const [fx0, fy0] of [rescueAim(r, 0), rescueAim(r, 1), rescueAim(r, 2), [VW * 0.3, 190], [VW * 0.55, 160]]) {   // fireworks
+    const cols = ['#ff4d6d', '#ffd23f', '#7df9ff', '#3ae374', '#ffffff', '#ff8c1a'];
+    for (let i = 0; i < 22; i++) { const an = i / 22 * Math.PI * 2, sp = 4 + Math.random() * 2; r.bits.push({ x: fx0, y: fy0 - 40, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, life: 46, col: cols[(i + Math.round(fx0)) % cols.length], s: 5, up: true }); }
+  }
+  if (a.fin && kind === 'torch') rescueBits(r, 30, ['#7fc4e8', '#bfe9ff', '#ffffff'], x, y - 10, 12);   // the ice bursts into a splash
+  if (a.fin && kind === 'hammer') rescueBits(r, 24, ['#b8aca5', '#8f8580', '#ff8c1a'], x, rescueSpots().fy - 4, 14);
   if (way === 'key') { rescueBits(r, 22 * big, ['#9a96a2', '#6d6a76', '#cfcbd6', '#ffffff'], x, y, 9); tone(1400, 0.08, 'sawtooth', 0.05, 300); tone(90, 0.3, 'square', 0.06, 40, 0.04); }
   if (way === 'vent') { rescueBits(r, 26 * big, ['#6b625e', '#3a3432', '#8f8580', '#ff8c1a'], x, y, 11); sfx.brick(); tone(70, 0.4, 'square', 0.08, 30); }
   if (way === 'crate') { rescueBits(r, 18 * big, ['#ff4d6d', '#ffd23f', '#ffffff'], x, y, 8); tone(1200, 0.25, 'sawtooth', 0.05, 200); }
@@ -3080,7 +3309,7 @@ function rescuePick(r, i) {
     r.step++; sfx.correct(); gotIt();
     payGems(cam + fx, fy - 90, 2);
     r.msg = `${qSolved(q)}!`; r.msgT = 60; r.msgCol = '#3ae374';
-    r.act = { t: 0, k: r.step };
+    r.act = { t: 0, k: r.step, fin: r.step >= 3 };
     if (r.f.way === 'key') tone(700, 0.12, 'sawtooth', 0.03, 1600);   // the blade swings
     if (r.f.way === 'crate') tone(1800, 0.18, 'square', 0.03, 600);   // pew
     if (r.f.way === 'ladder') tone(900, 0.2, 'triangle', 0.03, 1400);   // the star spins away
@@ -3088,6 +3317,13 @@ function rescuePick(r, i) {
   } else {
     G.mistakes++; G.streak = 0; remember(q); missed(q); sfx.wrong();
     r.msg = `Oops! ${qSolved(q)}`; r.msgT = 110; r.msgCol = '#ff6b6b'; r.wait = 100;
+    const g = r.g; if (g && !g.gone) {
+      g.laugh = 60; g.tx = Math.max(g.x0 - 36, g.tx - 18); guardSay(g, guardStyle().miss, 80);
+      const k = guardStyle().kind;
+      if (k === 'penguin') { tone(2600, 0.25, 'square', 0.03, 2400); tone(2600, 0.2, 'square', 0.03, 2400, 0.3); }   // TWEET
+      else if (k === 'bot') [700, 500, 700].forEach((f, i) => tone(f, 0.08, 'square', 0.03, null, i * 0.1));
+      else [150, 130, 115].forEach((f, i) => tone(f, 0.12, 'square', 0.04, f - 20, i * 0.14));
+    }
   }
 }
 function freeFriend(r) {
@@ -3101,10 +3337,11 @@ function endRescue(r) {
   G.rescue = null;
   P.x = r.backX - P.w / 2; P.y = GR * T - P.h; P.vx = P.vy = 0; P.inv = 60; P.onGround = false;
   floatText(P.x + P.w / 2, P.y - 30, `${r.f.pname}! ${r.f.ptip}`, '#7df9ff', 22);
+  if (r.f.id === 'hana') floatText(P.x + P.w / 2, P.y - 70, isTouch ? 'Sword ready! Tap ✊ to slash.' : 'Sword ready! Press X to slash.', '#ffd23f', 22);
   syncAnsBar();
 }
-const rescueTitle = r => (r.phase === 'ask' && r.q ? qShow(r.q) : r.phase === 'find' ? `You found ${RESCUE_TOOL[r.f.way].name}!` : r.phase === 'in' || r.phase === 'arrive' ? `Find ${r.f.name}!` : `${r.f.name} is free!`);
-const rescueHint = r => (r.phase === 'ask' ? `${r.tricky ? 'Your tricky facts free' : 'Right answers free'} ${r.f.name}!  (${r.step}/3)` : r.phase === 'find' ? 'Use it to free your friend!' : r.phase === 'in' || r.phase === 'arrive' ? '' : `New power: ${r.f.pname}`);
+const rescueTitle = r => (r.phase === 'ask' && r.q ? qShow(r.q) : r.phase === 'guard' ? 'A guard!' : r.phase === 'find' ? `You found ${RESCUE_TOOL[r.f.way].name}!` : r.phase === 'in' || r.phase === 'arrive' ? `Find ${r.f.name}!` : `${r.f.name} is free!`);
+const rescueHint = r => (r.phase === 'ask' ? `${r.tricky ? 'Your tricky facts free' : 'Right answers free'} ${r.f.name}!  (${r.step}/3)` : r.phase === 'guard' ? "Don't worry. Right answers beat him!" : r.phase === 'find' ? 'Use it to free your friend!' : r.phase === 'in' || r.phase === 'arrive' ? '' : `New power: ${r.f.pname}`);
 
 // ---------------------------------------------------------------- swing crossings
 // One per level: two steps up to a ledge, a wide gap, a perch in the middle, another gap. Each right answer swings
@@ -3327,9 +3564,9 @@ function stepsPick(st, i) {
       floatText((prev.x + x) / 2, Math.min(prev.top, y) - 1.2 * T, `${st.back ? '−' : '+'}${st.step}`, st.back ? '#ff8a3c' : '#3ae374', 26);   // the jump, said out loud
       floatText(x, y - 50, st.seq.slice(0, st.k + 1).join(', '), '#3ae374', 24);
       if (st.k < st.n - 1) stepsOpts(st);
-      else crossHop((st.c0 + st.w + 0.8) * T, GR * T, () => {   // made it across: a bridge appears behind
+      else crossHop((st.c0 + st.w + 0.8) * T, GR * T, () => {   // made it across: the stones drop one by one and fill the pit
         st.done = true; G.cross = null; confetti(x, y);
-        for (let col = st.c0; col < st.c0 + st.w; col++) { L.map[GR][col] = 'b'; burst(col * T + T / 2, GR * T, '#c9a24f', 3, 2); }
+        st.fall = st.path.map((o, k) => ({ o, k, vy: 0, wait: 10 + k * 14 }));
         floatText(P.x + P.w / 2, GR * T - 3 * T, `${st.seq.join(', ')}!`, '#3ae374', 28);
       }, 26);
     } else {   // the stone crumbles and Kai drops
@@ -3351,7 +3588,24 @@ function stepsCatch(p) {
   floatText(p.x + p.w / 2, p.y - 30, 'Try again!', '#ffffff', 22);
   return true;
 }
+// After the crossing each stone falls, breaks on the bottom and fills its 3-column section of the pit with the world's
+// stair blocks (its number stays painted on top), so the answers built the path back across.
+function stepsFill(st, k) { for (let c = st.c0 + 3 * k; c < st.c0 + 3 * k + 3; c++) { L.map[GR][c] = 'S'; L.map[GR + 1][c] = 'S'; } }
+function stepsBreak(st, k, o) {
+  stepsFill(st, k); o.filled = true;
+  const W = L.world;
+  for (let c = st.c0 + 3 * k; c < st.c0 + 3 * k + 3; c++) { burst(c * T + T / 2, GR * T + 4, W.stair[0], 5, 3); burst(c * T + T / 2, GR * T + 4, W.stair[2], 3, 2); }
+  shake(4, 2); tone(140, 0.18, 'square', 0.06, 60); tone(90, 0.25, 'triangle', 0.06, 50, 0.04);
+}
 function updateSteps() {
+  for (const st of L.steps || []) if (st.fall) {   // stones falling into the pit after the crossing
+    for (const f of st.fall) {
+      if (f.wait > 0) { f.wait--; continue; }
+      f.vy = Math.min(f.vy + 0.9, 14); f.o.top = Math.min(GR * T, f.o.top + f.vy);
+      if (f.o.top >= GR * T) { stepsBreak(st, f.k, f.o); f.gone = true; }
+    }
+    st.fall = st.fall.filter(f => !f.gone); if (!st.fall.length) st.fall = null;
+  }
   if (G.cross) return;
   const p = P, cx = p.x + p.w / 2;
   for (const st of L.steps || []) if (!st.done && cx > st.c0 * T - 4 && cx < st.c0 * T + T && p.y + p.h <= GR * T + 4) { crossStart(st); return; }
@@ -3366,7 +3620,16 @@ function drawSteps() {
   const W = L.world;
   for (const st of L.steps || []) {
     const x0 = st.c0 * T, x1 = (st.c0 + st.w) * T;
-    if (x1 < cam - 60 || x0 > cam + VW + 60 || st.done) continue;
+    if (x1 < cam - 60 || x0 > cam + VW + 60) continue;
+    if (st.done) {   // after the crossing: stones falling into the pit, then their numbers painted on the filled floor
+      for (const o of st.path) {
+        const top = o.filled ? GR * T : o.top;
+        if (!o.filled) block(o.x - T / 2, top, W.stair[0], W.stair[1], W.stair[2]);
+        ctx.font = `${String(o.val).length > 2 ? 15 : 19}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.strokeText(o.val, o.x, top + T / 2 + 1); ctx.fillText(o.val, o.x, top + T / 2 + 1);
+      }
+      continue;
+    }
     const sx = x0 - 2.4 * T, txt = st.back ? `Count back by ${st.step}s` : `Count up by ${st.step}s`;   // the rule on a sign, with an arrow
     ctx.font = '20px "Lilita One", "Trebuchet MS", sans-serif'; const w = ctx.measureText(txt).width + 26 + 22;
     ctx.fillStyle = '#6b4a2e'; ctx.fillRect(sx - 3, GR * T - 70, 6, 70);
@@ -6793,6 +7056,121 @@ function toolImg(way, px = 34) {
 
 // The rescue scene: slides in over the level (down for a cave or chute, up for a ledge or roof), built from the
 // world's own blocks. Kai on the left with his treasure, the friend on the right behind three things to break.
+// The finishing move's big effect, after the strike lands (the laser draws its star before).
+function drawFinish(r, fin, kind, aimX, aimY, kX, kY) {
+  const ft = fin.t - FIN_HIT, { fy, fx } = rescueSpots();
+  if (ft >= 0 && ft < 30) glowAt(aimX, aimY, 120 + ft * 3, `rgba(255,240,180,${0.6 * (1 - ft / 30)})`);
+  if (kind === 'sword' && fin.t >= FIN_HIT - 6 && ft < 40) {   // one long cut through the air, the last block split in two
+    const f = ft < 0 ? 1 : 1 - ft / 40, dx = 1, dy = -0.35;
+    ctx.strokeStyle = `rgba(255,214,90,${0.45 * f})`; ctx.lineWidth = 22; ctx.beginPath(); ctx.moveTo(aimX - 420 * dx, aimY - 420 * dy); ctx.lineTo(aimX + 220 * dx, aimY + 220 * dy); ctx.stroke();
+    ctx.strokeStyle = `rgba(255,255,255,${f})`; ctx.lineWidth = 7; ctx.stroke();
+    if (ft >= 0) {
+      const bx = aimX - T / 2, by = aimY - T / 2;
+      ctx.globalAlpha = f; ctx.fillStyle = '#7d7a86';
+      ctx.save(); ctx.translate(-ft * 1.2, -ft * 1.4 + ft * ft * 0.06); ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + T, by); ctx.lineTo(bx, by + T); ctx.fill(); ctx.restore();
+      ctx.save(); ctx.translate(ft * 1.6, ft * 0.4 + ft * ft * 0.09); ctx.beginPath(); ctx.moveTo(bx + T, by); ctx.lineTo(bx + T, by + T); ctx.lineTo(bx, by + T); ctx.fill(); ctx.restore();
+      ctx.fillStyle = `rgba(255,248,220,${0.22 * f})`;   // light floods out of the cut
+      for (let i = 0; i < 8; i++) { const an = i * 0.785 + 0.2; ctx.beginPath(); ctx.moveTo(aimX, aimY); ctx.lineTo(aimX + Math.cos(an) * 400, aimY + Math.sin(an) * 400); ctx.lineTo(aimX + Math.cos(an + 0.16) * 400, aimY + Math.sin(an + 0.16) * 400); ctx.fill(); }
+      ctx.globalAlpha = 1;
+    }
+  }
+  if (kind === 'hammer' && ft >= 0 && ft < 45) {   // the ground pound's shockwave rolls out along the floor
+    const f = 1 - ft / 45;
+    ctx.lineWidth = 6; ctx.strokeStyle = `rgba(255,255,255,${f})`; ctx.beginPath(); ctx.ellipse(aimX, fy, 20 + ft * 16, 6 + ft * 2.5, 0, 0, 7); ctx.stroke();
+    ctx.strokeStyle = `rgba(255,140,26,${f})`; ctx.beginPath(); ctx.ellipse(aimX, fy, 10 + ft * 10, 4 + ft * 1.6, 0, 0, 7); ctx.stroke();
+  }
+  if (kind === 'laser') {   // the beam draws a star around the bars, then the star blazes
+    const cx = fx, cy = fy - 44, R0 = 54, pts = [0, 2, 4, 1, 3, 0].map(i => [cx + Math.cos(-Math.PI / 2 + i * 1.2566) * R0, cy + Math.sin(-Math.PI / 2 + i * 1.2566) * R0]);
+    const s = fin.t - (FIN_HIT - 34), u = clamp(s / 30, 0, 1) * 5, n = Math.floor(u), f = ft < 0 ? 1 : Math.max(0, 1 - ft / 45);
+    if (s >= 0 && f > 0) {
+      const end = n >= 5 ? pts[5] : [pts[n][0] + (pts[n + 1][0] - pts[n][0]) * (u - n), pts[n][1] + (pts[n + 1][1] - pts[n][1]) * (u - n)];
+      ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i <= n; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.lineTo(end[0], end[1]);
+      ctx.strokeStyle = `rgba(255,77,109,${0.5 * f})`; ctx.lineWidth = ft >= 0 ? 16 : 10; ctx.stroke(); ctx.strokeStyle = `rgba(255,255,255,${f})`; ctx.lineWidth = 3; ctx.stroke(); ctx.lineCap = 'butt';
+      if (ft < 0) {   // the beam itself, from the laser to the tip of the star
+        const gx = kX + 30, gy = kY - 26;
+        ctx.strokeStyle = `rgba(255,77,109,${0.6 + 0.4 * Math.random()})`; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(end[0], end[1]); ctx.stroke();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke(); glowAt(end[0], end[1], 22, 'rgba(255,120,140,.8)');
+      } else glowAt(cx, cy, 90, `rgba(255,77,109,${0.5 * f})`);
+    }
+  }
+  if (kind === 'torch' && ft >= 0 && ft < 60) {   // a ring of fire spins around the ice
+    const f = 1 - ft / 60, rad = 40 + ft * 1.6, cx = fx, cy = fy - 40;
+    for (let i = 0; i < 18; i++) {
+      const an = i / 18 * Math.PI * 2 + ft * 0.08, x = cx + Math.cos(an) * rad, y = cy + Math.sin(an) * rad * 0.8, fl = 7 + Math.sin(tick * 0.6 + i) * 3;
+      ctx.globalAlpha = f; ctx.fillStyle = '#ff3b1f'; ctx.beginPath(); ctx.arc(x, y, fl + 3, 0, 7); ctx.fill();
+      ctx.fillStyle = '#ff8c1a'; ctx.beginPath(); ctx.arc(x, y - 2, fl, 0, 7); ctx.fill(); ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(x, y - 3, fl * 0.45, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  if (kind === 'star' && ft >= 0 && ft < 20) for (const k of [0, 1, 2]) { const [lx, ly] = rescueAim(r, k); glowAt(lx, ly, 70, `rgba(255,200,80,${0.8 * (1 - ft / 20)})`); }
+}
+// A few plain things in each rescue room, from the world's own look (nothing hangs from the sky).
+function drawRescueDecor(r, fy) {
+  const key = L.world.key, X = f => Math.round(VW * f);
+  if (key === 'japan') {   // a stone lantern, a red banner on the cave wall, a small potted pine
+    const lx = X(0.08);
+    ctx.fillStyle = '#6d6a76'; ctx.fillRect(lx - 14, fy - 8, 28, 8); ctx.fillRect(lx - 5, fy - 30, 10, 22); ctx.fillRect(lx - 13, fy - 34, 26, 5);
+    ctx.fillStyle = '#8f8b98'; ctx.fillRect(lx - 11, fy - 54, 22, 20); ctx.fillStyle = '#ffcf6b'; ctx.fillRect(lx - 6, fy - 49, 12, 11);
+    ctx.fillStyle = '#5a5762'; ctx.beginPath(); ctx.moveTo(lx - 20, fy - 54); ctx.lineTo(lx + 20, fy - 54); ctx.lineTo(lx, fy - 68); ctx.fill();
+    glowAt(lx, fy - 44, 46, 'rgba(255,200,100,.35)');
+    const bx = X(0.45), by = fy - 6.4 * T;
+    ctx.fillStyle = '#3a2a20'; ctx.fillRect(bx - 28, by, 56, 5);
+    ctx.fillStyle = '#c0392b'; ctx.fillRect(bx - 20, by + 5, 40, 74); ctx.fillStyle = '#a02d22'; ctx.fillRect(bx + 14, by + 5, 6, 74);
+    ctx.fillStyle = '#f4ead2'; ctx.beginPath(); ctx.arc(bx - 2, by + 36, 11, 0, 7); ctx.fill();
+    const px = X(0.91);
+    ctx.fillStyle = '#7a4a2a'; ctx.fillRect(px - 14, fy - 16, 28, 16); ctx.fillStyle = '#5a3a1e'; ctx.fillRect(px - 16, fy - 18, 32, 4);
+    ctx.fillStyle = '#5a3a1e'; ctx.fillRect(px - 2, fy - 30, 4, 14);
+    ctx.fillStyle = '#2f6b3a'; ctx.fillRect(px - 20, fy - 36, 22, 8); ctx.fillRect(px - 4, fy - 46, 24, 8); ctx.fillRect(px - 14, fy - 56, 18, 7);
+    ctx.fillStyle = '#3f8a4a'; ctx.fillRect(px - 20, fy - 36, 22, 3); ctx.fillRect(px - 4, fy - 46, 24, 3); ctx.fillRect(px - 14, fy - 56, 18, 3);
+  } else if (key === 'lava') {   // Tomo's mine: rails and a cart of glowing rock, hot cracks in the floor
+    for (const cx of [0.42, 0.6, 0.78]) {
+      const x = X(cx); ctx.strokeStyle = `rgba(255,${110 + Math.round(40 * Math.sin(tick * 0.08 + cx * 9))},30,.9)`; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(x - 22, fy + 10); ctx.lineTo(x - 8, fy + 18); ctx.lineTo(x + 4, fy + 8); ctx.lineTo(x + 20, fy + 20); ctx.stroke();
+      glowAt(x, fy + 14, 26, 'rgba(255,110,30,.3)');
+    }
+    ctx.fillStyle = '#2a201e'; ctx.fillRect(X(0.8), fy - 4, VW - X(0.8), 4); for (let x = X(0.8); x < VW; x += 18) ctx.fillRect(x, fy - 6, 8, 6);
+    const mx = X(0.91);
+    ctx.fillStyle = '#ff8c1a'; ctx.beginPath(); ctx.arc(mx - 10, fy - 40, 9, 0, 7); ctx.arc(mx + 6, fy - 42, 10, 0, 7); ctx.fill(); glowAt(mx, fy - 42, 40, 'rgba(255,140,30,.4)');
+    ctx.fillStyle = '#6b625e'; ctx.beginPath(); ctx.moveTo(mx - 30, fy - 40); ctx.lineTo(mx + 30, fy - 40); ctx.lineTo(mx + 24, fy - 12); ctx.lineTo(mx - 24, fy - 12); ctx.fill();
+    ctx.fillStyle = '#4a4240'; ctx.fillRect(mx - 30, fy - 40, 60, 5); ctx.fillRect(mx - 26, fy - 28, 52, 3);
+    ctx.fillStyle = '#1e1614'; ctx.beginPath(); ctx.arc(mx - 14, fy - 10, 7, 0, 7); ctx.arc(mx + 14, fy - 10, 7, 0, 7); ctx.fill();
+  } else if (key === 'robot') {   // pipes along the wall, and a control console with blinking lights
+    const py = fy - 4.7 * T;
+    ctx.fillStyle = '#5a6b7a'; ctx.fillRect(0, py, VW, 12); ctx.fillStyle = '#7a8898'; ctx.fillRect(0, py, VW, 3);
+    for (let x = 60; x < VW; x += 150) { ctx.fillStyle = '#3d4856'; ctx.fillRect(x, py - 3, 10, 18); }
+    const vx = X(0.3); ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(vx, py - 12, 10, 0, 7); ctx.stroke(); ctx.fillStyle = '#c0392b'; ctx.fillRect(vx - 2, py - 12, 4, 12);
+    ctx.fillStyle = '#5a6b7a'; ctx.fillRect(X(0.97) - 6, py, 12, fy - py);
+    const cx = X(0.88);
+    ctx.fillStyle = '#4a5868'; ctx.fillRect(cx - 24, fy - 52, 48, 52); ctx.fillStyle = '#2b3542'; ctx.fillRect(cx - 24, fy - 52, 48, 4);
+    ctx.fillStyle = '#123a2a'; ctx.fillRect(cx - 18, fy - 46, 36, 20); ctx.fillStyle = '#3ae374';
+    for (let i = 0; i < 4; i++) ctx.fillRect(cx - 15 + i * 8, fy - 32 - ((tick >> 3) + i * 3) % 10, 5, 2);
+    ['#ff4d6d', '#ffd23f', '#3ae374'].forEach((c, i) => { ctx.fillStyle = (tick >> 4) % 3 === i ? c : '#2b3542'; ctx.fillRect(cx - 15 + i * 12, fy - 18, 7, 7); });
+  } else if (key === 'snow') {   // icicles from the cave roof, snow piles, a little snowman
+    for (let x = 20, i = 0; x < VW; x += 44, i++) {
+      const h = 14 + ((i * 7) % 4) * 7;
+      ctx.fillStyle = '#bfe9ff'; ctx.beginPath(); ctx.moveTo(x - 8, T); ctx.lineTo(x + 8, T); ctx.lineTo(x, T + h); ctx.fill();
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(x - 4, T, 2, h * 0.5);
+    }
+    ctx.fillStyle = '#ffffff';
+    for (const [f, w] of [[0.06, 50], [0.97, 60]]) { ctx.beginPath(); ctx.ellipse(X(f), fy, w / 2, 14, 0, Math.PI, 0); ctx.fill(); }
+    const sx = X(0.89);
+    ctx.fillStyle = '#f4f8fc'; ctx.beginPath(); ctx.arc(sx, fy - 14, 15, 0, 7); ctx.arc(sx, fy - 38, 11, 0, 7); ctx.fill();
+    ctx.fillStyle = '#1a1426'; ctx.fillRect(sx - 5, fy - 41, 3, 3); ctx.fillRect(sx + 2, fy - 41, 3, 3);
+    ctx.fillStyle = '#ff8a1a'; ctx.fillRect(sx - 10, fy - 37, 8, 3);
+    ctx.fillStyle = '#2b2b38'; ctx.fillRect(sx - 9, fy - 52, 18, 4); ctx.fillRect(sx - 6, fy - 62, 12, 10);
+  } else if (key === 'castle') {   // a torch on a post and a banner on a pole, on the roof
+    const tx = X(0.86);
+    ctx.fillStyle = '#3a2a20'; ctx.fillRect(tx - 4, fy - 74, 8, 74); ctx.fillStyle = '#5a3a1e'; ctx.fillRect(tx - 8, fy - 80, 16, 8);
+    const fl = Math.sin(tick * 0.5) * 2;
+    ctx.fillStyle = '#ff3b1f'; ctx.beginPath(); ctx.arc(tx, fy - 88, 8 + fl * 0.5, 0, 7); ctx.fill();
+    ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(tx, fy - 90, 4, 0, 7); ctx.fill(); glowAt(tx, fy - 88, 60, 'rgba(255,170,60,.35)');
+    const bx = X(0.95);
+    ctx.fillStyle = '#5a3a1e'; ctx.fillRect(bx - 3, fy - 120, 6, 120); ctx.fillStyle = '#ffd23f'; ctx.fillRect(bx - 5, fy - 126, 10, 6);
+    const wv = Math.sin(tick * 0.08) * 3;
+    ctx.fillStyle = '#c0392b'; ctx.beginPath(); ctx.moveTo(bx + 3, fy - 116); ctx.lineTo(bx + 36, fy - 114 + wv); ctx.lineTo(bx + 36, fy - 74 + wv); ctx.lineTo(bx + 3, fy - 70); ctx.fill();
+    ctx.fillStyle = '#f4ead2'; ctx.beginPath(); ctx.arc(bx + 19, fy - 93 + wv / 2, 7, 0, 7); ctx.fill();
+  }
+}
 function drawRescue() {
   const r = G.rescue, f = r.f, W = L.world, way = f.way, tool = RESCUE_TOOL[way], { fy, kx, fx } = rescueSpots();
   const s = r.phase === 'in' ? r.t / RESCUE_SLIDE : r.phase === 'out' ? 1 - r.t / RESCUE_SLIDE : 1, e = 1 - (1 - clamp(s, 0, 1)) ** 3;
@@ -6806,13 +7184,30 @@ function drawRescue() {
     for (let y = 0; y < fy; y += T) for (let x = -T; x < VW + T; x += T) block(x, y, W.brick[0], W.brick[1], W.brick[0]);
     ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(-T, 0, VW + 2 * T, fy);
     glowAt(fx, fy - 60, 200, way === 'falls' ? 'rgba(160,220,255,.25)' : 'rgba(255,220,160,.22)');
+    const hole = way === 'key' || way === 'crate' ? [kx - T, kx + T] : null;   // where he dropped in: a hole in the roof
+    for (let x = -T; x < VW + T; x += T) if (!hole || x + T <= hole[0] || x >= hole[1]) block(x, 0, W.stair[0], W.stair[1], W.stair[2]);
+    if (hole) {
+      ctx.fillStyle = 'rgba(255,240,200,.10)'; ctx.beginPath(); ctx.moveTo(hole[0], 0); ctx.lineTo(hole[1], 0); ctx.lineTo(hole[1] + 30, fy); ctx.lineTo(hole[0] - 30, fy); ctx.fill();   // light falling through
+      glowAt(kx, 0, 90, 'rgba(255,240,200,.35)');
+      if (way === 'crate') { ctx.fillStyle = '#5a6b7a'; ctx.fillRect(kx - 24, 0, 48, T + 14); ctx.fillStyle = '#2b2b38'; ctx.fillRect(kx - 18, 0, 36, T + 14); ctx.fillStyle = '#9aa7b8'; ctx.fillRect(kx - 26, T + 10, 52, 6); }   // the chute
+    }
+    if (way === 'falls') {   // the frozen waterfall he walked through, cracked open on the left
+      ctx.globalAlpha = 0.85; ctx.fillStyle = '#9fd8f5'; ctx.fillRect(0, T, 26, fy - T); ctx.fillStyle = '#e8fbff'; ctx.fillRect(6, T, 4, fy - T); ctx.fillRect(16, T + 20, 3, fy - T - 20); ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#2a5a7a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(4, fy - 90); ctx.lineTo(22, fy - 60); ctx.lineTo(8, fy - 30); ctx.moveTo(22, fy - 60); ctx.lineTo(26, fy - 110); ctx.stroke();
+    }
   }
-  const gap = way === 'vent' ? [T, kx - 30] : null;   // Tomo's ledge: open air on the left, where the vent blew Kai up from
+  const gap = way === 'vent' || way === 'ladder' ? [T, kx - 30] : null;   // up scenes: open air on the left, where Kai came up from (the vent's air, or the ladder)
   for (let x = -T; x < VW + T; x += T) if (!gap || x + T <= gap[0] || x >= gap[1]) { block(x, fy, W.stair[0], W.stair[1], W.stair[2]); block(x, fy + T, W.stair[0], W.stair[1], W.stair[2]); }
-  if (gap) {
+  if (gap && way === 'ladder') {   // the ladder's top pokes up through the gap
+    const lx = (gap[0] + gap[1]) / 2;
+    ctx.fillStyle = '#c9a24f'; ctx.fillRect(lx - 13, fy - 30, 4, VH - fy + 40); ctx.fillRect(lx + 9, fy - 30, 4, VH - fy + 40);
+    for (let y = fy - 22; y < VH + 10; y += 13) ctx.fillRect(lx - 11, y, 22, 3);
+  }
+  if (gap && way === 'vent') {
     glowAt((gap[0] + gap[1]) / 2, VH, 90, 'rgba(255,120,30,.45)');
     if (tick % 4 === 0) r.bits.push({ x: gap[0] + Math.random() * (gap[1] - gap[0]), y: VH, vx: (Math.random() - 0.5), vy: -6 - Math.random() * 3, life: 50, col: ['#b8aca5', '#d8cfc8', '#ff8c1a'][Math.floor(Math.random() * 3)], s: 6, up: true });
   }
+  drawRescueDecor(r, fy);
   const freeT = r.phase === 'free' || r.phase === 'out' ? (r.phase === 'out' ? 230 : r.t) : -1, vis = r.vis || 0;
   const ledgeX = fx - T, ledgeTop = fy - 4 * T;
   let px = fx, py = fy;
@@ -6857,7 +7252,8 @@ function drawRescue() {
   }
   ctx.globalAlpha = 1;
   // the treasure, before Kai has it (glowing where it lies), then flying into his hand
-  const a = r.act, at = a ? a.t : -1, ix = kx + 90, holdY = fy - 24;
+  drawGuard(r);
+  const a = r.act, at = a ? actEff(a) : -1, ix = kx + 90, holdY = fy - 24, fin = a && a.fin ? a : null;
   const have = !['in', 'arrive'].includes(r.phase) && !(r.phase === 'find' && r.t < 20);
   if (!have || (r.phase === 'find' && r.t < 44)) {
     const fly = r.phase === 'find' ? clamp((r.t - 20) / 24, 0, 1) : 0, tx = ix + (kx + 14 - ix) * fly, ty = (tool.kind === 'sword' ? fy - 30 : fy - 16) + (holdY - (fy - 30)) * fly - Math.sin(Math.PI * fly) * 60;
@@ -6866,18 +7262,45 @@ function drawRescue() {
     drawTool(tool.kind, tx, ty, fly * 6 + (tool.kind === 'hammer' && !fly ? -0.5 : 0), 1);
   }
   // Kai (Tomo's scene: floats up through the gap first; the hammer: leaps at the boulder and back)
-  let kX = kx, kY = fy, kAir = false;
-  if (gap && (r.phase === 'in' || r.phase === 'arrive')) {
-    const g = r.phase === 'in' ? 0 : r.t / RESCUE_ARRIVE, up = Math.min(1, g / 0.55), over = clamp((g - 0.55) / 0.45, 0, 1);
-    kX = gap[0] + (gap[1] - gap[0]) / 2; kX += (kx - kX) * over; kY = VH + 50 + (fy - 70 - VH - 50) * (1 - (1 - up) ** 2) + 70 * over * over; kAir = g < 1;
+  let kX = kx, kY = fy, kAir = false, kWalk = false;
+  if (r.phase === 'in' || r.phase === 'arrive') {   // how he gets in
+    const g = r.phase === 'in' ? 0 : r.t / RESCUE_ARRIVE;
+    if (way === 'vent') {   // floats up through the gap on the vent's air, drifts right and lands
+      const up = Math.min(1, g / 0.55), over = clamp((g - 0.55) / 0.45, 0, 1);
+      kX = gap[0] + (gap[1] - gap[0]) / 2; kX += (kx - kX) * over; kY = VH + 50 + (fy - 70 - VH - 50) * (1 - (1 - up) ** 2) + 70 * over * over; kAir = g < 1;
+    } else if (way === 'ladder') {   // climbs up the ladder, then hops onto the roof
+      const up = Math.min(1, g / 0.6), over = clamp((g - 0.6) / 0.4, 0, 1), lx = (gap[0] + gap[1]) / 2;
+      kX = lx + (kx - lx) * over; kY = VH + 50 + (fy - 8 - VH - 50) * up - Math.sin(Math.PI * over) * 30 + 8 * over; kAir = over > 0 && over < 1; kWalk = up < 1;
+    } else if (way === 'key' || way === 'crate') {   // drops in through the roof
+      const u = Math.min(1, g / 0.5); kY = -60 + (fy + 60) * u * u; kAir = u < 1;
+    } else if (way === 'falls') {   // walks in through the cracked waterfall
+      kX = -20 + (kx + 20) * Math.min(1, g / 0.7); kWalk = g < 0.7;
+    }
   }
   const [aimX, aimY] = a ? rescueAim(r, a.k - 1) : [0, 0];
   if (a && tool.kind === 'hammer') {   // leap, smash, leap back
     const u = at < RESCUE_HIT ? at / RESCUE_HIT : 1 - (at - RESCUE_HIT) / (RESCUE_ACT - RESCUE_HIT), tx = aimX - 44;
-    kX = kx + (tx - kx) * u; kY = fy - Math.sin(Math.PI * Math.min(1, u)) * (at < RESCUE_HIT ? 70 : 30); kAir = at < RESCUE_ACT - 2;
+    kX = kx + (tx - kx) * u; kY = fy - Math.sin(Math.PI * Math.min(1, u)) * (at < RESCUE_HIT ? (fin ? 220 : 120) : 30); kAir = at < RESCUE_ACT - 2 && (at > 0 || !fin);
   }
+  let ghosts = null;
+  if (fin && tool.kind === 'sword') {   // the finishing slash: Kai dashes right through, then walks back
+    const d0 = FIN_HIT - 10, tx = aimX - 50, ft = fin.t;
+    if (ft >= d0 && ft < FIN_HIT) { const u = (ft - d0) / 10; kX = kx + (tx - kx) * u; ghosts = [0.25, 0.5, 0.75].map(v => kx + (kX - kx) * v); kAir = true; }
+    else if (ft >= FIN_HIT && ft < FIN_HIT + 30) kX = tx;
+    else if (ft >= FIN_HIT + 30) { kX = tx + (kx - tx) * Math.min(1, (ft - FIN_HIT - 30) / 34); kWalk = kX > kx + 1; }
+  }
+  if (fin && fin.t < FIN_HIT + 12) {   // the wind-up: the room goes dark, Kai glows, speed lines
+    const w = fin.t < FIN_HIT ? clamp(fin.t / 20, 0, 1) : 1 - (fin.t - FIN_HIT) / 12;
+    ctx.fillStyle = `rgba(10,6,24,${0.6 * w})`; ctx.fillRect(-20, -20, VW + 40, VH + 40);
+    if (fin.t < FIN_HIT) {
+      ctx.strokeStyle = `rgba(255,255,255,${0.35 * w})`; ctx.lineWidth = 2;
+      for (let i = 0; i < 16; i++) { const an = i * 0.39 + fin.t * 0.05, r0 = 70 + ((fin.t * 9 + i * 37) % 120); ctx.beginPath(); ctx.moveTo(kX + Math.cos(an) * r0, kY - 22 + Math.sin(an) * r0); ctx.lineTo(kX + Math.cos(an) * (r0 + 60), kY - 22 + Math.sin(an) * (r0 + 60)); ctx.stroke(); }
+    }
+    glowAt(kX, kY - 22, 40 + 30 * w + Math.sin(tick * 0.4) * 6, `rgba(255,214,90,${0.7 * w})`);
+  }
+  if (ghosts) { ctx.globalAlpha = 0.3; for (const gx of ghosts) drawBaked(SPR, 'jump', false, { x: gx - 12, y: kY - 44, w: 24, h: 44 }); ctx.globalAlpha = 1; }
   const kick = a && tool.kind === 'laser' && at > 8 && at < RESCUE_HIT + 6 ? -3 : 0;   // the laser kicks back
-  drawBaked(SPR, kAir || (freeT > 130 && Math.floor(freeT / 16) % 2) ? 'jump' : 'stand', false, { x: kX - 12 + kick, y: kY - 44 + (freeT > 130 ? hop : 0), w: 24, h: 44 });
+  drawBaked(SPR, kAir || (freeT > 130 && Math.floor(freeT / 16) % 2) ? 'jump' : kWalk && Math.floor(r.t / 6) % 2 ? 'walkA' : 'stand', false, { x: kX - 12 + kick, y: kY - 44 + (freeT > 130 ? hop : 0), w: 24, h: 44 });
   // the treasure in Kai's hand, and what it does
   if (have && !(r.phase === 'find' && r.t < 44)) {
     const hx = kX + 12 + kick, hy = kY - 22 + (freeT > 130 ? hop : 0);
@@ -6896,21 +7319,21 @@ function drawRescue() {
       ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(cx - 14, cy, 22, -1.1, 1.1); ctx.stroke();
       ctx.strokeStyle = 'rgba(160,220,255,.6)'; ctx.lineWidth = 9; ctx.beginPath(); ctx.arc(cx - 18, cy, 22, -0.9, 0.9); ctx.stroke();
     }
-    if (tool.kind === 'laser' && at > 8) {   // a beam
+    if (tool.kind === 'laser' && at > 8 && !fin) {   // a beam
       const gx = kx + 12 + Math.cos(Math.atan2(aimY - (fy - 22), aimX - kx - 12)) * 26, gy = fy - 22 - 4;
       ctx.strokeStyle = `rgba(255,77,109,${0.6 + 0.4 * Math.random()})`; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(aimX, aimY); ctx.stroke();
       ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(aimX, aimY); ctx.stroke();
       glowAt(aimX, aimY, 26, 'rgba(255,120,140,.7)');
     }
-    if (tool.kind === 'star' && at <= RESCUE_HIT) drawTool('star', hx + (aimX - hx) * u, hy + (aimY - hy) * u - Math.sin(Math.PI * u) * 50, at * 0.9, 1);
+    if (tool.kind === 'star' && at <= RESCUE_HIT) for (const k of fin ? [0, 1, 2] : [a.k - 1]) {
+      const [sx2, sy2] = rescueAim(r, k);
+      drawTool('star', hx + (sx2 - hx) * u, hy + (sy2 - hy) * u - Math.sin(Math.PI * u) * (50 + k * 25), at * 0.9, fin ? 1.3 : 1);
+    }
   }
+  if (fin) drawFinish(r, fin, tool.kind, aimX, aimY, kX, kY);
   // speech
   const say = r.phase === 'ask' && r.step === 0 && r.t < 150 && !a ? 'Help me, Kai!' : freeT >= 30 && freeT < 130 ? 'Thank you, Kai!' : freeT >= 130 ? 'See you at the dojo!' : '';
-  if (say) {
-    ctx.font = '18px "Lilita One", "Trebuchet MS", sans-serif'; const w = ctx.measureText(say).width + 22, bx = clamp(px, w / 2 + 6, VW - w / 2 - 6), by = py - 82 + hop;
-    ctx.fillStyle = '#ffffff'; rrect(bx - w / 2, by - 15, w, 30, 12); ctx.fill(); ctx.beginPath(); ctx.moveTo(px - 5, by + 15); ctx.lineTo(px, by + 23); ctx.lineTo(px + 5, by + 15); ctx.fill();
-    ctx.fillStyle = '#22224a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(say, bx, by + 1);
-  }
+  if (say) rescueBubble(say, px, py - 82 + hop);
   if (freeT >= 130) {   // the power, said big
     hudText(`New power: ${f.pname}!`, VW / 2, VH * 0.42, 28, '#ffd23f', 'center');
     hudText(`${f.ptip}  You keep the ${tool.short.toLowerCase()}!`, VW / 2, VH * 0.42 + 34, 19, '#ffffff', 'center');
@@ -6969,7 +7392,12 @@ function drawSwings() {
     }
     anchors.forEach((ax, h) => {   // what Kai holds on to: hanging still, or holding Kai as he swings
       const ay = look.lift ? top + 6 + 28 : top + 4, riding = g && g.ph === 'go' && g.half === h;
-      const hx = riding ? P.x + P.w / 2 : ax + Math.sin(tick * 0.03 + h) * (look.lift ? 0 : 6), hy = riding ? P.y + 6 : base - 1.4 * T;
+      // A rope swings like a pendulum. The one Kai grabs next swings wide, out to the ledge he stands on, so it looks
+      // catchable; the others sway gently. (The ski lift's chairs just rock a little.)
+      const len = base - 1.4 * T - ay, next = g && g.ph === 'ask' && g.half === h, standX = (h === 0 ? sw.l0 + 1.6 : sw.pm + 1) * T;
+      const reach = next ? Math.min(1.25, Math.asin(Math.min(0.95, Math.abs(ax - standX) / len)) + 0.08) : 0.32;
+      const th = look.lift ? Math.sin(tick * 0.06 + h) * 0.08 : Math.sin(tick * (next ? 0.045 : 0.035) + h * 2.1) * reach;
+      const hx = riding ? P.x + P.w / 2 : ax + Math.sin(th) * len, hy = riding ? P.y + 6 : ay + Math.cos(th) * len;
       if (look.lift) {   // a chair on a short bar
         const cy = riding ? P.y + P.h - 10 : hy + 10;
         ctx.strokeStyle = look.rope; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(riding ? hx : ax, riding ? P.y - 24 : ay); ctx.lineTo(hx, cy - 6); ctx.stroke();
@@ -7020,7 +7448,18 @@ function drawPlayer() {
     for (const back of [9, 6, 3]) { ctx.globalAlpha = 0.12 + (9 - back) * 0.04; drawKaiPose(p, trainPoseAt(rmS, rmS.showT - back)); }
     ctx.globalAlpha = 1;
   }
+  const sword = swordOn() && !pose, slashing = sword && G.slashT > 0, fc = p.face < 0 ? -1 : 1;
+  if (sword && !slashing) drawTool('sword', p.x + p.w / 2 - fc * 5, p.y + 16, Math.PI - fc * 0.55, 0.7);   // on his back, handle over the shoulder
   if (pose) drawKaiPose(p, pose); else drawBaked(SPR, k, p.face < 0, p);
+  if (slashing) {   // a quick swing from over the head to the front, with a white arc
+    const e = (SLASH_T - G.slashT) / SLASH_T, hx = p.x + p.w / 2 + fc * 8, hy = p.y + 22;
+    drawTool('sword', hx, hy, fc * (-1.4 + Math.min(1, e * 1.6) * 3.0), 1);
+    if (G.slashT <= SLASH_HIT + 4 && G.slashT > SLASH_HIT - 5) {
+      ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 5; ctx.beginPath();
+      if (fc > 0) ctx.arc(hx, hy, 44, -1.3, 1.0); else ctx.arc(hx, hy, 44, Math.PI - 1.0, Math.PI + 1.3);
+      ctx.stroke();
+    }
+  }
   ctx.restore();
   if (hasPower('shield')) {
     ctx.strokeStyle = `rgba(125,249,255,${0.5 + 0.3 * Math.sin(tick * 0.2)})`; ctx.lineWidth = 3;
@@ -7602,12 +8041,28 @@ let msgPrimary = null;
 
 // Read to me: pages with a story picture get a 🔊 button that reads the page out loud with the device's own voice,
 // so a kindergartner can follow the story. Any new page (or starting to play) stops the reading.
-function stopReading() { if (window.speechSynthesis) speechSynthesis.cancel(); }
-function readAloud() {
+// iPhone notes: the voice is muted by the silent switch (the game's music isn't), so iPhones get a one-line tip; and
+// Safari can drop a new speech if it starts in the same moment the old one is cancelled, so only cancel when needed.
+const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+let readBtn = null;
+function stopReading() {
+  if (window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending)) speechSynthesis.cancel();
+  if (readBtn) readBtn.textContent = '🔊 Read to me';
+}
+function readAloud(btn) {
   if (!window.speechSynthesis) return;
+  if (btn && speechSynthesis.speaking) { stopReading(); return; }   // the button stops it, too
   stopReading();
-  const txt = [...$('msgBody').querySelectorAll('p')].map(p => p.innerText).join(' ').replace(/[“”"]/g, '');
-  const u = new SpeechSynthesisUtterance(txt); u.rate = 0.9; u.pitch = 1.05; speechSynthesis.speak(u);
+  readBtn = btn || null;
+  const txt = [...$('msgBody').querySelectorAll('p')].filter(p => !p.classList.contains('readtip')).map(p => p.innerText).join(' ').replace(/[“”"]/g, '');
+  const u = new SpeechSynthesisUtterance(txt); u.rate = 0.9; u.pitch = 1.05; u.lang = 'en-US';
+  const v = speechSynthesis.getVoices().find(x => x.lang === 'en-US' && x.localService) || speechSynthesis.getVoices().find(x => /^en/.test(x.lang));
+  if (v) u.voice = v;
+  u.onend = u.onerror = () => { if (readBtn === btn && btn) btn.textContent = '🔊 Read to me'; };
+  if (speechSynthesis.paused) speechSynthesis.resume();
+  speechSynthesis.speak(u);
+  if (btn) btn.textContent = '⏹ Stop';
+  if (isIOS && !$('msgBody').querySelector('.readtip')) $('msgBody').insertAdjacentHTML('beforeend', '<p class="readtip">No voice? Flip the silent switch on the side of the iPhone.</p>');
 }
 function showMsg(title, body, btns) {
   stopReading();
@@ -7618,7 +8073,7 @@ function showMsg(title, body, btns) {
   for (const b of btns) {
     const el = document.createElement('button');
     el.className = 'btn' + (b.alt ? ' alt' : ''); el.textContent = b.label;
-    el.onclick = () => { audio(); b.fn(); };
+    el.onclick = () => { audio(); if (b.fn === readAloud) readAloud(el); else b.fn(); };
     box.appendChild(el);
     if (b.primary) msgPrimary = el;
   }
@@ -7651,7 +8106,13 @@ function startStage(i) {
   } else begin();
 }
 function intro(title, body, label) { mode = 'intro'; hide('pauseBtn'); showTouch(false); showMsg(title, body, [{ label, fn: begin, primary: true }]); }
-function begin() { stopReading(); mode = 'play'; hide('msg'); show('pauseBtn'); showTouch(true); }
+function begin() {
+  stopReading(); mode = 'play'; hide('msg'); show('pauseBtn'); showTouch(true);
+  if (G && !G.swordTip && swordOn() && (prog.swordTips || 0) < 3) {
+    G.swordTip = true; prog.swordTips = (prog.swordTips || 0) + 1; save();
+    floatText(P.x + P.w / 2 + 60, P.y - 40, isTouch ? 'Your sword! Tap ✊ to slash.' : 'Your sword! Press X to slash.', '#ffd23f', 22);
+  }
+}
 
 function unlockedCount() {
   if (prog.allOpen) return STAGES.length;
@@ -8900,7 +9361,21 @@ function layout() {
   stage.style.width = `min(100vw, calc(100dvh * ${VW} / ${VH}))`;
   if (!stage.style.width) stage.style.width = `min(100vw, calc(100vh * ${VW} / ${VH}))`;
 }
-window.addEventListener('resize', layout);
+// Turning the phone in a training room: rebuild the room for the new screen width (same lesson, same progress),
+// so the floor still fills the screen and Kai, Sensei and the boards stay centred.
+function relayoutVault() {
+  if (typeof L === 'undefined' || !L || !L.vault || !L.room || L.room.kind !== 'train') return;
+  const cols = Math.ceil(VW / T); if (cols === L.w) return;
+  const rm = L.room, map = newMap();
+  for (let c = 0; c < cols; c++) { for (let r = 0; r < ROWS; r++) map[r].push('.'); map[GR][c] = '#'; map[GR + 1][c] = '#'; }
+  const sc = Math.floor(cols / 2) + 2, dx = (sc - rm.senseiC) * T;
+  rm.senseiC = sc;
+  rm.boards = (cols > 20 ? [5, 7, 9] : [2, 4]).map((c, i) => ({ ...(rm.boards[i] || { broken: 0 }), c }));
+  L.map = map; L.w = cols; L.exitC = cols - 2;
+  if (P) P.x = clamp(P.x + dx, 0, cols * T - P.w);
+  cam = 0;
+}
+window.addEventListener('resize', () => { layout(); relayoutVault(); });
 layout();
 document.body.classList.toggle('touch', isTouch);
 document.querySelectorAll('[data-pix]').forEach(el => { el.innerHTML = pixImg(el.dataset.pix); });
