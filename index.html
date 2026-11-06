@@ -80,6 +80,9 @@
   .practice { display: flex; gap: 6px; justify-content: center; align-items: center; flex-wrap: wrap; margin: 0 0 12px; font-size: 18px; }
   .practice span { background: rgba(255,107,107,.18); border-radius: 8px; padding: 3px 10px; font-weight: 800; }
   .promo { background: rgba(255,210,63,.15); border-radius: 10px; padding: 8px; margin: 0 0 14px; font-size: 18px; }
+  #leaveBtn { display: none; position: fixed; left: 12px; bottom: max(24px, env(safe-area-inset-bottom)); z-index: 7; padding: 10px 16px; border-radius: 12px;
+    border: 2px solid rgba(255,255,255,.5); background: rgba(20,16,40,.7); color: #fff; font: 18px "Lilita One", "Trebuchet MS", sans-serif; }
+  body.canleave #leaveBtn { display: block; }
   #pauseBtn { position: absolute; top: 1.2%; right: 1%; width: max(40px, 5%); aspect-ratio: 1; border-radius: 10px;
     border: none; background: rgba(0,0,0,.35); color: #fff; font-size: clamp(14px, 2.4vw, 26px); cursor: pointer; z-index: 5; }
   #touch { position: fixed; inset: auto 0 0 0; height: 0; z-index: 6; }
@@ -90,7 +93,6 @@
   .tbtn.on { background: rgba(255,255,255,.45); }
   .tbtn[data-k="move"] { display: none; left: 18px; bottom: 120px; background: rgba(255,120,60,.45); }
   body.canmove .tbtn[data-k="move"] { display: flex; }
-  body.portrait .tbtn[data-k="move"] { bottom: calc(max(36px, env(safe-area-inset-bottom)) + 130px); }
   /* Tap-to-answer bar for gates and bosses */
   #ansbar { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 7; display: flex; flex-direction: column; align-items: center; gap: 6px;
     -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; }
@@ -120,6 +122,7 @@
   body.portrait .tbtn[data-k="right"] { left: 122px; }
   body.portrait .tbtn[data-k="jump"] { right: 12px; width: 120px; height: 120px; }
   body.portrait .tbtn:not([data-k="jump"]) { bottom: calc(max(36px, env(safe-area-inset-bottom)) + 10px); }
+  body.portrait .tbtn[data-k="move"] { left: 12px; bottom: calc(max(36px, env(safe-area-inset-bottom)) + 122px); }   /* above the left arrow (after the rule above, which would win otherwise) */
   body.touch .keys { display: none; }
   body.racing .tbtn[data-k="jump"] { display: none; }
   .bigrow { margin: 4px 0 2px; }
@@ -397,6 +400,7 @@
   <div id="stage">
     <canvas id="game" width="960" height="540"></canvas>
     <button id="pauseBtn" class="hidden" aria-label="Pause">⏸</button>
+    <button id="leaveBtn" aria-label="Leave the lesson">◀ Leave</button>
   </div>
 </div>
 
@@ -421,7 +425,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 5, 2026 11:18 PM PT · new rescue guards: sumo, golem, bot, penguin, watchman</div>
+  <div class="build">Updated Nov 5, 2026 11:29 PM PT · Tomo's vent in Ash Trail is easier to see</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -2953,6 +2957,16 @@ function enterVault() {
   if (L.room.kind === 'train') { P.x = (L.room.senseiC - 3.4) * T; P.face = 1; }
   sfx.gate(); if (L.room.kind !== 'train') floatText(P.x + 110, P.y - 30, 'A secret room!', '#ffd23f', 26);
 }
+// Leave a lesson before it's learned (the Leave button, or ← on a computer): back to the level, no move and no
+// power, the gems from the drill are kept, and the door opens again so he can come back and try later.
+const canLeaveDrill = () => !!(G && mode === 'play' && L.vault && L.room && L.room.kind === 'train' && !L.room.open && !L.room.show);
+function leaveDrill() {
+  if (!canLeaveDrill()) return;
+  const d = G.roomDoor;
+  leaveVault();
+  if (d) { d.used = false; d.solved = false; d.rearm = true; }
+  floatText(P.x + P.w / 2, P.y - 40, 'Come back any time!', '#ffd23f', 22);
+}
 function leaveVault() {
   puff();
   if (G.roomDoor) G.roomDoor.solved = L.room.open;
@@ -4382,7 +4396,11 @@ function updatePlayer() {
   document.body.classList.toggle('drilling', !!(L.room && L.room.kind === 'train' && !L.room.open));
   const rm = L.room;
   if (rm && rm.kind === 'train') for (const b of rm.boards) if (b.broken > 0 && --b.broken === 0) burst(b.c * T + T / 2, GR * T - 50, '#ffffff', 6, 2);
-  if (rm && rm.kind === 'train' && !rm.open && p.onGround) { p.vx = 0; keys.jump = false; updateRoom(); petTick(); return; }
+  if (rm && rm.kind === 'train' && !rm.open && p.onGround) {
+    if (!isTouch && keys.left && !G.leftHeldIn && canLeaveDrill()) { leaveDrill(); return; }
+    G.leftHeldIn = keys.left;
+    p.vx = 0; keys.jump = false; updateRoom(); petTick(); return;
+  }
   const onIce = p.onGround && L.map[Math.floor((p.y + p.h + 2) / T)]?.[Math.floor((p.x + p.w / 2) / T)] === 'I';
   const acc = onIce ? 0.18 : p.onGround ? 0.55 : 0.38;
   if (keys.left && !keys.right) { p.vx -= acc; p.face = -1; }
@@ -4449,7 +4467,11 @@ function updatePlayer() {
     if (p.x > b.startX && G.checkpoint < b.startX) G.checkpoint = b.startX + T;
     if (G.carry && G.carry.b === b && overlap(p, { x: b.altarC * T, y: GR * T - 2 * T, w: T, h: 2 * T })) placeStone(b);
   }
-  for (const d of L.doors || []) if (!d.used && !d.hidden && p.onGround && overlap(p, doorBox(d.c, d.r))) { openDoor(d); return; }
+  for (const d of L.doors || []) {
+    const on = overlap(p, doorBox(d.c, d.r));
+    if (d.rearm) { if (!on) d.rearm = false; continue; }   // after leaving a lesson early: step away first, then it opens again
+    if (!d.used && !d.hidden && p.onGround && on) { openDoor(d); return; }
+  }
   if (L.vault && overlap(p, doorBox(L.exitC))) { leaveVault(); return; }
 
   for (const c of L.coins) {
@@ -6983,10 +7005,14 @@ function drawFriendSpot() {
       ctx.fillStyle = '#7d7a86'; ctx.fillRect(hx + 2 + o * 2 * T, g, 2 * T - 4, 9); ctx.fillStyle = '#5a5762'; ctx.fillRect(hx + 2 + o * 2 * T, g + 7, 2 * T - 4, 2);
       ctx.fillStyle = '#3a3842'; ctx.fillRect(hx + T - 4 + o * 2 * T, g + 2, 8, 3);
       ctx.restore();
-    } else if (way === 'vent') {   // a glowing vent, bigger than the others
-      glowAt(X, g, 46, `rgba(255,120,30,${0.35 + 0.15 * Math.sin(tick * 0.08)})`);
-      ctx.fillStyle = '#3a2f2c'; rrect(X - 26, g - 10, 52, 12, 5); ctx.fill(); ctx.fillStyle = '#120c0a'; rrect(X - 18, g - 7, 36, 7, 3); ctx.fill();
-      if (tick % 14 === 0 && G) G.parts.push({ k: 'bit', x: X + (Math.random() - 0.5) * 20, y: g - 10, vx: 0, vy: -2.5, life: 34, col: '#b8aca5', s: 6 });
+    } else if (way === 'vent') {   // a big glowing vent, much bigger than the others, with a tall column of steam
+      const pulse = 0.5 + 0.2 * Math.sin(tick * 0.08);
+      glowAt(X, g - 20, 90, `rgba(255,120,30,${pulse * 0.6})`);
+      ctx.fillStyle = 'rgba(216,207,200,.18)'; ctx.beginPath(); ctx.moveTo(X - 16, g - 12); ctx.lineTo(X + 16, g - 12); ctx.lineTo(X + 34, g - 4 * T); ctx.lineTo(X - 34, g - 4 * T); ctx.fill();   // the steam column
+      ctx.fillStyle = '#3a2f2c'; rrect(X - 34, g - 14, 68, 16, 6); ctx.fill(); ctx.fillStyle = '#5a4a44'; ctx.fillRect(X - 34, g - 14, 68, 3);
+      ctx.fillStyle = `rgba(255,${130 + Math.round(60 * pulse)},40,1)`; rrect(X - 24, g - 10, 48, 9, 3); ctx.fill();   // the hot opening
+      ctx.fillStyle = '#2a201e'; for (let i = -18; i <= 18; i += 9) ctx.fillRect(X + i - 2, g - 10, 4, 9);   // bars
+      if (tick % 5 === 0 && G) G.parts.push({ k: 'bit', x: X + (Math.random() - 0.5) * 30, y: g - 14, vx: (Math.random() - 0.5) * 0.6, vy: -3 - Math.random() * 1.5, life: 44, col: ['#d8cfc8', '#b8aca5', '#ff8c1a'][tick % 3], s: 6 + (tick % 3) * 2 });
     } else if (way === 'crate') {   // a crate with a blinking light
       const x = fr.c * T, y = g - T;
       block(x, y, '#b0794a', '#6e4627', '#d8a679'); ctx.fillStyle = '#6e4627'; ctx.fillRect(x + 4, y + T / 2 - 2, T - 8, 4);
@@ -8110,7 +8136,7 @@ function begin() {
   stopReading(); mode = 'play'; hide('msg'); show('pauseBtn'); showTouch(true);
   if (G && !G.swordTip && swordOn() && (prog.swordTips || 0) < 3) {
     G.swordTip = true; prog.swordTips = (prog.swordTips || 0) + 1; save();
-    floatText(P.x + P.w / 2 + 60, P.y - 40, isTouch ? 'Your sword! Tap ✊ to slash.' : 'Your sword! Press X to slash.', '#ffd23f', 22);
+    floatText(cam + VW / 2, P.y - 60, isTouch ? 'Your sword! Tap ✊ to slash.' : 'Your sword! Press X to slash.', '#ffd23f', 22);
   }
 }
 
@@ -9237,6 +9263,7 @@ $('resetBtn').onclick = () => {
   if (confirm(`Reset ${curPlayer().name}'s belts, points and unlocked levels?`)) { prog.best = {}; prog.mastery = {}; prog.seenWorld = {}; setAllOpen(false); }
 };
 $('pauseBtn').onclick = togglePause;
+$('leaveBtn').onclick = leaveDrill;
 $('shopBtn').onclick = () => { audio(); openShop(); };
 $('raceBtn').onclick = () => { audio(); showRaceSetup(); };
 $('shopClose').onclick = () => { hide('shop'); buildMenu(); show('menu'); };
@@ -9334,6 +9361,7 @@ let last = performance.now(), acc = 0;
 const STEP = 1000 / 60;
 function frame(now) {
   acc += Math.min(100, now - last); last = now;
+  document.body.classList.toggle('canleave', canLeaveDrill());   // the lesson's Leave button
   while (acc >= STEP) {
     dojoTick(STEP / 1000);
     if (mode === 'pad') tickPad(STEP / 1000);
