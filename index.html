@@ -425,7 +425,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 5, 2026 11:29 PM PT · Tomo's vent in Ash Trail is easier to see</div>
+  <div class="build">Updated Nov 5, 2026 11:43 PM PT · high kick for Hana; freed friends can be rescued again</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1665,29 +1665,17 @@ function moveNow() {
   if (rm && rm.kind === 'train') return rm.open ? rm.move : null;
   return G.power && G.power.kind === 'sensei' ? G.power.move : null;
 }
-// Hana's samurai sword works in the world where Kai found it (Japan, not the boss): the same button slashes
-// bricks and enemies just in front of him. Learned moves (training room, Sensei power) come first.
-const swordOn = () => !!(G && mode === 'play' && !L.boss && L.world && L.world.key === 'japan' && prog.friends && prog.friends.hana && !L.room && !G.rescue && !G.swing && !G.cross);
-const SLASH_T = 18, SLASH_HIT = 10;
-function swordStrike() {
-  const f = P.face < 0 ? -1 : 1, cx = P.x + P.w / 2, x0 = f > 0 ? cx : cx - 78, x1 = f > 0 ? cx + 78 : cx, y0 = P.y - 12, y1 = P.y + P.h - 6;
-  let hit = false;
-  for (let r = Math.max(0, Math.floor(y0 / T)); r <= Math.floor(y1 / T); r++) for (let c = Math.floor(x0 / T); c <= Math.floor(x1 / T); c++) {
-    if (L.map[r] && L.map[r][c] === 'B') { L.map[r][c] = '.'; G.score += 50; hit = true; sfx.brick(); burst(c * T + T / 2, r * T + T / 2, L.world.brick[0], 10); }
-  }
-  for (const e of L.enemies || []) {
-    if (!e.dead && e.x + e.w > x0 && e.x < x1 && e.y + e.h > y0 && e.y < y1) { e.dead = 'flip'; e.vy = -8; e.vx = f * 4; G.score += 200; hit = true; sfx.stomp(); }
-  }
-  if (hit) { shake(5, 3); floatText(cx + f * 40, P.y - 10, 'SLASH!', '#ffd23f', 24); }
-}
+// After freeing Hana, Kai's HIGH KICK works in her world (Japan, not the boss): the move button kicks bricks away and
+// knocks enemies over, through the same move system as the dojo moves (which come first). The owner swapped the
+// samurai sword ("too violent") for a fan, then for this kick.
+const KICK_CHAMBER = { ...GUARD, leg: [-60, 12] }, HIGH_KICK = { r: -14, arm: [-5, 15], arm2: [25, 15], leg: [-38, 30] };
+const HIGH_KICK_MOVE = { name: 'High Kick', bricks: true, steps: [{ pose: GUARD }, { pose: KICK_CHAMBER }, { pose: HIGH_KICK }] };
+const kickOn = () => !!(G && mode === 'play' && !L.boss && L.world && L.world.key === 'japan' && prog.friends && prog.friends.hana && !L.room && !G.rescue && !G.swing && !G.cross);
 function doMove() {
-  const mv = moveNow();
-  if (!mv) { if (swordOn() && !(G.slashT > 0)) { G.slashT = SLASH_T; tone(700, 0.12, 'sawtooth', 0.03, 1600); } return; }
-  if (G.moveT > 0) return;
+  const mv = moveNow() || (kickOn() ? HIGH_KICK_MOVE : null); if (!mv || G.moveT > 0) return;
   G.moveT = 28; G.moveOf = mv; sfx.throw();
 }
 function moveTick() {
-  if (G.slashT > 0 && --G.slashT === SLASH_HIT) swordStrike();
   if (!(G.moveT > 0)) return;
   if (P.onGround) P.vx *= 0.7;
   if (--G.moveT !== 16) return;
@@ -1704,6 +1692,12 @@ function moveTick() {
   for (const e of L.enemies || []) {
     if (!e.dead && Math.abs(e.x + e.w / 2 - at.x) < 40 && Math.abs(e.y + e.h / 2 - at.y) < 44) {
       e.dead = 'flip'; e.vy = -8; e.vx = (P.face || 1) * 4; G.score += 200; hit = true; floatText(e.x + 15, e.y, 'HI-YAH!', '#fff', 24); sfx.stomp();
+    }
+  }
+  if (G.moveOf.bricks) {   // the high kick breaks bricks in front of Kai, from his head down to his feet
+    const f = P.face < 0 ? -1 : 1, cx = P.x + P.w / 2, x0 = Math.min(cx, at.x + f * 20), x1 = Math.max(cx, at.x + f * 20);
+    for (let r = Math.max(0, Math.floor((P.y - 14) / T)); r <= Math.floor((P.y + P.h - 6) / T); r++) for (let c = Math.floor(x0 / T); c <= Math.floor(x1 / T); c++) {
+      if (L.map[r] && L.map[r][c] === 'B') { L.map[r][c] = '.'; G.score += 50; hit = true; sfx.brick(); burst(c * T + T / 2, r * T + T / 2, L.world.brick[0], 10); floatText(c * T + T / 2, r * T - 10, 'KICK!', '#ffd23f', 24); }
     }
   }
   if (!hit) tone(300, 0.08, 'triangle', 0.03, 600);
@@ -2879,7 +2873,7 @@ function boxPrize(c, r, asked = false) {
   G.power = { kind: k, t: POWERS[k].time }; sfx.power(); petSay('wow');
   floatText(x, y - 50, `${POWERS[k].name}!`, '#7df9ff', 26);
 }
-const canMoveBtn = () => !!moveNow() || swordOn();
+const canMoveBtn = () => !!moveNow() || kickOn();
 const hasPower = k => !!(G && G.power && (G.power.kind === k || (G.power.kind === 'sensei' && (k === 'star' || k === 'speed' || (k === 'jump' && G.power.kick)))));
 function grantPower() {
   const kinds = ['double', 'shield', 'fire'], kind = kinds[G.powerN++ % kinds.length];
@@ -3027,7 +3021,7 @@ function startRescue(fr) {
   const f = fr.f, p = P, X = (fr.c + 0.5) * T;
   const backX = { key: X, vent: X - T, crate: X + T, falls: (fr.c + 2.5) * T, ladder: X + T }[f.way];   // back out on the same clear ground
   const pool = shuffle(Object.values(prog.facts).filter(x => x.weak || x.practice).map(x => ({ ...x.q })));
-  G.rescue = { fr, f, dir: f.dir, phase: 'in', t: 0, step: 0, pool, tricky: pool.length > 0, asked: new Set(), wait: 0, msg: '', msgT: 0, bits: [], words: [], vis: 0, act: null, flash: 0, shk: 0, backX, tiles: null };
+  G.rescue = { fr, f, again: !!fr.again, dir: f.dir, phase: 'in', t: 0, step: 0, pool, tricky: pool.length > 0, asked: new Set(), wait: 0, msg: '', msgT: 0, bits: [], words: [], vis: 0, act: null, flash: 0, shk: 0, backX, tiles: null };
   G.mbox = null; keys.left = keys.right = keys.jump = false; keys.jumpPressed = false;
   p.vx = p.vy = 0; p.inv = 9999;
   sfx.gate(); tone(330, 0.3, 'triangle', 0.05, 160);
@@ -3038,11 +3032,11 @@ function rescueNext(r) {
   else { q = L.gen(); for (let i = 0; i < 20 && r.asked.has(factKey(q)); i++) q = L.gen(); }
   r.asked.add(factKey(q)); r.q = q; r.opts = choices(q, 3); r.shownAt = G.time; r.pick = -1;
 }
-// Each rescue has one awesome thing to find, and every right answer uses it: the samurai sword slashes a stone block,
+// Each rescue has one awesome thing to find, and every right answer uses it: Kai's high kick knocks a stone block away,
 // Tomo's hammer smashes a boulder, Niko's laser cuts a bar, the fire torch melts the ice, flaming throwing stars light
 // the lanterns. A hit: a flash, a shake, flying pieces, a big comic-book word. Kai keeps it (treasure shelf, Badge Book).
 const RESCUE_TOOL = {
-  key: { kind: 'sword', name: 'a samurai sword', short: 'Samurai sword', word: 'SLASH!' },
+  key: { kind: 'kick', name: 'the High Kick', short: 'High kick', word: 'KICK!' },   // no treasure: Kai's own kick
   vent: { kind: 'hammer', name: "Tomo's mining hammer", short: 'Mining hammer', word: 'SMASH!' },
   crate: { kind: 'laser', name: "Niko's laser", short: 'Laser', word: 'ZAP!' },
   falls: { kind: 'torch', name: 'a fire torch', short: 'Fire torch', word: 'WHOOSH!' },
@@ -3051,7 +3045,7 @@ const RESCUE_TOOL = {
 const RESCUE_FIND = 56, RESCUE_HIT = 14, RESCUE_ACT = 34;
 // The last hit is a finishing move: a slow wind-up (screen dims, Kai glows), then one huge strike.
 const FIN_HIT = 60, FIN_ACT = 130;
-const FIN_WORD = { sword: 'MEGA SLASH!', hammer: 'GROUND POUND!', laser: 'STAR LASER!', torch: 'RING OF FIRE!', star: 'FIREWORKS!' };
+const FIN_WORD = { kick: 'MEGA KICK!', hammer: 'GROUND POUND!', laser: 'STAR LASER!', torch: 'RING OF FIRE!', star: 'FIREWORKS!' };
 // Where the hit animation is, on the normal 0..RESCUE_ACT clock (the finishing move holds the wind-up, then stretches the end).
 const actEff = a => (!a.fin ? a.t : a.t < FIN_HIT - RESCUE_HIT ? 0 : a.t < FIN_HIT ? a.t - (FIN_HIT - RESCUE_HIT) : RESCUE_HIT + (a.t - FIN_HIT) * (RESCUE_ACT - RESCUE_HIT) / (FIN_ACT - FIN_HIT));
 // One guard in each rescue room: big and grumpy, but he never hurts Kai. He leaps in after Kai finds the treasure,
@@ -3307,7 +3301,10 @@ function rescueImpact(r, a) {   // the hit lands
   }
   if (a.fin && kind === 'torch') rescueBits(r, 30, ['#7fc4e8', '#bfe9ff', '#ffffff'], x, y - 10, 12);   // the ice bursts into a splash
   if (a.fin && kind === 'hammer') rescueBits(r, 24, ['#b8aca5', '#8f8580', '#ff8c1a'], x, rescueSpots().fy - 4, 14);
-  if (way === 'key') { rescueBits(r, 22 * big, ['#9a96a2', '#6d6a76', '#cfcbd6', '#ffffff'], x, y, 9); tone(1400, 0.08, 'sawtooth', 0.05, 300); tone(90, 0.3, 'square', 0.06, 40, 0.04); }
+  if (way === 'key') {   // the stone block flies apart from the kick
+    const n0 = r.bits.length; rescueBits(r, 20 * big, ['#9a96a2', '#6d6a76', '#cfcbd6', '#ffffff'], x, y, 8); for (const b of r.bits.slice(n0)) b.vx = Math.abs(b.vx) + 2;
+    sfx.stomp(); tone(90, 0.3, 'square', 0.06, 40, 0.03);
+  }
   if (way === 'vent') { rescueBits(r, 26 * big, ['#6b625e', '#3a3432', '#8f8580', '#ff8c1a'], x, y, 11); sfx.brick(); tone(70, 0.4, 'square', 0.08, 30); }
   if (way === 'crate') { rescueBits(r, 18 * big, ['#ff4d6d', '#ffd23f', '#ffffff'], x, y, 8); tone(1200, 0.25, 'sawtooth', 0.05, 200); }
   if (way === 'falls') { rescueBits(r, 20 * big, ['#ffffff', '#e8fbff', '#cfd6e4'], x, y - 10, 5); tone(CHIME_TUNE[a.k * 2], 0.9, 'triangle', 0.06); tone(300, 0.3, 'sawtooth', 0.02, 900); }
@@ -3324,7 +3321,7 @@ function rescuePick(r, i) {
     payGems(cam + fx, fy - 90, 2);
     r.msg = `${qSolved(q)}!`; r.msgT = 60; r.msgCol = '#3ae374';
     r.act = { t: 0, k: r.step, fin: r.step >= 3 };
-    if (r.f.way === 'key') tone(700, 0.12, 'sawtooth', 0.03, 1600);   // the blade swings
+    if (r.f.way === 'key') tone(400, 0.15, 'triangle', 0.04, 900);   // hi-yah
     if (r.f.way === 'crate') tone(1800, 0.18, 'square', 0.03, 600);   // pew
     if (r.f.way === 'ladder') tone(900, 0.2, 'triangle', 0.03, 1400);   // the star spins away
     if (r.step < 3) r.wait = RESCUE_ACT + 14;
@@ -3344,18 +3341,19 @@ function freeFriend(r) {
   const f = r.f;
   prog.friends = prog.friends || {}; prog.friends[f.id] = true; r.fr.done = true; save();
   sfx.win();
+  if (r.again) { const { fy, fx } = rescueSpots(); payGems(cam + fx, fy - 90, 5); }   // a replay: bonus gems (the power is already his)
   if (f.way === 'falls') CHIME_TUNE.slice(0, 8).forEach((n, i) => tone(n, 0.5, 'triangle', 0.05, null, 0.4 + i * 0.32));   // Amazing Grace
   if (FRIENDS.every(x => prog.friends[x.id])) award('friends');
 }
 function endRescue(r) {
   G.rescue = null;
   P.x = r.backX - P.w / 2; P.y = GR * T - P.h; P.vx = P.vy = 0; P.inv = 60; P.onGround = false;
-  floatText(P.x + P.w / 2, P.y - 30, `${r.f.pname}! ${r.f.ptip}`, '#7df9ff', 22);
-  if (r.f.id === 'hana') floatText(P.x + P.w / 2, P.y - 70, isTouch ? 'Sword ready! Tap ✊ to slash.' : 'Sword ready! Press X to slash.', '#ffd23f', 22);
+  floatText(P.x + P.w / 2, P.y - 30, r.again ? `${r.f.name} rescued again! +5 gems` : `${r.f.pname}! ${r.f.ptip}`, '#7df9ff', 22);
+  if (r.f.id === 'hana' && !r.again) floatText(P.x + P.w / 2, P.y - 70, isTouch ? 'High kick! Tap ✊ to kick in Japan.' : 'High kick! Press X to kick in Japan.', '#ffd23f', 22);
   syncAnsBar();
 }
-const rescueTitle = r => (r.phase === 'ask' && r.q ? qShow(r.q) : r.phase === 'guard' ? 'A guard!' : r.phase === 'find' ? `You found ${RESCUE_TOOL[r.f.way].name}!` : r.phase === 'in' || r.phase === 'arrive' ? `Find ${r.f.name}!` : `${r.f.name} is free!`);
-const rescueHint = r => (r.phase === 'ask' ? `${r.tricky ? 'Your tricky facts free' : 'Right answers free'} ${r.f.name}!  (${r.step}/3)` : r.phase === 'guard' ? "Don't worry. Right answers beat him!" : r.phase === 'find' ? 'Use it to free your friend!' : r.phase === 'in' || r.phase === 'arrive' ? '' : `New power: ${r.f.pname}`);
+const rescueTitle = r => (r.phase === 'ask' && r.q ? qShow(r.q) : r.phase === 'guard' ? 'A guard!' : r.phase === 'find' ? (r.f.way === 'key' ? 'Get ready to kick!' : `You found ${RESCUE_TOOL[r.f.way].name}!`) : r.phase === 'in' || r.phase === 'arrive' ? `Find ${r.f.name}!` : `${r.f.name} is free!`);
+const rescueHint = r => (r.phase === 'ask' ? `${r.tricky ? 'Your tricky facts free' : 'Right answers free'} ${r.f.name}!  (${r.step}/3)` : r.phase === 'guard' ? "Don't worry. Right answers beat him!" : r.phase === 'find' ? (r.f.way === 'key' ? 'Each right answer is a high kick!' : 'Use it to free your friend!') : r.phase === 'in' || r.phase === 'arrive' ? '' : r.again ? 'Rescued again!' : `New power: ${r.f.pname}`);
 
 // ---------------------------------------------------------------- swing crossings
 // One per level: two steps up to a ledge, a wide gap, a perch in the middle, another gap. Each right answer swings
@@ -3929,7 +3927,7 @@ const CHIME_TUNE = [293.7, 392, 493.9, 392, 493.9, 440, 392, 329.6, 293.7, 293.7
 // (Runs while the level is built: it must use the level passed in, not the global L.)
 function addFriend(L) {
   L.friend = null;
-  const f = friendOf(L.def); if (!f || (prog.friends || {})[f.id]) return;
+  const f = friendOf(L.def); if (!f) return;   // freed friends stay findable: their rescue can be played again for fun
   const map = L.map, end = L.flagC - 12, W = L.w;
   const clear = (c, h) => c >= 1 && c < W - 1 && map[GR][c] === '#' && map[GR + 1][c] === '#' && map.slice(GR - h, GR).every(row => row[c] === '.');
   const [wide, high] = { key: [4, 6], vent: [3, GR], crate: [3, 3], falls: [4, 5], ladder: [3, GR] }[f.way];
@@ -3961,7 +3959,7 @@ function addFriend(L) {
     if (score > bestScore) { best = c; bestScore = score; }
   }
   if (best == null) return;
-  const c = best, fr = { f, c: c + 1, t: 0, open: 0, room: Math.max(0, Math.round(bestScore / 100)) };
+  const c = best, fr = { f, c: c + 1, t: 0, open: 0, room: Math.max(0, Math.round(bestScore / 100)), again: !!(prog.friends || {})[f.id] };
   if (f.way === 'key') { fr.c = c; fr.kc = c + 1; fr.kr = GR - 4; map[fr.kr][fr.kc] = 'U'; fr.hole = c + 2; }   // the key block, and a trapdoor two tiles wide beside it
   L.coins = L.coins.filter(g => g.gold || Math.abs(g.x - (fr.c + 0.5) * T) > 2 * T || g.y < (GR - 6) * T);   // no gem hiding the key block or the crate
   if (f.way === 'crate') map[GR - 1][fr.c] = 'U';   // a solid crate (drawn over the tile)
@@ -7028,10 +7026,11 @@ function drawFriendSpot() {
     if (friendNear()) {   // "Help!" from where the friend is
       const up = fr.f.dir < 0, bx = way === 'key' ? (fr.hole + 1) * T : way === 'falls' ? (fr.c + 1) * T : X;
       const by = (up ? 210 : way === 'falls' ? g - 4 * T - 26 : way === 'crate' ? g - T - 32 : g - 46) + Math.sin(tick * 0.1) * 3;
-      ctx.font = '16px "Lilita One", "Trebuchet MS", sans-serif'; const w = ctx.measureText('Help!').width + 18;
+      const help = fr.again ? 'Play again!' : 'Help!';
+      ctx.font = '16px "Lilita One", "Trebuchet MS", sans-serif'; const w = ctx.measureText(help).width + 18;
       ctx.fillStyle = '#ffffff'; rrect(bx - w / 2, by - 13, w, 26, 10); ctx.fill(); ctx.strokeStyle = '#cfd6e4'; ctx.lineWidth = 2; ctx.stroke();
       ctx.beginPath(); ctx.moveTo(bx - 5, by + (up ? -13 : 13)); ctx.lineTo(bx, by + (up ? -21 : 21)); ctx.lineTo(bx + 5, by + (up ? -13 : 13)); ctx.fill();
-      ctx.fillStyle = '#22224a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('Help!', bx, by + 1);
+      ctx.fillStyle = '#22224a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(help, bx, by + 1);
     }
   }
   if (G && hasFriend('eyes') && tick % 9 === 0) {   // Night eyes: secret spots sparkle
@@ -7047,10 +7046,10 @@ function drawFriendSpot() {
 // The five treasures, drawn with plain shapes at (x, y) = where the hand holds it, turned by ang.
 function drawTool(kind, x, y, ang = 0, s = 1) {
   ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.rotate(ang); ctx.scale(s, s);
-  if (kind === 'sword') {   // a samurai sword: long curved-looking blade, gold guard, wrapped handle
-    ctx.fillStyle = '#2a1a1a'; ctx.fillRect(-2, -2, 4, 12); ctx.fillStyle = '#e63946'; ctx.fillRect(-2, 1, 4, 2); ctx.fillRect(-2, 6, 4, 2);
-    ctx.fillStyle = '#ffd23f'; ctx.fillRect(-6, -5, 12, 3);
-    ctx.fillStyle = '#dfe6ee'; ctx.fillRect(-2, -38, 4, 33); ctx.fillStyle = '#ffffff'; ctx.fillRect(-2, -38, 1, 33); ctx.fillRect(-1, -41, 2, 3);
+  if (kind === 'kick') {   // the High Kick (Badge Book): a gold burst, like where a kick lands
+    ctx.fillStyle = '#ffd23f'; ctx.beginPath();
+    for (let i = 0; i < 16; i++) { const an = i * Math.PI / 8, rr = i % 2 ? 9 : 22; ctx.lineTo(Math.cos(an) * rr, -14 + Math.sin(an) * rr); }
+    ctx.closePath(); ctx.fill(); ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, -14, 6, 0, 7); ctx.fill();
   } else if (kind === 'hammer') {   // a big mining hammer
     ctx.fillStyle = '#8b5a2b'; ctx.fillRect(-2, -26, 4, 32);
     ctx.fillStyle = '#5a5762'; ctx.fillRect(-11, -36, 22, 12); ctx.fillStyle = '#9a96a2'; ctx.fillRect(-11, -36, 22, 3);
@@ -7074,7 +7073,7 @@ function drawTool(kind, x, y, ang = 0, s = 1) {
 function toolImg(way, px = 34) {
   const cv = document.createElement('canvas'); cv.width = px; cv.height = px;
   const keep = ctx; ctx = cv.getContext('2d');
-  const kind = RESCUE_TOOL[way].kind, ang = { sword: 0.6, hammer: 0.5, laser: 0, torch: 0.2, star: 0 }[kind];
+  const kind = RESCUE_TOOL[way].kind, ang = { kick: 0, hammer: 0.5, laser: 0, torch: 0.2, star: 0 }[kind];
   drawTool(kind, px * (kind === 'laser' ? 0.25 : 0.42), px * (kind === 'star' ? 0.5 : kind === 'laser' ? 0.55 : 0.82), ang, px / 52);
   ctx = keep;
   return `<img class="toolimg" src="${cv.toDataURL()}" alt="">`;
@@ -7086,19 +7085,12 @@ function toolImg(way, px = 34) {
 function drawFinish(r, fin, kind, aimX, aimY, kX, kY) {
   const ft = fin.t - FIN_HIT, { fy, fx } = rescueSpots();
   if (ft >= 0 && ft < 30) glowAt(aimX, aimY, 120 + ft * 3, `rgba(255,240,180,${0.6 * (1 - ft / 30)})`);
-  if (kind === 'sword' && fin.t >= FIN_HIT - 6 && ft < 40) {   // one long cut through the air, the last block split in two
-    const f = ft < 0 ? 1 : 1 - ft / 40, dx = 1, dy = -0.35;
-    ctx.strokeStyle = `rgba(255,214,90,${0.45 * f})`; ctx.lineWidth = 22; ctx.beginPath(); ctx.moveTo(aimX - 420 * dx, aimY - 420 * dy); ctx.lineTo(aimX + 220 * dx, aimY + 220 * dy); ctx.stroke();
-    ctx.strokeStyle = `rgba(255,255,255,${f})`; ctx.lineWidth = 7; ctx.stroke();
-    if (ft >= 0) {
-      const bx = aimX - T / 2, by = aimY - T / 2;
-      ctx.globalAlpha = f; ctx.fillStyle = '#7d7a86';
-      ctx.save(); ctx.translate(-ft * 1.2, -ft * 1.4 + ft * ft * 0.06); ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + T, by); ctx.lineTo(bx, by + T); ctx.fill(); ctx.restore();
-      ctx.save(); ctx.translate(ft * 1.6, ft * 0.4 + ft * ft * 0.09); ctx.beginPath(); ctx.moveTo(bx + T, by); ctx.lineTo(bx + T, by + T); ctx.lineTo(bx, by + T); ctx.fill(); ctx.restore();
-      ctx.fillStyle = `rgba(255,248,220,${0.22 * f})`;   // light floods out of the cut
-      for (let i = 0; i < 8; i++) { const an = i * 0.785 + 0.2; ctx.beginPath(); ctx.moveTo(aimX, aimY); ctx.lineTo(aimX + Math.cos(an) * 400, aimY + Math.sin(an) * 400); ctx.lineTo(aimX + Math.cos(an + 0.16) * 400, aimY + Math.sin(an + 0.16) * 400); ctx.fill(); }
-      ctx.globalAlpha = 1;
-    }
+  if (kind === 'kick' && ft >= 0 && ft < 40) {   // the flying kick lands: a gold burst and a ring
+    const f = 1 - ft / 40, R1 = 20 + ft * 6;
+    ctx.fillStyle = `rgba(255,210,63,${0.8 * f})`; ctx.beginPath();
+    for (let i = 0; i < 20; i++) { const an = i * Math.PI / 10, rr = i % 2 ? R1 * 0.45 : R1; ctx.lineTo(aimX + Math.cos(an) * rr, aimY + Math.sin(an) * rr); }
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = `rgba(255,255,255,${f})`; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(aimX, aimY, R1 * 1.3, 0, 7); ctx.stroke();
   }
   if (kind === 'hammer' && ft >= 0 && ft < 45) {   // the ground pound's shockwave rolls out along the floor
     const f = 1 - ft / 45;
@@ -7281,9 +7273,9 @@ function drawRescue() {
   drawGuard(r);
   const a = r.act, at = a ? actEff(a) : -1, ix = kx + 90, holdY = fy - 24, fin = a && a.fin ? a : null;
   const have = !['in', 'arrive'].includes(r.phase) && !(r.phase === 'find' && r.t < 20);
-  if (!have || (r.phase === 'find' && r.t < 44)) {
-    const fly = r.phase === 'find' ? clamp((r.t - 20) / 24, 0, 1) : 0, tx = ix + (kx + 14 - ix) * fly, ty = (tool.kind === 'sword' ? fy - 30 : fy - 16) + (holdY - (fy - 30)) * fly - Math.sin(Math.PI * fly) * 60;
-    if (tool.kind === 'sword') block(ix - T / 2, fy - T + 8, '#7d7a86', '#4a4752', '#a8a4b2');   // the stone it is stuck in
+  if (tool.kind === 'kick' && r.phase === 'find' && r.t >= 20) glowAt(kx, fy - 22, 40 + Math.sin(tick * 0.3) * 6, 'rgba(255,214,90,.6)');
+  if (tool.kind !== 'kick' && (!have || (r.phase === 'find' && r.t < 44))) {
+    const fly = r.phase === 'find' ? clamp((r.t - 20) / 24, 0, 1) : 0, tx = ix + (kx + 14 - ix) * fly, ty = fy - 16 + (holdY - (fy - 30)) * fly - Math.sin(Math.PI * fly) * 60;
     glowAt(tx, ty - 12, 34 + Math.sin(tick * 0.2) * 6, 'rgba(255,240,160,.55)');
     drawTool(tool.kind, tx, ty, fly * 6 + (tool.kind === 'hammer' && !fly ? -0.5 : 0), 1);
   }
@@ -7304,16 +7296,14 @@ function drawRescue() {
     }
   }
   const [aimX, aimY] = a ? rescueAim(r, a.k - 1) : [0, 0];
+  if (a && tool.kind === 'kick') {   // a flying high kick: up over the guard, the foot lands on the block, and back
+    const tx = aimX - 34, ty = Math.min(fy, aimY + 30), hop = fin ? 170 : 90;
+    if (at < RESCUE_HIT) { const u = at / RESCUE_HIT; kX = kx + (tx - kx) * u; kY = fy + (ty - fy) * u - Math.sin(Math.PI * u) * hop; kAir = at > 0 || !fin; }
+    else { const u = 1 - Math.min(1, (at - RESCUE_HIT) / (RESCUE_ACT - RESCUE_HIT)); kX = kx + (tx - kx) * u; kY = fy + (ty - fy) * u - Math.sin(Math.PI * u) * 50; kAir = u > 0.02; }
+  }
   if (a && tool.kind === 'hammer') {   // leap, smash, leap back
     const u = at < RESCUE_HIT ? at / RESCUE_HIT : 1 - (at - RESCUE_HIT) / (RESCUE_ACT - RESCUE_HIT), tx = aimX - 44;
     kX = kx + (tx - kx) * u; kY = fy - Math.sin(Math.PI * Math.min(1, u)) * (at < RESCUE_HIT ? (fin ? 220 : 120) : 30); kAir = at < RESCUE_ACT - 2 && (at > 0 || !fin);
-  }
-  let ghosts = null;
-  if (fin && tool.kind === 'sword') {   // the finishing slash: Kai dashes right through, then walks back
-    const d0 = FIN_HIT - 10, tx = aimX - 50, ft = fin.t;
-    if (ft >= d0 && ft < FIN_HIT) { const u = (ft - d0) / 10; kX = kx + (tx - kx) * u; ghosts = [0.25, 0.5, 0.75].map(v => kx + (kX - kx) * v); kAir = true; }
-    else if (ft >= FIN_HIT && ft < FIN_HIT + 30) kX = tx;
-    else if (ft >= FIN_HIT + 30) { kX = tx + (kx - tx) * Math.min(1, (ft - FIN_HIT - 30) / 34); kWalk = kX > kx + 1; }
   }
   if (fin && fin.t < FIN_HIT + 12) {   // the wind-up: the room goes dark, Kai glows, speed lines
     const w = fin.t < FIN_HIT ? clamp(fin.t / 20, 0, 1) : 1 - (fin.t - FIN_HIT) / 12;
@@ -7324,14 +7314,14 @@ function drawRescue() {
     }
     glowAt(kX, kY - 22, 40 + 30 * w + Math.sin(tick * 0.4) * 6, `rgba(255,214,90,${0.7 * w})`);
   }
-  if (ghosts) { ctx.globalAlpha = 0.3; for (const gx of ghosts) drawBaked(SPR, 'jump', false, { x: gx - 12, y: kY - 44, w: 24, h: 44 }); ctx.globalAlpha = 1; }
   const kick = a && tool.kind === 'laser' && at > 8 && at < RESCUE_HIT + 6 ? -3 : 0;   // the laser kicks back
-  drawBaked(SPR, kAir || (freeT > 130 && Math.floor(freeT / 16) % 2) ? 'jump' : kWalk && Math.floor(r.t / 6) % 2 ? 'walkA' : 'stand', false, { x: kX - 12 + kick, y: kY - 44 + (freeT > 130 ? hop : 0), w: 24, h: 44 });
+  const kickPose = a && tool.kind === 'kick' ? (at === 0 && fin ? { r: 10, ...GUARD } : at < RESCUE_HIT * 0.6 ? mixPose(GUARD, KICK_CHAMBER, at / (RESCUE_HIT * 0.6)) : at < RESCUE_HIT + 8 ? HIGH_KICK : at < RESCUE_ACT - 4 ? GUARD : null) : null;
+  if (kickPose) drawKaiPose({ x: kX - 12, y: kY - 44, w: 24, h: 44, face: 1 }, kickPose);
+  else drawBaked(SPR, kAir || (freeT > 130 && Math.floor(freeT / 16) % 2) ? 'jump' : kWalk && Math.floor(r.t / 6) % 2 ? 'walkA' : 'stand', false, { x: kX - 12 + kick, y: kY - 44 + (freeT > 130 ? hop : 0), w: 24, h: 44 });
   // the treasure in Kai's hand, and what it does
-  if (have && !(r.phase === 'find' && r.t < 44)) {
+  if (tool.kind !== 'kick' && have && !(r.phase === 'find' && r.t < 44)) {
     const hx = kX + 12 + kick, hy = kY - 22 + (freeT > 130 ? hop : 0);
-    let ang = { sword: -0.5, hammer: -0.4, laser: -0.1, torch: 0.5, star: 0 }[tool.kind];
-    if (a && tool.kind === 'sword') ang = at < RESCUE_HIT ? -1.6 + (at / RESCUE_HIT) * 3.2 : 1.6 - Math.min(1, (at - RESCUE_HIT) / 10) * 2.1;
+    let ang = { kick: 0, hammer: -0.4, laser: -0.1, torch: 0.5, star: 0 }[tool.kind];
     if (a && tool.kind === 'hammer') ang = at < RESCUE_HIT ? -2.2 + (at / RESCUE_HIT) * 3.4 : 1.2 - Math.min(1, (at - RESCUE_HIT) / 10) * 1.6;
     if (a && tool.kind === 'torch') ang = 1.3;
     if (a && tool.kind === 'laser') ang = Math.atan2(aimY - hy, aimX - hx);
@@ -7340,11 +7330,6 @@ function drawRescue() {
   }
   if (a && at < RESCUE_HIT + 6) {   // the shot on its way
     const u = clamp(at / RESCUE_HIT, 0, 1), hx = kx + 18, hy = fy - 30;
-    if (tool.kind === 'sword' && at > 3 && at <= RESCUE_HIT) {   // a white crescent of air flies off the blade
-      const cx = hx + (aimX - hx) * u, cy = hy + (aimY - hy) * u;
-      ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(cx - 14, cy, 22, -1.1, 1.1); ctx.stroke();
-      ctx.strokeStyle = 'rgba(160,220,255,.6)'; ctx.lineWidth = 9; ctx.beginPath(); ctx.arc(cx - 18, cy, 22, -0.9, 0.9); ctx.stroke();
-    }
     if (tool.kind === 'laser' && at > 8 && !fin) {   // a beam
       const gx = kx + 12 + Math.cos(Math.atan2(aimY - (fy - 22), aimX - kx - 12)) * 26, gy = fy - 22 - 4;
       ctx.strokeStyle = `rgba(255,77,109,${0.6 + 0.4 * Math.random()})`; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(aimX, aimY); ctx.stroke();
@@ -7361,8 +7346,11 @@ function drawRescue() {
   const say = r.phase === 'ask' && r.step === 0 && r.t < 150 && !a ? 'Help me, Kai!' : freeT >= 30 && freeT < 130 ? 'Thank you, Kai!' : freeT >= 130 ? 'See you at the dojo!' : '';
   if (say) rescueBubble(say, px, py - 82 + hop);
   if (freeT >= 130) {   // the power, said big
-    hudText(`New power: ${f.pname}!`, VW / 2, VH * 0.42, 28, '#ffd23f', 'center');
-    hudText(`${f.ptip}  You keep the ${tool.short.toLowerCase()}!`, VW / 2, VH * 0.42 + 34, 19, '#ffffff', 'center');
+    if (r.again) { hudText(`${f.name} says thanks again!`, VW / 2, VH * 0.42, 28, '#ffd23f', 'center'); hudText('+5 gems', VW / 2, VH * 0.42 + 34, 19, '#ffffff', 'center'); }
+    else {
+      hudText(`New power: ${f.pname}!`, VW / 2, VH * 0.42, 28, '#ffd23f', 'center');
+      hudText(tool.kind === 'kick' ? `${f.ptip}  Your high kick works in Japan!` : `${f.ptip}  You keep the ${tool.short.toLowerCase()}!`, VW / 2, VH * 0.42 + 34, 19, '#ffffff', 'center');
+    }
   }
   // answer tiles (computers; phones use the buttons)
   r.tiles = null;
@@ -7474,18 +7462,7 @@ function drawPlayer() {
     for (const back of [9, 6, 3]) { ctx.globalAlpha = 0.12 + (9 - back) * 0.04; drawKaiPose(p, trainPoseAt(rmS, rmS.showT - back)); }
     ctx.globalAlpha = 1;
   }
-  const sword = swordOn() && !pose, slashing = sword && G.slashT > 0, fc = p.face < 0 ? -1 : 1;
-  if (sword && !slashing) drawTool('sword', p.x + p.w / 2 - fc * 5, p.y + 16, Math.PI - fc * 0.55, 0.7);   // on his back, handle over the shoulder
   if (pose) drawKaiPose(p, pose); else drawBaked(SPR, k, p.face < 0, p);
-  if (slashing) {   // a quick swing from over the head to the front, with a white arc
-    const e = (SLASH_T - G.slashT) / SLASH_T, hx = p.x + p.w / 2 + fc * 8, hy = p.y + 22;
-    drawTool('sword', hx, hy, fc * (-1.4 + Math.min(1, e * 1.6) * 3.0), 1);
-    if (G.slashT <= SLASH_HIT + 4 && G.slashT > SLASH_HIT - 5) {
-      ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 5; ctx.beginPath();
-      if (fc > 0) ctx.arc(hx, hy, 44, -1.3, 1.0); else ctx.arc(hx, hy, 44, Math.PI - 1.0, Math.PI + 1.3);
-      ctx.stroke();
-    }
-  }
   ctx.restore();
   if (hasPower('shield')) {
     ctx.strokeStyle = `rgba(125,249,255,${0.5 + 0.3 * Math.sin(tick * 0.2)})`; ctx.lineWidth = 3;
@@ -8134,9 +8111,9 @@ function startStage(i) {
 function intro(title, body, label) { mode = 'intro'; hide('pauseBtn'); showTouch(false); showMsg(title, body, [{ label, fn: begin, primary: true }]); }
 function begin() {
   stopReading(); mode = 'play'; hide('msg'); show('pauseBtn'); showTouch(true);
-  if (G && !G.swordTip && swordOn() && (prog.swordTips || 0) < 3) {
-    G.swordTip = true; prog.swordTips = (prog.swordTips || 0) + 1; save();
-    floatText(cam + VW / 2, P.y - 60, isTouch ? 'Your sword! Tap ✊ to slash.' : 'Your sword! Press X to slash.', '#ffd23f', 22);
+  if (G && !G.kickTip && kickOn() && (prog.kickTips || 0) < 3) {
+    G.kickTip = true; prog.kickTips = (prog.kickTips || 0) + 1; save();
+    floatText(cam + VW / 2, P.y - 60, isTouch ? 'High kick! Tap ✊ to kick.' : 'High kick! Press X to kick.', '#ffd23f', 22);
   }
 }
 
