@@ -425,7 +425,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 5, 2026 11:43 PM PT · high kick for Hana; freed friends can be rescued again</div>
+  <div class="build">Updated Nov 6, 2026 12:04 AM PT · guard behind the wall + final kick; grade test-out</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -486,6 +486,7 @@
     <div class="shophint">Harder math ★ earns more gems and belt points!</div>
     <button class="autobtn" id="autoBtn" type="button"></button>
     <div class="tracks" id="trackBox"></div>
+    <button class="autobtn hidden" id="testBtn" type="button"></button>
     <div class="tabs" id="skillTabs"></div>
     <div class="skillgrid" id="skillGrid"></div>
     <div class="row"><button class="btn alt" id="skillsClose" type="button">Back</button></div>
@@ -535,7 +536,7 @@
 
 <div id="dojo" class="overlay hidden">
   <div class="card padcard dojocard">
-    <div class="dojotop"><b><span data-pix="flame"></span> Daily Dojo</b><span id="djProg"></span></div>
+    <div class="dojotop"><b id="djTitle"><span data-pix="flame"></span> Daily Dojo</b><span id="djProg"></span></div>
     <div class="fusebar"><i id="djFuse"></i></div>
     <div class="padq" id="djQ"></div>
     <div class="padkeys" id="djKeys"></div>
@@ -789,6 +790,10 @@ function noteFact(q, right, fast, skill) {
   }
 }
 function skillProgress(k) {
+  if (prog.testedOut && prog.testedOut[k.id]) return { ...skillProgressRaw(k), done: true, ready: true, mature: true, testedOut: true };   // passed a test-out
+  return skillProgressRaw(k);
+}
+function skillProgressRaw(k) {
   const list = factList(k);
   if (list) {
     const st = list.map(q => factStatus(factKey(q))), n = list.length;
@@ -3054,11 +3059,11 @@ const actEff = a => (!a.fin ? a.t : a.t < FIN_HIT - RESCUE_HIT ? 0 : a.t < FIN_H
 // facing left at Kai. Frames: a stand, b (stomp / bounce / siren / lantern up), c (laugh / beep / whistle),
 // d (golem ball / penguin belly-slide). Each comes in and gets away in his own way.
 const GUARD_STYLE = {
-  japan: { kind: 'sumo', w: 22, h: 20, enter: 'leap', run: 'waddle', say: 'Nobody gets past my belly!', miss: 'Ho ho! Belly bounce!', bye: 'Wobble wobble!' },
-  lava: { kind: 'golem', w: 20, h: 23, enter: 'roll', run: 'roll', say: 'Rumble rumble! Stay out!', miss: 'Hee hee! Rumble!', bye: 'Roll away!' },
-  robot: { kind: 'bot', w: 18, h: 22, enter: 'zoom', run: 'zoom', say: 'BEEP. ACCESS DENIED.', miss: 'BEEP BOOP! Try again!', bye: 'BEEP BOOP! BYE!' },
-  snow: { kind: 'penguin', w: 18, h: 20, enter: 'slide', run: 'slide', say: 'Ahem. Members only.', miss: 'TWEET! Not that one!', bye: 'Wheee!' },
-  castle: { kind: 'watch', w: 18, h: 20, enter: 'drop', run: 'poof', say: 'Who goes there?!', miss: 'Nice try, little ninja!', bye: 'Poof!' },
+  japan: { kind: 'sumo', w: 22, h: 20, enter: 'leap', run: 'waddle', say: 'Nobody gets past my belly!', miss: 'Ho ho! Belly bounce!', face: 'Now you face my belly!', bye: 'Wobble wobble!' },
+  lava: { kind: 'golem', w: 20, h: 23, enter: 'roll', run: 'roll', say: 'Rumble rumble! Stay out!', miss: 'Hee hee! Rumble!', face: 'Rumble! Get past ME!', bye: 'Roll away!' },
+  robot: { kind: 'bot', w: 18, h: 22, enter: 'zoom', run: 'zoom', say: 'BEEP. ACCESS DENIED.', miss: 'BEEP BOOP! Try again!', face: 'FINAL DEFENSE MODE!', bye: 'BEEP BOOP! BYE!' },
+  snow: { kind: 'penguin', w: 18, h: 20, enter: 'slide', run: 'slide', say: 'Ahem. Members only.', miss: 'TWEET! Not that one!', face: "You'll have to get past ME!", bye: 'Wheee!' },
+  castle: { kind: 'watch', w: 18, h: 20, enter: 'drop', run: 'poof', say: 'Who goes there?!', miss: 'Nice try, little ninja!', face: "You'll have to get past ME!", bye: 'Poof!' },
 };
 const guardStyle = () => GUARD_STYLE[L.world.key] || GUARD_STYLE.japan;
 const GUARD_PAL = {
@@ -3140,7 +3145,7 @@ function guardSet(kind) {
   const st = Object.values(GUARD_STYLE).find(x => x.kind === kind);
   return (GUARD_SETS[kind] = bake(makeFrames(st.w, st.h, GUARD_PAL[kind], (api, f) => drawGuardArt(kind, api, f), 4), ['a', 'b', 'c', 'd']));
 }
-const GUARD_HURT = ['Oof!', 'Hey!', 'Grrr...'];
+const GUARD_NERVOUS = ['Uh oh...', 'Hey! Stop that!'];
 const GUARD_IN = 36, GUARD_PHASE = GUARD_IN + 84;   // leap in, then the threat
 function guardSay(g, txt, t = 80) { g.say = txt; g.sayT = t; }
 function guardTick(r) {
@@ -3148,6 +3153,8 @@ function guardTick(r) {
   g.t++;
   if (g.hurt > 0) g.hurt--;
   if (g.laugh > 0) g.laugh--;
+  if (g.nerv > 0) g.nerv--;
+  if (g.scare > 0) g.scare--;
   if (g.sayT > 0) g.sayT--;
   const st = guardStyle(), { fy } = rescueSpots();
   if (g.stomp > 0 && --g.stomp === 12) { r.shk = 12; tone(70, 0.45, 'square', 0.09, 35); rescueBits(r, 14, ['#b8aca5', '#d8cfc8'], g.x + 10, fy - 4, 6); }   // sumo stomp
@@ -3170,7 +3177,7 @@ function guardTick(r) {
   }
   if (g.fall > 0) {   // knocked flat by the finishing move, dizzy, then up and away
     g.fall++;
-    if (g.fall < 12) { g.x += 4; g.rot = Math.min(1.45, g.rot + 0.13); }
+    if (g.fall < 12) { g.x += g.kicked ? 9 : 4; g.rot = Math.min(1.45, g.rot + 0.13); }
     if (g.fall >= 70 && g.fall < 82) g.rot = Math.max(0, g.rot - 0.13);
     if (g.fall === 82) { g.rot = 0; g.run = 0; guardSay(g, st.bye, 90); tone(500, 0.4, 'square', 0.04, 1200); }
   }
@@ -3201,11 +3208,12 @@ function drawGuard(r) {
   else if (running) fr = slow ? 'b' : 'a';
   else if (st.kind === 'bot' && !g.fall) fr = Math.floor(g.t / 15) % 2 ? 'b' : 'a';   // siren and radar
   const bob = g.laugh > 0 && st.kind === 'sumo' ? -Math.abs(Math.sin(g.laugh * 0.45)) * 5 : running && st.run === 'waddle' ? -Math.abs(Math.sin(g.run * 0.5)) * 4 : 0;
+  const shiver = g.nerv > 0 ? Math.sin(g.nerv * 1.7) * 2 : 0, jump = g.scare > 0 ? -Math.sin(Math.PI * g.scare / 40) * 34 : 0;
   const lean = g.hurt > 0 && !g.fall ? 0.18 * (g.hurt / 18) : running && st.run === 'waddle' ? Math.sin(g.run * 0.5) * 0.12 : 0;
   const lift = g.fall ? (g.rot / 1.45) * (Wd / 2) : 0;   // lying flat, he rests on the floor, not in it
   if (!(g.hurt > 6 && g.hurt % 4 < 2)) {   // blinks when hit
     ctx.save();
-    ctx.translate(Math.round(g.x), Math.round(fy + g.y + bob - lift));
+    ctx.translate(Math.round(g.x + shiver), Math.round(fy + g.y + bob - lift + jump));
     if (fr === 'd' && st.kind === 'golem') { ctx.translate(0, -H / 2); ctx.rotate(g.spin || 0); ctx.translate(0, H / 2); }   // rolling
     ctx.rotate(g.fall ? g.rot : lean);
     if (g.laugh > 0 && st.kind === 'bot') ctx.scale(Math.cos(g.laugh * 0.35) || 0.05, 1);   // a happy little spin
@@ -3238,10 +3246,17 @@ function rescueTick() {
   if (r.act) {   // a hit in progress
     const a = r.act; a.t++;
     const eff = actEff(a);
-    if (r.f.way === 'falls' && eff < RESCUE_HIT + 4 && (!a.fin || a.t >= FIN_HIT - RESCUE_HIT)) rescueFlame(r);
+    if (r.f.way === 'falls' && !a.kickG && eff < RESCUE_HIT + 4 && (!a.fin || a.t >= FIN_HIT - RESCUE_HIT)) rescueFlame(r);
     if (a.fin && a.t < FIN_HIT && a.t % 10 === 0) tone(220 + a.t * 12, 0.12, 'triangle', 0.035);   // powering up
     if (a.t === (a.fin ? FIN_HIT : RESCUE_HIT)) rescueImpact(r, a);
-    if (a.t >= (a.fin ? FIN_ACT : RESCUE_ACT)) { r.act = null; if (r.step >= 3) { r.phase = 'free'; r.t = 0; freeFriend(r); } }
+    if (a.t >= (a.fin ? FIN_ACT : RESCUE_ACT)) {
+      r.act = null;
+      if (r.step >= 4) { r.phase = 'free'; r.t = 0; freeFriend(r); }
+      else if (r.step === 3) {   // the wall is down: the guard steps out in front of the friend
+        r.phase = 'standoff'; r.t = 0;
+        const g = r.g; if (g && !g.gone) { g.tx = rescueSpots().fx - 56; guardSay(g, guardStyle().face, 110); tone(110, 0.3, 'square', 0.05, 80); }
+      }
+    }
   }
   if (r.phase === 'in' && r.t >= RESCUE_SLIDE) { r.t = 0; r.phase = 'arrive'; }   // first Kai gets in, the way he really came
   else if (r.phase === 'arrive' && (r.f.way === 'key' || r.f.way === 'crate') && r.t === Math.round(RESCUE_ARRIVE / 2)) { tone(110, 0.2, 'square', 0.05, 60); r.shk = 6; }   // lands with a thud
@@ -3249,13 +3264,16 @@ function rescueTick() {
   else if (r.phase === 'find') {
     if (r.t === 20) { r.flash = 0.6; [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.18, 'triangle', 0.05, null, i * 0.07)); }   // got it!
     if (r.t >= RESCUE_FIND) {   // ...and here comes the guard
-      const { kx, fx } = rescueSpots(), x0 = Math.round(kx + (fx - 62 - kx) * 0.55);
+      const { fx } = rescueSpots(), x0 = fx + 66;   // behind the wall, beside the friend he guards
       r.phase = 'guard'; r.t = 0;
-      r.g = { x: VW + 80, y: 0, x0, tx: x0, t: 0, enter: 0, hurt: 0, laugh: 0, say: '', sayT: 0, fall: 0, rot: 0, run: -1, gone: false, stomp: 0, spin: 0 };
+      r.g = { x: VW + 80, y: 0, x0, tx: x0, t: 0, enter: 0, hurt: 0, laugh: 0, nerv: 0, scare: 0, say: '', sayT: 0, fall: 0, rot: 0, run: -1, gone: false, stomp: 0, spin: 0 };
     }
   }
   else if (r.phase === 'guard') {
     if (r.t >= GUARD_PHASE) { r.phase = 'ask'; r.t = 0; rescueNext(r); }
+  }
+  else if (r.phase === 'standoff') {
+    if (r.t >= 100) { r.phase = 'ask'; r.t = 0; rescueNext(r); }
   }
   else if (r.phase === 'ask' && r.wait > 0 && --r.wait === 0) rescueNext(r);
   else if (r.phase === 'free' && r.t >= 230) { r.phase = 'out'; r.t = 0; sfx.gate(); }
@@ -3284,16 +3302,23 @@ function rescueFlame(r) {   // the torch's stream of fire
   for (let i = 0; i < 3; i++) { const u = Math.random(); r.bits.push({ x: x0 + (tx - x0) * u * 0.3, y: y0 + (ty - y0) * u * 0.3, vx: (tx - x0) / 14 + (Math.random() - 0.5), vy: (ty - y0) / 14 + (Math.random() - 0.5) * 2, life: 16, col: ['#ff6a00', '#ffd23f', '#ff3b1f'][i], s: 7, up: true }); }
 }
 function rescueImpact(r, a) {   // the hit lands
+  const g = r.g;
+  if (a.kickG) {   // the flying kick hits the guard: he tumbles, dizzy, then makes his getaway
+    const { fy } = rescueSpots(), x = g ? g.x : VW * 0.6;
+    r.flash = 1; r.shk = 26; r.words.push({ txt: 'HI-YAH!', x: VW / 2, y: VH * 0.3, t: 0, size: 64 });
+    sfx.stomp(); tone(60, 0.8, 'sawtooth', 0.07, 30); tone(880, 0.5, 'triangle', 0.05, 1760);
+    rescueBits(r, 22, ['#ffd23f', '#ffffff', '#ff8c1a'], x - 10, fy - 36, 9);
+    if (g && !g.gone) { g.hurt = 18; g.fall = 1; g.kicked = true; guardSay(g, 'OWWW!', 60); }
+    return;
+  }
   const [x, y] = rescueAim(r, a.k - 1), way = r.f.way, last = a.k >= 3, big = last ? 1.5 : 1;
   r.vis = a.k; r.flash = last ? 0.8 : 0.45; r.shk = last ? 18 : 10;
   const kind = RESCUE_TOOL[way].kind;
   if (a.fin) { r.flash = 1; r.shk = 26; r.words.push({ txt: FIN_WORD[kind], x: VW / 2, y: VH * 0.3, t: 0, size: 64 }); tone(60, 0.8, 'sawtooth', 0.07, 30); tone(880, 0.5, 'triangle', 0.05, 1760); }
   else r.words.push({ txt: RESCUE_TOOL[way].word, x: x - 30, y: y - 50, t: 0, size: last ? 54 : 40 });
-  const g = r.g;
-  if (g && !g.gone) {
-    g.hurt = 18;
-    if (a.fin) { g.fall = 1; guardSay(g, 'OWWW!', 60); }
-    else { g.tx = Math.min(g.x0 + 44, g.tx + 22); guardSay(g, guardStyle().kind === 'bot' ? 'BZZT!' : GUARD_HURT[(a.k - 1) % 3], 50); }
+  if (g && !g.gone) {   // behind the wall, the guard gets more and more nervous
+    if (a.fin) { g.scare = 40; guardSay(g, 'Yikes!', 60); }
+    else { g.nerv = 34; guardSay(g, guardStyle().kind === 'bot' ? 'BEEP?! WALL DAMAGE!' : GUARD_NERVOUS[(a.k - 1) % 2], 60); }
   }
   if (a.fin && kind === 'star') for (const [fx0, fy0] of [rescueAim(r, 0), rescueAim(r, 1), rescueAim(r, 2), [VW * 0.3, 190], [VW * 0.55, 160]]) {   // fireworks
     const cols = ['#ff4d6d', '#ffd23f', '#7df9ff', '#3ae374', '#ffffff', '#ff8c1a'];
@@ -3320,16 +3345,16 @@ function rescuePick(r, i) {
     r.step++; sfx.correct(); gotIt();
     payGems(cam + fx, fy - 90, 2);
     r.msg = `${qSolved(q)}!`; r.msgT = 60; r.msgCol = '#3ae374';
-    r.act = { t: 0, k: r.step, fin: r.step >= 3 };
-    if (r.f.way === 'key') tone(400, 0.15, 'triangle', 0.04, 900);   // hi-yah
-    if (r.f.way === 'crate') tone(1800, 0.18, 'square', 0.03, 600);   // pew
-    if (r.f.way === 'ladder') tone(900, 0.2, 'triangle', 0.03, 1400);   // the star spins away
-    if (r.step < 3) r.wait = RESCUE_ACT + 14;
+    r.act = { t: 0, k: r.step, fin: r.step >= 3, kickG: r.step >= 4 };   // 3rd: the treasure's finishing move on the wall; 4th: a flying kick at the guard
+    if (r.f.way === 'key' || r.step >= 4) tone(400, 0.15, 'triangle', 0.04, 900);   // hi-yah
+    else if (r.f.way === 'crate') tone(1800, 0.18, 'square', 0.03, 600);   // pew
+    else if (r.f.way === 'ladder') tone(900, 0.2, 'triangle', 0.03, 1400);   // the star spins away
+    if (r.step < 3) r.wait = RESCUE_ACT + 14;   // (after the 3rd and 4th, the act itself moves things on)
   } else {
     G.mistakes++; G.streak = 0; remember(q); missed(q); sfx.wrong();
     r.msg = `Oops! ${qSolved(q)}`; r.msgT = 110; r.msgCol = '#ff6b6b'; r.wait = 100;
     const g = r.g; if (g && !g.gone) {
-      g.laugh = 60; g.tx = Math.max(g.x0 - 36, g.tx - 18); guardSay(g, guardStyle().miss, 80);
+      g.laugh = 60; guardSay(g, guardStyle().miss, 80);
       const k = guardStyle().kind;
       if (k === 'penguin') { tone(2600, 0.25, 'square', 0.03, 2400); tone(2600, 0.2, 'square', 0.03, 2400, 0.3); }   // TWEET
       else if (k === 'bot') [700, 500, 700].forEach((f, i) => tone(f, 0.08, 'square', 0.03, null, i * 0.1));
@@ -3352,8 +3377,8 @@ function endRescue(r) {
   if (r.f.id === 'hana' && !r.again) floatText(P.x + P.w / 2, P.y - 70, isTouch ? 'High kick! Tap ✊ to kick in Japan.' : 'High kick! Press X to kick in Japan.', '#ffd23f', 22);
   syncAnsBar();
 }
-const rescueTitle = r => (r.phase === 'ask' && r.q ? qShow(r.q) : r.phase === 'guard' ? 'A guard!' : r.phase === 'find' ? (r.f.way === 'key' ? 'Get ready to kick!' : `You found ${RESCUE_TOOL[r.f.way].name}!`) : r.phase === 'in' || r.phase === 'arrive' ? `Find ${r.f.name}!` : `${r.f.name} is free!`);
-const rescueHint = r => (r.phase === 'ask' ? `${r.tricky ? 'Your tricky facts free' : 'Right answers free'} ${r.f.name}!  (${r.step}/3)` : r.phase === 'guard' ? "Don't worry. Right answers beat him!" : r.phase === 'find' ? (r.f.way === 'key' ? 'Each right answer is a high kick!' : 'Use it to free your friend!') : r.phase === 'in' || r.phase === 'arrive' ? '' : r.again ? 'Rescued again!' : `New power: ${r.f.pname}`);
+const rescueTitle = r => (r.phase === 'ask' && r.q ? qShow(r.q) : r.phase === 'guard' ? 'A guard!' : r.phase === 'standoff' ? 'The guard steps out!' : r.phase === 'find' ? (r.f.way === 'key' ? 'Get ready to kick!' : `You found ${RESCUE_TOOL[r.f.way].name}!`) : r.phase === 'in' || r.phase === 'arrive' ? `Find ${r.f.name}!` : `${r.f.name} is free!`);
+const rescueHint = r => (r.phase === 'ask' ? (r.step >= 3 ? 'One more right answer for a flying kick!  (3/4)' : `${r.tricky ? 'Your tricky facts free' : 'Right answers free'} ${r.f.name}!  (${r.step}/4)`) : r.phase === 'guard' ? "Don't worry. Right answers beat him!" : r.phase === 'standoff' ? 'Get ready...' : r.phase === 'find' ? (r.f.way === 'key' ? 'Each right answer is a high kick!' : 'Use it to free your friend!') : r.phase === 'in' || r.phase === 'arrive' ? '' : r.again ? 'Rescued again!' : `New power: ${r.f.pname}`);
 
 // ---------------------------------------------------------------- swing crossings
 // One per level: two steps up to a ledge, a wide gap, a perch in the middle, another gap. Each right answer swings
@@ -7295,13 +7320,13 @@ function drawRescue() {
       kX = -20 + (kx + 20) * Math.min(1, g / 0.7); kWalk = g < 0.7;
     }
   }
-  const [aimX, aimY] = a ? rescueAim(r, a.k - 1) : [0, 0];
-  if (a && tool.kind === 'kick') {   // a flying high kick: up over the guard, the foot lands on the block, and back
+  const [aimX, aimY] = a ? (a.kickG ? [(r.g ? r.g.x : fx) - 16, fy - 36] : rescueAim(r, a.k - 1)) : [0, 0];
+  if (a && (tool.kind === 'kick' || a.kickG)) {   // a flying high kick: up over the guard, the foot lands on the block, and back
     const tx = aimX - 34, ty = Math.min(fy, aimY + 30), hop = fin ? 170 : 90;
     if (at < RESCUE_HIT) { const u = at / RESCUE_HIT; kX = kx + (tx - kx) * u; kY = fy + (ty - fy) * u - Math.sin(Math.PI * u) * hop; kAir = at > 0 || !fin; }
     else { const u = 1 - Math.min(1, (at - RESCUE_HIT) / (RESCUE_ACT - RESCUE_HIT)); kX = kx + (tx - kx) * u; kY = fy + (ty - fy) * u - Math.sin(Math.PI * u) * 50; kAir = u > 0.02; }
   }
-  if (a && tool.kind === 'hammer') {   // leap, smash, leap back
+  if (a && tool.kind === 'hammer' && !a.kickG) {   // leap, smash, leap back
     const u = at < RESCUE_HIT ? at / RESCUE_HIT : 1 - (at - RESCUE_HIT) / (RESCUE_ACT - RESCUE_HIT), tx = aimX - 44;
     kX = kx + (tx - kx) * u; kY = fy - Math.sin(Math.PI * Math.min(1, u)) * (at < RESCUE_HIT ? (fin ? 220 : 120) : 30); kAir = at < RESCUE_ACT - 2 && (at > 0 || !fin);
   }
@@ -7314,12 +7339,12 @@ function drawRescue() {
     }
     glowAt(kX, kY - 22, 40 + 30 * w + Math.sin(tick * 0.4) * 6, `rgba(255,214,90,${0.7 * w})`);
   }
-  const kick = a && tool.kind === 'laser' && at > 8 && at < RESCUE_HIT + 6 ? -3 : 0;   // the laser kicks back
-  const kickPose = a && tool.kind === 'kick' ? (at === 0 && fin ? { r: 10, ...GUARD } : at < RESCUE_HIT * 0.6 ? mixPose(GUARD, KICK_CHAMBER, at / (RESCUE_HIT * 0.6)) : at < RESCUE_HIT + 8 ? HIGH_KICK : at < RESCUE_ACT - 4 ? GUARD : null) : null;
+  const kick = a && !a.kickG && tool.kind === 'laser' && at > 8 && at < RESCUE_HIT + 6 ? -3 : 0;   // the laser kicks back
+  const kickPose = a && (tool.kind === 'kick' || a.kickG) ? (at === 0 && fin ? { r: 10, ...GUARD } : at < RESCUE_HIT * 0.6 ? mixPose(GUARD, KICK_CHAMBER, at / (RESCUE_HIT * 0.6)) : at < RESCUE_HIT + 8 ? HIGH_KICK : at < RESCUE_ACT - 4 ? GUARD : null) : null;
   if (kickPose) drawKaiPose({ x: kX - 12, y: kY - 44, w: 24, h: 44, face: 1 }, kickPose);
   else drawBaked(SPR, kAir || (freeT > 130 && Math.floor(freeT / 16) % 2) ? 'jump' : kWalk && Math.floor(r.t / 6) % 2 ? 'walkA' : 'stand', false, { x: kX - 12 + kick, y: kY - 44 + (freeT > 130 ? hop : 0), w: 24, h: 44 });
   // the treasure in Kai's hand, and what it does
-  if (tool.kind !== 'kick' && have && !(r.phase === 'find' && r.t < 44)) {
+  if (tool.kind !== 'kick' && !(a && a.kickG) && have && !(r.phase === 'find' && r.t < 44)) {
     const hx = kX + 12 + kick, hy = kY - 22 + (freeT > 130 ? hop : 0);
     let ang = { kick: 0, hammer: -0.4, laser: -0.1, torch: 0.5, star: 0 }[tool.kind];
     if (a && tool.kind === 'hammer') ang = at < RESCUE_HIT ? -2.2 + (at / RESCUE_HIT) * 3.4 : 1.2 - Math.min(1, (at - RESCUE_HIT) / 10) * 1.6;
@@ -7328,7 +7353,7 @@ function drawRescue() {
     if (!(a && tool.kind === 'star' && at < RESCUE_HIT)) drawTool(tool.kind, hx, hy, ang, 1);
     if (freeT < 0 && r.phase === 'ask' && !a) glowAt(hx, hy - 14, 20, 'rgba(255,240,160,.25)');
   }
-  if (a && at < RESCUE_HIT + 6) {   // the shot on its way
+  if (a && !a.kickG && at < RESCUE_HIT + 6) {   // the shot on its way
     const u = clamp(at / RESCUE_HIT, 0, 1), hx = kx + 18, hy = fy - 30;
     if (tool.kind === 'laser' && at > 8 && !fin) {   // a beam
       const gx = kx + 12 + Math.cos(Math.atan2(aimY - (fy - 22), aimX - kx - 12)) * 26, gy = fy - 22 - 4;
@@ -7341,7 +7366,7 @@ function drawRescue() {
       drawTool('star', hx + (sx2 - hx) * u, hy + (sy2 - hy) * u - Math.sin(Math.PI * u) * (50 + k * 25), at * 0.9, fin ? 1.3 : 1);
     }
   }
-  if (fin) drawFinish(r, fin, tool.kind, aimX, aimY, kX, kY);
+  if (fin) drawFinish(r, fin, fin.kickG ? 'kick' : tool.kind, aimX, aimY, kX, kY);
   // speech
   const say = r.phase === 'ask' && r.step === 0 && r.t < 150 && !a ? 'Help me, Kai!' : freeT >= 30 && freeT < 130 ? 'Thank you, Kai!' : freeT >= 130 ? 'See you at the dojo!' : '';
   if (say) rescueBubble(say, px, py - 82 + hop);
@@ -8250,6 +8275,13 @@ function renderSkills() {
     const kp = skillProgress(SKILL[id]), cls = kp.ready ? 'pass' : kp.done ? 'learn' : '';
     return `<i class="${cls}${id === prog.skill ? ' now' : ''}" title="${SKILL[id].name}"></i>`;
   }).join('')}</span><span class="tx">${x.done ? '✔' : x.locked ? `🔒 ${SKILL[TRACK_REQ[x.t.ids[x.f]]].name} first` : SKILL[x.t.ids[x.f]].name}</span></div>`).join('') : '';
+  const tb = $('testBtn'), canTest = prog.auto && plan && testSkills(plan.gi).length > 0;
+  tb.classList.toggle('hidden', !canTest);
+  if (canTest) {
+    const tried = (prog.testDay || {})[GRADES[plan.gi].id] === today();
+    tb.innerHTML = tried ? `🎓 Test out of ${GRADES[plan.gi].name}: <b>try again tomorrow</b>` : `🎓 Already know it? <b>Test out of ${GRADES[plan.gi].name}</b>`;
+    tb.disabled = tried; tb.onclick = () => { audio(); startTest(plan.gi); };
+  }
   $('skillTabs').innerHTML = '';
   for (const [cat, label] of SKILL_CATS) {
     const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.className = cat === skillTab ? 'on' : '';
@@ -9002,8 +9034,52 @@ function dojoQuestions() {
   for (let i = 0; out.length < DOJO_N && i < 60; i++) add(curSkill().gen());
   return shuffle(out);
 }
+// Test-out (owner asked: can a check move a kid up a grade?): 20 quick questions from the grade's skills that aren't
+// passed yet, in the Daily Dojo screen. 90% right and most of them fast passes the whole grade (every skill counts as
+// passed, `prog.testedOut`, so the grade tracks move on to the next grade). Otherwise any kind of math (track) that was
+// all right and fast still passes. One try per grade per day, so it can't be guessed through.
+const TEST_N = 20;
+const testSkills = gi => gradeTracks(gi).flatMap(t => t.ids).filter(id => SKILL[id] && !skillProgress(SKILL[id]).ready);
+function startTest(gi) {
+  const ids = shuffle(testSkills(gi)); if (!ids.length) return;
+  const qs = [], sk = [], gens = {}, seen = new Set();
+  for (let i = 0; qs.length < TEST_N && i < TEST_N * 6; i++) {
+    const id = ids[i % ids.length], g = gens[id] || (gens[id] = genFor(SKILL[id], false)), q = g();
+    if (seen.has(factKey(q))) continue;
+    seen.add(factKey(q)); qs.push(q); sk.push(id);
+  }
+  prog.testDay = prog.testDay || {}; prog.testDay[GRADES[gi].id] = today(); save();
+  hide('menu'); hide('skills');
+  $('djTitle').innerHTML = `🎓 Test out of ${GRADES[gi].name}`;
+  dojo = { qs, i: 0, right: 0, before: new Map(), lock: false, test: { gi, sk, res: [] } };
+  show('dojo'); dojoNext();
+}
+function finishTest() {
+  const t = dojo.test, n = dojo.qs.length, right = t.res.filter(x => x.ok).length, fast = t.res.filter(x => x.ok && x.fast).length, G0 = GRADES[t.gi];
+  dojo = null; hide('dojo'); $('djTitle').innerHTML = `${pixImg('flame', 'pix sm')} Daily Dojo`;
+  prog.testedOut = prog.testedOut || {};
+  let body, title;
+  if (right >= Math.ceil(n * 0.9) && fast >= Math.ceil(n * 0.7)) {
+    for (const id of gradeTracks(t.gi).flatMap(x => x.ids)) prog.testedOut[id] = true;
+    const next = GRADES[t.gi + 1];
+    title = 'You tested out!';
+    body = `<p><b>${right} / ${n}</b> right, ${fast} fast.</p><div class="promo">${G0.name} math: passed!</div><p>${next ? `On to ${next.name} math. Sensei is proud of you!` : 'You know it all. Sensei is proud of you!'}</p>`;
+    sfx.win();
+  } else {
+    const passed = [];
+    for (const tr of gradeTracks(t.gi)) {
+      const mine = t.res.filter(x => tr.ids.includes(x.sk));
+      if (mine.length >= 3 && mine.every(x => x.ok && x.fast)) { tr.ids.forEach(id => { prog.testedOut[id] = true; }); passed.push(tr.name); }
+    }
+    title = passed.length ? 'Some passed!' : 'Not yet!';
+    body = `<p><b>${right} / ${n}</b> right, ${fast} fast. To test out: ${Math.ceil(n * 0.9)} right and ${Math.ceil(n * 0.7)} fast.</p>${passed.length ? `<div class="promo">Passed: ${passed.join(', ')}</div>` : ''}<p>Keep playing, and try again tomorrow!</p>`;
+  }
+  save();
+  showMsg(title, body, [{ label: 'Play ▶', fn: toMenu, primary: true }]);
+}
 function startDojo() {
   hide('menu');
+  $('djTitle').innerHTML = `${pixImg('flame', 'pix sm')} Daily Dojo`;
   const before = new Map(Object.entries(prog.facts).map(([k]) => [k, factStatus(k)]));
   dojo = { qs: dojoQuestions(), i: 0, right: 0, before, lock: false };
   show('dojo'); dojoNext();
@@ -9044,7 +9120,9 @@ function dojoPick(i) {
   if (!dojo || dojo.lock) return;
   audio(); dojo.lock = true;
   const q = dojo.q, ok = i === -2 || (i >= 0 && dojo.opts[i] === q.ans), btns = [...$('djKeys').children];
-  noteFact(q, ok, dojo.full - dojo.left <= fastFrames(null, q, false) / 60 + (dojo.typing ? DOJO_TYPE_EXTRA : 0), null);
+  const quick = dojo.full - dojo.left <= fastFrames(null, q, false) / 60 + (dojo.typing ? DOJO_TYPE_EXTRA : 0);
+  noteFact(q, ok, quick, null);
+  if (dojo.test) dojo.test.res.push({ sk: dojo.test.sk[dojo.i], ok, fast: ok && quick });
   if (ok) { dojo.right++; sfx.correct(); if (i >= 0) btns[i].classList.add('right'); else btns[btns.length - 1].classList.add('right'); }
   else {
     sfx.wrong(); if (i >= 0) btns[i].classList.add('wrong');
@@ -9076,6 +9154,7 @@ function dojoKey(e) {
   else if (e.code === 'Enter' || e.code === 'Space' || e.code === 'NumpadEnter') dojoPick(dojo.sel);
 }
 function finishDojo() {
+  if (dojo.test) { finishTest(); return; }
   const d = today(), dl = prog.daily, first = dl.last !== d;
   let gems = 0;
   if (first) {
