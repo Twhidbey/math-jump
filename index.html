@@ -93,8 +93,9 @@
   .tbtn.on { background: rgba(255,255,255,.45); }
   .tbtn[data-k="move"] { display: none; left: 18px; bottom: 120px; background: rgba(255,120,60,.45); }
   body.canmove .tbtn[data-k="move"] { display: flex; }
-  .tbtn[data-k="down"] { display: none; left: 116px; bottom: 120px; background: rgba(90,200,255,.4); }   /* swim down: only in the sea */
+  .tbtn[data-k="down"] { display: none; right: 138px; bottom: 18px; background: rgba(90,200,255,.4); }   /* swim down, beside ▲ (right thumb: up and down; left thumb steers). Only in the sea */
   body.swim .tbtn[data-k="down"] { display: flex; }
+  body.asking .tbtn[data-k="down"] { display: none; }   /* the answer buttons go there; a right door swims Kai through anyway */
   .tbtn[data-k="move"] .pix { width: 44px; height: 44px; pointer-events: none; }
   /* Tap-to-answer bar for gates and bosses */
   #ansbar { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 7; display: flex; flex-direction: column; align-items: center; gap: 6px;
@@ -129,8 +130,7 @@
   body.portrait .tbtn[data-k="jump"] { right: 12px; width: 120px; height: 120px; }
   body.portrait .tbtn:not([data-k="jump"]) { bottom: calc(max(36px, env(safe-area-inset-bottom)) + 10px); }
   body.portrait .tbtn[data-k="move"] { left: 12px; bottom: calc(max(36px, env(safe-area-inset-bottom)) + 122px); }
-  body.portrait .tbtn[data-k="down"] { left: 122px; bottom: calc(max(36px, env(safe-area-inset-bottom)) + 122px); }
-  body.portrait.asking .tbtn[data-k="down"] { display: none; }   /* the answer row goes there; the door swims Kai through anyway */   /* above the left arrow (after the rule above, which would win otherwise) */
+  body.portrait .tbtn[data-k="down"] { right: 22px; bottom: calc(max(36px, env(safe-area-inset-bottom)) + 132px); }   /* above ▲ */   /* above the left arrow (after the rule above, which would win otherwise) */
   body.touch .keys { display: none; }
   body.racing .tbtn[data-k="jump"] { display: none; }
   .bigrow { margin: 4px 0 2px; }
@@ -456,7 +456,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 7, 2026 11:20 AM PT · Fix: Kai stuck at sea doors</div>
+  <div class="build">Updated Nov 7, 2026 11:45 AM PT · Sea: ▼ by the ▲ button, gentler floating</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -3969,9 +3969,10 @@ function swimY(p) {
   if (p.jbuf > 0 && depth < 14) {   // leap out of the water
     p.vy = -8.6; p.jbuf = 0; sfx.jump(); burst(p.x + p.w / 2, L.water, '#e8f8ff', 6, 2); return;
   }
+  if (keys.downPressed) { keys.downPressed = false; p.vy = Math.max(p.vy, 0) + 4.4; }   // a tap of ▼ is a kick down (about a tile and a half)
   if (keys.down) p.vy = Math.min(p.vy + 0.45, 3.8);
   else if (keys.jump && depth > 14) p.vy = Math.max(p.vy - 0.45, -4.2);
-  else if (depth > 3) p.vy = Math.max(p.vy - 0.24, -2.8);   // floats back up
+  else if (depth > 3) p.vy = Math.max(p.vy - 0.1, -1.4);   // drifts gently back up (slow, so Kai has time to get under things)
   else if (depth < -3) p.vy = Math.min(p.vy + 0.35, 3);
   else p.vy *= 0.8;
   if (p.vy > 4.5) p.vy *= 0.82;   // splashing in from a leap
@@ -5015,6 +5016,7 @@ function updatePlayer() {
   if (keys.jumpPressed) { p.jbuf = 8; keys.jumpPressed = false; }
   if (p.jbuf > 0) p.jbuf--;
   if (wet) swimY(p); else {
+  keys.downPressed = false;
   if (p.onGround) p.coyote = 7; else if (p.coyote > 0) p.coyote--;
   if (p.jbuf > 0 && p.coyote > 0) { p.vy = hasPower('jump') ? -16.5 : hasFriend('spring') ? -14.2 : -13.2; p.onGround = false; p.coyote = 0; p.jbuf = 0; p.squash = -8; sfx.jump(); }
   if (p.onGround) p.usedDouble = false;
@@ -10356,6 +10358,7 @@ window.addEventListener('keydown', e => {
   if (k) {
     e.preventDefault();
     if (k === 'jump' && !keys.jump) keys.jumpPressed = true;
+    if (k === 'down' && !keys.down) keys.downPressed = true;
     keys[k] = true;
   }
   if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
@@ -10399,7 +10402,7 @@ document.querySelectorAll('.tbtn').forEach(el => {
   const down = e => {
     e.preventDefault(); audio();
     if (mode === 'race') raceSteer(k === 'left' ? -1 : k === 'right' ? 1 : 0);
-    if (k === 'jump' && !keys.jump) keys.jumpPressed = true; keys[k] = true; el.classList.add('on');
+    if (k === 'jump' && !keys.jump) keys.jumpPressed = true; if (k === 'down' && !keys.down) keys.downPressed = true; keys[k] = true; el.classList.add('on');
   };
   const up = e => { e.preventDefault(); keys[k] = false; el.classList.remove('on'); };
   el.addEventListener('pointerdown', down);
