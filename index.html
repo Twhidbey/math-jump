@@ -459,7 +459,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 7, 2026 12:15 PM PT · Pixel-art player pictures</div>
+  <div class="build">Updated Nov 7, 2026 12:40 PM PT · Sea: jump-out rock, open ? boxes from above</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1429,7 +1429,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
         case 'raft': { const s = flat(8); raft(s + 3, ri(rng, 2, 3), 2); coin(s + 3, WS + 4); coin(s + 4, WS + 4, 5); break; }   // pass under it: rows WS + 3 and down
         case 'arch': { const s = flat(9); raft(s + 3, 3, 1); rock(s + 3, 3, WS + 5); for (let i = 0; i < 3; i++) coin(s + 3 + i, WS + 3); break; }   // a 3-row gap between raft and rock
         case 'reef': { const s = flat(8); rock(s + 2, 2, GR - ri(rng, 2, 4)); rock(s + 5, 2, GR - ri(rng, 1, 3)); coin(s + 4, GR - 2, 5); swimmer(s + 6, WS + ri(rng, 1, 3)); break; }
-        case 'boxes': { const s = flat(8), r = WS + 3; for (let i = 1; i <= 5; i++) map[r][s + i] = i % 2 === 0 && rng() < 0.85 ? '?' : 'B'; break; }   // swim under, then float up into them
+        case 'boxes': { const s = flat(8), r = WS + 2; for (let i = 1; i <= 5; i++) map[r][s + i] = i % 2 === 0 && rng() < 0.85 ? '?' : 'B'; break; }   // a tap of ▼ lands on them from above (or float up into them from below)
         case 'pillar': { const s = flat(7); rock(s + 3, 2, WS + 2); coin(s + 3, WS + 1); coin(s + 4, WS + 1); break; }   // too tall to swim over down low: stay up top
         case 'vent': {   // a bubble vent on the sea floor shoots Kai up out of the water, to gems in the sky
           const s = flat(9); L.vents.push({ x: (s + 4) * T + T / 2 });
@@ -1438,10 +1438,17 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
         }
       }
     }
+    // A rock that rises from the sea floor to just above the surface: no way under or through, so Kai jumps out of the
+    // water to get over it (owner asked for one per level). A hint shows if he waits at it.
+    function leapChunk() {
+      const s = flat(10); rock(s + 4, 2, WS - 1);
+      L.leaps.push({ c: s + 4, told: false, t: 0 });
+      coin(s + 4, WS - 3); coin(s + 5, WS - 3, 5);
+    }
     function clamChunk() {   // a treasure clam on the sea floor: swim down to it for a question; right = it opens, pearls spill out as gems
       const s = flat(8); L.clams.push({ x: (s + 4) * T + T / 2, y: GR * T, used: false, open: 0, state: 'shut', t: 0 });
     }
-    L.vents = []; L.clams = []; L.deep = def.k === 2;   // Sunken Ship: the water gets darker the further you go
+    L.vents = []; L.clams = []; L.leaps = []; L.deep = def.k === 2;   // Sunken Ship: the water gets darker the further you go
     if (L.deep) for (let c = 16; c < 1000; c += ri(rng, 9, 13)) L.lfish = [...(L.lfish || []), { c, r: WS + ri(rng, 2, 6), ph: rng() * 6 }];
     function caveChunk() {   // a little cave on the sea floor with the golden gem inside: dive all the way down and swim in
       const s = flat(10);
@@ -1456,6 +1463,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
       const n = ri(rng, 1, 2);
       for (let k = 0; k < n; k++) seaChunk(kinds[ri(rng, 0, kinds.length - 1)]);
       if (i === 1) caveChunk();
+      if (i === 0) leapChunk();
       if (i === 2 || i === def.n - 3) clamChunk();
       if (i === calm) seaChunk('vent');   // every level has at least one vent
       if (i === calm) { const s = flat(ri(rng, 14, 18)); for (let k = 2; k < 12; k += 2) coin(s + k, WS + 1 + (k % 4 ? 0 : 2)); }   // breathing room: an easy swim with gems
@@ -3975,7 +3983,7 @@ function swimY(p) {
   const depth = p.y + p.h * 0.5 - L.water;   // 0 = floating at the surface
   p.coyote = 0;
   if (p.jbuf > 0 && depth < 14) {   // leap out of the water
-    p.vy = -8.6; p.jbuf = 0; sfx.jump(); burst(p.x + p.w / 2, L.water, '#e8f8ff', 6, 2); return;
+    p.vy = -9.2; p.bounce = true; p.jbuf = 0; sfx.jump(); burst(p.x + p.w / 2, L.water, '#e8f8ff', 6, 2); return;   // always a full leap (a quick tap on a phone too)
   }
   if (keys.downPressed) { keys.downPressed = false; p.vy = Math.max(p.vy, 0) + 4.4; }   // a tap of ▼ is a kick down (about a tile and a half)
   if (keys.down) p.vy = Math.min(p.vy + 0.45, 3.8);
@@ -4364,7 +4372,7 @@ function updateMini() {
   const mb = G.mbox;
   if (mb) {
     if (mb.wait > 0) mb.wait--;
-    else if (!mb.clam) for (let i = 0; i < mb.bubbles.length; i++) { const b = mb.bubbles[i]; if (overlap(p, { x: b.x - 20, y: b.y - 20, w: 40, h: 40 })) { boxPick(mb, i); break; } }
+    else if (!mb.clam && !L.water) for (let i = 0; i < mb.bubbles.length; i++) { const b = mb.bubbles[i]; if (overlap(p, { x: b.x - 20, y: b.y - 20, w: 40, h: 40 })) { boxPick(mb, i); break; } }
     if (G.mbox && Math.abs(p.x + p.w / 2 - mb.bubbles[1].x) > 10 * T) {   // walked away: the bubbles float off (a clam closes and waits)
       G.mbox = null; if (mb.clam) { mb.clam.used = false; mb.clam.state = 'shut'; }
     }
@@ -5054,6 +5062,13 @@ function updatePlayer() {
   const hit = moveY(p);
   twistMove(p, feetBefore, fallSpeed);
   if (hit) bump(hit.c, hit.r);
+  if (L.water && wasAir && p.onGround) {   // the sea: landing on a ? box (or a coral brick) from above opens it, because Kai is usually above them
+    const r = Math.floor((p.y + p.h + 2) / T), c = Math.floor((p.x + p.w / 2) / T);
+    for (const cc of [c, Math.floor((p.x + 2) / T), Math.floor((p.x + p.w - 2) / T)]) if (L.map[r] && (L.map[r][cc] === '?' || L.map[r][cc] === 'B')) { bump(cc, r); p.vy = -3; break; }
+  }
+  for (const lp of L.leaps || []) if (!lp.told && Math.abs(p.x + p.w - lp.c * T) < 10 && p.vx === 0 && (keys.right) && ++lp.t > 40) {
+    lp.told = true; floatText(p.x + p.w / 2, p.y - 30, 'Jump out of the water! ▲', '#ffd23f', 24);
+  }
   if (wasAir && p.onGround && fallSpeed > 6) { p.squash = 8; burst(p.x + p.w / 2, p.y + p.h, '#e8e0d0', 4, 1.5); }
   if (p.squash > 0) p.squash--; else if (p.squash < 0) p.squash++;
   if (p.inv > 0) p.inv--;
