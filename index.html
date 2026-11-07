@@ -459,7 +459,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 7, 2026 2:50 PM PT · Octopus: tentacle sweep, hoard, gem gift; Seaside Road</div>
+  <div class="build">Updated Nov 7, 2026 3:20 PM PT · Gate questions only show near their gate</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1471,9 +1471,9 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
         if (def.k === 2) L.ship = { c: s + 3, w: 16 };
       }
       // The gate: a reef wall from the sea floor up out of the water, with three doors (one answer each) at different depths.
-      const s = flat(16), q = L.gen();
-      for (let r = 2; r < GR; r++) { map[r][s + 13] = 'G'; map[r][s + 14] = 'G'; }
-      const st = { s, q, sea: true, answers: [0, 1, 2].map(() => ({ c: s + 13, r: WS + 1, val: 0, state: 'idle', shake: 0, cells: [] })), gate: [s + 13, s + 14], solved: false, opening: null, openT: 0, need: 1, got: 0 };
+      const s = flat(11), q = L.gen();   // a short run-up: the question shows close to its wall
+      for (let r = 2; r < GR; r++) { map[r][s + 8] = 'G'; map[r][s + 9] = 'G'; }
+      const st = { s, q, sea: true, answers: [0, 1, 2].map(() => ({ c: s + 8, r: WS + 1, val: 0, state: 'idle', shake: 0, cells: [] })), gate: [s + 8, s + 9], solved: false, opening: null, openT: 0, need: 1, got: 0 };
       seaDoors(st, map); L.stations.push(st);
     }
     // Every other ? box asks a question first (not right before a gate).
@@ -2864,7 +2864,7 @@ function resolveAnswer(st, a) {
   st.answers.forEach(o => { if (o !== a) o.state = 'done'; });
   award('first-gate');
   st.solved = true; openGate(st); shake(6, 2);
-  G.checkpoint = (st.s + 15) * T;
+  G.checkpoint = (st.gate[1] + 1) * T;
   setTimeout(sfx.gate, 350);
   if (st.quick) {
     G.lightN++; G.score += 300; sfx.streak(); payGems(cx, cy + T / 2, 3, 3);
@@ -2881,6 +2881,9 @@ let barKey = '';
 // keyboards use , . / (N M , . / for five) or 1-5.
 function barTarget() { return isTouch ? answerTarget() : null; }
 const ANS_KEYS = n => (n > 3 ? ['N', 'M', ',', '.', '/'] : [',', '.', '/']);
+// Kai is at this gate's own stretch (where its answer buttons show). Its question (banner, sign, New trick card) only
+// shows from here (owner: a question hanging around far ahead of its gate, past other puzzles, was confusing).
+const gateNear = st => !!st && st !== L.arena && !!P && P.x >= (st.s - 3) * T && P.x <= st.gate[1] * T + T;
 function answerTarget() {
   if (mode !== 'play') return null;
   if (G && (G.rescue || G.swing)) return miniTarget();
@@ -3234,7 +3237,7 @@ function previewTrick() {
   if (G.tip || G.time % 10 || L.boss || L.vault || G.rescue || G.swing || G.cross) return;
   const m = miniTarget(), st = !m && currentStation();
   const q = m ? (m.kind === 'feed' || m.kind === 'box' ? m.q : null)
-    : st && st !== L.arena && !st.swap && !st.star && P.x >= (st.s - 8) * T && P.x <= st.gate[1] * T ? st.q : null;
+    : st && st !== L.arena && !st.swap && !st.star && gateNear(st) ? st.q : null;
   const id = q && q.op !== 'room' && trickInfo(q).id, seen = prog.tricks || (prog.tricks = {});
   if (!id || seen[id]) return;
   seen[id] = true; save();
@@ -6522,7 +6525,7 @@ function drawSeaDoors() {
       const x = a.c * T + (a.shake ? Math.sin(a.shake * 1.6) * 4 : 0), y = a.r * T;
       if (on && a.state === 'idle') { ctx.strokeStyle = `rgba(255,255,255,${0.45 + 0.4 * Math.sin(tick * 0.15)})`; ctx.lineWidth = 3; ctx.strokeRect(x - 2, y - 2, 2 * T + 4, 2 * T + 4); }
       ctx.fillStyle = a.state === 'idle' ? '#2a1a00' : '#ffffff'; ctx.font = '30px "Lilita One", "Trebuchet MS", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(String(a.val), x + T, y + T + 1);
+      ctx.fillText(a.state === 'idle' && !(st === cur && gateNear(st)) ? '?' : String(a.val), x + T, y + T + 1);
       if (!isTouch && on && a.state === 'idle') keyTag(ANS_KEYS(3)[j], x + 2 * T - 2, y - 2);
     }
   }
@@ -7400,7 +7403,7 @@ function drawAnswer(x, y, c, r) {
     ctx.strokeStyle = `rgba(255,255,255,${0.4 + 0.4 * Math.sin(tick * 0.15)})`; ctx.lineWidth = 3;
     ctx.strokeRect(x - 2, y - 2, T + 4, T + 4);
   }
-  const s = String(a.val);
+  const s = a.state === 'idle' && !(cur && gateNear(st)) ? '?' : String(a.val);   // the answers show once Kai reaches the gate
   ctx.fillStyle = a.state === 'idle' ? '#2a1a00' : '#fff';
   ctx.font = `${s.length >= 3 ? 16 : 22}px "Lilita One", "Trebuchet MS", sans-serif`;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -7561,7 +7564,7 @@ function drawSigns() {
   for (const st of [...L.stations, ...(L.walls || [])]) if (st.gfx && st.gfx.t < 120 && Math.abs(st.gfx.x0 - cam - VW / 2) < VW) drawGateFx(st);
   for (const st of L.stations) {
     if (st.star) drawShuriken(st.star.x, st.star.y, st.star.spin, '#d8dfe8', '#5a6472', 16);
-    const x = st.s * T + 4, y = st.sea ? L.water - 2.6 * T : (GR - 3.1) * T, w = 3.5 * T, h = 1.25 * T;
+    const x = (st.sea ? st.s + 2 : st.s) * T + 4, y = st.sea ? L.water - 2.6 * T : (GR - 3.1) * T, w = 3.5 * T, h = 1.25 * T;
     if (x > cam + VW || x + w < cam) continue;
     if (st.sea) {   // the sign stands on a red and white buoy floating at the surface
       const bob = Math.sin(tick * 0.05 + st.s) * 2;
@@ -7571,7 +7574,7 @@ function drawSigns() {
     } else { ctx.fillStyle = '#6e4627'; ctx.fillRect(x + w / 2 - 4, y + h, 8, GR * T - y - h); }
     ctx.fillStyle = '#5e3a1c'; rrect(x - 3, y - 3, w + 6, h + 6, 6); ctx.fill();
     ctx.fillStyle = st.solved ? '#c8f7d4' : '#f6e1b5'; rrect(x, y, w, h, 5); ctx.fill();
-    const txt = st.solved ? qSolved(st.q) : qShow(st.q);
+    const txt = st.solved ? qSolved(st.q) : st === currentStation() && gateNear(st) ? qShow(st.q) : `Gate ${L.stations.indexOf(st) + 1}`;
     let size = 21; ctx.font = `${size}px "Lilita One", "Trebuchet MS", sans-serif`;
     while (ctx.measureText(txt).width > w - 10 && size > 12) { size--; ctx.font = `${size}px "Lilita One", "Trebuchet MS", sans-serif`; }
     ctx.fillStyle = '#3a2200'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -9122,15 +9125,17 @@ function drawHUD() {
   else if (L.room) txt = L.room.open ? 'Treasure!' : { scale: 'Balance the scale!', square: 'Magic square!', machine: 'Number machine!' }[L.room.kind];
   else if (br) txt = `Make ${br.target}!`;
   else if (miniTarget()) txt = qShow(miniTarget().q);
-  else if (cur) txt = qShow(cur.q);
+  else if (cur && cur !== L.arena) txt = gateNear(cur) ? qShow(cur.q) : null;   // far from the gate: no question yet
   else if (L.boss) txt = G.hand ? 'Take my hand?' : L.boss.outro && !L.boss.outro.done ? L.boss.name : L.boss.dead || L.boss.dying || L.boss.outro ? 'Grab the scroll!' : L.arena.wait ? 'Nice hit!' : `Dodge! ${Math.ceil(L.arena.phaseT / 60)}`;
   else txt = 'Get the scroll piece!';
-  ctx.font = '38px "Lilita One", "Trebuchet MS", sans-serif';
-  const w = Math.max(240, ctx.measureText(txt).width + 50);
-  ctx.fillStyle = 'rgba(20,20,50,.75)'; rrect(VW / 2 - w / 2, by, w, 64, 14); ctx.fill();
-  ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 3; ctx.stroke();
-  ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(txt, VW / 2, by + 34);
+  if (txt) {
+    ctx.font = '38px "Lilita One", "Trebuchet MS", sans-serif';
+    const w = Math.max(240, ctx.measureText(txt).width + 50);
+    ctx.fillStyle = 'rgba(20,20,50,.75)'; rrect(VW / 2 - w / 2, by, w, 64, 14); ctx.fill();
+    ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(txt, VW / 2, by + 34);
+  }
 
   if (G.rescue) hudText(rescueHint(G.rescue), VW / 2, by + 80, 16, '#fff', 'center');
   else if (G.swing && G.swing.lift) hudText(G.swing.ph === 'board' ? 'Here comes a chair!' : G.swing.ph === 'ride' && !G.swing.need ? 'Riding up!' : G.swing.ph === 'ride' ? `${isTouch ? 'Tap' : 'Pick'} the right answer to ride past the tower!  (1/2)` : `${isTouch ? 'Tap' : 'Pick'} the right answer to get on the lift!  (0/2)`, VW / 2, by + 80, 16, '#fff', 'center');
@@ -9160,8 +9165,11 @@ function drawHUD() {
   } else if (br) {
     hudText(`Bonk stones to pick up (one or more), carry to the altar · so far ${br.total}${G.carry ? ` · holding ${G.carry.stones.reduce((a, t) => a + t.val, 0)}` : ''}`, VW / 2, by + 80, 16, '#fff', 'center');
   } else {
-    const done = L.stations.filter(s => s.solved).length;
-    hudText(cur ? `${L.water ? (isTouch ? 'Tap the right door!' : 'Pick the right door!') : `${isTouch ? 'Tap' : 'Bonk'} the right answer!`}  (${done}/${L.stations.length})` : `All ${L.stations.length} gates open!`, VW / 2, by + 80, 16, '#fff', 'center');
+    const done = L.stations.filter(s => s.solved).length, n = L.stations.length;
+    if (!cur) hudText(`All ${n} gates open!`, VW / 2, by + 80, 16, '#fff', 'center');
+    else if (miniTarget()) hudText(`${isTouch ? 'Tap' : 'Pick'} the right answer!`, VW / 2, by + 80, 16, '#fff', 'center');
+    else if (gateNear(cur)) hudText(`${L.water ? (isTouch ? 'Tap the right door!' : 'Pick the right door!') : `${isTouch ? 'Tap' : 'Bonk'} the right answer!`}  (${done}/${n})`, VW / 2, by + 80, 16, '#fff', 'center');
+    else hudText(`${done} / ${n} gates`, VW / 2, by + 18, 16, '#fff', 'center');   // just the progress until the next gate is close
   }
   if (pic) {   // the picture in a small panel under the banner, same style as the banner
     const pw = narrow ? 210 : 250, px = VW / 2 - pw / 2, py = L.water ? GR * T + 8 : by + 92;   // the sea: down on the sand, clear of Kai at the surface
