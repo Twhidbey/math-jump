@@ -447,7 +447,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 7, 2026 9:25 AM PT · pixel icons everywhere, work it out with Sensei</div>
+  <div class="build">Updated Nov 7, 2026 9:33 AM PT · Sensei's bow fixed, friend powers last one level</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1235,11 +1235,11 @@ const STONE_TOPS = [1, 3.3, 5.6];   // the three choice blocks, tiles above the 
 // secret way in: a key block that opens a trapdoor, an ash vent that blows Kai up out of sight, a blinking crate,
 // a frozen waterfall, a ladder past the top of the screen. The screen slides into a small scene where three right
 // answers, taken from the kid's own tricky facts (missed or slow ones), free the friend (rescue*). Each friend gives a
-// power for good (hasFriend); all five earn the "Every One Matters" badge, and they wait at the Welcome Home page.
+// power for the rest of that level (hasFriend, G.friendPow); all five earn the "Every One Matters" badge, and they wait at the Welcome Home page.
 // dir: 1 = the scene is below the level (the screen slides down), -1 = above it (slides up).
 const FRIENDS = [
   { id: 'hana', name: 'Hana', w: 0, k: 2, way: 'key', dir: 1, power: 'glide', pname: 'Fan glide', ptip: 'Hold jump to float down slowly.' },
-  { id: 'tomo', name: 'Tomo', w: 1, k: 0, way: 'vent', dir: -1, power: 'brave', pname: 'Brave heart', ptip: "The first hit in each level won't hurt." },
+  { id: 'tomo', name: 'Tomo', w: 1, k: 0, way: 'vent', dir: -1, power: 'brave', pname: 'Brave heart', ptip: "The next hit won't hurt." },
   { id: 'niko', name: 'Niko', w: 2, k: 1, way: 'crate', dir: 1, power: 'magnet', pname: 'Gem magnet', ptip: 'Gems near you fly to you.' },
   { id: 'yuki', name: 'Yuki', w: 3, k: 1, way: 'falls', dir: 1, power: 'spring', pname: 'Spring feet', ptip: 'You jump a little higher.' },
   { id: 'mei', name: 'Mei', w: 4, k: 1, way: 'ladder', dir: -1, power: 'eyes', pname: 'Night eyes', ptip: 'Secret spots sparkle.' },
@@ -3180,7 +3180,7 @@ function leaveVault() {
   }
 }
 
-function hasFriend(power) { return !!(prog && prog.friends) && FRIENDS.some(f => f.power === power && prog.friends[f.id]); }
+function hasFriend(power) { return !!(G && G.friendPow && G.friendPow[power]); }   // a freed friend's power lasts to the end of that level (owner)
 function friendNear() { const fr = L.friend; return !!fr && !fr.done && Math.abs(P.x + P.w / 2 - (fr.c + 0.5) * T) < 10 * T; }
 // The secret ways in, during play.
 function updateFriend() {
@@ -3567,14 +3567,15 @@ function freeFriend(r) {
   const f = r.f;
   prog.friends = prog.friends || {}; prog.friends[f.id] = true; r.fr.done = true; save();
   sfx.win();
-  if (r.again) { const { fy, fx } = rescueSpots(); payGems(cam + fx, fy - 90, 5); }   // a replay: bonus gems (the power is already his)
+  (G.friendPow || (G.friendPow = {}))[f.power] = true; G.braveUsed = false;   // the power, for the rest of this level (a replay gives it again)
+  if (r.again) { const { fy, fx } = rescueSpots(); payGems(cam + fx, fy - 90, 5); }   // a replay: bonus gems too
   if (f.way === 'falls') CHIME_TUNE.slice(0, 8).forEach((n, i) => tone(n, 0.5, 'triangle', 0.05, null, 0.4 + i * 0.32));   // Amazing Grace
   if (FRIENDS.every(x => prog.friends[x.id])) award('friends');
 }
 function endRescue(r) {
   G.rescue = null;
   P.x = r.backX - P.w / 2; P.y = GR * T - P.h; P.vx = P.vy = 0; P.inv = 60; P.onGround = false;
-  floatText(P.x + P.w / 2, P.y - 30, r.again ? `${r.f.name} rescued again! +5 gems` : `${r.f.pname}! ${r.f.ptip}`, '#7df9ff', 22);
+  floatText(P.x + P.w / 2, P.y - 30, `${r.again ? `${r.f.name} rescued again! +5 gems. ` : ''}${r.f.pname} for this level! ${r.f.ptip}`, '#7df9ff', 22);
   if (r.f.id === 'hana' && !r.again) floatText(P.x + P.w / 2, P.y - 70, isTouch ? 'High kick! Tap the fist button to kick in Japan.' : 'High kick! Press X to kick in Japan.', '#ffd23f', 22);
   syncAnsBar();
 }
@@ -3736,7 +3737,7 @@ function hurt() {
     burst(P.x + P.w / 2, P.y + P.h / 2, '#7df9ff', 16, 5); floatText(P.x + P.w / 2, P.y - 20, 'Shield blocked it!', '#7df9ff', 24);
     return;
   }
-  if (hasFriend('brave') && !G.braveUsed) {   // Tomo's brave heart: the first hit in a level doesn't hurt
+  if (hasFriend('brave') && !G.braveUsed) {   // Tomo's brave heart: the next hit after freeing him doesn't hurt
     G.braveUsed = true; P.inv = 90; sfx.stomp();
     burst(P.x + P.w / 2, P.y + P.h / 2, '#ffd23f', 14, 4); floatText(P.x + P.w / 2, P.y - 20, 'Brave heart!', '#ffd23f', 24);
     return;
@@ -7647,7 +7648,7 @@ function drawRescue() {
   if (freeT >= 130) {   // the power, said big
     if (r.again) { hudText(`${f.name} says thanks again!`, VW / 2, VH * 0.42, 28, '#ffd23f', 'center'); hudText('+5 gems', VW / 2, VH * 0.42 + 34, 19, '#ffffff', 'center'); }
     else {
-      hudText(`New power: ${f.pname}!`, VW / 2, VH * 0.42, 28, '#ffd23f', 'center');
+      hudText(`${f.pname} for this level!`, VW / 2, VH * 0.42, 28, '#ffd23f', 'center');
       hudText(tool.kind === 'kick' ? `${f.ptip}  Your high kick works in Japan!` : `${f.ptip}  You keep the ${tool.short.toLowerCase()}!`, VW / 2, VH * 0.42 + 34, 19, '#ffffff', 'center');
     }
   }
@@ -7931,11 +7932,20 @@ function posedFigure(F, pose) {
   limb(2, F.arm2, pose.arm2, F.back, F.skin, 2);
   {   // the body, leaned around the feet (nearest cell), its outline drawn fresh
     const layer = new Map(), big = th ? scale2x(cells) : null;
+    // Eyes ('e') must stay single pixels: leaned, the sampling can turn one into two. So while leaning they're
+    // read as the face around them, and then each eye pixel is put back once where it lands.
+    const faceAt = (cx, cy) => { for (const [dx, dy] of [[-1, 0], [1, 0], [0, 1], [0, -1]]) { const n = cells[cy + dy] && cells[cy + dy][cx + dx]; if (n && n !== 'e' && n !== 'k') return n; } return 'e'; };
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const rx = x + 0.5 - ax, ry = y + 0.5 - ay, u = ax + rx * co + ry * si - M, v = ay - rx * si + ry * co - M;
-      const k = big ? big[Math.floor(v * 2)] && big[Math.floor(v * 2)][Math.floor(u * 2)] : cells[Math.floor(v)] && cells[Math.floor(v)][Math.floor(u)];
+      let k = big ? big[Math.floor(v * 2)] && big[Math.floor(v * 2)][Math.floor(u * 2)] : cells[Math.floor(v)] && cells[Math.floor(v)][Math.floor(u)];
+      if (th && k === 'e') k = faceAt(Math.floor(u), Math.floor(v));
       if (k && k !== 'k') layer.set(y * W + x, src.pal[k]);
     }
+    if (th) cells.forEach((row, v) => row.forEach((k, u) => {
+      if (k !== 'e') return;
+      const du = u + 0.5 + M - ax, dv = v + 0.5 + M - ay, i = Math.floor(ay + du * si + dv * co) * W + Math.floor(ax + du * co - dv * si);
+      if (layer.has(i)) layer.set(i, src.pal.e);
+    }));
     paint(layer);
   }
   limb(4, F.leg, pose.leg, F.near, F.foot, 2, F.inner);

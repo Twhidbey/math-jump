@@ -77,7 +77,7 @@ Each level also has one extra touch that fits its name: cherry trees to shake, b
 
 Five little students from Sensei's dojo got lost, one in each world. Each is hidden behind a secret way in, and a small "Help!" bubble shows when Kai is close:
 
-| World (level) | Friend | The secret | Freeing them | Power (for good) |
+| World (level) | Friend | The secret | Freeing them | Power (rest of that level) |
 |---|---|---|---|---|
 | Japan (Koi Pond) | **Hana** (pink kimono) | Bonk the golden key block: a trapdoor slides open; walk onto it and the screen slides down into a cave | each right answer cuts a rope on her bamboo cage | **Fan glide:** hold jump to float down slowly |
 | Lava (Ash Trail) | **Tomo** (miner's helmet) | Stand on the big glowing vent: it blows Kai up out of sight to a hidden ledge | each right answer breaks a fallen rock | **Brave heart:** the first hit in each level doesn't hurt |

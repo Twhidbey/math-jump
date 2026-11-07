@@ -31,6 +31,8 @@ Everything is in `index.html`. `CLAUDE.md` maps the code and records the owner's
 - **Work it out with Sensei**: missing the same fact twice in one day (even in different levels) pauses the game and opens a card that walks through the trick in small steps the kid answers (8 + 5: 8 + ? = 10 → 5 is 2 and ? → 10 + 3 = ?). ✕ closes it any time. The tip card also has a **Show me** button. A worked-out fact gets no silver that level, so it keeps coming back.
 
 - **Pixel art instead of emoji** in the Badge Book (21 icons), level hints (15), gem counts, streak, race timer, kick button, Pick your math and the Fact Book. Left for later (owner to decide): player animal icons (new art), Settings buttons, How to play rows, small labels.
+- Sensei's (and Kai's) eye no longer turns into two pixels when he bows.
+- **Rescue powers last only to the end of that level** (owner). Replaying a rescue gives the power again for that level, plus 5 gems. Hana's high kick still works in all of Japan (it's the rescue treasure, not the power).
 
 ## Open questions for the owner
 0. How do the kids find the Work it out card? Too often, too long (division by counting can be 7 steps)?
