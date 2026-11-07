@@ -459,7 +459,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 7, 2026 1:20 PM PT · Sea: kelp forest, shipwreck, coral gardens, pufferfish</div>
+  <div class="build">Updated Nov 7, 2026 1:45 PM PT · Bosses: Kai catches the star and throws it</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -5203,7 +5203,8 @@ function bossAttack(b) {
   else if (kind === 'rock') lob('rock');
   else if (kind === 'snow') { b.flip ^= 1; if (b.flip) lob('snow'); else low('snowroll', 3.8, 16); }
   else if (kind === 'ink') {   // the octopus squirts ink at Kai's depth (every other time a second blob, higher or lower): swim out of the way
-    const top = (L.water || 0) + 16, bot = GR * T - 16, aim = clamp(P.y + P.h / 2, top, bot), ink = y => L.proj.push({ k: 'ink', x: sx, y, vx: b.face * 4 * easy, vy: 0, g: 0, r: 13 });
+    // Each blob comes out of the octopus, then drifts into its lane (ty) as it travels, so kids see where it's going.
+    const top = (L.water || 0) + 16, bot = GR * T - 16, aim = clamp(P.y + P.h / 2, top, bot), ink = y => L.proj.push({ k: 'ink', x: sx, y: b.y + b.h * 0.45, ty: y, vx: b.face * 4 * easy, vy: 0, g: 0, r: 13 });
     ink(aim); b.flip ^= 1;
     if (b.flip) ink(clamp(aim < (top + bot) / 2 ? aim + 3 * T : aim - 3 * T, top, bot));
   }
@@ -5270,7 +5271,7 @@ function hitOrb(o) {
       noteFact(ar.q, true, G.time - ar.askedAt <= 480, L.skill); G.solved++; if (G.time - ar.askedAt <= 480) G.fastN++;
       payGems(o.x, oy, G.time - ar.askedAt <= 480 ? 2 : 1);
       const last = L.boss.hp <= 1;   // the last answer: no shuriken, Kai holds out his hand
-      ar.wait = 1; if (last) offerHand(); else { G.shots.push({ x: o.x, y: oy, spin: 0 }); P.throwT = 14; sfx.throw(); }
+      ar.wait = 1; if (last) offerHand(); else G.shots.push({ x: o.x, y: oy, spin: 0, catch: true });   // the right star flies to Kai's hand, then he throws it
       sfx.correct(); streakUp(o.x, oy); gotIt();
       floatText(P.x + P.w / 2, P.y - 30, last ? 'Right!' : ar.q.retry ? 'You remembered it!' : 'Shuriken!', '#ffd23f', 28);
       setTimeout(() => { if (L.arena === ar) ar.orbs = []; }, 300);
@@ -5418,6 +5419,12 @@ function updateShotsAndProjectiles() {
   const b = L.boss;
   for (const s of G.shots) {
     s.spin += 0.5;
+    if (s.catch) {   // flying to Kai's hand first
+      const hx = P.x + P.w / 2 + P.face * 10, hy = P.y + 14, dx = hx - s.x, dy = hy - s.y, d = Math.hypot(dx, dy);
+      if (d < 14) { s.catch = false; s.x = hx; s.y = hy; P.face = b.x + b.w / 2 > P.x + P.w / 2 ? 1 : -1; P.throwT = 14; sfx.throw(); }
+      else { s.x += dx / d * 14; s.y += dy / d * 14; }
+      continue;
+    }
     const tx = b.x + b.w / 2, ty = b.y + b.h / 2, dx = tx - s.x, dy = ty - s.y, d = Math.hypot(dx, dy);
     if (d < 16) {
       s.done = true; b.hp--; b.flash = 36; sfx.hit(); shake(12, 6); G.freeze = 5;
@@ -5431,6 +5438,7 @@ function updateShotsAndProjectiles() {
 
   for (const p of L.proj) {
     p.x += p.vx; p.vy += p.g; p.y += p.vy;
+    if (p.ty !== undefined) p.y += (p.ty - p.y) * 0.06;   // octopus ink easing into its lane
     if (p.g && p.y > GR * T - p.r) { p.done = true; burst(p.x, GR * T - 4, p.k === 'rock' ? '#ff6a00' : p.k === 'snow' ? '#ffffff' : '#b388ff', 8); }
     if (p.x < -40 || p.x > L.w * T + 40) p.done = true;
     if (!p.done && !p.deco && mode === 'play' && circleHits(p.x, p.y, p.r - 2, P)) { p.done = true; if (fiery()) burst(p.x, p.y, '#ff6a00', 8); else hurt(); }
