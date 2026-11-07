@@ -333,6 +333,9 @@
   .friendrow { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin: 8px 0 2px; }
   .friendrow span { display: grid; justify-items: center; gap: 2px; width: 74px; font-size: 12px; line-height: 1.2; text-align: center; }
   .kidimg { width: 40px; height: 40px; image-rendering: pixelated; }
+  .picon { width: 48px; height: 48px; image-rendering: pixelated; vertical-align: middle; }
+  .picon.sm { width: 26px; height: 26px; margin: -4px 0; }
+  .icongrid .picon { width: 40px; height: 40px; display: block; }
   .friendrow .pair { display: flex; align-items: flex-end; gap: 2px; width: auto; }
   .toolimg { width: 30px; height: 30px; }
   .kidq { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 8px; background: rgba(0,0,0,.3); font-style: normal; font-size: 22px; color: rgba(255,255,255,.5); }
@@ -456,7 +459,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 7, 2026 11:45 AM PT · Sea: ▼ by the ▲ button, gentler floating</div>
+  <div class="build">Updated Nov 7, 2026 12:15 PM PT · Pixel-art player pictures</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -2573,9 +2576,14 @@ function trackRound(skill, how) {
   sfx.win();
   return `<div class="promo levelup">${lines.join('<br>')}</div>`;
 }
-const PLAYER_ICONS = ['🥷', '🐯', '🐼', '🦊', '🐸', '🐲', '🦄', '🐵', '🦖'];
-let players = { list: [{ id: 'p1', name: 'Player 1', grade: null, icon: '🥷' }], cur: 'p1' };
+// Player pictures are characters from the game (owner, Nov 2026: pixel art instead of emoji): Kai, the five lost
+// friends and the hungry animals. Old saves had emoji; each gets the closest character (ICON_FROM_EMOJI).
+const PLAYER_ICONS = ['kai', 'hana', 'tomo', 'niko', 'yuki', 'mei', 'panda', 'rabbit', 'cat', 'fox', 'penguin', 'seal', 'duck', 'raccoon', 'robocat', 'robodog', 'moonrabbit', 'lizard'];
+const ICON_FROM_EMOJI = { '🥷': 'kai', '🐯': 'cat', '🐼': 'panda', '🦊': 'fox', '🐸': 'duck', '🐲': 'lizard', '🦄': 'moonrabbit', '🐵': 'raccoon', '🦖': 'salamander' };
+const fixIcon = ic => ICON_FROM_EMOJI[ic] || (PLAYER_ICONS.includes(ic) || ic === 'salamander' ? ic : 'kai');
+let players = { list: [{ id: 'p1', name: 'Player 1', grade: null, icon: 'kai' }], cur: 'p1' };
 try { const s = JSON.parse(localStorage.getItem(PLAYERS_KEY)); if (s && s.list && s.list.length) players = s; } catch (e) { /* no storage */ }
+players.list.forEach(pl => { pl.icon = fixIcon(pl.icon); });
 const keyFor = id => (id === 'p1' ? SAVE_KEY : `${SAVE_KEY}:${id}`);
 const curPlayer = () => players.list.find(x => x.id === players.cur) || players.list[0];
 function savePlayers() { try { localStorage.setItem(PLAYERS_KEY, JSON.stringify(players)); } catch (e) { /* no storage */ } }
@@ -7846,6 +7854,20 @@ function kidSpr(id) {
   }, 2), ['stand', 'cheer']);
   return KID_SPR[id];
 }
+// A player's picture as a small pixel image (cached): Kai, a lost friend, or an animal from the levels.
+const playerIconURL = {};
+function playerIcon(id, cls = 'picon') {
+  id = fixIcon(id);
+  if (!playerIconURL[id]) {
+    const cv = document.createElement('canvas'); cv.width = 40; cv.height = 40;
+    const x = cv.getContext('2d'); x.imageSmoothingEnabled = false;
+    if (id === 'kai') drawNinjaPreview(cv, { band: 'band-red', suit: 'suit-navy', trail: null, pet: null }, 2);
+    else if (KID_LOOK[id]) { const s = kidSpr(id).stand[0]; x.drawImage(s, Math.round((40 - s.width) / 2), Math.round(40 - s.height)); }
+    else { const s = bakeSpr(id, ANIMAL_SPR[id], 2); x.drawImage(s, Math.round((40 - s.width) / 2), Math.round((40 - s.height) / 2)); }
+    playerIconURL[id] = cv.toDataURL();
+  }
+  return `<img class="${cls}" src="${playerIconURL[id]}" alt="">`;
+}
 function kidImg(id, cls = 'kidimg') {
   const s = kidSpr(id).stand[0], cv = document.createElement('canvas'); cv.width = 40; cv.height = 40;
   const x = cv.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(s, Math.round((40 - s.width) / 2), Math.round(40 - s.height));
@@ -9125,7 +9147,7 @@ function puff() {
 function buildMenu() {
   const pts = totalPoints(), b = beltFor(pts), k = curSkill();
   $('rank').innerHTML = `${beltHTML(b)} <span><b>${b.name} Belt</b> · ${pts} pts</span>`;
-  const me = curPlayer(); $('playerChip').textContent = `${me.icon} ${me.name} ▾`;
+  const me = curPlayer(); $('playerChip').innerHTML = `${playerIcon(me.icon, 'picon sm')} `; $('playerChip').append(`${me.name} ▾`);
   const pr = skillProgress(k);
   $('skillChip').innerHTML = `${pixImg('compass', 'pix sm')} ${k.name} <span class="tier">${stars(k.tier)}</span> <span class="dots">${pr.learned}/${pr.n}</span> ✎`;
   const dl = prog.daily, live = dl.last >= today() - 1 ? dl.streak : 0;
@@ -10171,7 +10193,7 @@ function showPlayers() {
     let pts = 0;
     try { const s = JSON.parse(localStorage.getItem(keyFor(pl.id))) || {}; pts = Object.values(s.best || {}).reduce((a, b) => a + (b.pts || b || 0), 0); } catch (e) { /* no storage */ }
     const b = document.createElement('div'); b.className = 'pcard' + (pl.id === players.cur ? ' on' : ''); b.tabIndex = 0;
-    b.innerHTML = `<span class="pi">${pl.icon}</span><span class="pn"></span><span class="pg">${GRADE[pl.grade] ? GRADE[pl.grade].name : 'No grade set'} · ${beltFor(pts).name} belt</span><button class="pe" type="button" aria-label="Edit">✏️</button>`;
+    b.innerHTML = `<span class="pi">${playerIcon(pl.icon)}</span><span class="pn"></span><span class="pg">${GRADE[pl.grade] ? GRADE[pl.grade].name : 'No grade set'} · ${beltFor(pts).name} belt</span><button class="pe" type="button" aria-label="Edit">✏️</button>`;
     b.querySelector('.pn').textContent = pl.name;
     b.onclick = () => { audio(); switchPlayer(pl.id); };
     b.querySelector('.pe').onclick = e => { e.stopPropagation(); audio(); editPlayer(pl); };
@@ -10203,7 +10225,7 @@ function renderPlayerForm() {
   }
   $('pIcons').innerHTML = '';
   for (const ic of PLAYER_ICONS) {
-    const b = document.createElement('button'); b.type = 'button'; b.textContent = ic; if (ic === pickIcon) b.className = 'on';
+    const b = document.createElement('button'); b.type = 'button'; b.innerHTML = playerIcon(ic); b.setAttribute('aria-label', ic); if (ic === pickIcon) b.className = 'on';
     b.onclick = () => { pickIcon = ic; renderPlayerForm(); };
     $('pIcons').appendChild(b);
   }
@@ -10270,7 +10292,7 @@ async function loadSave(text) {
   let d; try { d = await readCode(text); } catch (e) { moveMsg("That code didn't work. Check it was copied whole."); return; }
   if (!confirm(`Replace ${editing.name}'s progress with ${d.player.name}'s save?`)) return;
   try { localStorage.setItem(keyFor(editing.id), JSON.stringify(d.prog)); } catch (e) { moveMsg("Couldn't save on this device."); return; }
-  Object.assign(editing, { name: d.player.name || editing.name, grade: d.player.grade ?? editing.grade, icon: d.player.icon || editing.icon });
+  Object.assign(editing, { name: d.player.name || editing.name, grade: d.player.grade ?? editing.grade, icon: fixIcon(d.player.icon || editing.icon) });
   savePlayers();
   if (editing.id === players.cur) { loadProg(editing.id); applyProg(); }
   showPlayers();

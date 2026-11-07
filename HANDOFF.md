@@ -44,6 +44,7 @@ Everything is in `index.html`. `CLAUDE.md` maps the code and records the owner's
 - **The Great Octopus** (basic version): 8 hits (its bar is in eighths), squirts ink at Kai's depth; held-out hand ending; a simple sea song and story pictures.
 - **Step 2 (next)**: a fuller octopus fight and story, music polish. **Step 3**: the sea's own animal, training room, stepping-stone / swing crossing, lost friend, twist, 3 more moves (sea levels have ~11 problems until then, the others ~16–21).
 - Then (owner picked from a list): pixel coral (the first coral was plain circles), swaying seaweed, fish schools, a turtle (Coral Reef) and a spouting whale (Kelp Forest); Sunken Ship gets darker as you go with glowing lantern fish; bubble vents shoot Kai out of the water to gems; two treasure clams per level on the sea floor (question → pearls spill out as gems). Not chosen yet: currents, dolphin ride, fill-the-shell crossing, friend in a bubble/clam.
+- Then: swim fixes (touching a door no longer answers it: Kai got stuck in a loop; ▼ moved next to ▲; gentler floating; tap ▼ = small kick; no breath meter). **Player pictures are pixel characters now** (Kai, Hana, Tomo, Niko, Yuki, Mei and 12 animals); old emoji picks became the closest one (🐯 → orange cat, 🦄 → moon rabbit, 🐸 → duck, 🐲 → lizard, 🦖 → salamander, 🐵 → raccoon).
 - Built on branch `claude/bold-pasteur-i1sjev` (not on `main` yet, so not live).
 
 ## Open questions for the owner
