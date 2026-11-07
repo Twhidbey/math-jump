@@ -459,7 +459,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 7, 2026 1:45 PM PT · Bosses: Kai catches the star and throws it</div>
+  <div class="build">Updated Nov 7, 2026 2:05 PM PT · Coral Reef: coral of different heights, spread out</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1490,9 +1490,15 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     // in the Kelp Forest. Only on open floor, away from the gates.
     const openFloor = c => map[GR - 1][c] === '.' && map[GR - 2][c] === '.' && !L.stations.some(st => c >= st.gate[0] - 1 && c <= st.gate[1] + 1) && !(L.ship && c >= L.ship.c - 1 && c <= L.ship.c + L.ship.w);
     L.garden = [];
-    if (def.k === 0) for (let c = 6; c < s; c += ri(rng, 3, 6)) {
-      if (!openFloor(c) || !openFloor(c + 1) || !openFloor(c + 2)) continue;
-      const n = ri(rng, 3, 6); for (let j = 0; j < n; j++) L.garden.push({ x: (c + j * 0.7) * T + ri(rng, 0, 12), kind: ['branch', 'fan', 'brain', 'tube', 'anemone', 'star', 'shell'][ri(rng, 0, 6)], col: ri(rng, 0, 4) });
+    if (def.k === 0) for (let c = 6; c < s; c += ri(rng, 6, 10)) {   // a patch every few tiles: 2–4 pieces, spaced out, each its own size
+      if (!openFloor(c) || !openFloor(c + 1) || !openFloor(c + 2) || !openFloor(c + 3)) continue;
+      const n = ri(rng, 2, 4); let x = c * T;
+      for (let j = 0; j < n; j++) {
+        const kind = ['branch', 'fan', 'brain', 'tube', 'anemone', 'star', 'shell', 'tall', 'pillar', 'tall'][ri(rng, 0, 9)];
+        const sz = kind === 'star' || kind === 'shell' ? 4 : kind === 'anemone' ? 1 : [4, 5, 6, 8][ri(rng, 0, 3)];   // small to tall
+        L.garden.push({ x, kind, col: ri(rng, 0, 4), sz });
+        x += (kind === 'anemone' ? 26 : 9 * Math.max(4, sz)) + ri(rng, 10, 26);
+      }
     }
     if (def.k === 1) for (let c = 4; c < s; c += ri(rng, 1, 3)) if (openFloor(c)) L.garden.push({ x: c * T + ri(rng, 0, 20), kind: 'kelp', h: ri(rng, 4, 8), ph: rng() * 6 });
     addFlavor(L);
@@ -6338,6 +6344,8 @@ const GARDEN_PIX = {
   brain: ['..xxxxx..', '.xdxxxdx.', 'xxxdxdxxx', 'xdxxxxxdx', 'xxxxxxxxx'],
   tube: ['d...d..d.', 'x...x..x.', 'x.d.x..x.', 'x.x.x.dx.', 'x.x.x.xx.', 'xxx.xxxx.', 'xxxxxxxx.'],
   star: ['...x...', '..xdx..', 'xxxdxxx', '.xdxdx.', 'xx...xx'],
+  tall: ['x...x...', 'x..xx..x', 'xx.x..xx', '.x.x.xx.', '.xxx.x..', '..xxxx..', '...xx...', '..xxx...', '..xx..x.', '..xx.xx.', '...xxx..', '...xx...', '...x....'],
+  pillar: ['.x..x.', '.xdxx.', '.xxdx.', '.xdxx.', 'xxxdx.', 'xdxxx.', 'xxdxxx', 'xxxxdx', 'xdxxxx', 'xxxdxx'],
   shell: ['..xxx..', '.xdxdx.', 'xdxdxdx', 'xxxxxxx'],
 };
 const GARDEN_COLS = [['#ff6b8a', '#c8405e'], ['#ffb347', '#d07a1a'], ['#c58aff', '#8a52c8'], ['#5ad8c8', '#2a9a8a'], ['#ffe066', '#c8a02a']];
@@ -6359,7 +6367,7 @@ function drawSeaScenery() {
       for (let k = 0; k < 6; k++) { const h = 14 + (k % 2) * 6, sw = Math.round(Math.sin(tick * 0.06 + k) * 2) * 2; ctx.fillStyle = c1; ctx.fillRect(g.x + k * 4 + sw, b - 12 - h, 4, h); ctx.fillStyle = '#ffffff'; ctx.fillRect(g.x + k * 4 + sw, b - 12 - h, 4, 4); }
       continue;
     }
-    const rows = GARDEN_PIX[g.kind], [c1, c2] = GARDEN_COLS[g.col], sz = g.kind === 'star' || g.kind === 'shell' ? 4 : 6;
+    const rows = GARDEN_PIX[g.kind], [c1, c2] = GARDEN_COLS[g.col], sz = g.sz || 6;
     seaPix(rows, g.x, b - rows.length * sz, sz, { x: c1, d: c2 });
   }
   const sh = L.ship;
