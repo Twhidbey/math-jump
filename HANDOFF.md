@@ -26,7 +26,12 @@ Everything is in `index.html`. `CLAUDE.md` maps the code and records the owner's
 - Training rooms: **◀ Leave** button (← on a computer) to quit a lesson early; the door opens again to come back later. Fist button no longer covers the left arrow on upright phones.
 - Read to me: the owner's iPhone was on silent (that mutes the voice). Added an iPhone tip line, a Stop button, en-US voice, and a Safari cancel/speak fix.
 
+## Built Nov 7, 2026
+- **New trick! cards**: the first time a question needs a trick the kid hasn't met (make 10, doubles, ×9, …), Sensei's card shows it with a sample fact as the question comes up. Once per trick per player.
+- **Work it out with Sensei**: missing the same fact twice in one day (even in different levels) pauses the game and opens a card that walks through the trick in small steps the kid answers (8 + 5: 8 + ? = 10 → 5 is 2 and ? → 10 + 3 = ?). ✕ closes it any time. The tip card also has a **Show me** button. A worked-out fact gets no silver that level, so it keeps coming back.
+
 ## Open questions for the owner
+0. How do the kids find the Work it out card? Too often, too long (division by counting can be 7 steps)?
 1. Waiting for players' reactions to the guards, the finishing moves, the ski lift and the test-out.
 2. Math Ninja moved here from `banhamt/quickpoll_private` (Nov 2026); that repo's old `claude/*` Math Ninja branches can be deleted by the owner on GitHub.
 3. Not yet tested on a real iPhone: Read to me with the silent switch off, sound after a pause, answer-button positions.

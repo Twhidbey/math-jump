@@ -386,6 +386,25 @@
     border-bottom: 4px solid #3a46a0; background: #5b6bd6; color: #fff; cursor: pointer; touch-action: manipulation; }
   .padkeys button:active { transform: translateY(2px); border-bottom-width: 2px; }
   .padkeys button.sel { outline: 3px solid #ffd23f; outline-offset: 2px; }
+  .workcard { border: 3px solid #ffd23f; }
+  .worktop { display: flex; align-items: center; gap: 10px; text-align: left; margin-bottom: 2px; }
+  .worktop canvas { image-rendering: pixelated; flex: none; }
+  .wkhead { flex: 1; } .wkhead b { color: #ffd23f; font-size: 19px; } #wkTrick { font-size: 14px; opacity: .85; }
+  .wkx { font: inherit; font-size: 20px; background: none; border: none; color: #fff; opacity: .7; cursor: pointer; padding: 4px 8px; }
+  #wkPic { width: 100%; max-height: 20vh; object-fit: contain; display: block; margin: 0 auto 4px; }
+  .wkdone { font-size: 16px; color: #9be58b; min-height: 0; } .wkdone b { color: #fff; }
+  .wkstep { font-size: clamp(22px, 6vw, 30px); font-weight: 800; margin: 6px 0 10px; }
+  .wkstep b { color: #3ae374; }
+  .wkkeys { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .wkkeys button { color: #1a1a2e; background: #fff; border-bottom: 5px solid #888; font-size: 28px; }
+  .wkkeys button:disabled { opacity: .3; cursor: default; }
+  .wkkeys.one { grid-template-columns: 1fr; } .wkkeys button.go { background: #2ecc71; border-bottom-color: #1e8a4c; color: #fff; font-size: 24px; }
+  @media (max-height: 520px) {   /* phone held sideways: keep the whole card on screen */
+    .workcard { padding: 8px 14px 10px; } .worktop canvas { width: 32px; height: 32px; }
+    .workcard .padq { font-size: 24px; margin: 0; } #wkPic { max-height: 14vh; margin-bottom: 0; }
+    .wkdone { font-size: 14px; } .wkstep { font-size: 20px; margin: 2px 0 6px; }
+    .wkkeys button { padding: 6px 0; font-size: 22px; } .workcard .padmsg { margin-bottom: 0; font-size: 13px; }
+  }
   .fusebar { height: 12px; border-radius: 6px; background: #3a3a5a; margin: 0 0 12px; overflow: hidden; }
   .fusebar i { display: block; height: 100%; width: 100%; border-radius: 6px;
     background: linear-gradient(90deg, #ff6a00, #ffd23f); box-shadow: 0 0 10px #ff9a3c; }
@@ -425,7 +444,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 6, 2026 8:49 AM PT · smaller Sensei tips, tap to close</div>
+  <div class="build">Updated Nov 7, 2026 9:13 AM PT · work it out with Sensei, new trick cards</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -544,6 +563,18 @@
   </div>
 </div>
 
+<div id="work" class="overlay hidden">
+  <div class="card padcard workcard">
+    <div class="worktop"><canvas id="wkSensei" width="44" height="44"></canvas><div class="wkhead"><b id="wkTitle"></b><div id="wkTrick"></div></div><button type="button" class="wkx" id="wkSkip" aria-label="Close">✕</button></div>
+    <div class="padq" id="wkQ"></div>
+    <canvas id="wkPic" width="400" height="96"></canvas>
+    <div class="wkdone" id="wkDone"></div>
+    <div class="wkstep" id="wkStep"></div>
+    <div class="padkeys wkkeys" id="wkKeys"></div>
+    <div class="padmsg" id="wkMsg"></div>
+  </div>
+</div>
+
 <div id="pad" class="overlay hidden">
   <div class="card padcard">
     <div class="fusebar"><i id="fuse"></i></div>
@@ -571,7 +602,11 @@ cv.addEventListener('pointerdown', e => {   // click / tap the big answer tiles 
   const rm = L.room, tr = G && G.rescue ? G.rescue.tiles : rm && rm.tiles;
   const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) * VW / r.width, y = (e.clientY - r.top) * VH / r.height;
   const tb = G && G.tip && G.tip.box;
-  if (tb && x >= tb.x && x <= tb.x + tb.w && y >= tb.y && y <= tb.y + tb.h) { G.tip.t = Math.min(G.tip.t, 14); return; }   // tap Sensei's tip to close it
+  if (tb && x >= tb.x && x <= tb.x + tb.w && y >= tb.y && y <= tb.y + tb.h) {   // tap Sensei's tip to close it, or its "Show me" to work it out
+    const sb = G.tip.show;
+    if (sb && x >= sb.x && x <= sb.x + sb.w && y >= sb.y - 6 && y <= sb.y + sb.h + 6) { audio(); openWork(G.tip.q, !!G.tip.example); return; }
+    G.tip.t = Math.min(G.tip.t, 14); return;
+  }
   if (G && G.rescue && !tr) return;
   if (tr) { const i = tr.findIndex(t => x >= t.x && x <= t.x + t.w && y >= t.y && y <= t.y + t.h); if (i >= 0) { audio(); tapAnswer(i); } return; }
   if (G && G.swing) { const t = G.swing.tiles, i = t ? t.findIndex(o => x + cam >= o.x && x + cam <= o.x + o.w && y >= o.y && y <= o.y + o.h) : -1; if (i >= 0) { audio(); tapAnswer(i); } return; }
@@ -775,6 +810,7 @@ function fastFrames(skill, q, walk = !isTouch) {
 function noteFact(q, right, fast, skill) {
   if (!q || q.op === 'room') return;
   if (q.sk) skill = SKILL[q.sk];
+  if (fast && G && G.helped && G.helped.has(factKey(q))) fast = null;   // worked out with Sensei in this level: right, but no silver yet
   if (q.trk && !q.review && G && G.byTrack) {   // grade tracks: how each kind of math went in this level
     const b = G.byTrack[q.trk] || (G.byTrack[q.trk] = { right: 0, wrong: 0, fast: 0 });
     if (right) { b.right++; if (fast) b.fast++; } else b.wrong++;
@@ -2794,39 +2830,102 @@ function petTick() {
   if (G.bubble && --G.bubble.t <= 0) G.bubble = null;
 }
 // Two misses in a row brings Sensei with a tip for the fact that was missed.
-function tipFor(q) {
-  if (q.tip) return q.tip;
-  const { a, b, op, ans } = q;
-  if (q.missing) return `Count up from ${a} to ${a + ans}. That's ${ans}.`;
-  if (q.step && op === '+') return `Think in tens: ${a / 10} tens + ${b / 10} tens = ${ans / 10} tens, which is ${ans}.`;
-  if (q.step && op === '−') return `Think in tens: ${a / 10} tens − ${b / 10} tens = ${ans / 10} tens, which is ${ans}.`;
-  if (q.step && op === '×') return `Do ${a} × ${b / 10} = ${a * b / 10} first, then put a zero on the end: ${ans}.`;
+// trickInfo names the trick (id, for the one-time "New trick!" card) and gives Sensei's tip text.
+function trickInfo(q) {
+  if (q.tip) return { id: null, txt: q.tip };
+  const { a, b, op, ans } = q, r = (id, txt) => ({ id, txt });
+  if (q.missing) return r(op === '+' && a + ans === 10 ? 'make10' : 'missing', `Count up from ${a} to ${a + ans}. That's ${ans}.`);
+  if (q.step && op === '+') return r('tensAdd', `Think in tens: ${a / 10} tens + ${b / 10} tens = ${ans / 10} tens, which is ${ans}.`);
+  if (q.step && op === '−') return r('tensSub', `Think in tens: ${a / 10} tens − ${b / 10} tens = ${ans / 10} tens, which is ${ans}.`);
+  if (q.step && op === '×') return r('tensMul', `Do ${a} × ${b / 10} = ${a * b / 10} first, then put a zero on the end: ${ans}.`);
   if (op === '+') {
-    if (a === b) return `Doubles! ${a} + ${a} is double ${a}, which is ${ans}.`;
-    if (Math.abs(a - b) === 1) { const m = Math.min(a, b); return `Near double: ${m} + ${m} = ${m * 2}, plus 1 more is ${ans}.`; }
+    if (a === b) return r('double', `Doubles! ${a} + ${a} is double ${a}, which is ${ans}.`);
+    if (Math.abs(a - b) === 1) { const m = Math.min(a, b); return r('nearDouble', `Near double: ${m} + ${m} = ${m * 2}, plus 1 more is ${ans}.`); }
     { const big = Math.max(a, b), small = Math.min(a, b);
-      if (big >= 10 && big < 100 && small < 10 && big % 10 + small >= 10) { const ten = big + 10 - big % 10, need = ten - big; return `Make the next ten first: ${big} + ${need} = ${ten}, then ${small - need} more is ${ans}.`; } }
-    if (a < 10 && b < 10 && ans > 10) { const big = Math.max(a, b), small = Math.min(a, b), need = 10 - big; return `Make 10 first: ${big} + ${need} = 10, then ${small - need} more is ${ans}.`; }
-    if (a >= 10 && b >= 10) { const t = Math.floor(a / 10) * 10 + Math.floor(b / 10) * 10, o = a % 10 + b % 10; return `Add the tens, then the ones: ${t} + ${o} = ${ans}.`; }
-    return `Start at the bigger number and count on ${Math.min(a, b)} more: ${ans}.`;
+      if (big >= 10 && big < 100 && small < 10 && big % 10 + small >= 10) { const ten = big + 10 - big % 10, need = ten - big; return r('nextTen', `Make the next ten first: ${big} + ${need} = ${ten}, then ${small - need} more is ${ans}.`); } }
+    if (a < 10 && b < 10 && ans > 10) { const big = Math.max(a, b), small = Math.min(a, b), need = 10 - big; return r('make10Add', `Make 10 first: ${big} + ${need} = 10, then ${small - need} more is ${ans}.`); }
+    if (a >= 10 && b >= 10) { const t = Math.floor(a / 10) * 10 + Math.floor(b / 10) * 10, o = a % 10 + b % 10; return r('tensOnes', `Add the tens, then the ones: ${t} + ${o} = ${ans}.`); }
+    return r('countOn', `Start at the bigger number and count on ${Math.min(a, b)} more: ${ans}.`);
   }
   if (op === '−') {
-    if (a >= 10 && a < 100 && b < 10 && a % 10 && a % 10 < b) { const ten = a - a % 10; return `Take away to the ten first: ${a} − ${a % 10} = ${ten}, then ${b - a % 10} more is ${ans}.`; }
-    if (b <= 3) return `Count back ${b} from ${a}: ${ans}.`;
-    if (a >= 20 && b >= 10) { const t = Math.floor(b / 10) * 10; return `Take away the tens, then the ones: ${a} − ${t} = ${a - t}, then take away ${b % 10} more: ${ans}.`; }
-    return `Count up from ${b} to ${a}. That's ${ans} steps.`;
+    if (a >= 10 && a < 100 && b < 10 && a % 10 && a % 10 < b) { const ten = a - a % 10; return r('backTen', `Take away to the ten first: ${a} − ${a % 10} = ${ten}, then ${b - a % 10} more is ${ans}.`); }
+    if (b <= 3) return r('countBack', `Count back ${b} from ${a}: ${ans}.`);
+    if (a >= 20 && b >= 10) { const t = Math.floor(b / 10) * 10; return r('subTensOnes', `Take away the tens, then the ones: ${a} − ${t} = ${a - t}, then take away ${b % 10} more: ${ans}.`); }
+    return r('countUp', `Count up from ${b} to ${a}. That's ${ans} steps.`);
   }
   if (op === '×') {
     const other = n => (a === n ? b : a);
-    if (a === 1 || b === 1) return `Anything times 1 stays the same: ${ans}.`;
-    if (a === 2 || b === 2) return `Times 2 is doubling: double ${other(2)} is ${ans}.`;
-    if (a === 10 || b === 10) return `Times 10: put a zero on the end. ${other(10)} becomes ${ans}.`;
-    if (a === 5 || b === 5) return `Count by 5s, ${other(5)} times: 5, 10, 15... all the way to ${ans}.`;
-    if (a === 9 || b === 9) { const o = other(9); return `Times 9: do times 10, then take one away. ${o * 10} − ${o} = ${ans}.`; }
-    if (a === 4 || b === 4) { const o = other(4); return `Times 4: double, then double again. ${o}, ${o * 2}, ${ans}.`; }
-    return `Use one you know: ${a} × ${b - 1} = ${a * (b - 1)}, plus one more ${a} is ${ans}.`;
+    if (a === 1 || b === 1) return r(null, `Anything times 1 stays the same: ${ans}.`);
+    if (a === 2 || b === 2) return r('x2', `Times 2 is doubling: double ${other(2)} is ${ans}.`);
+    if (a === 10 || b === 10) return r('x10', `Times 10: put a zero on the end. ${other(10)} becomes ${ans}.`);
+    if (a === 5 || b === 5) return r('x5', `Count by 5s, ${other(5)} times: 5, 10, 15... all the way to ${ans}.`);
+    if (a === 9 || b === 9) { const o = other(9); return r('x9', `Times 9: do times 10, then take one away. ${o * 10} − ${o} = ${ans}.`); }
+    if (a === 4 || b === 4) { const o = other(4); return r('x4', `Times 4: double, then double again. ${o}, ${o * 2}, ${ans}.`); }
+    return r('xKnown', `Use one you know: ${a} × ${b - 1} = ${a * (b - 1)}, plus one more ${a} is ${ans}.`);
   }
-  return `Think times tables: what times ${b} makes ${a}? ${ans} × ${b} = ${a}.`;
+  if (op === '÷') return r('div', `Think times tables: what times ${b} makes ${a}? ${ans} × ${b} = ${a}.`);
+  return { id: null, txt: `${qSolved(q)}.` };
+}
+const tipFor = q => trickInfo(q).txt;
+// "Work it out with Sensei": the trick in 2-3 small steps the kid answers (each step: text with a ?, and its answer).
+// null when there's no trick to walk through (think puzzles, pattern walls, stepping stones).
+function workSteps(q) {
+  if (!q || q.op === 'room' || q.tip) return null;
+  const { id } = trickInfo(q), { a, b, ans } = q, s = (text, v) => ({ text, ans: v });
+  if (!id) return null;
+  const big = Math.max(a, b), small = Math.min(a, b), other = n => (a === n ? b : a);
+  const counts = (from, by, n, sign = '+') => range(1, n).map(i => s(`${from + (sign === '+' ? by : -by) * (i - 1)} ${sign} ${by} = ?`, from + (sign === '+' ? by : -by) * i));
+  switch (id) {
+    case 'make10': return [s(`${a} and how many more make 10?`, ans)];
+    case 'missing': { const c = a + ans;
+      return a < 10 && c > 10 ? [s(`${a} + ? = 10`, 10 - a), s(`10 + ? = ${c}`, c - 10), s(`${10 - a} + ${c - 10} = ?`, ans)] : [s(`Count up: ${c} − ${a} = ?`, ans)]; }
+    case 'tensAdd': return [s(`${a / 10} tens + ${b / 10} tens = ? tens`, ans / 10), s(`${ans / 10} tens = ?`, ans)];
+    case 'tensSub': return [s(`${a / 10} tens − ${b / 10} tens = ? tens`, ans / 10), s(`${ans / 10} tens = ?`, ans)];
+    case 'tensMul': return [s(`${a} × ${b / 10} = ?`, a * b / 10), s(`Put a zero on the end: ${a * b / 10} → ?`, ans)];
+    case 'double': return [s(`Two groups of ${a}. Double ${a} = ?`, ans)];
+    case 'nearDouble': return [s(`Double ${small}: ${small} + ${small} = ?`, small * 2), s(`${small * 2} + 1 more = ?`, ans)];
+    case 'nextTen': case 'make10Add': { const ten = big + 10 - big % 10, need = ten - big;
+      return [s(`${big} + ? = ${ten}`, need), s(`${small} is ${need} and ?`, small - need), s(`${ten} + ${small - need} = ?`, ans)]; }
+    case 'tensOnes': { const ta = a - a % 10, tb = b - b % 10;
+      return [s(`Tens: ${ta} + ${tb} = ?`, ta + tb), s(`Ones: ${a % 10} + ${b % 10} = ?`, a % 10 + b % 10), s(`${ta + tb} + ${a % 10 + b % 10} = ?`, ans)]; }
+    case 'countOn': return small <= 4 ? counts(big, 1, small) : [s(`Start at ${big}, count on ${small}: ?`, ans)];
+    case 'backTen': { const o = a % 10, ten = a - o;
+      return [s(`${a} − ? = ${ten}`, o), s(`${b} is ${o} and ?`, b - o), s(`${ten} − ${b - o} = ?`, ans)]; }
+    case 'countBack': return counts(a, 1, b, '−');
+    case 'subTensOnes': { const t = b - b % 10;
+      return b % 10 ? [s(`Tens: ${a} − ${t} = ?`, a - t), s(`Ones: ${a - t} − ${b % 10} = ?`, ans)] : [s(`${a} − ${t} = ?`, ans)]; }
+    case 'countUp': return b < 10 && a > 10 ? [s(`${b} + ? = 10`, 10 - b), s(`10 + ? = ${a}`, a - 10), s(`${10 - b} + ${a - 10} = ?`, ans)] : [s(`${b} + ? = ${a}`, ans)];
+    case 'x2': { const o = other(2); return [s(`Double it: ${o} + ${o} = ?`, ans)]; }
+    case 'x10': { const o = other(10); return [s(`Put a zero on ${o}: ?`, ans)]; }
+    case 'x5': { const o = other(5), k = o >= 8 ? 10 : o > 5 ? 5 : 2;   // start from one they know, then count by 5s
+      return [s(`5 × ${k} = ?`, 5 * k), ...(o >= k ? counts(5 * k, 5, o - k) : counts(5 * k, 5, k - o, '−'))]; }
+    case 'x9': { const o = other(9); return [s(`${o} × 10 = ?`, o * 10), s(`${o * 10} − ${o} = ?`, ans)]; }
+    case 'x4': { const o = other(4); return [s(`Double ${o} = ?`, o * 2), s(`Double ${o * 2} = ?`, ans)]; }
+    case 'xKnown': return [s(`${a} × ${b - 1} = ?`, a * (b - 1)), s(`${a * (b - 1)} + ${a} = ?`, ans)];
+    case 'div': { const k0 = ans > 5 ? 5 : 2;   // times facts up to the number, then read off how many
+      return [...range(k0, ans).map(k => s(`${b} × ${k} = ?`, b * k)), s(`How many ${b}s make ${a}?`, ans)]; }
+  }
+  return null;
+}
+// A sample fact for each trick, for Sensei's one-time "New trick!" card (and its Show me).
+const TRICK_EX = {
+  make10: [7, '+', 3, true], missing: [8, '+', 5, true], tensAdd: [30, '+', 40], tensSub: [70, '−', 30], tensMul: [3, '×', 40],
+  double: [6, '+', 6], nearDouble: [6, '+', 7], nextTen: [47, '+', 5], make10Add: [8, '+', 5], tensOnes: [36, '+', 21],
+  countOn: [6, '+', 2], backTen: [43, '−', 6], countBack: [9, '−', 2], subTensOnes: [57, '−', 23], countUp: [9, '−', 5],
+  x2: [7, '×', 2], x10: [6, '×', 10], x5: [7, '×', 5], x9: [9, '×', 6], x4: [4, '×', 6], xKnown: [7, '×', 8], div: [24, '÷', 6],
+};
+const TRICK_NAME = {
+  make10: 'Make 10', missing: 'Count up', tensAdd: 'Think in tens', tensSub: 'Think in tens', tensMul: 'Times tens', double: 'Doubles',
+  nearDouble: 'Near doubles', nextTen: 'Make the next ten', make10Add: 'Make 10 first', tensOnes: 'Tens, then ones', countOn: 'Count on',
+  backTen: 'Back to the ten', countBack: 'Count back', subTensOnes: 'Tens, then ones', countUp: 'Count up', x2: 'Times 2 = double',
+  x10: 'Times 10', x5: 'Count by 5s', x9: 'The times 9 trick', x4: 'Double, double', xKnown: 'Use one you know', div: 'Think times',
+};
+function trickExample(id, q) {
+  const e = TRICK_EX[id]; if (!e) return null;
+  const [a, op, b, miss] = e, ans = miss ? (id === 'make10' ? 10 - a : b) : op === '+' ? a + b : op === '−' ? a - b : op === '×' ? a * b : a / b;
+  const ex = miss ? { a, b: ans, op, ans, missing: true, text: `${a} + ? = ${a + ans}` }
+    : { a, b, op, ans, text: `${a} ${op} ${b}`, ...(['tensAdd', 'tensSub', 'tensMul'].includes(id) ? { step: 10 } : {}) };
+  return q && factKey(q) === factKey(ex) ? null : ex;   // never the very question that's coming up
 }
 // A picture to go with the tip: ten frames, arrays, groups, a number line or a balance.
 function picFor(q) {
@@ -2844,13 +2943,94 @@ function picFor(q) {
 // Sensei's tip: a small card in the top-left corner (owner: the big one covered the screen at key moments).
 // 6 s, and it goes away early when tapped (its ✕) or after the next right answer.
 const TIP_T = 360;
-function senseiTip(txt, q = null) {
-  G.tip = { txt, t: TIP_T, pic: q ? picFor(q) : null };
+function senseiTip(txt, q = null, title = "Sensei's tip", t = TIP_T) {
+  G.tip = { txt, t, max: t, title, pic: q ? picFor(q) : null, q: q && workSteps(q) ? q : null };   // q: the tip card's "Show me" walks through it
   [392, 523, 659].forEach((f, i) => tone(f, 0.25, 'triangle', 0.04, null, i * 0.1));
 }
+// The same fact missed twice in one day (also across levels) opens "Work it out with Sensei". Otherwise two misses
+// in a row bring the tip card. Pattern walls and stepping stones (op 'room') have their own help.
 function missed(q) {
   petSay('sad');
+  if (q && q.op !== 'room') {
+    const d = today(), mt = prog.missToday && prog.missToday.d === d ? prog.missToday : (prog.missToday = { d, n: {} }), k = factKey(q);
+    mt.n[k] = (mt.n[k] || 0) + 1; save();
+    if (mt.n[k] >= 2 && workSteps(q)) { mt.n[k] = 0; G.wrongRun = 0; openWork(q); return; }
+  }
   if (++G.wrongRun >= (G.tipSoon ? 1 : 2)) { senseiTip(tipFor(q), q); G.wrongRun = 0; }   // a step-back level: help after one miss
+}
+// The first time a question needs a trick the kid hasn't met, Sensei shows it with a sample fact (once per player, prog.tricks)
+// as the question comes up. Gates from 8 tiles out, the animal and math boxes while they're asked.
+function previewTrick() {
+  if (G.tip || G.time % 10 || L.boss || L.vault || G.rescue || G.swing || G.cross) return;
+  const m = miniTarget(), st = !m && currentStation();
+  const q = m ? (m.kind === 'feed' || m.kind === 'box' ? m.q : null)
+    : st && st !== L.arena && !st.swap && !st.star && P.x >= (st.s - 8) * T && P.x <= st.gate[1] * T ? st.q : null;
+  const id = q && q.op !== 'room' && trickInfo(q).id, seen = prog.tricks || (prog.tricks = {});
+  if (!id || seen[id]) return;
+  seen[id] = true; save();
+  const ex = trickExample(id, q); if (!ex) return;
+  senseiTip(`${TRICK_NAME[id]}! ${ex.missing ? ex.text : `${ex.text} = ?`} ${tipFor(ex)}`, ex, 'New trick!', 480);
+  G.tip.example = true;
+}
+// ---- Work it out with Sensei: the game waits (mode 'work') while the kid answers the trick's small steps.
+// A wrong pick just greys that choice out. ✕ / Escape leaves any time. A fact worked out here gets no silver in
+// this level (G.helped → noteFact), so it still comes back to practise.
+let work = null;
+function workOpts(ans) {
+  const near = [-2, -1, 1, 2, 3, 10, -10].map(d => ans + d).filter(v => v >= 0 && v !== ans);
+  for (let i = near.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [near[i], near[j]] = [near[j], near[i]]; }
+  return [ans, near[0], near[1]].sort((x, y) => x - y);
+}
+function openWork(q, example = false) {
+  const steps = workSteps(q); if (!steps || work) return;
+  work = { q, steps: steps.map(st => ({ ...st, opts: workOpts(st.ans), off: [] })), i: 0, back: mode === 'work' ? 'play' : mode, example };
+  if (!example) (G.helped || (G.helped = new Set())).add(factKey(q));
+  mode = 'work'; keys.left = keys.right = keys.jump = keys.jumpPressed = false; G.tip = null;
+  $('wkQ').textContent = q.missing ? q.text : `${q.text} = ?`;
+  $('wkTitle').textContent = example ? 'Try the trick!' : "Let's work it out!";
+  $('wkTrick').textContent = TRICK_NAME[trickInfo(q).id] || '';
+  const sc = $('wkSensei'), sx = sc.getContext('2d'), img = SENSEI_SPR.a[0], k = Math.min(sc.width / img.width, sc.height / img.height);
+  sx.clearRect(0, 0, sc.width, sc.height); sx.imageSmoothingEnabled = false; sx.drawImage(img, 0, 0, img.width * k, img.height * k);
+  const pic = picFor(q), pc = $('wkPic');
+  pc.classList.toggle('hidden', !pic);
+  if (pic) { const px = pc.getContext('2d'), keep = ctx; px.clearRect(0, 0, pc.width, pc.height); ctx = px; try { drawTipPic(pic, 0, 0, pc.width, pc.height, 22); } finally { ctx = keep; } }
+  renderWork(); show('work'); showTouch(false); hide('pauseBtn');
+  [392, 523, 659].forEach((f, i) => tone(f, 0.25, 'triangle', 0.04, null, i * 0.1));
+}
+function renderWork() {
+  const w = work, done = w.i >= w.steps.length, keysEl = $('wkKeys');
+  $('wkDone').innerHTML = w.steps.slice(Math.max(0, w.i - 3), w.i).map(st => `<div>✓ ${st.text.replace('?', `<b>${st.ans}</b>`)}</div>`).join('');
+  keysEl.innerHTML = '';
+  if (done) {
+    $('wkStep').innerHTML = `So <b>${qSolved(w.q)}</b>!`;
+    $('wkMsg').textContent = w.example ? 'Now you know the trick!' : "It'll come back soon. You can do it!";
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'go'; b.textContent = 'Got it!';
+    b.addEventListener('click', () => { audio(); closeWork(); });
+    keysEl.appendChild(b); keysEl.classList.add('one');
+    return;
+  }
+  keysEl.classList.remove('one');
+  const st = w.steps[w.i];
+  $('wkStep').innerHTML = st.text.replace('?', '<span class="padin">?</span>');
+  $('wkMsg').textContent = w.steps.length > 1 ? `Step ${w.i + 1} of ${w.steps.length}` : '';
+  st.opts.forEach((v, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = v;
+    const [c1, c2] = ansCol(i); b.style.background = c1; b.style.borderBottomColor = c2;
+    if (st.off[i]) b.disabled = true;
+    b.addEventListener('click', () => { audio(); workPick(i); });
+    keysEl.appendChild(b);
+  });
+}
+function workPick(i) {
+  const w = work; if (!w) return;
+  if (w.i >= w.steps.length) { closeWork(); return; }
+  const st = w.steps[w.i]; if (i < 0 || i >= st.opts.length || st.off[i]) return;
+  if (st.opts[i] === st.ans) { tone(660 + w.i * 110, 0.12, 'triangle', 0.05); w.i++; renderWork(); if (w.i >= w.steps.length) sfx.correct(); }
+  else { st.off[i] = true; sfx.wrong(); renderWork(); $('wkMsg').textContent = 'Not that one. Try again!'; }
+}
+function closeWork() {
+  const w = work; if (!w) return;
+  work = null; hide('work'); mode = w.back || 'play'; show('pauseBtn'); showTouch(true);
 }
 function gotIt() { petSay('happy'); G.wrongRun = 0; if (G.tip) G.tip.t = Math.min(G.tip.t, 14); }   // the tip helped: it slides away
 
@@ -5088,6 +5268,7 @@ function update() {
   G.parts = G.parts.filter(p => p.life > 0);
   if (G.shake > 0) G.shake--;
   if (G.tip && --G.tip.t <= 0) G.tip = null;
+  previewTrick();
   if (G.flash > 0) G.flash = Math.max(0, G.flash - 0.04);
   for (const f of G.flyers) { f.t += 1 / 28; if (f.t >= 1) G.pulse = 8; }
   G.flyers = G.flyers.filter(f => f.t < 1);
@@ -7944,18 +8125,26 @@ function wrapLines(txt, maxW) {
 }
 function drawTip() {
   // a small card in the top-left corner, under the hearts; slides in from the left
-  const t = G.tip, w = Math.min(330, VW - 24), h = t.pic ? 114 : 70, slide = Math.min(1, (TIP_T - t.t) / 14, t.t / 14);
+  const t = G.tip, max = t.max || TIP_T, w = Math.min(330, VW - 24), h = (t.pic ? 114 : 70) + (t.q ? 34 : 0), slide = Math.min(1, (max - t.t) / 14, t.t / 14);
   const x = 10 - (1 - slide) * (w + 20), y = VW < 700 ? 200 : 84;
   t.box = { x, y, w, h };
   ctx.globalAlpha = 0.95; ctx.fillStyle = 'rgba(20,20,50,.92)'; rrect(x, y, w, h, 12); ctx.fill(); ctx.globalAlpha = 1;
   ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2; ctx.stroke();
   ctx.save(); ctx.translate(x + 6, y + 14); ctx.scale(0.6, 0.6); ctx.drawImage(SENSEI_SPR.a[0], 0, 0); ctx.restore();
   ctx.font = '12px "Lilita One", "Trebuchet MS", sans-serif'; ctx.fillStyle = '#ffd23f'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-  ctx.fillText("Sensei's tip", x + 48, y + 7);
+  ctx.fillText(t.title || "Sensei's tip", x + 48, y + 7);
   ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.font = '15px "Lilita One", "Trebuchet MS", sans-serif'; ctx.textAlign = 'right'; ctx.fillText('✕', x + w - 8, y + 5);   // tap to close
   ctx.textAlign = 'left'; ctx.font = '13px "Lilita One", "Trebuchet MS", sans-serif'; ctx.fillStyle = '#ffffff';
   wrapLines(t.txt, w - 58).slice(0, 3).forEach((ln, i) => ctx.fillText(ln, x + 48, y + 23 + i * 15));
-  if (t.pic) drawTipPic(t.pic, x + 8, y + 66, w - 16, h - 70, 12);
+  if (t.pic) drawTipPic(t.pic, x + 8, y + 66, w - 16, 44, 12);
+  t.show = null;
+  if (t.q) {   // a button to work the trick out step by step
+    const bw = 130, bh = 26, bx = x + w - bw - 8, by = y + h - bh - 6;
+    t.show = { x: bx, y: by, w: bw, h: bh };
+    ctx.fillStyle = '#2ecc71'; rrect(bx, by, bw, bh, 8); ctx.fill();
+    ctx.fillStyle = '#ffffff'; ctx.font = '15px "Lilita One", "Trebuchet MS", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(isTouch ? 'Show me ▶' : 'Show me ▶ (H)', bx + bw / 2, by + bh / 2 + 1);
+  }
 }
 function drawTipPic(pic, x, y, w, h, big = 18) {   // big: the largest ten-frame cell
   const dot = (cx, cy, r, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill(); };
@@ -8549,6 +8738,7 @@ function setAllOpen(on) {
 }
 
 $('muteBtn').onclick = () => setMuted(!muted);
+$('wkSkip').onclick = () => { audio(); closeWork(); };
 $('musicBtn').onclick = () => { audio(); setMusic(!musicOn); };
 $('easyBtn').onclick = () => setEasy(!prog.easy);
 $('unlockBtn').onclick = () => setAllOpen(!prog.allOpen);
@@ -9469,6 +9659,15 @@ window.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') { if (e.key === 'Enter') $('pSave').click(); return; }   // typing a name
   audio();
   if (!$('dojo').classList.contains('hidden')) { dojoKey(e); return; }
+  if (mode === 'work') {   // Work it out with Sensei: 1-3 or , . / pick, Enter goes on at the end, Escape closes
+    e.preventDefault();
+    if (e.repeat) return;
+    const i = /^Digit[1-3]$/.test(e.code) ? Number(e.code[5]) - 1 : ['Comma', 'Period', 'Slash'].indexOf(e.code);
+    if (e.code === 'Escape') closeWork();
+    else if (work && work.i >= work.steps.length && (e.code === 'Enter' || e.code === 'Space' || i >= 0)) closeWork();
+    else if (i >= 0) workPick(i);
+    return;
+  }
   if (mode === 'pad' && ask && ask.keypad) {
     e.preventDefault();
     if (/^[0-9]$/.test(e.key)) padType(e.key);
@@ -9497,6 +9696,7 @@ window.addEventListener('keydown', e => {
     keys[k] = true;
   }
   if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
+  if (mode === 'play' && e.code === 'KeyH' && G && G.tip && G.tip.q) openWork(G.tip.q, !!G.tip.example);
   if (mode === 'play' && /^Digit[1-5]$/.test(e.code)) tapAnswer(Number(e.code[5]) - 1);
   if (mode === 'play' && ['KeyN', 'KeyM', 'Comma', 'Period', 'Slash'].includes(e.code)) {   // the row just above the arrow keys
     const t = answerTarget();
@@ -9558,7 +9758,7 @@ function frame(now) {
     dojoTick(STEP / 1000);
     if (mode === 'pad') tickPad(STEP / 1000);
     else if (mode === 'race' || mode === 'racedone') { tick++; updateRace(STEP / 1000); }
-    else if (mode !== 'pause' && mode !== 'intro' && !RC) {
+    else if (mode !== 'pause' && mode !== 'intro' && mode !== 'work' && !RC) {
       if (G && G.freeze > 0) G.freeze--;                          // a tiny hit-stop when a boss is struck
       else if (G && G.slow > 0 && G.slow-- % 3) { /* slow motion after a boss falls */ }
       else update();

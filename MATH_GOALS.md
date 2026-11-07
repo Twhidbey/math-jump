@@ -44,7 +44,7 @@ Most useful first:
 
 1. **More typing (recall).** The Daily Dojo types known facts now. Next options: gates show a keypad in expert mode or for gold facts; a "say it first" parent tip in the README.
 2. **A stronger Daily Dojo, the rest:** a small streak reward kids can see grow (pet, belt stripe, Dojo wall); 15–20 questions.
-3. **Show the trick when it's needed, not only after 2 misses.** For example, the first time a new fact type appears (first make-10 fact, first ×9), Sensei shows the trick before the question.
+3. ~~Show the trick when it's needed~~ **Done (Nov 7, 2026):** "New trick!" cards the first time a trick is needed, and "Work it out with Sensei" (step by step) after the same fact is missed twice in a day.
 4. **Kindergarten number sense** (before adding):
    - Counting objects, "how many?" with dots or ten-frames instead of written numbers.
    - Which is more, comparing numbers.
