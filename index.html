@@ -459,7 +459,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 7, 2026 4:05 PM PT · Fix: boss question shows again</div>
+  <div class="build">Updated Nov 7, 2026 4:30 PM PT · Deep sea diver merged in; swing back and forth, clearer diver arms and legs</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1452,6 +1452,9 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
       const s = flat(8); L.clams.push({ x: (s + 4) * T + T / 2, y: GR * T, used: false, open: 0, state: 'shut', t: 0 });
     }
     L.vents = []; L.clams = []; L.leaps = []; L.deep = def.k === 2;   // Sunken Ship: the water gets darker the further you go
+    // Sunken Ship is all deep sea (owner): no surface, no sky, nothing sticking up out of the water. Kai wears the diving
+    // suit he found at the end of the Kelp Forest; it keeps him at a steady depth (L.water is that depth, not a surface).
+    L.abyss = def.k === 2;
     if (L.deep) for (let c = 16; c < 1000; c += ri(rng, 9, 13)) L.lfish = [...(L.lfish || []), { c, r: WS + ri(rng, 2, 6), ph: rng() * 6 }];
     function caveChunk() {   // a little cave on the sea floor with the golden gem inside: dive all the way down and swim in
       const s = flat(10);
@@ -1459,23 +1462,24 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
       rock(s + 7, 2, GR - 4);
       L.coins.push({ x: (s + 5) * T + T / 2, y: (GR - 1.6) * T, v: 25, gold: true, taken: false });
     }
-    const kinds = easy ? ['trail', 'raft', 'reef', 'boxes', 'vent'] : ['trail', 'raft', 'arch', 'reef', 'boxes', 'pillar', 'vent'];
+    const kinds = L.abyss ? (easy ? ['trail', 'reef', 'boxes', 'trail'] : ['trail', 'reef', 'boxes', 'pillar', 'reef'])
+      : easy ? ['trail', 'raft', 'reef', 'boxes', 'vent'] : ['trail', 'raft', 'arch', 'reef', 'boxes', 'pillar', 'vent'];
     const calm = Math.floor(def.n / 2);
     flat(10);
     for (let i = 0; i < def.n; i++) {
       const n = ri(rng, 1, 2);
       for (let k = 0; k < n; k++) seaChunk(kinds[ri(rng, 0, kinds.length - 1)]);
       if (i === 1) caveChunk();
-      if (i === calm) leapChunk();
+      if (i === calm && !L.abyss) leapChunk();
       if (i === 2 || i === def.n - 3) clamChunk();
-      if (i === calm) seaChunk('vent');   // every level has at least one vent
+      if (i === calm && !L.abyss) seaChunk('vent');   // every level has at least one vent (not the deep sea: they shoot Kai out of the water)
       if (i === calm) {   // breathing room: an easy swim with gems (in the Sunken Ship it's where the old ship lies)
         const s = flat(def.k === 2 ? 22 : ri(rng, 14, 18)); for (let k = 2; k < 12; k += 2) coin(s + k, WS + 1 + (k % 4 ? 0 : 2));
         if (def.k === 2) L.ship = { c: s + 3, w: 16 };
       }
       // The gate: a reef wall from the sea floor up out of the water, with three doors (one answer each) at different depths.
       const s = flat(11), q = L.gen();   // a short run-up: the question shows close to its wall
-      for (let r = 2; r < GR; r++) { map[r][s + 8] = 'G'; map[r][s + 9] = 'G'; }
+      for (let r = L.abyss ? 0 : 2; r < GR; r++) { map[r][s + 8] = 'G'; map[r][s + 9] = 'G'; }   // deep sea: up to the top, no way over
       const st = { s, q, sea: true, answers: [0, 1, 2].map(() => ({ c: s + 8, r: WS + 1, val: 0, state: 'idle', shake: 0, cells: [] })), gate: [s + 8, s + 9], solved: false, opening: null, openT: 0, need: 1, got: 0 };
       seaDoors(st, map); L.stations.push(st);
     }
@@ -1484,10 +1488,15 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     { let k = 0; for (let c = 0; c < L.w; c++) for (let r = 0; r < GR; r++) if (map[r][c] === '?' && !L.stations.some(st => c > st.s - 9 && c <= st.gate[1]) && k++ % 2 === 0) L.mboxes.add(c + ',' + r); }
     { let k = 0; L.coins = L.coins.filter(c => c.v >= 10 || k++ % 2 === 0); }
     // The finale: the sand slopes up out of the water to a beach with the scroll and a little beach hut.
+    // Deep sea: the scroll waits on an old anchor on the sea floor, by a little diving bell with lit windows.
     const s = flat(26);
-    for (let i = 0; i < 8; i++) for (let r = Math.max(WS, GR - 1 - i); r < GR; r++) map[r][s + 2 + i] = '#';
-    for (let c = s + 10; c < L.w; c++) for (let r = WS; r < GR; r++) map[r][c] = '#';
-    L.flagC = s + 15; L.castleC = s + 19; L.goalB = WS * T;
+    if (L.abyss) { L.flagC = s + 12; L.castleC = s + 17; L.goalB = GR * T; }
+    else {
+      for (let i = 0; i < 8; i++) for (let r = Math.max(WS, GR - 1 - i); r < GR; r++) map[r][s + 2 + i] = '#';
+      for (let c = s + 10; c < L.w; c++) for (let r = WS; r < GR; r++) map[r][c] = '#';
+      L.flagC = s + 15; L.castleC = s + 19; L.goalB = WS * T;
+      if (def.k === 1) L.suit = { c: s + 12, got: false };   // Kelp Forest: a diving suit waits on the beach for the deep sea
+    }
     if (L.lfish) L.lfish = L.lfish.filter(f => f.c < s && !(L.ship && f.c >= L.ship.c - 1 && f.c <= L.ship.c + L.ship.w));
     // Scenery on the sea floor (not solid, drawn behind the blocks): coral gardens in the Coral Reef, a forest of kelp
     // in the Kelp Forest. Only on open floor, away from the gates.
@@ -2170,6 +2179,32 @@ function drawKai({ P, R, E }, f) {
 const POSE_BODIES = [0, 1, 2, 3, 4, 5, 6, 7].map(m => 'p' + m);
 const bakeNinja = pal => bake(makeFrames(16, 16, { ...KAI_PAL, ...pal }, drawKai, 11), ['stand', 'walkA', 'jump', ...POSE_BODIES]);
 let SPR = bakeNinja({});
+// Kai in the old-time diving suit (sea: Kelp Forest beach onward, all of the deep sea). Same 16 x 16 grid and frames as
+// Kai, faces right: a round brass helmet with a front window (his eyes show), his headband tied round the outside,
+// a canvas suit, gloves, heavy boots and an air tank on his back. r / R = the headband he has on.
+const DIVER_PAL = { h: '#d29a3c', H: '#8a5e22', j: '#ffe08a', g: '#9fd8f0', e: '#16121f', w: '#ffffff', u: '#7a8e96', U: '#4e5f68', a: '#b3c6ce', A: '#5c6f78', t: '#b4c0cc', T: '#6a7a8a', G: '#a0682e', B: '#2a2a32', y: '#c99a3a' };
+function drawDiver({ P, R, E }, f) {
+  R(1, 8, 3, 5, 't'); R(1, 8, 1, 5, 'T'); P(2, 7, 'T');   // air tank
+  E(8.5, 5, 4.7, 4.6, 'h');   // helmet
+  E(8.2, 7.4, 4.2, 2.2, 'H'); E(8.6, 4.8, 4.4, 4, 'h');   // shade along the bottom
+  P(6, 1, 'j'); P(7, 1, 'j'); P(5, 2, 'j');   // shine
+  E(10.6, 5.5, 3.1, 3, 'H'); E(10.6, 5.5, 2.3, 2.2, 'g');   // front window
+  P(10, 5, 'e'); P(10, 6, 'e'); P(12, 5, 'e'); P(12, 6, 'e'); P(9, 4, 'w');   // Kai's eyes and a glint
+  P(5, 5, 'H'); P(5, 6, 'H');   // a bolt on the side
+  R(4, 2, 10, 1, 'r'); P(3, 2, 'R');   // the headband, tied round the outside of the helmet
+  if (f !== 1) { P(2, 2, 'r'); P(1, 3, 'r'); P(2, 3, 'R'); P(0, 4, 'r'); }
+  else { P(2, 3, 'r'); P(1, 3, 'r'); P(0, 3, 'R'); P(1, 4, 'r'); }
+  R(5, 9, 8, 1, 'H'); P(6, 9, 'y'); P(9, 9, 'y'); P(12, 9, 'y');   // brass collar with bolts
+  R(5, 10, 7, 3, 'u'); R(5, 12, 7, 1, 'U'); P(8, 12, 'y');   // canvas suit, weight belt with a buckle
+  P(3, 9, 'U'); P(4, 9, 'U');   // air hose
+  // Arms and legs in their own shades (owner: they blended into the suit): near arm and legs lighter, far arm darker.
+  if (f === 2) { P(11, 10, 'A'); R(12, 9, 2, 2, 'a'); P(14, 8, 'G'); P(13, 8, 'G'); P(4, 10, 'A'); P(4, 11, 'G'); }   // arms up
+  else { P(11, 10, 'A'); P(11, 11, 'A'); R(12, 10, 2, 2, 'a'); P(13, 12, 'G'); P(12, 12, 'G'); P(4, 10, 'A'); P(4, 11, 'A'); P(4, 12, 'G'); }
+  if (f === 0) { R(5, 13, 2, 1, 'a'); R(4, 14, 3, 1, 'B'); R(9, 13, 2, 1, 'a'); R(9, 14, 3, 1, 'B'); }
+  else { R(4, 13, 2, 1, 'a'); R(10, 13, 2, 1, 'a'); R(3, 14, 3, 1, 'B'); R(10, 14, 3, 1, 'B'); }
+}
+const bakeDiver = pal => bake(makeFrames(16, 16, { ...DIVER_PAL, r: pal.r || KAI_PAL.r, R: pal.R || KAI_PAL.R }, drawDiver, 3), ['stand', 'walkA', 'jump']);
+let DIVER = null;
 const ENEMY_SPR = {
   ninja: bakeNinja({ n: '#a3242f', N: '#d0485a', r: '#1a1a1a', R: '#000000', b: '#1a1a1a' }),
   shadow: bakeNinja({ n: '#3d2466', N: '#6b44a8', r: '#b388ff', R: '#7d55c7', b: '#b388ff', s: '#1d1033', w: '#ff3355', e: '#ff3355' }),
@@ -3928,7 +3963,7 @@ function updateSwings() {
   if (G.swing || G.cross) return;
   const p = P, cx = p.x + p.w / 2;
   for (const sw of L.swings || []) {
-    if (sw.done) continue;
+    if (sw.done && sw.lift) continue;
     if (sw.lift) {   // anywhere on the ground between the bottom station and the cliff
       if (p.onGround && Math.abs(p.y + p.h - GR * T) < 4 && cx > sw.b * T && cx < sw.cl * T) {
         G.swing = { sw, lift: true, ph: 'ask', half: 0, t: 0, wait: 0, wob: 0, tiles: null, need: false };
@@ -3938,9 +3973,17 @@ function updateSwings() {
       }
       continue;
     }
-    const onLedge = p.onGround && Math.abs(p.y + p.h - swingTop()) < 4 && cx > sw.l0 * T && cx < (sw.l0 + 2) * T;   // anywhere on the start ledge
-    const leaping = !p.onGround && p.y + p.h < swingTop() + 12 && cx > (sw.l0 + 1) * T && cx < (sw.l0 + 5) * T;   // jumped out over the gap: he grabs the rope
-    if (onLedge || leaping) { swingStart(sw); return; }
+    const up = Math.abs(p.y + p.h - swingTop()) < 4, high = !p.onGround && p.y + p.h < swingTop() + 12;
+    const onLedge = p.onGround && up && cx > sw.l0 * T && cx < (sw.l0 + 2) * T;   // anywhere on the start ledge
+    const onEnd = p.onGround && up && cx > sw.l1 * T && cx < (sw.l1 + 2) * T;      // the far ledge
+    if (sw.rearm && !onLedge) sw.rearm = false;   // he stepped back off the swing: it waits until he leaves the ledge (or walks at the gap)
+    if (sw.done) {   // crossed already: he can swing back and forth freely, no questions (walk at the gap, or jump out over it)
+      if ((onLedge && keys.right && cx > (sw.l0 + 1) * T) || (high && p.vx > 0 && cx > (sw.l0 + 1.5) * T && cx < (sw.l0 + 5) * T)) { swingFree(sw, 1); return; }
+      if ((onEnd && keys.left && cx < (sw.l1 + 1) * T) || (high && p.vx < 0 && cx < (sw.l1 + 0.5) * T && cx > (sw.l1 - 3) * T)) { swingFree(sw, -1); return; }
+      continue;
+    }
+    const leaping = high && cx > (sw.l0 + 1) * T && cx < (sw.l0 + 5) * T;   // jumped out over the gap: he grabs the rope
+    if ((onLedge && (!sw.rearm || keys.right)) || leaping) { swingStart(sw); return; }
   }
 }
 function swingStart(sw) {
@@ -3950,6 +3993,12 @@ function swingStart(sw) {
   p.inv = 0;   // never mid-blink (he can't be hurt while swinging, and the blink timer doesn't run here)
   swingNext(G.swing);
   if (!sw.told) { sw.told = true; floatText(p.x + p.w / 2, p.y - 46, (SWING_LOOK[L.world.key] || SWING_LOOK.japan).tell, '#ffd23f', 24); }
+}
+// A free swing (no question): over both gaps on a crossing he has done, or back from the perch to the start ledge.
+function swingFree(sw, dir) {
+  const p = P;
+  G.swing = { sw, free: true, dir, ph: 'go', half: dir > 0 ? 0 : 1, t: 0, wait: 0, wob: 0, from: p.x + p.w / 2, tiles: null };
+  p.vx = p.vy = 0; p.inv = 0;
 }
 function swingNext(g) { g.q = L.gen(); g.opts = choices(g.q, 3); g.shownAt = G.time; g.pick = -1; }
 function swingTick() {
@@ -3961,17 +4010,25 @@ function swingTick() {
     p.x = g.bx + (g.wob ? Math.sin(g.wob * 0.9) * 3 : 0);
     if (g.wait > 0 && --g.wait === 0) swingNext(g);
     if (keys.jumpPressed) { keys.jumpPressed = false; if (G.time - (g.told || -999) > 90) { g.told = G.time; floatText(p.x + p.w / 2, p.y - 30, 'Pick a number!', '#ffd23f', 22); } }
-    if (keys.left && g.half === 0 && !g.wait) { G.swing = null; p.x = (sw.l0 + 0.4) * T - p.w / 2; p.face = -1; }   // changed his mind: steps back
+    if (keys.left && !g.wait) {   // changed his mind: steps back (from the perch he swings back to the start ledge)
+      if (g.half === 0) { G.swing = null; sw.rearm = true; p.x = (sw.l0 + 0.4) * T - p.w / 2; p.face = -1; }
+      else { g.free = true; g.dir = -1; g.half = 0; g.ph = 'go'; g.t = 0; g.q = null; g.from = null; }
+    }
     return;
   }
   keys.jumpPressed = false;
-  const u = Math.min(1, g.t / SWING_FRAMES), [x0, x1] = swingEnds(sw, g.half), e = u * u * (3 - 2 * u);
+  const u = Math.min(1, g.t / SWING_FRAMES), [a, b] = swingEnds(sw, g.half), [x0, x1] = g.dir < 0 ? [b, a] : [a, b], e = u * u * (3 - 2 * u);
+  const xs = g.from != null ? g.from : x0;   // a free swing starts from wherever he stood on the ledge
   const look = SWING_LOOK[L.world.key] || SWING_LOOK.japan, depth = look.lift ? 0.6 * T : 1.8 * T;
-  p.x = x0 + (x1 - x0) * e - p.w / 2; p.y = swingTop() - p.h + depth * Math.sin(Math.PI * e); p.onGround = false; p.face = 1;
+  p.x = xs + (x1 - xs) * e - p.w / 2; p.y = swingTop() - p.h + depth * Math.sin(Math.PI * e); p.onGround = false; p.face = g.dir < 0 ? -1 : 1;
   if (g.t === 1) tone(240, 0.5, 'sine', 0.04, 520);   // whoosh
   if (u >= 1) {
-    p.y = swingTop() - p.h; p.onGround = true; p.squash = 6;
-    if (g.half === 0) { g.half = 1; g.ph = 'ask'; g.t = 0; g.bx = x1 - p.w / 2; swingNext(g); }
+    p.y = swingTop() - p.h; p.onGround = true; p.squash = 6; g.from = null;
+    if (g.free) {   // on over the other gap, or off at the end
+      const nh = g.half + g.dir;
+      if (nh === 0 || nh === 1) { g.half = nh; g.t = 0; }
+      else { G.swing = null; p.vx = 0; if (g.dir < 0) sw.rearm = true; }
+    } else if (g.half === 0) { g.half = 1; g.ph = 'ask'; g.t = 0; g.bx = x1 - p.w / 2; swingNext(g); }
     else { sw.done = true; G.swing = null; confetti(p.x + p.w / 2, p.y); sfx.win(); floatText(p.x + p.w / 2, p.y - 40, 'Made it across!', '#3ae374', 26); }
   }
 }
@@ -4009,6 +4066,7 @@ const inWater = p => !!L.water && p.y + p.h * 0.5 > L.water - 8 && p.vy > -6;
 function swimY(p) {
   const depth = p.y + p.h * 0.5 - L.water;   // 0 = floating at the surface
   p.coyote = 0;
+  if (L.abyss && p.jbuf > 0) p.jbuf = 0;   // deep sea: no surface to leap out of (▲ just swims up)
   if (p.jbuf > 0 && depth < 14) {   // leap out of the water (by the rocky island: a big dolphin leap with a flip)
     const lp = (L.leaps || []).find(l => p.x + p.w > (l.c - 4) * T && p.x < (l.c + 3) * T);
     if (lp) { p.vy = -11.5; p.flipT = 40; if (lp.seal === 'sit') { lp.seal = 'dive'; lp.st = 0; } burst(p.x + p.w / 2, L.water, '#e8f8ff', 14, 4); floatText(p.x + p.w / 2, p.y - 20, 'Splash!', '#9be7ff', 24); }
@@ -4022,12 +4080,14 @@ function swimY(p) {
   else if (depth < -3) p.vy = Math.min(p.vy + 0.35, 3);
   else p.vy *= 0.8;
   if (p.vy > 4.5) p.vy *= 0.82;   // splashing in from a leap
-  if (depth > 20 && tick % 26 === 0) G.parts.push({ k: 'bit', x: p.x + p.w / 2 + p.face * 8, y: p.y + 6, vx: 0, vy: -1.2, life: 40, col: 'rgba(225,245,255,.85)', s: 4 });
+  if (L.abyss && tick % 34 === 0) G.parts.push({ k: 'bit', x: p.x + p.w / 2 - p.face * 6, y: p.y - 6, vx: 0, vy: -1.3, up: true, life: 46, col: 'rgba(225,245,255,.85)', s: 4 });   // air from the helmet
+  else if (depth > 20 && tick % 26 === 0) G.parts.push({ k: 'bit', x: p.x + p.w / 2 + p.face * 8, y: p.y + 6, vx: 0, vy: -1.2, life: 40, col: 'rgba(225,245,255,.85)', s: 4 });
 }
 // Swimming into something at the surface: a beach or step with open air above it gets a little hop up onto it.
 // Touching a door never answers it (owner saw Kai stuck at a wall, answering by accident over and over): sea doors are
 // picked with the buttons or keys, and the right one swims Kai through.
 function seaWall(p, wet) {
+  if (L.abyss) return;   // the deep sea has no beach to hop onto
   const c = Math.floor((p.face > 0 ? p.x + p.w + 2 : p.x - 2) / T);
   if (wet && (keys.left || keys.right) && p.y + p.h * 0.5 - L.water < 30 && !solid(c, SEA_TOP - 1) && !solid(c, SEA_TOP - 2)) p.vy = -8.6;
 }
@@ -5148,6 +5208,11 @@ function updatePlayer() {
     G.score += G.hearts * 300; confetti(p.x + p.w / 2, p.y);
     floatText(p.x + p.w / 2, p.y - 20, 'Scroll recovered!', '#ffd23f', 30);
   }
+  if (L.suit && !L.suit.got && p.x + p.w > L.suit.c * T + 6) {   // Kelp Forest beach: Kai puts on the diving suit for the deep sea
+    L.suit.got = true; G.suit = true; sfx.correct(); confetti(p.x + p.w / 2, p.y);
+    floatText(p.x + p.w / 2, p.y - 40, 'Diving suit!', '#ffd23f', 30);
+    floatText(p.x + p.w / 2, p.y - 6, 'Ready for the deep sea!', '#9be7ff', 20);
+  }
   if (!L.boss && !L.vault && p.x + p.w >= L.flagC * T + T / 2 - 6) {
     mode = 'win'; G.winT = 0; stopMusic(); sfx.win(); hide('pauseBtn'); showTouch(false); petSay('dance');
     const bonus = Math.max(0, GR - Math.floor((p.y + p.h) / T)) * 100 + G.hearts * 300;
@@ -5453,10 +5518,12 @@ function armReach(p) {   // 0..1: how far the arm is out
 function armTick(p, b) {
   p.t++;
   if (b && !b.dying && !b.outro) p.x = b.x + (p.dir < 0 ? 16 : b.w - 16);
-  const u = armReach(p), len = u * (p.dir < 0 ? p.x : L.w * T - p.x), x0 = p.dir < 0 ? p.x - len : p.x;   // reaches the far wall of the arena
+  const u = armReach(p), len = u * (p.dir < 0 ? p.x : L.w * T - p.x);   // reaches the far wall of the arena
   p.tip = p.dir < 0 ? p.x - len : p.x + len;
   if (p.t > p.warn + ARM_OUT + ARM_HOLD + ARM_BACK) p.done = true;
-  if (u > 0.1 && mode === 'play' && !p.done && overlap(P, { x: x0, y: p.y - 14, w: len, h: 28 })) { if (fiery()) { p.t = Math.max(p.t, p.warn + ARM_OUT + ARM_HOLD); } else hurt(); }
+  // It only hurts where it runs along its lane (the bend near the body is part of the octopus, which hurts anyway).
+  const h0 = p.x + p.dir * ARM_BEND * 0.7, h1 = p.tip, hx = Math.min(h0, h1), hw = Math.max(0, Math.abs(h1 - h0));
+  if (u > 0.1 && mode === 'play' && !p.done && hw > 0 && (p.dir < 0 ? h1 < h0 : h1 > h0) && overlap(P, { x: hx, y: p.y - 14, w: hw, h: 28 })) { if (fiery()) { p.t = Math.max(p.t, p.warn + ARM_OUT + ARM_HOLD); } else hurt(); }
 }
 // Each hit makes the octopus let go of something from his hoard: a pearl, shell or coin floats off and a little fish
 // comes to take it home. The pile behind him shrinks as he loses arms' worth of treasure.
@@ -5581,10 +5648,11 @@ function updateWin() {
     if (G.winT === 120) finishLevel();
     return;
   }
+  const fall = L.abyss ? 3 : 12;   // deep sea: Kai sinks gently down to the sea floor
   if (G.winT < 50) {
-    p.vx *= 0.8; p.vy = Math.min(p.vy + 0.55, 12); moveX(p); moveY(p);   // stop and catch the scroll
+    p.vx *= 0.8; p.vy = Math.min(p.vy + 0.55, fall); moveX(p); moveY(p);   // stop and catch the scroll
   } else {
-    p.face = 1; p.vx = 2.6; p.vy = Math.min(p.vy + 0.55, 12);
+    p.face = 1; p.vx = 2.6; p.vy = Math.min(p.vy + 0.55, fall);
     moveX(p); moveY(p); p.anim += 0.16;
   }
   if (G.winT === 210) finishLevel();
@@ -5602,7 +5670,7 @@ function updateAmbient() {
   for (const p of ambient) { p.a += 0.05; p.x += p.vx + Math.sin(p.a) * 0.4; p.y += p.vy; }
   for (let i = ambient.length - 1; i >= 0; i--) {
     const p = ambient[i];
-    if (p.y > VH + 20 || p.y < -20 || p.x < -20 || (p.k === 'petal') !== (k === 'japan') || (p.k === 'flake') !== (k === 'snow') || (p.k === 'bubble') !== (k === 'sea') || (p.k === 'bubble' && p.y < SEA_TOP * T + 4)) ambient.splice(i, 1);
+    if (p.y > VH + 20 || p.y < -20 || p.x < -20 || (p.k === 'petal') !== (k === 'japan') || (p.k === 'flake') !== (k === 'snow') || (p.k === 'bubble') !== (k === 'sea') || (p.k === 'bubble' && p.y < (L.abyss ? -10 : SEA_TOP * T + 4))) ambient.splice(i, 1);
   }
 }
 
@@ -5621,6 +5689,7 @@ function finishLevel() {
   let body = st.boss ? `<div class="bigicon">${pixImg('scroll', 'pix big')}</div>` : `<div class="bigicon">${pixImg('piece', 'pix big')}<small>${found}/3</small></div>`;
   // Each boss's win card (the Shogun's is the ending).
   if (st.boss && BOSS_CARD[W.boss.kind]) body = sceneHTML(W.boss.kind) + `<p class="freed">${BOSS_CARD[W.boss.kind]}</p>`;
+  if (G.suit) body += `<p class="freed">Kai got a diving suit! Next stop: the deep sea.</p>`;
   body += `<div class="medalrow"><span class="dots">${'●'.repeat(dots) + '○'.repeat(3 - dots)}</span> ${medalImg(dots, 'pix sm')}</div>`;
   const earned = Math.round((G.coins + (st.boss ? 20 : 0)) * TIER_GEMS[sk.tier - 1]);
   prog.bank += earned; prog.stats.gems += earned; save();
@@ -5723,7 +5792,7 @@ function update() {
   for (const p of G.parts) {
     p.life--; p.x += p.vx; p.y += p.vy;
     if (p.k === 'prize') p.vy *= 0.92;
-    if (p.k === 'bit') p.vy += 0.4;
+    if (p.k === 'bit' && !p.up) p.vy += 0.4;   // up: bubbles keep rising
     if (p.k === 'coin') p.vy += 0.6;
   }
   G.parts = G.parts.filter(p => p.life > 0);
@@ -6333,6 +6402,7 @@ const TURTLE_PIX = [['....ggg...', '..ggGgGg..', '.gGgggGgss', 'fgggGgggse', '.f
 const WHALE_PIX = ['......xxxxxxxxx.....', '...xxxxxxxxxxxxxx...', '.xxxxxxxxxxxxxxxxx.x', 'xxxxxexxxxxxxxxxxxxx', 'xxwwwwwxxxxxxxxxx.xx', '.wwwwwwwwxxxxxxx....'];
 function bgSea() {
   const top = SEA_TOP * T, k = L.def && !L.def.boss ? L.def.k : 0, [w0, w1] = SEA_WATER[k] || SEA_WATER[0], floor = GR * T;
+  if (L.abyss) { bgAbyss(); return; }
   clouds('rgba(255,255,255,.75)');
   repeat(0.06, 640, x => { poly([[x - 120, top], [x - 60, top - 34], [x + 10, top - 46], [x + 80, top - 30], [x + 130, top]], '#6aa88a'); poly([[x - 20, top - 44], [x + 10, top - 46], [x + 40, top - 40], [x + 10, top - 36]], '#8ac8a0'); }, 31);
   const g = ctx.createLinearGradient(0, top, 0, VH); g.addColorStop(0, w0); g.addColorStop(1, w1);
@@ -6383,6 +6453,45 @@ function bgSea() {
     for (let j = 0; j < n; j++) ctx.fillRect(Math.round(x + Math.round(Math.sin(tick * 0.03 + j * 0.6 + i) * j * 0.7) * 2), floor - (j + 1) * 9, 6, 9);
   }, 59);
 }
+// The deep sea (Sunken Ship, owner: "completely underwater, no sky islands, everything should look like deep sea"):
+// water from the top of the screen to the floor, dark trench walls far away, sea snow drifting down, little glowing
+// specks and far-off glowing jellyfish, the old ship's shape in the back, dim seaweed.
+function bgAbyss() {
+  const floor = GR * T;
+  const g = ctx.createLinearGradient(0, 0, 0, VH); g.addColorStop(0, '#0e3a66'); g.addColorStop(0.55, '#06203e'); g.addColorStop(1, '#020a18');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+  repeat(0.08, 520, (x, i) => {   // far trench walls: tall dark rock rising from the deep
+    const h = 300 + hash(i + 4) * 160, w = 160 + hash(i + 8) * 120;
+    poly([[x - w, VH], [x - w * 0.7, VH - h * 0.6], [x - w * 0.45, VH - h * 0.75], [x - w * 0.2, VH - h], [x + w * 0.15, VH - h * 0.85], [x + w * 0.5, VH - h * 0.55], [x + w, VH]], '#071a32');
+  }, 71);
+  hills(0.2, 360, '#0a2440', 140, 41);
+  for (let i = 0; i < 60; i++) {   // sea snow, drifting down slowly
+    const x = ((hash(i + 300) * 1400 - cam * 0.25 + Math.sin(tick * 0.01 + i) * 10) % 1400 + 1400) % 1400, y = (hash(i + 400) * VH + tick * (0.15 + hash(i) * 0.25)) % VH;
+    if (x < VW) { ctx.fillStyle = 'rgba(200,225,255,.35)'; ctx.fillRect(Math.round(x), Math.round(y), 2, 2); }
+  }
+  for (let i = 0; i < 18; i++) {   // little glowing specks that pulse
+    const x = ((hash(i + 500) * 1800 - cam * 0.35) % 1800 + 1800) % 1800, y = 40 + hash(i + 600) * (floor - 120) + Math.sin(tick * 0.02 + i) * 8;
+    if (x > VW + 20) continue;
+    const a = 0.25 + 0.25 * Math.sin(tick * 0.05 + i * 1.7);
+    glowAt(x, y, 14, `rgba(110,255,220,${a})`); ctx.fillStyle = `rgba(180,255,240,${a + 0.3})`; ctx.fillRect(Math.round(x) - 1, Math.round(y) - 1, 3, 3);
+  }
+  for (let j = 0; j < 3; j++) {   // far-off jellyfish, glowing softly as they pulse upward
+    const cyc = 1600 + j * 400, u = ((tick + j * 700) % cyc) / cyc, x = ((hash(j + 700) * VW + j * 300) % VW), y = floor - u * (floor + 80), pulse = Math.sin(tick * 0.08 + j) * 2;
+    glowAt(x, y, 30, 'rgba(200,140,255,.25)');
+    ctx.fillStyle = 'rgba(210,170,255,.5)'; ctx.beginPath(); ctx.ellipse(x, y, 12 + pulse, 8, 0, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = 'rgba(210,170,255,.35)'; for (let t = -2; t <= 2; t++) for (let k = 0; k < 4; k++) ctx.fillRect(Math.round(x + t * 4 + Math.sin(tick * 0.06 + k + t) * 2), Math.round(y + 2 + k * 5), 2, 4);
+  }
+  repeat(0.3, 1400, x => {   // the old ship, broken in two on the sea floor
+    poly([[x - 160, floor], [x - 150, floor - 70], [x + 40, floor - 60], [x + 20, floor]], '#0f2236'); poly([[x + 70, floor], [x + 80, floor - 50], [x + 200, floor - 80], [x + 190, floor]], '#0f2236');
+    ctx.fillStyle = '#132a42'; ctx.fillRect(x - 70, floor - 190, 10, 130); ctx.fillRect(x - 110, floor - 170, 90, 6);
+  }, 53);
+  repeat(0.65, 110, (x, i) => {   // dim seaweed
+    if (hash(i + 5) < 0.45) return;
+    const n = 3 + Math.floor(hash(i + 2) * 4);
+    ctx.fillStyle = '#1f4a42';
+    for (let j = 0; j < n; j++) ctx.fillRect(Math.round(x + Math.round(Math.sin(tick * 0.03 + j * 0.6 + i) * j * 0.7) * 2), floor - (j + 1) * 9, 6, 9);
+  }, 59);
+}
 // Sunken Ship: the water gets darker the further Kai swims (and the deeper), with glowing lantern fish lighting the way.
 // Kai, the gate doors, clams and their pearls always glow, so the math stays easy to see.
 let seaDarkCv = null;
@@ -6390,7 +6499,7 @@ function drawSeaDark() {
   const prog01 = clamp((P.x / T - 10) / Math.max(1, L.flagC - 40), 0, 1), a = 0.25 + 0.5 * prog01 * (P.x / T < L.flagC - 14 ? 1 : 0.3);
   if (!seaDarkCv) seaDarkCv = document.createElement('canvas');
   if (seaDarkCv.width !== VW) { seaDarkCv.width = VW; seaDarkCv.height = VH; }
-  const d = seaDarkCv.getContext('2d'), top = L.water;
+  const d = seaDarkCv.getContext('2d'), top = L.abyss ? 0 : L.water;
   d.globalCompositeOperation = 'source-over'; d.clearRect(0, 0, VW, VH);
   const g = d.createLinearGradient(0, top, 0, VH); g.addColorStop(0, `rgba(2,8,24,${a * 0.6})`); g.addColorStop(1, `rgba(2,8,24,${a})`);
   d.fillStyle = g; d.fillRect(0, top, VW, VH - top);
@@ -6402,6 +6511,7 @@ function drawSeaDark() {
   for (const cl of L.clams || []) hole(cl.x, cl.y - 20, 70);
   if (L.ship) for (let k = 0; k < 4; k++) hole(L.ship.c * T + 90 + k * 70, GR * T - 3.6 * T + k * 6, 60);   // the ship's portholes glow
   if (G.mbox) G.mbox.bubbles.forEach(b => hole(b.x, b.y, 40));
+  if (L.abyss) { const sp = scrollSpot(); hole(sp.x, sp.y, 110); hole(L.castleC * T + 2.5 * T, GR * T - 1.6 * T, 140); }   // the scroll and the diving bell's lit windows
   ctx.drawImage(seaDarkCv, 0, 0);
 }
 // Lantern fish (Sunken Ship): a little dark fish with a glowing light on a stalk, drifting in a small loop.
@@ -6521,8 +6631,9 @@ function drawSeaFloorThings() {
 }
 // The water's surface, drawn over everything at the end: a soft blue tint under it and a wavy bright line.
 function drawWaterFront() {
-  const top = L.water, x0 = cam - 20, x1 = cam + VW + 20;
+  const top = L.abyss ? 0 : L.water, x0 = cam - 20, x1 = cam + VW + 20;
   ctx.fillStyle = 'rgba(40,150,230,.06)'; ctx.fillRect(x0, top, x1 - x0, VH - top);
+  if (L.abyss) return;   // the deep sea: no surface in sight
   ctx.fillStyle = 'rgba(255,255,255,.6)';
   for (let x = Math.floor(x0 / 12) * 12; x < x1; x += 12) ctx.fillRect(x, top - 2 + Math.round(Math.sin(x * 0.05 + tick * 0.06) * 2), 9, 3);
 }
@@ -7124,6 +7235,12 @@ function drawGround(x, y, c, r, top) {
       break;
     }
     case 'sea': {   // sand
+      if (L.abyss) {   // the deep sea floor: dark grey silt
+        ctx.fillStyle = '#3e4c5c'; ctx.fillRect(x, y, T, T);
+        ctx.fillStyle = '#2e3a48'; const h = (c * 41 + r * 23) % 9; ctx.fillRect(x + 5 + h, y + 15, 4, 3); ctx.fillRect(x + 22 - h, y + 27, 5, 3);
+        if (top) { ctx.fillStyle = '#5a6a7a'; ctx.fillRect(x, y, T, 7); ctx.fillStyle = '#7a8a96'; ctx.fillRect(x + ((c * 13) % 24), y + 2, 4, 2); }
+        break;
+      }
       ctx.fillStyle = '#e2bf7e'; ctx.fillRect(x, y, T, T);
       ctx.fillStyle = '#c9a463'; const h = (c * 41 + r * 23) % 9; ctx.fillRect(x + 5 + h, y + 15, 4, 3); ctx.fillRect(x + 22 - h, y + 27, 5, 3);
       if (top) { ctx.fillStyle = '#f6dfa8'; ctx.fillRect(x, y, T, 8); ctx.fillStyle = 'rgba(0,0,0,.1)'; ctx.fillRect(x, y + 8, T, 2); }
@@ -7323,7 +7440,7 @@ function drawTile(t, x, y, c, r) {
         poly([[cx, cy - 10 * a], [cx + 3, cy - 3], [cx + 10 * a, cy], [cx + 3, cy + 3], [cx, cy + 10 * a], [cx - 3, cy + 3], [cx - 10 * a, cy], [cx - 3, cy - 3]], ctx.fillStyle);
       }
       break;
-    case 'S': block(x, y, W.stair[0], W.stair[1], W.stair[2]); break;
+    case 'S': if (L.abyss) block(x, y, '#3e4c5e', '#1e2836', '#5a6a7e'); else block(x, y, W.stair[0], W.stair[1], W.stair[2]); break;   // deep sea: dark rock
     case 'W': block(x, y, W.brick[0], W.brick[1], W.brick[2] || W.brick[0]); ctx.strokeStyle = '#1a1a2a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x + 8, y + 4); ctx.lineTo(x + 16, y + 16); ctx.lineTo(x + 12, y + 22); ctx.lineTo(x + 24, y + 32); ctx.moveTo(x + 16, y + 16); ctx.lineTo(x + 28, y + 12); ctx.stroke(); break;
     case 'P': case 'Q': case 'p': case 'q': {
       const top = t === 'P' || t === 'Q', left = t === 'P' || t === 'p';
@@ -7595,9 +7712,17 @@ function drawSigns() {
   for (const st of [...L.stations, ...(L.walls || [])]) if (st.gfx && st.gfx.t < 120 && Math.abs(st.gfx.x0 - cam - VW / 2) < VW) drawGateFx(st);
   for (const st of L.stations) {
     if (st.star) drawShuriken(st.star.x, st.star.y, st.star.spin, '#d8dfe8', '#5a6472', 16);
-    const x = (st.sea ? st.s + 2 : st.s) * T + 4, y = st.sea ? L.water - 2.6 * T : (GR - 3.1) * T, w = 3.5 * T, h = 1.25 * T;
+    const x = (st.sea ? st.s + 2 : st.s) * T + 4, y = st.sea ? L.water - (L.abyss ? 1.6 : 2.6) * T : (GR - 3.1) * T, w = 3.5 * T, h = 1.25 * T;
     if (x > cam + VW || x + w < cam) continue;
-    if (st.sea) {   // the sign stands on a red and white buoy floating at the surface
+    if (st.sea && L.abyss) {   // deep sea: the sign hangs under a glowing float, tied to a rock on the sea floor
+      const bob = Math.sin(tick * 0.05 + st.s) * 2, cx = x + w / 2;
+      ctx.fillStyle = '#8a7a5a'; ctx.fillRect(cx - 1, y + h, 3, GR * T - y - h - 10);   // the rope
+      ctx.fillStyle = '#4a5260'; ctx.fillRect(cx - 12, GR * T - 14, 24, 14); ctx.fillStyle = '#6a7484'; ctx.fillRect(cx - 12, GR * T - 14, 24, 4);   // its rock
+      glowAt(cx, y - 14 + bob, 34, 'rgba(255,190,90,.45)');
+      ctx.fillStyle = '#ff9a3a'; ctx.beginPath(); ctx.arc(cx, y - 14 + bob, 13, 0, 7); ctx.fill();
+      ctx.fillStyle = '#ffd08a'; ctx.fillRect(cx - 6, y - 22 + bob, 5, 5);
+      ctx.fillStyle = '#8a7a5a'; ctx.fillRect(cx - 1, y - 2 + bob, 3, 4);
+    } else if (st.sea) {   // the sign stands on a red and white buoy floating at the surface
       const bob = Math.sin(tick * 0.05 + st.s) * 2;
       ctx.fillStyle = '#6e4627'; ctx.fillRect(x + w / 2 - 4, y + h, 8, L.water - y - h + bob);
       ctx.fillStyle = '#e63946'; ctx.beginPath(); ctx.ellipse(x + w / 2, L.water + 4 + bob, 20, 12, 0, 0, 7); ctx.fill();
@@ -7657,7 +7782,7 @@ function drawDecor(c) {
 // Each level hangs its scroll piece from something of its own; each world ends at a fitting home.
 const SCROLL_AT = { sea: [[-32, -2.9], [0, -2.9]], snow: [[-30, -4.2], [-34, -4.0]], japan: [[-34, -4.1], [-30, -4.4]], lava: [[0, -3.7], [0, -3.2]], robot: [[-36, -3.1], [0, -3.4]], castle: [[-30, -3.2], [-28, -3.1]] };
 function scrollSpot() {
-  const [dx, dy] = SCROLL_AT[L.world.key][L.def.k % 2] || [0, -3];
+  const [dx, dy] = L.abyss ? [-30, -2.2] : SCROLL_AT[L.world.key][L.def.k % 2] || [0, -3];
   const bob = L.world.key === 'robot' && L.def.k % 2 === 1 ? Math.sin(tick * 0.06) * 6 : 0;
   return { x: L.flagC * T + T / 2 + dx, y: (L.goalB || GR * T) + dy * T + bob };
 }
@@ -7874,7 +7999,7 @@ function drawGoal() {
   const px = L.flagC * T + T / 2, b = L.goalB || GR * T;
   const inside = G && (mode === 'win' || mode === 'done') && P.x > (L.castleC + 2.2) * T;
   if (px > cam - 300 && px < cam + VW + 300) {
-    HOLDERS[L.world.key][L.def.k % 2](px, b);
+    if (L.abyss) deepAnchor(px, b); else HOLDERS[L.world.key][L.def.k % 2](px, b);
     if (!inside && !(G && (mode === 'win' || mode === 'done'))) {   // waiting on its holder (once Kai has it, drawCarriedScroll draws it)
       const { x, y } = scrollSpot();
       glowAt(x, y, 34, 'rgba(255,230,120,.5)');
@@ -7882,7 +8007,41 @@ function drawGoal() {
     }
   }
   const cx = L.castleC * T;
-  if (cx < cam + VW + 60 && cx + 5 * T > cam - 60) HOMES[L.world.key](cx, b);
+  if (cx < cam + VW + 60 && cx + 5 * T > cam - 60) (L.abyss ? divingBell : HOMES[L.world.key])(cx, b);
+  if (L.suit && !L.suit.got) {   // Kelp Forest: the diving suit on a little stand on the beach
+    const sx = L.suit.c * T + T / 2;
+    glowAt(sx, b - 22, 40, `rgba(255,230,140,${0.3 + 0.15 * Math.sin(tick * 0.1)})`);
+    drawBaked(DIVER || (DIVER = bakeDiver(heroPal())), 'stand', false, { x: sx - 12, y: b - 44, w: 24, h: 44 });   // standing on the sand, ready to put on
+    if (tick % 60 < 40) hudText('!', sx, b - 1.9 * T - Math.abs(Math.sin(tick * 0.08)) * 6, 22, '#ffd23f', 'center');
+  }
+}
+// The deep sea's scroll holder: an old anchor stuck in the sand, the scroll tied to its crossbar.
+function deepAnchor(px, b) {
+  ctx.fillStyle = '#3a4250'; ctx.fillRect(px - 6, b - 3.3 * T, 12, 3.3 * T - 8);   // shaft
+  ctx.fillRect(px - 34, b - 3.0 * T, 68, 9);   // crossbar
+  ctx.strokeStyle = '#3a4250'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(px, b - 3.3 * T - 10, 10, 0, 7); ctx.stroke();   // ring
+  ctx.beginPath(); ctx.arc(px, b - 0.9 * T, 0.9 * T, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();   // the arms, half in the sand
+  ctx.fillStyle = '#5a6474'; ctx.fillRect(px - 4, b - 3.3 * T, 3, 3.3 * T - 8);
+  ctx.fillStyle = '#2f6a4a'; [[-30, -3.0], [8, -2.4], [-3, -1.2]].forEach(([dx, dy]) => ctx.fillRect(px + dx, b + dy * T, 10, 4));   // moss
+  ctx.fillStyle = '#c9b48a'; ctx.beginPath(); ctx.ellipse(px, b, 40, 8, 0, Math.PI, 0); ctx.fill();   // sand heaped round it
+  line(px - 30, b - 3.0 * T + 8, px - 30, b - 2.2 * T - 14, '#e63946', 2);
+}
+// The deep sea's home: a little brass diving bell resting on the sea floor, with warm lit windows and an open hatch.
+function divingBell(cx, b) {
+  const w = 5 * T, mx = cx + w / 2, top = b - 3.4 * T;
+  ctx.fillStyle = '#5a4018'; ctx.fillRect(cx + 14, b - 12, 10, 12); ctx.fillRect(cx + w - 24, b - 12, 10, 12);   // feet
+  ctx.fillStyle = '#7a5a22'; ctx.beginPath(); ctx.moveTo(cx + 4, b - 10); ctx.lineTo(cx + 16, top + 50); ctx.quadraticCurveTo(mx, top - 30, cx + w - 16, top + 50); ctx.lineTo(cx + w - 4, b - 10); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#b8863a'; ctx.beginPath(); ctx.moveTo(cx + 10, b - 14); ctx.lineTo(cx + 20, top + 52); ctx.quadraticCurveTo(mx, top - 22, cx + w - 20, top + 52); ctx.lineTo(cx + w - 10, b - 14); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#7a5a22'; ctx.fillRect(cx + 6, b - 0.9 * T, w - 12, 8); ctx.fillRect(cx + 16, top + 1.3 * T, w - 32, 6);   // bands
+  ctx.fillStyle = '#e0b860'; for (let k = 0; k < 9; k++) ctx.fillRect(cx + 14 + k * 18, b - 0.9 * T + 2, 4, 4);   // rivets
+  ctx.fillStyle = '#7a5a22'; ctx.fillRect(mx - 8, top - 4, 16, 14);   // the top fitting
+  for (const wx of [cx + 1.1 * T, cx + w - 1.1 * T]) {   // round windows, lit from inside
+    glowAt(wx, b - 2.1 * T, 30, 'rgba(255,220,130,.45)');
+    ctx.fillStyle = '#5a4018'; ctx.beginPath(); ctx.arc(wx, b - 2.1 * T, 13, 0, 7); ctx.fill();
+    ctx.fillStyle = '#ffe9a8'; ctx.beginPath(); ctx.arc(wx, b - 2.1 * T, 9, 0, 7); ctx.fill();
+  }
+  ctx.fillStyle = '#1a1208'; ctx.beginPath(); ctx.moveTo(cx + 2 * T, b - 14); ctx.lineTo(cx + 2 * T, b - 1.4 * T); ctx.arc(mx, b - 1.4 * T, 0.5 * T, Math.PI, 0); ctx.lineTo(cx + 3 * T, b - 14); ctx.fill();   // the open hatch
+  ctx.fillStyle = 'rgba(255,220,130,.25)'; ctx.fillRect(cx + 2 * T + 6, b - 1.3 * T, T - 12, 1.3 * T - 16);
 }
 // The scroll flies into Kai's hands and he carries it home. Drawn right after Kai, so the house never covers it
 // while he is in front of the house; it disappears with him when he goes inside.
@@ -7992,6 +8151,38 @@ function drawBoss() {
   }
 }
 
+// The tentacle grows out of the octopus's side, bends up or down to its lane, then runs along the lane to a curled
+// tip (owner: the arm should stay joined to the octopus as it shoots out). During the warning it lifts toward the lane.
+const ARM_BEND = 80;   // px from the root to where the arm reaches its lane
+function octoArmRoot(p) {
+  const b = L.boss;
+  if (!b) return { x: p.x, y: p.y };
+  return { x: b.x + (p.dir < 0 ? 18 : b.w - 18), y: b.y + b.h * 0.68 };
+}
+function drawOctoArm(p, u) {
+  const root = octoArmRoot(p), dir = p.dir;
+  const lift = clamp(p.t / p.warn, 0, 1);   // 0..1 during the warning, then 1
+  const ty = root.y + (p.y - root.y) * (u > 0 ? 1 : lift * 0.6);
+  const len = u > 0 ? Math.max(ARM_BEND * 0.7, Math.abs(p.tip - root.x)) : 26 + 30 * lift;
+  const ease = s => s * s * (3 - 2 * s);
+  const at = d => {   // centre of the arm d px out from the root, and its half thickness
+    const k = d / len, y = root.y + (ty - root.y) * ease(Math.min(1, d / ARM_BEND)) + Math.sin(d * 0.045 - tick * 0.35) * 3 * k;
+    return { x: root.x + dir * d, y, r: 13 - 6 * k };
+  };
+  const pts = []; for (let d = 0; d <= len; d += 4) pts.push(at(d));
+  pts.push(at(len));
+  for (const q of pts) { ctx.fillStyle = '#8a2a52'; ctx.beginPath(); ctx.arc(q.x, q.y, q.r + 2, 0, 7); ctx.fill(); }   // outline
+  for (const q of pts) { ctx.fillStyle = '#c2507a'; ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, 7); ctx.fill(); }
+  for (const q of pts) { ctx.fillStyle = '#e88ab0'; ctx.fillRect(Math.round(q.x - 2), Math.round(q.y - q.r * 0.6), 4, 3); }   // shine on top
+  ctx.fillStyle = '#ffd0e0';
+  for (let d = 14; d < len - 10; d += 18) { const q = at(d); ctx.beginPath(); ctx.arc(q.x, q.y + q.r * 0.55, 2.6, 0, 7); ctx.fill(); }   // suckers underneath
+  const e = at(len);   // the curled tip
+  ctx.fillStyle = '#8a2a52';
+  [[4, -4, 7], [2, -11, 6], [-4, -14, 5]].forEach(([dx, dy, r]) => { ctx.beginPath(); ctx.arc(e.x + dir * dx, e.y + dy, r, 0, 7); ctx.fill(); });
+  ctx.fillStyle = '#c2507a';
+  [[4, -4, 5], [2, -11, 4], [-4, -14, 3]].forEach(([dx, dy, r]) => { ctx.beginPath(); ctx.arc(e.x + dir * dx, e.y + dy, r, 0, 7); ctx.fill(); });
+}
+
 function drawProjectiles() {
   for (const p of L.proj) {
     if (p.k === 'star') drawShuriken(p.x, p.y, tick * 0.4, '#b388ff', '#4b2a6b', 11);
@@ -8007,13 +8198,8 @@ function drawProjectiles() {
         ctx.fillStyle = `rgba(120,20,70,${a})`; ctx.fillRect(Math.min(p.x, x1), p.y - 16, Math.abs(x1 - p.x), 32);
         ctx.strokeStyle = 'rgba(255,200,230,.7)'; ctx.setLineDash([10, 8]); ctx.lineWidth = 2; ctx.strokeRect(Math.min(p.x, x1), p.y - 16, Math.abs(x1 - p.x), 32); ctx.setLineDash([]);
         hudText('!', p.x + p.dir * 40, p.y, 26, '#ffb3d0', 'center');
-      } else if (u > 0) {
-        const a0 = Math.min(p.x, p.tip), a1 = Math.max(p.x, p.tip);
-        ctx.fillStyle = '#c2507a'; ctx.fillRect(a0, p.y - 12, a1 - a0, 24);
-        ctx.fillStyle = '#8a2a52'; ctx.fillRect(a0, p.y + 6, a1 - a0, 6);
-        ctx.fillStyle = '#ffd0e0'; for (let x = a0 + 10; x < a1 - 6; x += 22) ctx.fillRect(x, p.y + 6, 6, 4);
-        const tx = p.tip; ctx.fillStyle = '#c2507a'; ctx.fillRect(tx - (p.dir < 0 ? 0 : 12), p.y - 22, 12, 12); ctx.fillRect(tx - (p.dir < 0 ? -6 : 18), p.y - 28, 12, 8);   // the curled tip
       }
+      drawOctoArm(p, u);
     }
     else if (p.k === 'ink') {   // a blob of octopus ink with a little trail
       ctx.fillStyle = 'rgba(40,20,60,.35)'; for (let k = 1; k <= 3; k++) { ctx.beginPath(); ctx.arc(p.x - Math.sign(p.vx) * k * 12, p.y + Math.sin(tick * 0.3 + k) * 2, p.r - k * 3, 0, 7); ctx.fill(); }
@@ -8658,7 +8844,9 @@ function drawPlayer() {
     for (let i = 0; i < 6; i++) { const a = u * 6.28 + i * 0.35; ctx.fillRect(Math.round(cx + Math.cos(a) * 34), Math.round(cy + Math.sin(a) * 34), 4, 4); }
     k = 'jump';
   }
-  if (pose && !(p.flipT > 0)) drawKaiPose(p, pose); else drawBaked(SPR, k, p.face < 0, p);
+  const diver = L.world && L.world.key === 'sea' && !L.boss && !L.room && (L.abyss || G.suit);
+  if (diver) drawBaked(DIVER || (DIVER = bakeDiver(heroPal())), k === 'jump' || k === 'walkA' ? k : 'stand', p.face < 0, p);
+  else if (pose && !(p.flipT > 0)) drawKaiPose(p, pose); else drawBaked(SPR, k, p.face < 0, p);
   ctx.restore();
   if (hasPower('shield')) {
     ctx.strokeStyle = `rgba(125,249,255,${0.5 + 0.3 * Math.sin(tick * 0.2)})`; ctx.lineWidth = 3;
@@ -8754,7 +8942,7 @@ function posedFigure(F, pose) {
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const nx = x + dx, ny = y + dy, n = ny * W + nx;
         if (nx < 0 || nx >= W || ny < 0 || ny >= H || layer.has(n)) continue;
-        if (soft && F.cloth.includes(g[n])) { if (inner) g[n] = inner; }   // across the figure's own clothes: a softer edge (none for Kai)
+        if (soft && F.cloth.includes(g[n])) { if (inner) g[n] = inner; }   // across the figure's own clothes: a softer edge (a dark suit shade for Kai, so his limbs stand out)
         else g[n] = OUTLINE;                                                // against the background, face or hands: the usual dark outline
       }
     }
@@ -8823,10 +9011,12 @@ function scale2x(src) {
 }
 function drawKaiPose(p, pose, fig = null) {
   const face = poseFace(p, pose), feet = p.y + p.h - (pose.y || 0), cx = p.x + p.w / 2, hp = heroPal();
-  const F = fig || { set: SPR, ...KAI_LIMBS, near: hp.N, back: hp.n, inner: null, cloth: [hp.n, hp.N], skin: KAI_PAL.s, foot: KAI_PAL.f };
+  const F = fig || { set: SPR, ...KAI_LIMBS, near: hp.N, back: hp.n, inner: darkCol(hp.n, 0.5), cloth: [hp.n, hp.N], skin: KAI_PAL.s, foot: KAI_PAL.f };
   const im = posedFigure(F, pose);
   ctx.drawImage(im.c[face < 0 ? 1 : 0], Math.round(cx - (face < 0 ? im.W - im.ax : im.ax) * im.px), Math.round(feet - im.ay * im.px));
 }
+// A darker shade of a '#rrggbb' colour (k = how much is kept): the edge where Kai's arm or leg crosses his own suit.
+const darkCol = (c, k) => '#' + [1, 3, 5].map(i => Math.round(parseInt(c.slice(i, i + 2), 16) * k).toString(16).padStart(2, '0')).join('');
 // The moment the move lands: boards crack, wind whooshes.
 function trainStrike(room) {
   const fx = room.move.fx, at = limbEnd(P, room.move.steps[2].pose);
@@ -9177,7 +9367,8 @@ function drawHUD() {
 
   if (G.rescue) hudText(rescueHint(G.rescue), VW / 2, by + 80, 16, '#fff', 'center');
   else if (G.swing && G.swing.lift) hudText(G.swing.ph === 'board' ? 'Here comes a chair!' : G.swing.ph === 'ride' && !G.swing.need ? 'Riding up!' : G.swing.ph === 'ride' ? `${isTouch ? 'Tap' : 'Pick'} the right answer to ride past the tower!  (1/2)` : `${isTouch ? 'Tap' : 'Pick'} the right answer to get on the lift!  (0/2)`, VW / 2, by + 80, 16, '#fff', 'center');
-  else if (G.swing) hudText(`${isTouch ? 'Tap' : 'Pick'} the right answer to swing!  (${G.swing.half}/2)`, VW / 2, by + 80, 16, '#fff', 'center');
+  else if (G.swing && G.swing.free) hudText(G.swing.dir < 0 ? 'Swinging back!' : 'Swinging across!', VW / 2, by + 80, 16, '#fff', 'center');
+  else if (G.swing) hudText(`${isTouch ? 'Tap' : 'Pick'} the right answer to swing!  (${G.swing.half}/2)  ◀ goes back`, VW / 2, by + 80, 16, '#fff', 'center');
   else if (L.boss) {
     const b = L.boss, bw = Math.min(320, VW - 60), bx = VW / 2 - bw / 2, segW = bw / b.max;
     hudText(b.kind === 'octo' ? `${b.name} · ${Math.max(0, b.hp)} / ${b.max} arms left` : b.name, VW / 2, by + 80, 16, '#ffb3b3', 'center');
@@ -9340,6 +9531,7 @@ function startStage(i) {
   G = { idx: i, skill: L.skill, hearts, maxHearts: hearts, coins: 0, score: 0, shake: 0, shakeAmp: 0, freeze: 0, slow: 0, flash: 0, flyers: [], pulse: 0, chain: 0, lastGem: -99, mistakes: 0, streak: 0, bestStreak: 0, solved: 0, fastN: 0, lightN: 0, missed: [], practice: new Map(), power: null, powerN: 0, carry: null, saved: null,
     pet: prog.equip.pet ? { x: P.x, y: P.y, mood: null, moodT: 0 } : null, glide: 0, alarm: 0, climb: false, hidden: false, bubble: null, tip: null, mbox: null, dash: 0, cross: null, wrongRun: 0, tipSoon: !!(plan && plan.mode === 'back'), byTrack: plan ? {} : null, checkpoint: 1.5 * T, time: 0, parts: [], shots: [], bumps: new Map(), winT: 0 };
   SPR = bakeNinja(heroPal());   // equipped headband and suit, plus the belt you've earned
+  DIVER = null;   // the diving suit picks up the headband again
   cam = 0; ambient.length = 0;
   hide('menu');
   if (st.boss) {
@@ -9353,6 +9545,7 @@ function startStage(i) {
 function intro(title, body, label) { mode = 'intro'; hide('pauseBtn'); showTouch(false); showMsg(title, body, [{ label, fn: begin, primary: true }]); }
 function begin() {
   stopReading(); mode = 'play'; hide('msg'); show('pauseBtn'); showTouch(true);
+  if (G && L.abyss && !G.deepTip) { G.deepTip = true; floatText(P.x + 120, GR * T - 4.5 * T, 'The deep sea! Kai has his diving suit on.', '#9be7ff', 22); }
   if (G && !G.kickTip && kickOn() && (prog.kickTips || 0) < 3) {
     G.kickTip = true; prog.kickTips = (prog.kickTips || 0) + 1; save();
     floatText(cam + VW / 2, P.y - 60, isTouch ? 'High kick! Tap the fist button to kick.' : 'High kick! Press X to kick.', '#ffd23f', 22);

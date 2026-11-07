@@ -48,6 +48,16 @@ Everything is in `index.html`. `CLAUDE.md` maps the code and records the owner's
 - **Step 2 done** (owner chose all four): octopus den with his hoard, tentacle sweep with a warning shadow (alternates with ink), each hit lets go of a piece that a little fish takes home, "n / 8 arms left"; ending: Kai gives him one of his own gems first (grace), he shares everything; new story pictures; the Seaside Road race into the sea; a bouncier bass in the octopus fight. Also: coral of different heights, boss stars fly to Kai's hand before he throws, ink comes out of the octopus. **Step 3 next**: the sea's animal, training room door, a crossing, lost friend, 3 more moves.
 - Built on branch `claude/bold-pasteur-i1sjev` (not on `main` yet, so not live).
 
+## Built Nov 7, 2026 (later still): octopus arm + the deep sea
+- **The octopus's tentacle stays joined to him** (owner: it looked cut off): `drawOctoArm` draws one tapering arm from his side (`octoArmRoot`), bending up or down to its lane over `ARM_BEND` px, then along the lane to a curled tip, with suckers underneath; during the warning it lifts toward the lane. It only hurts along the lane part (`armTick`).
+- **Sunken Ship (sea level 3) is all deep sea** (owner: "completely underwater, no sky islands, everything should look like deep sea"): `L.abyss`. No surface line, sky, clouds, island, rafts, arches, bubble vents or dolphin leap; gate walls go to the top; dark trench background with sea snow, glowing specks and far jellyfish (`bgAbyss`); dark silt floor and dark rock blocks; gate signs hang under a glowing float tied to the floor; the finale is on the sea floor (old anchor holds the scroll, `deepAnchor`; Kai swims into a brass diving bell, `divingBell`). Kai keeps a steady depth (`L.water` is that depth, not a surface; ▲ no longer leaps).
+- **Diving suit**: on the Kelp Forest beach (sea level 2) a suit waits on a stand just before the scroll (`L.suit`); walking past puts it on ("Diving suit!", `G.suit`), and the win card says so. Kai is drawn as a pixel diver (`DIVER`, `drawDiver`, `bakeDiver`: same 16×16 grid as Kai; brass helmet with his eyes in the window, **his headband tied round the outside** (owner), canvas suit, gloves, boots, air tank) for the rest of that level and all of Sunken Ship, with air bubbles rising. The owner turned down a first try that drew a helmet over the normal Kai (not pixel art, didn't cover the body).
+
+## Built Nov 7, 2026 (evening)
+- The deep-sea / diving-suit work above was made by accident in the old `banhamt` copy; the owner sent the files and it was merged into this repo (nothing lost on either side).
+- **Swings: going back** (owner): ← on the start ledge steps back (it no longer grabs him again right away), ← on the perch swings him back. **A finished crossing can be swung back and forth freely** (no questions): walk at the gap from either ledge, or jump out over it.
+- **Limbs stand out from the suit** (owner): the diving suit's arms and legs have their own shades with a seam and brown gloves; Kai's posed arm/leg (dojo moves, high kick) get a dark suit-coloured edge where they cross his body.
+
 ## Open questions for the owner
 0. How do the kids find the Work it out card? Too often, too long (division by counting can be 7 steps)?
 1. Waiting for players' reactions to the guards, the finishing moves, the ski lift and the test-out.
