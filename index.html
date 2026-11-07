@@ -349,7 +349,7 @@
   .badgegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin: 12px 0 14px; }
   .badge { background: rgba(255,255,255,.05); border-radius: 12px; padding: 10px 8px; opacity: .55; }
   .badge.got { background: rgba(255,210,63,.14); border: 2px solid #ffd23f; opacity: 1; }
-  .badge .bi { font-size: 34px; }
+  .badge .bi { font-size: 34px; } .badge .bi .pix { margin: 0 auto; width: 48px; height: 48px; }
   .badge .bn { font-weight: 800; font-size: 15px; margin-top: 2px; }
   .badge .bt { font-size: 12px; opacity: .85; }
   #toast { position: fixed; top: max(14px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 30;
@@ -444,7 +444,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 7, 2026 9:13 AM PT · work it out with Sensei, new trick cards</div>
+  <div class="build">Updated Nov 7, 2026 9:19 AM PT · pixel-art badges, work it out with Sensei</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -2762,28 +2762,29 @@ function openBossPad() {
 
 // ---------------------------------------------------------------- badges
 const BADGES = [
-  { id: 'first-gate', icon: '⛩️', name: 'First Gate', text: 'Open your first math gate.' },
-  { id: 'perfect', icon: '💯', name: 'Perfect Ninja', text: 'Finish a level with no wrong answers.' },
-  { id: 'streak10', icon: '🔥', name: 'On Fire', text: 'Get 10 answers in a row.' },
-  { id: 'power', icon: '⚡', name: 'Powered Up', text: 'Earn a streak power-up.' },
-  { id: 'bridge', icon: '🌉', name: 'Bridge Builder', text: 'Build a number-stone bridge.' },
-  { id: 'bridge10', icon: '🏗️', name: 'Master Builder', text: 'Build 10 bridges.' },
-  { id: 'dojo7', icon: '🔥', name: 'Dedicated', text: 'Do the Daily Dojo 7 days in a row.' },
-  { id: 'vault', icon: '🥋', name: 'Sensei\'s Student', text: 'Learn a move in a training room.' },
-  { id: 'moves-all', icon: '🐉', name: 'Master\'s Student', text: 'Learn all 15 moves from Sensei.' },
-  { id: 'golden', icon: '🌟', name: 'Golden Gem', text: 'Grab a flaming golden gem.' },
-  { id: 'golden-all', icon: '👑', name: 'Golden Hunter', text: 'Grab all 15 golden gems. Unlocks the Golden suit!' },
-  { id: 'boss-nohit', icon: '🛡️', name: 'Untouchable', text: 'Beat a boss without getting hit.' },
-  { id: 'boss-all', icon: '📜', name: 'Scroll Keeper', text: 'Win back all five scrolls.' },
-  { id: 'race-win', icon: '🥇', name: 'Champion Rider', text: 'Win a race.' },
-  { id: 'race-perfect', icon: '🐎', name: 'Perfect Ride', text: 'Get every gate right in a race.' },
-  { id: 'shopper', icon: '🛍️', name: 'Shopper', text: 'Buy something in the Dojo Shop.' },
-  { id: 'gems500', icon: '💎', name: 'Gem Collector', text: 'Collect 500 gems in total.' },
-  { id: 'black-belt', icon: '🥋', name: 'Black Belt', text: 'Reach the Black Belt rank.' },
-  { id: 'gold-medal', icon: '🥇', name: 'Gold Medal', text: 'Win a gold medal in a math skill (no mistakes).' },
-  { id: 'brave', icon: '🧠', name: 'Brave Brain', text: 'Finish a level with ★★★★ math or harder.' },
-  { id: 'friends', icon: '🤝', name: 'Every One Matters', text: 'Find all five lost friends and bring them home.' },
+  { id: 'first-gate', pix: 'torii', name: 'First Gate', text: 'Open your first math gate.' },
+  { id: 'perfect', pix: 'shuriken', name: 'Perfect Ninja', text: 'Finish a level with no wrong answers.' },
+  { id: 'streak10', pix: 'flame', name: 'On Fire', text: 'Get 10 answers in a row.' },
+  { id: 'power', pix: 'bolt', name: 'Powered Up', text: 'Earn a streak power-up.' },
+  { id: 'bridge', pix: 'bridge', name: 'Bridge Builder', text: 'Build a number-stone bridge.' },
+  { id: 'bridge10', pix: 'hammer', name: 'Master Builder', text: 'Build 10 bridges.' },
+  { id: 'dojo7', pix: 'calendar', name: 'Dedicated', text: 'Do the Daily Dojo 7 days in a row.' },
+  { id: 'vault', pix: 'gi', name: 'Sensei\'s Student', text: 'Learn a move in a training room.' },
+  { id: 'moves-all', pix: 'dragon', name: 'Master\'s Student', text: 'Learn all 15 moves from Sensei.' },
+  { id: 'golden', pix: 'gem', swap: { c: '#ffd23f', b: '#e8452c', w: '#fff6c8' }, name: 'Golden Gem', text: 'Grab a flaming golden gem.' },
+  { id: 'golden-all', pix: 'crown', name: 'Golden Hunter', text: 'Grab all 15 golden gems. Unlocks the Golden suit!' },
+  { id: 'boss-nohit', pix: 'shield', name: 'Untouchable', text: 'Beat a boss without getting hit.' },
+  { id: 'boss-all', pix: 'scroll', name: 'Scroll Keeper', text: 'Win back all five scrolls.' },
+  { id: 'race-win', pix: 'trophy', name: 'Champion Rider', text: 'Win a race.' },
+  { id: 'race-perfect', pix: 'horse', name: 'Perfect Ride', text: 'Get every gate right in a race.' },
+  { id: 'shopper', pix: 'bag', name: 'Shopper', text: 'Buy something in the Dojo Shop.' },
+  { id: 'gems500', pix: 'gem', name: 'Gem Collector', text: 'Collect 500 gems in total.' },
+  { id: 'black-belt', pix: 'belt', swap: { b: '#26262e' }, name: 'Black Belt', text: 'Reach the Black Belt rank.' },
+  { id: 'gold-medal', pix: 'medal', name: 'Gold Medal', text: 'Win a gold medal in a math skill (no mistakes).' },
+  { id: 'brave', pix: 'brain', name: 'Brave Brain', text: 'Finish a level with ★★★★ math or harder.' },
+  { id: 'friends', pix: 'house', name: 'Every One Matters', text: 'Find all five lost friends and bring them home.' },
 ];
+const badgeImg = (b, cls = 'pix big') => pixImg(b.pix, cls, b.swap || null);
 let toastTimer = null;
 function award(id) {
   if (prog.badges[id]) return;
@@ -2791,17 +2792,17 @@ function award(id) {
   if (id === 'golden-all' && !prog.owned.includes('suit-gold')) prog.owned.push('suit-gold');   // the secret costume
   save();
   const b = BADGES.find(x => x.id === id);
-  $('toast').innerHTML = `<span>${b.icon}</span> Badge unlocked: <b>${b.name}</b>`;
+  $('toast').innerHTML = `${badgeImg(b, 'pix sm')} Badge unlocked: <b>${b.name}</b>`;
   show('toast'); clearTimeout(toastTimer); toastTimer = setTimeout(() => hide('toast'), 3200);
   [659, 784, 988, 1319].forEach((f, i) => tone(f, 0.18, 'triangle', 0.05, null, 0.15 + i * 0.09));
 }
 function openBadges() {
   hide('menu');
   const got = BADGES.filter(b => prog.badges[b.id]).length;
-  $('badgeCount').innerHTML = `${got} of ${BADGES.length} badges · 🌟 ${Object.keys(prog.golden).length} of 15 golden gems
+  $('badgeCount').innerHTML = `${got} of ${BADGES.length} badges · ${pixImg('gem', 'pix sm', { c: '#ffd23f', b: '#e8452c', w: '#fff6c8' })} ${Object.keys(prog.golden).length} of 15 golden gems
     <div class="friendrow">${FRIENDS.map(f => (prog.friends || {})[f.id] ? `<span><span class="pair">${kidImg(f.id)}${toolImg(f.way)}</span><small><b>${f.name}</b> ${f.pname} · ${RESCUE_TOOL[f.way].short}</small></span>`
       : `<span><i class="kidq">?</i><small>Lost in ${WORLDS[f.w].name}</small></span>`).join('')}</div>`;
-  $('badgeGrid').innerHTML = BADGES.map(b => `<div class="badge ${prog.badges[b.id] ? 'got' : ''}"><div class="bi">${prog.badges[b.id] ? b.icon : '❔'}</div>
+  $('badgeGrid').innerHTML = BADGES.map(b => `<div class="badge ${prog.badges[b.id] ? 'got' : ''}"><div class="bi">${prog.badges[b.id] ? badgeImg(b) : pixImg('qmark', 'pix big')}</div>
     <div class="bn">${b.name}</div><div class="bt">${b.text}</div></div>`).join('');
   show('badges');
 }
@@ -8778,6 +8779,19 @@ const PIX = {
   magnet: ['', '.rrr....rrr', '.rrr....rrr', '.rrr....rrr', '.rrr....rrr', '.rrr....rrr', '.rrr....rrr', '.rrrr..rrrr', '..rrrrrrrr', '...rrrrrr', '.www....www', '.www....www'],
   heart: ['', '.rrr...rrr', 'rrwrr.rrrrr', 'rwrrrrrrrrr', 'rrrrrrrrrrr', 'rrrrrrrrrrr', '.rrrrrrrrr', '..rrrrrrr', '...rrrrr', '....rrr', '.....r'],
   star: ['.....y', '.....y', '....yyy', 'yyyyyyyyyy', '.yyyyyyyy', '..yyyyyy', '..yyyyyy', '.yyy..yyy', '.yy....yy', 'y........y'],
+  // Badge Book icons
+  shuriken: ['.....w', '.....g', '....ggg', '....ggg', '..ggggggg', 'wggggdggggw', '..ggggggg', '....ggg', '....ggg', '.....g', '.....w'],
+  bridge: ['', '', '.....rr', '...rr..rr', '..r.r..r.r', '.rqqqqqqqqr', 'rqq......qqr', 'qq........qq', 'q..........q', 'cbcbcbcbcbcb', 'bcbcbcbcbcbc'],
+  hammer: ['', '.gggggggg', 'gwggggggg', 'ggggggggg', '.gggggggg', '.....qq', '.....qq', '.....qq', '.....qq', '.....qq', '.....qq', '.....qq'],
+  gi: ['...ww..ww', '.wwwwddwwww', 'wwwwwddwwwww', 'wwwwddwwwwww', 'ww.wwdwww.ww', 'ww.wwwdww.ww', 'ww.wwwwdw.ww', '...dddddd', '...dddddd', '...wwwdww', '...wwwwww', '...wwwwww'],
+  dragon: ['..y...y', '..GG..GG', '..GGGGGGG', '.GGGGGGGGG', 'GGwdGGGGGG', 'GGGGGGGGGGG', 'GGGGGGGGGGGG', 'rrr.GGGGGGGG', '.wGGGGGGyGG', '..GGGGG.yGG', '........yyG', '.........yy'],
+  crown: ['', '', 'y....y....y', 'yy..yyy..yy', 'yy..yyy..yy', 'yyyyyyyyyyy', 'yyyyyyyyyyy', 'yrryybbyyrr', 'yrryybbyyrr', 'yyyyyyyyyyy', 'YYYYYYYYYYY'],
+  horse: ['......q.q', '.....qqqq', '....qqqqqd', '...qqdqqqdd', '..qqqqqqqqdd', '.qqqqqqqqqdd', 'qqqq.qqqqqdd', 'qdq...qqqqdd', 'qqq...qqqqqd', '......qqqqqq', '......qqqqqq'],
+  bag: ['', '....yyyy', '...y....y', '...y....y', '.pppppppppp', '.pPPPPPPPPp', '.pPPPPPPPPp', '.pPPPrrPPPp', '.pPPrrrrPPp', '.pPPPrrPPPp', '.pPPPPPPPPp', '.pppppppppp'],
+  brain: ['', '...pp.pp', '.ppPppPpppp', 'pPpppPpPpppp', 'ppPppppPpPpp', 'pppPpPppppPp', 'pPppppPpPppp', '.ppPpppppPp', '..pppppppp', '......pp', '......pp'],
+  house: ['.....rr', '....rrrr', '...rrrrrr', '..rrrrrrrr', '.rrrrrrrrrr', 'rrrrrrrrrrrr', '.wwwwwwwwww', '.wbbwwwwqqw', '.wbbwwwwqqw', '.wwwwwwwqqw', '.wwwwwwwqqw', 'GGGGGGGGGGGG'],
+  calendar: ['..d......d', 'rrdrrrrrrdrr', 'rrrrrrrrrrrr', 'wwwwwwwwwwww', 'wwwddddddwww', 'wwwwwwwddwww', 'wwwwwwddwwww', 'wwwwwddwwwww', 'wwwwwddwwwww', 'wwwwwddwwwww', 'wwwwwwwwwwww'],
+  qmark: ['', '...gggggg', '..gg....gg', '........gg', '.......gg', '......gg', '.....gg', '.....gg', '', '.....gg', '.....gg'],
 };
 const pixCache = {};
 function pixURL(name, scale = 3, swap = null) {
