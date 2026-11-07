@@ -43,6 +43,7 @@ Everything is in `index.html`. `CLAUDE.md` maps the code and records the owner's
 - **Fractions** (6 skills: name the part, name the part 2, bigger or smaller, part of a group, same amount, add parts) on the grade tracks for grades 2–5; stacked fractions on blocks and buttons; a fraction bar picture with "3 of 4 parts".
 - **The Great Octopus** (basic version): 8 hits (its bar is in eighths), squirts ink at Kai's depth; held-out hand ending; a simple sea song and story pictures.
 - **Step 2 (next)**: a fuller octopus fight and story, music polish. **Step 3**: the sea's own animal, training room, stepping-stone / swing crossing, lost friend, twist, 3 more moves (sea levels have ~11 problems until then, the others ~16–21).
+- Then (owner picked from a list): pixel coral (the first coral was plain circles), swaying seaweed, fish schools, a turtle (Coral Reef) and a spouting whale (Kelp Forest); Sunken Ship gets darker as you go with glowing lantern fish; bubble vents shoot Kai out of the water to gems; two treasure clams per level on the sea floor (question → pearls spill out as gems). Not chosen yet: currents, dolphin ride, fill-the-shell crossing, friend in a bubble/clam.
 - Built on branch `claude/bold-pasteur-i1sjev` (not on `main` yet, so not live).
 
 ## Open questions for the owner
