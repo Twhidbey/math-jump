@@ -459,7 +459,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 7, 2026 2:05 PM PT · Coral Reef: coral of different heights, spread out</div>
+  <div class="build">Updated Nov 7, 2026 2:50 PM PT · Octopus: tentacle sweep, hoard, gem gift; Seaside Road</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -2383,7 +2383,9 @@ const SONGS = {
     mel: seq(`F5 . A5 . C6 . A5 . G5 . F5 . D5 . F5 .   E5 . G5 . C5 . . . E5 . F5 . G5 . . .
               A5 . C6 . D6 . C6 . A5 . F5 . G5 . A5 .   G5 . E5 . C5 . E5 . F5 . . . . . . .`),
     bass: seq(`F2 . . . C3 . . . F2 . . . C3 . . .   C2 . . . G2 . . . C2 . . . G2 . . .
-               D2 . . . A2 . . . Bb1 . . . F2 . . .   C2 . . . G2 . . . F2 . . . . . . .`) },
+               D2 . . . A2 . . . Bb1 . . . F2 . . .   C2 . . . G2 . . . F2 . . . . . . .`),
+    bossBass: seq(`F2 . F3 . C3 . F3 . F2 . F3 . C3 . A2 .   C2 . C3 . G2 . C3 . C2 . C3 . G2 . E2 .
+                   D2 . D3 . A2 . D3 . Bb1 . Bb2 . F2 . Bb2 .   C2 . C3 . G2 . C3 . F2 . C3 . F2 . . .`) },   // the octopus fight: a bouncy octave bass
   castle: { bpm: 92, lead: 'triangle', vol: 0.05, drum: 'k.......s...h...',
     mel: seq(`D5 . . . F5 . E5 . D5 . . . A4 . . .   Bb4 . . . D5 . C5 . A4 . . . . . . .
               D5 . . . F5 . G5 . A5 . . . G5 . F5 .   E5 . . . C#5 . . . D5 . . . . . . .`),
@@ -2402,6 +2404,7 @@ SONGS.menu = { ...SONGS.japan, bpm: 84, drum: 'k...............' };
 function arrange(base, k) {
   const len = base.bass.length, hold = new Array(len).fill(0);
   let last = 0; for (let i = 0; i < len * 2; i++) { if (base.bass[i % len]) last = base.bass[i % len]; if (i >= len) hold[i % len] = last; }
+  if (k === 3 && base.bossBass) return arrange({ ...base, bass: base.bossBass, bossBass: null }, 3);
   const bass = k === 0 ? base.bass : hold.map((f, i) => (k === 1 ? (i % 2 ? 0 : f) : k === 2 ? (i % 2 ? 0 : i % 4 ? f * 2 : f) : (i % 2 ? f * 2 : f)));
   const drum = k === 0 ? base.drum : Array.from({ length: 16 }, (_, i) => {
     const b = base.drum[i] || '.';
@@ -5211,8 +5214,14 @@ function bossAttack(b) {
   else if (kind === 'ink') {   // the octopus squirts ink at Kai's depth (every other time a second blob, higher or lower): swim out of the way
     // Each blob comes out of the octopus, then drifts into its lane (ty) as it travels, so kids see where it's going.
     const top = (L.water || 0) + 16, bot = GR * T - 16, aim = clamp(P.y + P.h / 2, top, bot), ink = y => L.proj.push({ k: 'ink', x: sx, y: b.y + b.h * 0.45, ty: y, vx: b.face * 4 * easy, vy: 0, g: 0, r: 13 });
-    ink(aim); b.flip ^= 1;
-    if (b.flip) ink(clamp(aim < (top + bot) / 2 ? aim + 3 * T : aim - 3 * T, top, bot));
+    b.cyc = ((b.cyc || 0) + 1) % 3;   // in turns: one blob, two blobs, a tentacle sweep
+    if (b.cyc === 0) {   // an arm reaches across at Kai's depth (top, middle or bottom); its shadow shows first, so swim to another depth
+      const lanes = [(L.water || 0) + 34, ((L.water || 0) + GR * T) / 2, GR * T - 40], y = lanes.reduce((a, l) => (Math.abs(l - (P.y + P.h / 2)) < Math.abs(a - (P.y + P.h / 2)) ? l : a));
+      L.proj.push({ k: 'arm', x: sx, y, vx: 0, vy: 0, g: 0, r: 0, t: 0, dir: b.face, warn: prog.easy ? 85 : 60 });
+    } else {
+      ink(aim);
+      if (b.cyc === 2) ink(clamp(aim < (top + bot) / 2 ? aim + 3 * T : aim - 3 * T, top, bot));
+    }
   }
   else { b.flip ^= 1; if (b.flip) low('star', 5, 11); else lob('orb'); }
   sfx.attack();
@@ -5360,12 +5369,16 @@ function runOutro(b) {
     if (t > 130 && t % 4 === 0) G.parts.push({ k: 'bit', x: b.x + Math.random() * b.w, y: b.y + b.h * 0.6, vx: 0, vy: 1.5, life: 30, col: '#9fd8f5', s: 4 });
     if (t === 250) { floatText(cx, b.y - 30, '♥', '#ff5a8a', 40); say('boss', 'A friend!', 100); }
     if (t === 340) { o.done = true; b.friendly = true; dropPrize(b, (P.x + cx) / 2); }
-  } else if (k === 'octo') {
-    if (t === 20) say('kai', 'Pieces are better shared.');
-    if (t === 120) { b.calm = true; say('boss', 'One for you... one for me?', 110); }
-    if (t > 120 && t % 8 === 0) G.parts.push({ k: 'bit', x: b.x + Math.random() * b.w, y: b.y + 10, vx: 0, vy: -1.2, life: 40, col: 'rgba(225,245,255,.85)', s: 4 });
-    if (t === 250) { floatText(cx, b.y - 30, '♥', '#ff5a8a', 40); say('boss', 'Everyone gets a piece!', 110); }
-    if (t === 340) { o.done = true; b.friendly = true; dropPrize(b, (P.x + cx) / 2); }
+  } else if (k === 'octo') {   // grace: Kai shares first, a gem of his own, though the octopus never shared anything
+    if (t === 20) {
+      say('kai', 'Here. This gem is for you.', 110);
+      if (G.coins > 0) G.coins--;
+      L.giftGem = { x0: P.x + P.w / 2, y0: P.y + 10, x: P.x + P.w / 2, y: P.y + 10, tx: cx, ty: b.y + 30, t: 0 };
+    }
+    if (t === 140) { b.calm = true; L.giftGem = null; say('boss', 'For me? Nobody ever gave me anything!', 120); floatText(cx, b.y - 30, '♥', '#ff5a8a', 40); }
+    if (t === 270) { say('boss', 'Here! Everyone gets a piece!', 120); octoDrop(b, 8); }
+    if (t > 270 && t < 380 && t % 8 === 0) G.parts.push({ k: 'bit', x: b.x + Math.random() * b.w, y: b.y + 10, vx: 0, vy: -1.2, life: 40, col: 'rgba(225,245,255,.85)', s: 4 });
+    if (t === 400) { o.done = true; b.friendly = true; dropPrize(b, (P.x + cx) / 2); }
   } else if (k === 'shogun') {
     if (t % 8 === 0 && t < 330) { shake(4, 2); L.proj.push({ k: 'rock', x: R(40, L.w * T - 40), y: -20, vx: 0, vy: 2, g: 0.3, r: 8, deco: true }); }
     if (t === 30) say('boss', "Why... why didn't you finish me?", 120);
@@ -5411,7 +5424,7 @@ function updateBoss() {
   if (dizzy) { pauseFx(b); moveY(b); return; }   // a worn-out boss stands still and can't hurt you
   if (b.x <= b.minX) b.vx = Math.abs(b.vx); else if (b.x >= b.maxX) b.vx = -Math.abs(b.vx);
   const vx0 = b.vx;
-  if (moveX(b)) b.vx = -vx0;
+  if (!L.proj.some(p => p.k === 'arm')) { if (moveX(b)) b.vx = -vx0; }
   moveY(b);
   if (b.spec.hop && b.onGround && b.t % b.spec.hop === 0) b.vy = -10;
   if (mode === 'play' && --b.atk <= 0) {
@@ -5421,7 +5434,42 @@ function updateBoss() {
   if (mode === 'play' && overlap(P, b) && !fiery()) hurt();
 }
 
+// The octopus's tentacle sweep: a warning shadow, then the arm shoots across the arena at one depth, holds, and pulls back.
+const ARM_OUT = 26, ARM_HOLD = 22, ARM_BACK = 30;
+function armReach(p) {   // 0..1: how far the arm is out
+  const t = p.t - p.warn;
+  return t < 0 ? 0 : t < ARM_OUT ? t / ARM_OUT : t < ARM_OUT + ARM_HOLD ? 1 : Math.max(0, 1 - (t - ARM_OUT - ARM_HOLD) / ARM_BACK);
+}
+function armTick(p, b) {
+  p.t++;
+  if (b && !b.dying && !b.outro) p.x = b.x + (p.dir < 0 ? 16 : b.w - 16);
+  const u = armReach(p), len = u * (p.dir < 0 ? p.x : L.w * T - p.x), x0 = p.dir < 0 ? p.x - len : p.x;   // reaches the far wall of the arena
+  p.tip = p.dir < 0 ? p.x - len : p.x + len;
+  if (p.t > p.warn + ARM_OUT + ARM_HOLD + ARM_BACK) p.done = true;
+  if (u > 0.1 && mode === 'play' && !p.done && overlap(P, { x: x0, y: p.y - 14, w: len, h: 28 })) { if (fiery()) { p.t = Math.max(p.t, p.warn + ARM_OUT + ARM_HOLD); } else hurt(); }
+}
+// Each hit makes the octopus let go of something from his hoard: a pearl, shell or coin floats off and a little fish
+// comes to take it home. The pile behind him shrinks as he loses arms' worth of treasure.
+function octoDrop(b, n = 1) {
+  for (let i = 0; i < n; i++) (L.gifts || (L.gifts = [])).push({ x: b.x + b.w / 2 + (Math.random() - 0.5) * 40, y: b.y + b.h * 0.6, vx: -1.2 - Math.random() * 1.5, vy: -1.4 - Math.random(), kind: R(0, 2), t: -i * 12, fx: cam - 40, fy: b.y - 40 - Math.random() * 120, col: ['#ffd23f', '#9be7ff', '#ffb38a', '#c58aff'][R(0, 3)] });
+}
+function giftsTick() {
+  for (const g of L.gifts || []) {
+    if (++g.t < 0) continue;
+    if (!g.got) { g.x += g.vx; g.y += g.vy; g.vx *= 0.98; g.vy = g.vy * 0.97 - 0.01; }
+    if (g.t > 30 && !g.got) {   // a little fish swims over to it
+      const dx = g.x - g.fx, dy = g.y - g.fy, d = Math.hypot(dx, dy);
+      if (d < 10) { g.got = true; sfx.coin && tone(1200, 0.08, 'triangle', 0.03); }
+      else { g.fx += dx / d * 4; g.fy += dy / d * 4; }
+    }
+    if (g.got) { g.fx -= 3; g.x = g.fx + 8; g.y = g.fy; }
+  }
+  if (L.gifts) L.gifts = L.gifts.filter(g => !g.got || g.fx > cam - 80);
+  const gg = L.giftGem;   // Kai's gem flying to the octopus
+  if (gg && gg.t < 50) { gg.t++; const u = gg.t / 50; gg.x = gg.x0 + (gg.tx - gg.x0) * u; gg.y = gg.y0 + (gg.ty - gg.y0) * u - Math.sin(u * Math.PI) * 60; if (gg.t === 50) { burst(gg.tx, gg.ty, '#ffd23f', 12, 3); sfx.coin(); } }
+}
 function updateShotsAndProjectiles() {
+  if (L.water) giftsTick();
   const b = L.boss;
   for (const s of G.shots) {
     s.spin += 0.5;
@@ -5434,6 +5482,7 @@ function updateShotsAndProjectiles() {
     const tx = b.x + b.w / 2, ty = b.y + b.h / 2, dx = tx - s.x, dy = ty - s.y, d = Math.hypot(dx, dy);
     if (d < 16) {
       s.done = true; b.hp--; b.flash = 36; sfx.hit(); shake(12, 6); G.freeze = 5;
+      if (b.kind === 'octo') octoDrop(b);
       burst(tx, ty, '#ffd23f', 14, 5); floatText(tx, b.y - 10, 'POW!', '#ffd23f', 34);
       if (b.hp <= 0) { b.dying = 90; L.proj = []; sfx.bossDown(); shake(30, 8); G.slow = 120; G.flash = 1; }
       else L.arena.wait = 45;   // short breather, then a new question
@@ -5443,6 +5492,7 @@ function updateShotsAndProjectiles() {
   if (L.arena && L.arena.wait > 1 && --L.arena.wait === 1 && !b.dying && !b.dead) nextBossQuestion();
 
   for (const p of L.proj) {
+    if (p.k === 'arm') { armTick(p, b); continue; }
     p.x += p.vx; p.vy += p.g; p.y += p.vy;
     if (p.ty !== undefined) p.y += (p.ty - p.y) * 0.06;   // octopus ink easing into its lane
     if (p.g && p.y > GR * T - p.r) { p.done = true; burst(p.x, GR * T - 4, p.k === 'rock' ? '#ff6a00' : p.k === 'snow' ? '#ffffff' : '#b388ff', 8); }
@@ -5601,7 +5651,7 @@ const BOSS_CARD = {
   golem: 'The Golem is gentle again. He gives you a scroll.',
   bot: 'The robots can rest now.',
   yeti: 'The Snowman has a friend now: you!',
-  octo: 'The Octopus shares now. Everyone gets a piece!',
+  octo: 'Kai shared first. Now the Octopus shares too.',
   shogun: '',
 };
 
@@ -5739,6 +5789,7 @@ const RIVALS = [
 const TRACKS = {
   cherry: { name: 'Cherry Valley', icon: 'blossom', sky: ['#6fb4f0', '#ffd6e8'], ground: ['#5fbf4a', '#54ad41'], rumble: ['#e63946', '#f4f4f4'], road: ['#c9a77a', '#bf9d70'], lane: '#f4ead5' },
   lava: { name: 'Lava Run', icon: 'volcano', sky: ['#1a0505', '#8a2a0a'], ground: ['#ff5a00', '#e84a00'], rumble: ['#1a1414', '#ff8c1a'], road: ['#2b2422', '#332b28'], lane: '#ff8c1a' },
+  sea: { name: 'Seaside Road', icon: 'fish', sky: ['#5fc8ff', '#d4f6ff'], ground: ['#efd49a', '#e6c98c'], rumble: ['#ff7aa8', '#ffffff'], road: ['#b8a890', '#ae9e86'], lane: '#ffffff' },
   snow: { name: 'Snowy Pass', icon: 'flake', sky: ['#9fd4ff', '#eaf6ff'], ground: ['#f4f9ff', '#e4f0fa'], rumble: ['#e63946', '#ffffff'], road: ['#b9c7d6', '#aebdcd'], lane: '#ffffff' },
   city: { name: 'Night City', icon: 'moon', sky: ['#05071a', '#2a1f5a'], ground: ['#1b1f3a', '#171a33'], rumble: ['#ff3d9a', '#3ae0ff'], road: ['#22232e', '#272837'], lane: '#ffd23f' },
 };
@@ -5773,7 +5824,7 @@ function showRaceSetup() {
 }
 
 // Between worlds you ride to the next one. The track matches where you're going.
-const TRAVEL_TRACK = [null, 'lava', 'city', 'snow', 'cherry', 'city'];   // the ride into each world (by world number)
+const TRAVEL_TRACK = [null, 'lava', 'city', 'snow', 'sea', 'city'];   // the ride into each world (by world number)
 function travelRace(w) {
   hide('msg');
   const tr = TRAVEL_TRACK[w], save = prog.track;
@@ -5974,6 +6025,11 @@ function raceScenery(r, W, hz) {
         for (let wy = hz - h + 8; wy < hz - 6; wy += 12) for (let wx = x + 6; wx < x + w - 6; wx += 10) if (hash(wx * 3 + wy) > 0.55) ctx.fillRect(wx, wy, 4, 5);
       }
     }
+  } else if (r.track === 'sea') {   // the ocean on the horizon, islands, the sun sparkling on the water
+    ctx.fillStyle = '#3ab0e8'; ctx.fillRect(0, hz - 26, W, 26);
+    ctx.fillStyle = 'rgba(255,255,255,.7)'; for (let k = 0; k < 24; k++) ctx.fillRect((hash(k) * W * 1.4 - off(30) * 0.3 + W * 2) % W, hz - 22 + hash(k + 4) * 18, 10, 2);
+    blob(W * 0.25, hz * 0.32, 30, '#fff6c8');
+    for (let k = -1; k <= 1; k++) { const x = W * 0.7 + k * W * 1.5 - off(200); poly([[x - 120, hz - 22], [x - 40, hz - 70], [x + 30, hz - 80], [x + 120, hz - 22]], '#5a9a7a'); }
   } else if (r.track === 'snow') {
     for (let k = -1; k <= 1; k++) {
       const x = W * 0.5 + k * W * 1.5 - off(300);
@@ -6039,6 +6095,19 @@ function roadside(p, sxOf, side, tree, track, i) {
       ctx.fillRect(x - side * 160 * u - (side > 0 ? 0 : 0), y - 900 * u, side * 160 * u, 24 * u);
       glowAt(x - side * 150 * u, y - 860 * u, 300 * u, 'rgba(255,220,120,.6)');
       blob(x - side * 150 * u, y - 870 * u, 30 * u, '#fff3c4');
+    }
+    return;
+  }
+  if (track === 'sea') {
+    const x = sxOf(p, side * ROAD_W * 1.7);
+    if (tree) {   // a palm tree
+      for (let k = 0; k < 6; k++) { ctx.fillStyle = k % 2 ? '#8a5a32' : '#a0703f'; ctx.fillRect(x - 32 * u + Math.sin(k * 0.5) * 30 * u, y - (k + 1) * 110 * u, 64 * u, 112 * u); }
+      const tx = x + Math.sin(3) * 30 * u, ty = y - 660 * u;
+      for (const [dx, dy] of [[-420, 160], [-300, 260], [400, 180], [280, 280], [-40, -120]]) poly([[tx, ty], [tx + dx * 0.5 * u, ty + (dy * 0.2 - 80) * u], [tx + dx * u, ty + dy * u], [tx + dx * 0.5 * u, ty + dy * 0.6 * u]], '#3fa35a');
+    } else {      // a beach umbrella
+      ctx.fillStyle = '#ddd'; ctx.fillRect(x - 12 * u, y - 520 * u, 24 * u, 520 * u);
+      poly([[x - 300 * u, y - 440 * u], [x, y - 600 * u], [x + 300 * u, y - 440 * u]], '#ff7aa8');
+      poly([[x - 100 * u, y - 440 * u], [x, y - 600 * u], [x + 100 * u, y - 440 * u]], '#ffffff');
     }
     return;
   }
@@ -6351,6 +6420,16 @@ const GARDEN_PIX = {
 const GARDEN_COLS = [['#ff6b8a', '#c8405e'], ['#ffb347', '#d07a1a'], ['#c58aff', '#8a52c8'], ['#5ad8c8', '#2a9a8a'], ['#ffe066', '#c8a02a']];
 function drawSeaScenery() {
   const b = GR * T;
+  if (L.boss && L.boss.kind === 'octo') {   // the octopus's den: rocks, and his hoard behind him (it shrinks as he lets go)
+    const rx = (L.w - 4) * T;
+    seaPix(['....xxxxxx....', '..xxxxxxxxxx..', '.xxxxdxxxxxxx.', 'xxxxxxxxxdxxxx', 'xxdxxxxxxxxxxx', 'xxxxxxxxxxxxdx', 'xxxxxxxxxxxxxx'], rx - 40, b - 7 * 14, 14, { x: '#3a4a6a', d: '#2a3650' });
+    const left = L.boss.outro ? 0 : Math.max(0, L.boss.hp) / L.boss.max, n = Math.round(4 + 26 * left);
+    for (let i = 0; i < n; i++) {
+      const px = rx + 10 + (hash(i * 3.1) - 0.5) * 120 * (1 - i / n * 0.6), py = b - 6 - i * 2.4 - hash(i) * 6, k = i % 3;
+      ctx.fillStyle = k === 0 ? '#ffd23f' : k === 1 ? '#ffffff' : '#ffb3c7'; ctx.fillRect(Math.round(px), Math.round(py), 10, 8);
+      ctx.fillStyle = k === 0 ? '#c99a1a' : k === 1 ? '#c8d8e0' : '#d0708a'; ctx.fillRect(Math.round(px) + 6, Math.round(py) + 4, 4, 4);
+    }
+  }
   for (const g of L.garden || []) {
     if (g.x < cam - 100 || g.x > cam + VW + 60) continue;
     if (g.kind === 'kelp') {   // a tall kelp strand that sways, with a leaf now and then
@@ -7887,6 +7966,21 @@ function drawProjectiles() {
       ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
       ctx.fillStyle = '#cfe6f5'; ctx.beginPath(); ctx.arc(p.x + Math.cos(tick * 0.3) * p.r * 0.4, p.y + Math.sin(tick * 0.3) * p.r * 0.4, p.r * 0.3, 0, 7); ctx.fill();
     }
+    else if (p.k === 'arm') {   // the tentacle: first its shadow across the water (a warning), then the arm itself
+      const u = armReach(p), x1 = p.dir < 0 ? 0 : L.w * T;
+      if (p.t < p.warn) {
+        const a = 0.18 + 0.14 * Math.sin(p.t * 0.4);
+        ctx.fillStyle = `rgba(120,20,70,${a})`; ctx.fillRect(Math.min(p.x, x1), p.y - 16, Math.abs(x1 - p.x), 32);
+        ctx.strokeStyle = 'rgba(255,200,230,.7)'; ctx.setLineDash([10, 8]); ctx.lineWidth = 2; ctx.strokeRect(Math.min(p.x, x1), p.y - 16, Math.abs(x1 - p.x), 32); ctx.setLineDash([]);
+        hudText('!', p.x + p.dir * 40, p.y, 26, '#ffb3d0', 'center');
+      } else if (u > 0) {
+        const a0 = Math.min(p.x, p.tip), a1 = Math.max(p.x, p.tip);
+        ctx.fillStyle = '#c2507a'; ctx.fillRect(a0, p.y - 12, a1 - a0, 24);
+        ctx.fillStyle = '#8a2a52'; ctx.fillRect(a0, p.y + 6, a1 - a0, 6);
+        ctx.fillStyle = '#ffd0e0'; for (let x = a0 + 10; x < a1 - 6; x += 22) ctx.fillRect(x, p.y + 6, 6, 4);
+        const tx = p.tip; ctx.fillStyle = '#c2507a'; ctx.fillRect(tx - (p.dir < 0 ? 0 : 12), p.y - 22, 12, 12); ctx.fillRect(tx - (p.dir < 0 ? -6 : 18), p.y - 28, 12, 8);   // the curled tip
+      }
+    }
     else if (p.k === 'ink') {   // a blob of octopus ink with a little trail
       ctx.fillStyle = 'rgba(40,20,60,.35)'; for (let k = 1; k <= 3; k++) { ctx.beginPath(); ctx.arc(p.x - Math.sign(p.vx) * k * 12, p.y + Math.sin(tick * 0.3 + k) * 2, p.r - k * 3, 0, 7); ctx.fill(); }
       ctx.fillStyle = '#2a1a3a'; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
@@ -7903,6 +7997,16 @@ function drawProjectiles() {
     }
   }
   for (const s of G.shots) drawShuriken(s.x, s.y, s.spin);
+  for (const g of L.gifts || []) {   // treasure the octopus let go of, and the little fish taking it home
+    if (g.t < 0) continue;
+    const gx = Math.round(g.x), gy = Math.round(g.y);
+    if (g.kind === 0) { ctx.fillStyle = '#ffffff'; ctx.fillRect(gx - 5, gy - 5, 10, 10); ctx.fillStyle = '#d8e8f0'; ctx.fillRect(gx + 1, gy + 1, 4, 4); }   // pearl
+    else if (g.kind === 1) { ctx.fillStyle = '#ffb3c7'; ctx.fillRect(gx - 7, gy - 4, 14, 8); ctx.fillStyle = '#d0708a'; ctx.fillRect(gx - 4, gy - 4, 2, 8); ctx.fillRect(gx + 2, gy - 4, 2, 8); }   // shell
+    else { ctx.fillStyle = '#ffd23f'; ctx.fillRect(gx - 6, gy - 6, 12, 12); ctx.fillStyle = '#c99a1a'; ctx.fillRect(gx - 2, gy - 3, 4, 6); }   // coin
+    if (g.t > 30) seaPix(SEA_FISH, g.fx - 8, g.fy - 5, 3, { x: g.col, e: '#16121f' }, g.got || g.fx > g.x);
+  }
+  const gg = L.giftGem;
+  if (gg) drawGem(gg.x, gg.y, 1, tick * 0.2);
   if (L.prize) {
     const z = L.prize, cx = z.x + z.w / 2, cy = z.y + z.h / 2;
     const g = ctx.createRadialGradient(cx, cy, 5, cx, cy, 50);
@@ -9033,7 +9137,7 @@ function drawHUD() {
   else if (G.swing) hudText(`${isTouch ? 'Tap' : 'Pick'} the right answer to swing!  (${G.swing.half}/2)`, VW / 2, by + 80, 16, '#fff', 'center');
   else if (L.boss) {
     const b = L.boss, bw = Math.min(320, VW - 60), bx = VW / 2 - bw / 2, segW = bw / b.max;
-    hudText(b.name, VW / 2, by + 80, 16, '#ffb3b3', 'center');
+    hudText(b.kind === 'octo' ? `${b.name} · ${Math.max(0, b.hp)} / ${b.max} arms left` : b.name, VW / 2, by + 80, 16, '#ffb3b3', 'center');
     ctx.fillStyle = 'rgba(0,0,0,.55)'; rrect(bx - 3, by + 91, bw + 6, 16, 6); ctx.fill();
     for (let i = 0; i < b.max; i++) {
       ctx.fillStyle = i < b.hp ? '#ff3355' : '#3a1a22';
@@ -9044,7 +9148,7 @@ function drawHUD() {
       const f = L.arena.phaseT / OPEN_FRAMES(), ww = 160;
       ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(VW / 2 - ww / 2, by + 136, ww, 5);
       ctx.fillStyle = '#ffd23f'; ctx.fillRect(VW / 2 - ww / 2, by + 136, ww * f, 5);
-    } else if (!L.boss.dying && !L.boss.dead && !L.boss.outro && !L.arena.wait) hudText('Jump over the attacks!', VW / 2, by + 124, 15, '#fff', 'center');
+    } else if (!L.boss.dying && !L.boss.dead && !L.boss.outro && !L.arena.wait) hudText(L.water ? 'Swim up or down to dodge!' : 'Jump over the attacks!', VW / 2, by + 124, 15, '#fff', 'center');
   } else if (L.vault) {
     const rm = L.room;
     if (rm.kind === 'train' && !rm.open && !rm.show && !(rm.intro > 0)) drawDrill(rm, by + 98);
@@ -9868,7 +9972,9 @@ function seaScene(c, t) {   // sky, water in bands, a sandy floor with coral, ri
   bands(c, ['#43b8ec', '#2f9ad8', '#2482c8', '#1a6ab0'], 24, SH);
   for (let x = 0; x < SW; x += 6) dot(c, x + Math.round(Math.sin(t * 2 + x) * 1), 24, 4, 1, '#ffffff');
   scHills(c, 3, 100, 2, '#e2bf7e', '#f6dfa8');
-  [[20, 96, 5, '#ff7a8a'], [28, 93, 4, '#ffb347'], [170, 95, 6, '#ff9ccf'], [180, 92, 4, '#c58aff']].forEach(([x, y, r, col]) => disc(c, x, y, r, col));
+  [[20, 99, '#ff7a8a'], [28, 99, '#ffb347'], [170, 99, '#ff9ccf'], [181, 99, '#c58aff']].forEach(([x, y, col]) => {   // tiny pixel coral
+    dot(c, x, y - 7, 1, 7, col); dot(c, x - 2, y - 5, 1, 3, col); dot(c, x + 2, y - 6, 1, 4, col); dot(c, x - 2, y - 3, 5, 1, col);
+  });
   for (let i = 0; i < 8; i++) { const x = Math.floor(rnd(71, i) * SW), y = Math.floor(SH - ((t * 14 + rnd(73, i) * SH) % (SH - 26))); dot(c, x, y, 1, 1, '#d8f4ff'); }
 }
 function scHeart(c, x, y, col = '#ff5a8a') { dot(c, x - 3, y - 2, 2, 2, col); dot(c, x + 1, y - 2, 2, 2, col); dot(c, x - 3, y, 6, 2, col); dot(c, x - 2, y + 2, 4, 1, col); dot(c, x - 1, y + 3, 2, 1, col); }
@@ -10025,8 +10131,13 @@ Object.assign(SCENES, {
     } },
   ],
   octo: [
-    { cap: '"Pieces are better shared."', draw(c, t) {
-      seaScene(c, t); sPut(c, scSpr.kai().stand[0], 64, 102); sPut(c, bossS('octo'), 128, 102);
+    { cap: '"This gem is for you."', draw(c, t, p) {
+      seaScene(c, t); sPut(c, scSpr.kai().stand[0], 60, 102); sPut(c, bossS('octo'), 132, 102);
+      const u = Math.min(1, p * 1.4), gx = Math.round(66 + u * 52), gy = Math.round(84 - Math.sin(u * Math.PI) * 18);
+      dot(c, gx - 1, gy - 2, 3, 1, '#9be7ff'); dot(c, gx - 2, gy - 1, 5, 2, '#3ae0ff'); dot(c, gx - 1, gy + 1, 3, 1, '#1a9ad0'); dot(c, gx, gy + 2, 1, 1, '#1a9ad0');
+    } },
+    { cap: '"For me?"', draw(c, t) {
+      seaScene(c, t); sPut(c, scSpr.kai().stand[0], 60, 102); sPut(c, bossS('octo', t % 1 < 0.5 ? 'a' : 'b'), 132, 102); scHeart(c, 132, 66);
     } },
     { cap: 'Everyone gets a piece!', draw(c, t) {
       seaScene(c, t); sPut(c, bossS('octo', t % 1 < 0.5 ? 'a' : 'b'), 96, 102);
