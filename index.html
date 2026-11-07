@@ -459,7 +459,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 7, 2026 4:50 PM PT · Deep sea: fewer jellyfish, they stay in place</div>
+  <div class="build">Updated Nov 7, 2026 5:30 PM PT · Sunken Ship: anglerfish buddy, pirate chest</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1455,6 +1455,8 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     // Sunken Ship is all deep sea (owner): no surface, no sky, nothing sticking up out of the water. Kai wears the diving
     // suit he found at the end of the Kelp Forest; it keeps him at a steady depth (L.water is that depth, not a surface).
     L.abyss = def.k === 2;
+    // A friendly anglerfish swims with Kai in the deep sea (owner picked): each right answer makes its lamp brighter.
+    if (L.abyss) L.angler = { x: 0, y: 0, on: false, face: 1, seen: 0, pulse: 0, told: false };
     if (L.deep) for (let c = 16; c < 1000; c += ri(rng, 9, 13)) L.lfish = [...(L.lfish || []), { c, r: WS + ri(rng, 2, 6), ph: rng() * 6 }];
     function caveChunk() {   // a little cave on the sea floor with the golden gem inside: dive all the way down and swim in
       const s = flat(10);
@@ -1475,7 +1477,11 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
       if (i === calm && !L.abyss) seaChunk('vent');   // every level has at least one vent (not the deep sea: they shoot Kai out of the water)
       if (i === calm) {   // breathing room: an easy swim with gems (in the Sunken Ship it's where the old ship lies)
         const s = flat(def.k === 2 ? 22 : ri(rng, 14, 18)); for (let k = 2; k < 12; k += 2) coin(s + k, WS + 1 + (k % 4 ? 0 : 2));
-        if (def.k === 2) L.ship = { c: s + 3, w: 16 };
+        if (def.k === 2) {
+          L.ship = { c: s + 3, w: 16 };
+          // A pirate chest by the ship (owner picked): a question opens it and "pieces of eight" spill out as gems.
+          L.clams.push({ chest: true, x: (s + 3) * T - 30, y: GR * T, used: false, open: 0, state: 'shut', t: 0, k: 0 });
+        }
       }
       // The gate: a reef wall from the sea floor up out of the water, with three doors (one answer each) at different depths.
       const s = flat(11), q = L.gen();   // a short run-up: the question shows close to its wall
@@ -4419,14 +4425,29 @@ function updateClams() {
     else cl.open = Math.max(0, cl.open - 0.06);
     if (!cl.used && !G.mbox && mode === 'play' && overlap(P, { x: cl.x - 30, y: cl.y - 40, w: 60, h: 40 })) {
       cl.used = true; cl.state = 'ask';
-      const q = L.gen(), vals = choices(q, 3);
+      const q = cl.chest ? chestQ(cl) : L.gen(), vals = choices(q, 3);
       G.mbox = { clam: cl, c: Math.floor(cl.x / T), r: GR - 1, q, shownAt: G.time, wait: 0, top: cl.y - 4 * T,
         bubbles: vals.map((val, i) => ({ val, x: cl.x + (i - 1) * 1.6 * T, y: cl.y - 2.7 * T })) };
-      sfx.coin(); floatText(cl.x, cl.y - 4.6 * T, 'Treasure clam!', '#ffd23f', 24);
+      sfx.coin(); floatText(cl.x, cl.y - 4.6 * T, cl.chest ? 'Pirate chest!' : 'Treasure clam!', '#ffd23f', 24);
     }
   }
 }
+// The pirate chest's question: for readers and fraction players, "pieces of eight": k of its 8 coins are gold, what part
+// is that? (the coins on the chest show it). Younger players get their own math instead.
+function chestQ(cl) {
+  if (!(reader() || (L.skill && L.skill.cat === 'frac'))) { cl.k = 0; return L.gen(); }
+  const k = R(1, 7), q = partsQ(k, 8);
+  cl.k = k;
+  return { ...q, text: `${k} of 8 coins`, sk: 'fname2' };
+}
 function clamDone(cl, right, fast, q) {
+  if (right && cl.chest) {   // pieces of eight: eight gems, and gold coins fly out
+    cl.state = 'open';
+    payGems(cl.x, cl.y - 30, 8); sfx.win();
+    floatText(cl.x, cl.y - 6.6 * T, 'Pieces of eight!', '#ffd23f', 26);
+    for (let i = 0; i < 16; i++) G.parts.push({ k: 'bit', x: cl.x, y: cl.y - 30, vx: (Math.random() - 0.5) * 6, vy: -2.5 - Math.random() * 3.5, life: 60, col: i % 2 ? '#ffd23f' : '#c99a1a', s: 7 });
+    return;
+  }
   if (right) {
     cl.state = 'open';
     payGems(cl.x, cl.y - 30, fast ? 4 : 3);
@@ -6498,7 +6519,8 @@ function bgAbyss() {
 // Kai, the gate doors, clams and their pearls always glow, so the math stays easy to see.
 let seaDarkCv = null;
 function drawSeaDark() {
-  const prog01 = clamp((P.x / T - 10) / Math.max(1, L.flagC - 40), 0, 1), a = 0.25 + 0.5 * prog01 * (P.x / T < L.flagC - 14 ? 1 : 0.3);
+  const prog01 = clamp((P.x / T - 10) / Math.max(1, L.flagC - 40), 0, 1), lit = L.angler ? Math.min(G.solved || 0, 16) / 16 : 0;
+  const a = (0.25 + 0.5 * prog01 * (P.x / T < L.flagC - 14 ? 1 : 0.3)) * (1 - 0.3 * lit);   // the anglerfish's light pushes the dark back
   if (!seaDarkCv) seaDarkCv = document.createElement('canvas');
   if (seaDarkCv.width !== VW) { seaDarkCv.width = VW; seaDarkCv.height = VH; }
   const d = seaDarkCv.getContext('2d'), top = L.abyss ? 0 : L.water;
@@ -6509,6 +6531,7 @@ function drawSeaDark() {
   const hole = (x, y, r) => { const h = d.createRadialGradient(x - cam, y, r * 0.3, x - cam, y, r); h.addColorStop(0, 'rgba(0,0,0,1)'); h.addColorStop(1, 'rgba(0,0,0,0)'); d.fillStyle = h; d.fillRect(x - cam - r, y - r, r * 2, r * 2); };
   hole(P.x + P.w / 2, P.y + P.h / 2, 150);
   for (const f of L.lfish || []) hole(f.x || 0, f.y || 0, 120);
+  if (L.angler && L.angler.on) hole(L.angler.x + L.angler.face * 30, L.angler.y - 26, anglerR() + L.angler.pulse * 2);
   const cs = currentStation(); if (cs && cs.answers) cs.answers.forEach(o => hole(o.c * T + T, o.r * T + T, 70));
   for (const cl of L.clams || []) hole(cl.x, cl.y - 20, 70);
   if (L.ship) for (let k = 0; k < 4; k++) hole(L.ship.c * T + 90 + k * 70, GR * T - 3.6 * T + k * 6, 60);   // the ship's portholes glow
@@ -6593,9 +6616,7 @@ function drawSeaScenery() {
     const ax = x0 + w + 20;   // the anchor on its chain, and a treasure chest
     ctx.fillStyle = '#5a6070'; for (let k = 0; k < 6; k++) ctx.fillRect(ax - 30 + k * 6, Math.round(top(x0 + w - 20)) + 20 + k * 8, 5, 5);
     ctx.fillRect(ax + 4, b - 50, 6, 46); ctx.fillRect(ax - 8, b - 46, 30, 5); ctx.fillRect(ax - 10, b - 14, 34, 6); ctx.fillRect(ax - 12, b - 22, 6, 10); ctx.fillRect(ax + 20, b - 22, 6, 10);
-    const cx = x0 - 50;
-    ctx.fillStyle = '#6e4627'; ctx.fillRect(cx, b - 26, 40, 26); ctx.fillStyle = '#8b5a2b'; ctx.fillRect(cx, b - 34, 40, 10);
-    ctx.fillStyle = '#ffd23f'; ctx.fillRect(cx, b - 26, 40, 3); ctx.fillRect(cx + 17, b - 24, 6, 8); ctx.fillRect(cx + 4, b - 36, 6, 4); ctx.fillRect(cx + 26, b - 37, 6, 4);
+    // (the treasure chest by the ship is a pirate chest with a question now: drawChest)
   }
 }
 // Bubble vents and treasure clams on the sea floor.
@@ -6620,6 +6641,7 @@ function drawSeaFloorThings() {
   }
   for (const cl of L.clams || []) {
     if (cl.x < cam - 80 || cl.x > cam + VW + 80) continue;
+    if (cl.chest) { drawChest(cl); continue; }
     const x = cl.x, b = cl.y, lift = cl.open * 26;
     if (!cl.used && cl.state === 'shut' && Math.abs(P.x - x) < 7 * T) glowAt(x, b - 16, 46, `rgba(255,230,140,${0.35 + 0.2 * Math.sin(tick * 0.1)})`);
     if (cl.open > 0.05) {   // the inside and its pearl
@@ -6630,6 +6652,50 @@ function drawSeaFloorThings() {
     seaPix(['...xx...', '.xxxxxx.', 'xdxxxxdx', 'xxdxxdxx'], x - 24, b - 42 - lift, 6, { x: '#c58aff', d: '#8a52c8' });   // lid
     if (!cl.used && cl.state === 'shut' && Math.abs(P.x - x) < 7 * T) hudText('?', x, b - 62 - Math.abs(Math.sin(tick * 0.08)) * 8, 22, '#ffd23f', 'center');
   }
+}
+// The pirate chest by the sunken ship: wood and gold bands, eight coins along the front (gold ones show the fraction
+// while it asks), the lid lifts a little while asking and swings open with a golden glow when it's answered.
+function drawChest(cl) {
+  const x = Math.round(cl.x), b = cl.y, w = 76, lift = Math.round(cl.open * 22), near = Math.abs(P.x - x) < 7 * T;
+  if (!cl.used && cl.state === 'shut' && near) glowAt(x, b - 20, 54, `rgba(255,210,90,${0.3 + 0.2 * Math.sin(tick * 0.1)})`);
+  if (cl.open > 0.05) { glowAt(x, b - 34, 40 + cl.open * 40, `rgba(255,220,100,${0.4 * cl.open + 0.2})`); ctx.fillStyle = '#ffd23f'; ctx.fillRect(x - w / 2 + 6, b - 36, w - 12, 8); }   // gold inside
+  ctx.fillStyle = '#6e4627'; ctx.fillRect(x - w / 2, b - 30, w, 30);
+  ctx.fillStyle = '#5a3820'; for (let y = b - 22; y < b; y += 8) ctx.fillRect(x - w / 2, y, w, 2);   // planks
+  ctx.fillStyle = '#c99a3a'; ctx.fillRect(x - w / 2, b - 30, w, 3); ctx.fillRect(x - w / 2 + 6, b - 30, 4, 30); ctx.fillRect(x + w / 2 - 10, b - 30, 4, 30);   // gold bands
+  if (cl.state === 'open' && cl.open > 0.5) {   // open: the lid stands up behind the gold
+    ctx.fillStyle = '#8b5a2b'; ctx.fillRect(x - w / 2 + 2, b - 30 - 26, w - 4, 20); ctx.fillStyle = '#c99a3a'; ctx.fillRect(x - w / 2 + 2, b - 30 - 26, w - 4, 3);
+    ctx.fillStyle = '#ffd23f'; ctx.fillRect(x - w / 2 + 6, b - 38, w - 12, 8);
+  } else { ctx.fillStyle = '#8b5a2b'; ctx.fillRect(x - w / 2, b - 42 - lift, w, 12); ctx.fillStyle = '#c99a3a'; ctx.fillRect(x - w / 2, b - 42 - lift, w, 3); }   // lid (lifts a little while asking)
+  ctx.fillStyle = '#ffd23f'; ctx.fillRect(x - 4, b - 33, 8, 8); ctx.fillStyle = '#16121f'; ctx.fillRect(x - 1, b - 31, 2, 4);   // lock
+  for (let i = 0; i < 8; i++) {   // the eight coins
+    const gold = cl.state === 'open' || i < cl.k, cx = x - 28 + i * 8;
+    ctx.fillStyle = '#16121f'; ctx.fillRect(cx - 4, b - 21, 9, 9);
+    ctx.fillStyle = gold ? '#ffd23f' : '#8a96a8'; ctx.fillRect(cx - 3, b - 20, 7, 7);
+    ctx.fillStyle = gold ? '#c99a1a' : '#5a6474'; ctx.fillRect(cx + 1, b - 16, 3, 3);
+  }
+  if (!cl.used && cl.state === 'shut' && near) hudText('?', x, b - 66 - Math.abs(Math.sin(tick * 0.08)) * 8, 22, '#ffd23f', 'center');
+}
+// The anglerfish buddy (Sunken Ship): swims just ahead of Kai; its lamp lights the dark, and every right answer in the
+// level makes it brighter (and pulses). Drawn behind the blocks so it never covers a door.
+const ANGLER_PIX = ['.....xxxxx....', '...xxxxxxxxx..', 't.xxxxxxxwex..', 'ttxxxxxxxeexx.', 'tttxxxxxxxxxxx', 'ttxxbbbbbbmmmx', 't.xbbbbbbbbbx.', '...xxxxxxxx...'];
+const anglerR = () => 120 + Math.min(G.solved || 0, 16) * 11;
+function drawAngler() {
+  const a = L.angler, p = P;
+  if (Math.abs(p.vx) > 0.5) a.face = p.vx > 0 ? 1 : -1;
+  const tx = p.x + p.w / 2 + a.face * 78, ty = p.y - 18 + Math.sin(tick * 0.04) * 10;
+  if (!a.on) { a.on = true; a.x = tx - a.face * 200; a.y = ty; }
+  a.x += (tx - a.x) * 0.05; a.y += (ty - a.y) * 0.05;
+  if ((G.solved || 0) > a.seen) { a.seen = G.solved; a.pulse = 36; burst(a.x + a.face * 30, a.y - 26, '#fff3a0', 8, 2); }
+  if (a.pulse > 0) a.pulse--;
+  if (!a.told && G.time > 330) { a.told = true; floatText(a.x, a.y - 60, 'Right answers make my light brighter!', '#fff3a0', 22); }
+  const lx = a.x + a.face * 30, ly = a.y - 26 + Math.sin(tick * 0.09) * 2, r = anglerR();
+  glowAt(lx, ly, r * 0.45 + a.pulse, `rgba(255,236,140,${0.35 + a.pulse / 90})`);
+  seaPix(ANGLER_PIX, a.x - 21, a.y - 12, 3, { x: '#6a5a9a', b: '#a898d0', t: '#4e4280', w: '#ffffff', e: '#16121f', m: '#2a2050' }, a.face < 0);
+  ctx.fillStyle = '#4e4280';   // the stalk, curving up and forward to the lamp
+  for (let k = 0; k <= 6; k++) { const u = k / 6; ctx.fillRect(Math.round(a.x + a.face * (2 + u * 28)), Math.round(a.y - 12 - Math.sin(u * Math.PI * 0.8) * 16 - u * 4 + (u > 0.8 ? 4 : 0)), 3, 3); }
+  const ls = 6 + Math.min(G.solved || 0, 16) * 0.25 + (a.pulse > 0 ? 2 : 0);
+  ctx.fillStyle = '#fff6a0'; ctx.fillRect(Math.round(lx - ls / 2), Math.round(ly - ls / 2), Math.round(ls), Math.round(ls));
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(lx - 1), Math.round(ly - 1), 2, 2);
 }
 // The water's surface, drawn over everything at the end: a soft blue tint under it and a wavy bright line.
 function drawWaterFront() {
@@ -9427,6 +9493,7 @@ function render() {
   if (!L.boss && !L.vault) drawGoal();
   if (L.water && !L.room) drawSeaScenery();
   if (L.lfish && !L.room) drawLanternFish();   // behind the blocks, so they never cover a door
+  if (L.angler && G && !L.room && !G.rescue) drawAngler();
   const c0 = Math.max(0, Math.floor(cam / T)), c1 = Math.min(L.w - 1, c0 + Math.ceil(VW / T) + 1);
   drawTiles();
   if (L.water && !L.room) { drawSeaDoors(); drawSeaFloorThings(); }

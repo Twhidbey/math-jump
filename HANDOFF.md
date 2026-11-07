@@ -58,6 +58,8 @@ Everything is in `index.html`. `CLAUDE.md` maps the code and records the owner's
 - **Swings: going back** (owner): ← on the start ledge steps back (it no longer grabs him again right away), ← on the perch swings him back. **A finished crossing can be swung back and forth freely** (no questions): walk at the gap from either ledge, or jump out over it.
 - **Limbs stand out from the suit** (owner): the diving suit's arms and legs have their own shades with a seam and brown gloves; Kai's posed arm/leg (dojo moves, high kick) get a dark suit-coloured edge where they cross his body.
 
+- **Sunken Ship spiced up** (owner picked 1 and 2 of 6 ideas): an **anglerfish buddy** swims ahead of Kai, and every right answer makes its lamp brighter (the dark gets lighter as he does math); a **pirate chest** by the wreck asks "k of 8 coins" (readers / fraction players; younger kids get their own math), right = "Pieces of eight!" and 8 gems. Background jellyfish now drift past (they seemed to follow Kai) and there are two. Other ideas not built yet: current tunnel crossing, glow coral switches, a sea animal to feed, lost friend in a bubble.
+
 ## Open questions for the owner
 0. How do the kids find the Work it out card? Too often, too long (division by counting can be 7 steps)?
 1. Waiting for players' reactions to the guards, the finishing moves, the ski lift and the test-out.
