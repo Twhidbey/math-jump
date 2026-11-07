@@ -459,7 +459,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 7, 2026 12:40 PM PT · Sea: jump-out rock, open ? boxes from above</div>
+  <div class="build">Updated Nov 7, 2026 1:20 PM PT · Sea: kelp forest, shipwreck, coral gardens, pufferfish</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1421,7 +1421,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     const swimmer = (c, r) => {
       if (rng() >= def.enemy * (easy ? 0.4 : 1)) return;
       if (def.k > 0 && rng() < 0.4) L.enemies.push({ kind: 'jelly', x: c * T + 6, y: r * T, y0: r * T, w: 24, h: 26, vx: 0, vy: 0, t: R(0, 120), dead: null });
-      else L.enemies.push({ kind: 'fish', x: c * T, y: r * T + 8, x0: (c - 3) * T, x1: (c + 3) * T, w: 30, h: 20, vx: -speed * 0.9, vy: 0, t: R(0, 60), dead: null });
+      else L.enemies.push({ kind: 'fish', x: c * T, y: r * T + 8, x0: (c - 3) * T, x1: (c + 3) * T, w: 26, h: 24, vx: -speed * 0.9, vy: 0, t: R(0, 60), dead: null });
     };
     function seaChunk(type) {
       switch (type) {
@@ -1466,7 +1466,10 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
       if (i === 0) leapChunk();
       if (i === 2 || i === def.n - 3) clamChunk();
       if (i === calm) seaChunk('vent');   // every level has at least one vent
-      if (i === calm) { const s = flat(ri(rng, 14, 18)); for (let k = 2; k < 12; k += 2) coin(s + k, WS + 1 + (k % 4 ? 0 : 2)); }   // breathing room: an easy swim with gems
+      if (i === calm) {   // breathing room: an easy swim with gems (in the Sunken Ship it's where the old ship lies)
+        const s = flat(def.k === 2 ? 22 : ri(rng, 14, 18)); for (let k = 2; k < 12; k += 2) coin(s + k, WS + 1 + (k % 4 ? 0 : 2));
+        if (def.k === 2) L.ship = { c: s + 3, w: 16 };
+      }
       // The gate: a reef wall from the sea floor up out of the water, with three doors (one answer each) at different depths.
       const s = flat(16), q = L.gen();
       for (let r = 2; r < GR; r++) { map[r][s + 13] = 'G'; map[r][s + 14] = 'G'; }
@@ -1482,7 +1485,16 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     for (let i = 0; i < 8; i++) for (let r = Math.max(WS, GR - 1 - i); r < GR; r++) map[r][s + 2 + i] = '#';
     for (let c = s + 10; c < L.w; c++) for (let r = WS; r < GR; r++) map[r][c] = '#';
     L.flagC = s + 15; L.castleC = s + 19; L.goalB = WS * T;
-    if (L.lfish) L.lfish = L.lfish.filter(f => f.c < s);
+    if (L.lfish) L.lfish = L.lfish.filter(f => f.c < s && !(L.ship && f.c >= L.ship.c - 1 && f.c <= L.ship.c + L.ship.w));
+    // Scenery on the sea floor (not solid, drawn behind the blocks): coral gardens in the Coral Reef, a forest of kelp
+    // in the Kelp Forest. Only on open floor, away from the gates.
+    const openFloor = c => map[GR - 1][c] === '.' && map[GR - 2][c] === '.' && !L.stations.some(st => c >= st.gate[0] - 1 && c <= st.gate[1] + 1) && !(L.ship && c >= L.ship.c - 1 && c <= L.ship.c + L.ship.w);
+    L.garden = [];
+    if (def.k === 0) for (let c = 6; c < s; c += ri(rng, 3, 6)) {
+      if (!openFloor(c) || !openFloor(c + 1) || !openFloor(c + 2)) continue;
+      const n = ri(rng, 3, 6); for (let j = 0; j < n; j++) L.garden.push({ x: (c + j * 0.7) * T + ri(rng, 0, 12), kind: ['branch', 'fan', 'brain', 'tube', 'anemone', 'star', 'shell'][ri(rng, 0, 6)], col: ri(rng, 0, 4) });
+    }
+    if (def.k === 1) for (let c = 4; c < s; c += ri(rng, 1, 3)) if (openFloor(c)) L.garden.push({ x: c * T + ri(rng, 0, 20), kind: 'kelp', h: ri(rng, 4, 8), ph: rng() * 6 });
     addFlavor(L);
     addFriend(L);
     return L;
@@ -6241,11 +6253,13 @@ function bgSea() {
   ctx.fillStyle = 'rgba(255,255,255,.07)';   // sunbeams
   repeat(0.15, 260, (x, i) => { const sway = Math.sin(tick * 0.01 + i) * 20; poly([[x, top], [x + 40, top], [x + 120 + sway, floor], [x + 60 + sway, floor]], 'rgba(255,255,255,.07)'); }, 37);
   hills(0.2, 360, k === 2 ? '#0c2a4a' : 'rgba(10,50,90,.45)', 120, 41);
-  for (let sc = 0; sc < 3; sc++) {   // schools of little fish: they swim one way, then all turn together
-    const ph = tick * 0.004 + sc * 2.1, cx = VW * (0.2 + sc * 0.3) + Math.sin(ph) * 260, dir = Math.cos(ph) > 0, cy = top + 70 + sc * 70 + Math.sin(ph * 3) * 12;
+  ctx.globalAlpha = 0.55;   // far away and pale, so they don't look like the fish that hurt (those are spiky pufferfish)
+  for (let sc = 0; sc < 2; sc++) {   // schools of little fish: they swim one way, then all turn together
+    const ph = tick * 0.004 + sc * 2.1, cx = VW * (0.25 + sc * 0.45) + Math.sin(ph) * 260, dir = Math.cos(ph) > 0, cy = top + 70 + sc * 70 + Math.sin(ph * 3) * 12;
     const col = ['#ffd23f', '#9be7ff', '#ffb38a'][sc];
-    for (let f = 0; f < 7; f++) seaPix(SEA_FISH, cx + ((f * 37) % 70) - 35, cy + ((f * 23) % 36) - 18, 3, { x: col, e: '#16121f' }, !dir);
+    for (let f = 0; f < 5; f++) seaPix(SEA_FISH, cx + ((f * 37) % 70) - 35, cy + ((f * 23) % 36) - 18, 3, { x: col, e: '#16121f' }, !dir);
   }
+  ctx.globalAlpha = 1;
   if (k === 0) {   // Coral Reef: a sea turtle paddles across far back
     const cyc = 1800, u = (tick % cyc) / cyc;
     seaPix(TURTLE_PIX[Math.floor(tick / 20) % 2], -80 + u * (VW + 160), top + 120 + Math.sin(tick * 0.02) * 10, 4, { g: '#5aa86a', G: '#3a7a4a', s: '#b8d89a', e: '#16121f', f: '#8ac87a' });
@@ -6254,7 +6268,12 @@ function bgSea() {
     const kind = ['branch', 'fan', 'brain'][Math.floor(hash(i) * 3)], [c1, c2] = CORAL_COLS[Math.floor(hash(i + 9) * 4)], rows = CORAL_PIX[kind];
     seaPix(rows, x, floor - rows.length * 6, 6, { x: c1, d: c2 });
   }, 43);
-  if (k === 1) repeat(0.5, 120, (x, i) => {   // kelp
+  if (k === 1) repeat(0.35, 60, (x, i) => {   // far kelp, dim
+    const h = 160 + hash(i + 3) * 180;
+    ctx.fillStyle = '#1f6a5a';
+    for (let y = 0; y < h; y += 12) ctx.fillRect(x + Math.sin(tick * 0.02 + y * 0.03 + i) * (y / 34), floor - y - 12, 8, 13);
+  }, 61);
+  if (k === 1) repeat(0.5, 75, (x, i) => {   // kelp
     const h = 180 + hash(i) * 160;
     ctx.fillStyle = i % 2 ? '#2e8a4a' : '#3fa35a';
     for (let y = 0; y < h; y += 12) ctx.fillRect(x + Math.sin(tick * 0.02 + y * 0.03 + i) * (y / 30), floor - y - 12, 8, 13);
@@ -6288,6 +6307,7 @@ function drawSeaDark() {
   for (const f of L.lfish || []) hole(f.x || 0, f.y || 0, 120);
   const cs = currentStation(); if (cs && cs.answers) cs.answers.forEach(o => hole(o.c * T + T, o.r * T + T, 70));
   for (const cl of L.clams || []) hole(cl.x, cl.y - 20, 70);
+  if (L.ship) for (let k = 0; k < 4; k++) hole(L.ship.c * T + 90 + k * 70, GR * T - 3.6 * T + k * 6, 60);   // the ship's portholes glow
   if (G.mbox) G.mbox.bubbles.forEach(b => hole(b.x, b.y, 40));
   ctx.drawImage(seaDarkCv, 0, 0);
 }
@@ -6301,6 +6321,64 @@ function drawLanternFish() {
     seaPix(['..xxx...', '.xxxxxx.', 'xxxxxxex', '.xxxxxx.', '..xxx...'], f.x - 12, f.y - 7, 3, { x: '#3a4a6a', e: '#ffe066' }, !dir);
     ctx.fillStyle = '#5a6a8a'; ctx.fillRect(Math.round(f.x + (dir ? 8 : -10)), Math.round(f.y - 13), 2, 6);
     ctx.fillStyle = '#fff6a0'; ctx.fillRect(Math.round(f.x + (dir ? 14 : -18)), Math.round(f.y - 16), 4, 4);
+  }
+}
+// Sea-floor scenery for each level (behind the blocks): coral gardens, kelp, the sunken ship.
+const GARDEN_PIX = {
+  branch: ['x..x...x', 'x.xx..xx', 'xx.x.xx.', '.xxxxx..', '..xxx...', '...x....', '...x....'],
+  fan: ['..xxxxx..', '.xdxxxdx.', 'xxxdxdxxx', 'xdxxxxxdx', '.xxdxdxx.', '..xxxxx..', '....x....', '....x....'],
+  brain: ['..xxxxx..', '.xdxxxdx.', 'xxxdxdxxx', 'xdxxxxxdx', 'xxxxxxxxx'],
+  tube: ['d...d..d.', 'x...x..x.', 'x.d.x..x.', 'x.x.x.dx.', 'x.x.x.xx.', 'xxx.xxxx.', 'xxxxxxxx.'],
+  star: ['...x...', '..xdx..', 'xxxdxxx', '.xdxdx.', 'xx...xx'],
+  shell: ['..xxx..', '.xdxdx.', 'xdxdxdx', 'xxxxxxx'],
+};
+const GARDEN_COLS = [['#ff6b8a', '#c8405e'], ['#ffb347', '#d07a1a'], ['#c58aff', '#8a52c8'], ['#5ad8c8', '#2a9a8a'], ['#ffe066', '#c8a02a']];
+function drawSeaScenery() {
+  const b = GR * T;
+  for (const g of L.garden || []) {
+    if (g.x < cam - 100 || g.x > cam + VW + 60) continue;
+    if (g.kind === 'kelp') {   // a tall kelp strand that sways, with a leaf now and then
+      for (let j = 0; j < g.h * 3; j++) {
+        const sway = Math.round(Math.sin(tick * 0.025 + g.ph + j * 0.25) * j * 0.35) * 2, y = b - (j + 1) * 12;
+        ctx.fillStyle = j % 2 ? '#2f8a48' : '#3a9a52'; ctx.fillRect(Math.round(g.x + sway), y, 8, 13);
+        if (j % 4 === 2) { ctx.fillStyle = '#4ab863'; ctx.fillRect(Math.round(g.x + sway + (j % 8 === 2 ? 8 : -8)), y + 2, 8, 6); }
+      }
+      continue;
+    }
+    if (g.kind === 'anemone') {   // a sea anemone: waving tentacles
+      const [c1, c2] = GARDEN_COLS[g.col];
+      ctx.fillStyle = c2; ctx.fillRect(g.x, b - 12, 24, 12);
+      for (let k = 0; k < 6; k++) { const h = 14 + (k % 2) * 6, sw = Math.round(Math.sin(tick * 0.06 + k) * 2) * 2; ctx.fillStyle = c1; ctx.fillRect(g.x + k * 4 + sw, b - 12 - h, 4, h); ctx.fillStyle = '#ffffff'; ctx.fillRect(g.x + k * 4 + sw, b - 12 - h, 4, 4); }
+      continue;
+    }
+    const rows = GARDEN_PIX[g.kind], [c1, c2] = GARDEN_COLS[g.col], sz = g.kind === 'star' || g.kind === 'shell' ? 4 : 6;
+    seaPix(rows, g.x, b - rows.length * sz, sz, { x: c1, d: c2 });
+  }
+  const sh = L.ship;
+  if (sh && sh.c * T < cam + VW + 40 && (sh.c + sh.w) * T > cam - 40) {   // the old ship on the sea floor, tilted, half buried
+    const x0 = sh.c * T, w = sh.w * T, H = 4.2 * T, top = x => b - H + (x - x0) * 0.09;   // the deck tilts down to the right
+    for (let x = x0; x < x0 + w; x += 6) {   // the hull, in pixel columns
+      const t = top(x), bow = x < x0 + 60 ? (x0 + 60 - x) * 0.9 : 0, stern = x > x0 + w - 30 ? (x - (x0 + w - 30)) * 1.4 : 0;
+      ctx.fillStyle = '#4a3420'; ctx.fillRect(x, Math.round(t + bow + stern), 6, Math.max(0, b - t - bow - stern));
+      ctx.fillStyle = '#5e4228'; for (let y = Math.round(t + bow + stern) + 10; y < b; y += 18) ctx.fillRect(x, y, 6, 3);   // planks
+      ctx.fillStyle = '#6e5232'; ctx.fillRect(x, Math.round(t + bow + stern), 6, 5);   // deck edge
+      if ((x - x0) % 30 === 0 && x > x0 + 40 && x < x0 + w - 20) { ctx.fillStyle = '#6e5232'; ctx.fillRect(x, Math.round(t + bow + stern) - 12, 4, 12); }   // rail posts
+    }
+    ctx.fillStyle = '#6e5232'; for (let x = x0 + 40; x < x0 + w - 20; x += 6) ctx.fillRect(x, Math.round(top(x)) - 13, 6, 3);   // the rail
+    ctx.fillStyle = '#120c08'; poly([[x0 + w * 0.62, b], [x0 + w * 0.6, b - 46], [x0 + w * 0.66, b - 70], [x0 + w * 0.72, b - 40], [x0 + w * 0.7, b]], '#120c08');   // a crack in the hull
+    const glow = 0.55 + 0.25 * Math.sin(tick * 0.05);
+    for (let k = 0; k < 4; k++) { const px = x0 + 90 + k * 70; if (px > x0 + w * 0.58 && px < x0 + w * 0.74) continue; const py = Math.round(top(px)) + 40; ctx.fillStyle = '#2a1e12'; ctx.fillRect(px - 9, py - 9, 18, 18); ctx.fillStyle = `rgba(255,214,110,${glow})`; ctx.fillRect(px - 6, py - 6, 12, 12); }   // portholes
+    const mx = x0 + w * 0.42, my = Math.round(top(mx));   // the broken mast, leaning, with a torn sail
+    for (let k = 0; k < 22; k++) { ctx.fillStyle = '#5e4228'; ctx.fillRect(Math.round(mx + k * 1.6), my - k * 9 - 9, 8, 10); }
+    ctx.fillStyle = '#4a3420'; ctx.fillRect(Math.round(mx + 14), my - 150, 80, 6);
+    ctx.fillStyle = 'rgba(220,210,180,.75)'; for (let k = 0; k < 13; k++) { const h = 50 + ((k * 7) % 4) * 8 - (k > 9 ? 22 : 0); ctx.fillRect(Math.round(mx + 18 + k * 6), my - 144, 6, h); }
+    ctx.fillStyle = '#3a8a4a'; for (let k = 0; k < 9; k++) ctx.fillRect(x0 + 50 + k * 47, Math.round(top(x0 + 50 + k * 47)) + 2, 10, 4);   // moss on the deck
+    const ax = x0 + w + 20;   // the anchor on its chain, and a treasure chest
+    ctx.fillStyle = '#5a6070'; for (let k = 0; k < 6; k++) ctx.fillRect(ax - 30 + k * 6, Math.round(top(x0 + w - 20)) + 20 + k * 8, 5, 5);
+    ctx.fillRect(ax + 4, b - 50, 6, 46); ctx.fillRect(ax - 8, b - 46, 30, 5); ctx.fillRect(ax - 10, b - 14, 34, 6); ctx.fillRect(ax - 12, b - 22, 6, 10); ctx.fillRect(ax + 20, b - 22, 6, 10);
+    const cx = x0 - 50;
+    ctx.fillStyle = '#6e4627'; ctx.fillRect(cx, b - 26, 40, 26); ctx.fillStyle = '#8b5a2b'; ctx.fillRect(cx, b - 34, 40, 10);
+    ctx.fillStyle = '#ffd23f'; ctx.fillRect(cx, b - 26, 40, 3); ctx.fillRect(cx + 17, b - 24, 6, 8); ctx.fillRect(cx + 4, b - 36, 6, 4); ctx.fillRect(cx + 26, b - 37, 6, 4);
   }
 }
 // Bubble vents and treasure clams on the sea floor.
@@ -7707,12 +7785,16 @@ function drawEnemy(e) {
   if (e.dead === 'flip') { ctx.translate(x + e.w / 2, y + e.h / 2); ctx.scale(1, -1); ctx.translate(-x - e.w / 2, -y - e.h / 2); }
   if (e.dead === 'squash') { ctx.translate(0, y + e.h); ctx.scale(1, 0.3); ctx.translate(0, -y - e.h); }
   switch (e.kind) {
-    case 'fish': {   // a little orange fish with a striped tail
-      const f = e.vx > 0 ? 1 : -1, cx = x + e.w / 2, cy = y + e.h / 2, wag = step ? 3 : -3;
-      poly([[cx - f * 10, cy], [cx - f * 17, cy - 7 + wag], [cx - f * 17, cy + 7 + wag]], '#e8601a');
-      ctx.fillStyle = '#ff8a3a'; ctx.beginPath(); ctx.ellipse(cx, cy, 12, 9, 0, 0, 7); ctx.fill();
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(cx - 2, cy - 8, 3, 16); ctx.fillStyle = '#ffd0a0'; ctx.fillRect(cx - 9, cy + 2, 14, 3);
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(cx + f * 6 - 2, cy - 4, 4, 4); ctx.fillStyle = '#16121f'; ctx.fillRect(cx + f * 6 - (f > 0 ? 0 : 1), cy - 3, 2, 2);
+    case 'fish': {   // a spiky pufferfish: the sea's "ouch" (the background fish are small and pale)
+      const f = e.vx > 0 ? 1 : -1, cx = Math.round(x + e.w / 2), cy = Math.round(y + e.h / 2), puff = step ? 1 : 0;
+      ctx.fillStyle = '#c8501a';
+      for (const [dx, dy] of [[0, -14], [9, -10], [-9, -10], [13, 0], [-13, 0], [9, 9], [-9, 9], [0, 13]]) ctx.fillRect(cx + dx - 2 + (dx ? Math.sign(dx) * puff : 0), cy + dy - 2 + (dy ? Math.sign(dy) * puff : 0), 4, 4);   // spikes
+      poly([[cx - f * 11, cy], [cx - f * 18, cy - 6], [cx - f * 18, cy + 6]], '#e8a020');   // tail
+      ctx.fillStyle = '#ffc83a'; ctx.fillRect(cx - 11, cy - 9, 22, 18); ctx.fillRect(cx - 9, cy - 11, 18, 22);
+      ctx.fillStyle = '#fff3c0'; ctx.fillRect(cx - 7, cy + 3, 14, 6);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(cx + f * 5 - 2, cy - 6, 5, 5); ctx.fillStyle = '#16121f'; ctx.fillRect(cx + f * 5 + (f > 0 ? 1 : -1), cy - 5, 2, 3);
+      ctx.fillStyle = '#7a2a0a'; ctx.fillRect(cx + f * 2 - 3, cy - 9, 7, 2);   // grumpy brow
+      ctx.fillStyle = '#16121f'; ctx.fillRect(cx + f * 9 - 1, cy + 1, 3, 2);   // mouth
       break;
     }
     case 'jelly': {   // a pink jellyfish with wiggly legs
@@ -8984,6 +9066,7 @@ function render() {
   drawPuzzles();
   if (L.room) drawRoom();
   if (!L.boss && !L.vault) drawGoal();
+  if (L.water && !L.room) drawSeaScenery();
   if (L.lfish && !L.room) drawLanternFish();   // behind the blocks, so they never cover a door
   const c0 = Math.max(0, Math.floor(cam / T)), c1 = Math.min(L.w - 1, c0 + Math.ceil(VW / T) + 1);
   drawTiles();
