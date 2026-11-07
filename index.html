@@ -459,7 +459,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 7, 2026 3:20 PM PT · Gate questions only show near their gate</div>
+  <div class="build">Updated Nov 7, 2026 3:50 PM PT · Sea: rocky island with a seal, dolphin flip leap</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1440,10 +1440,13 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     }
     // A rock that rises from the sea floor to just above the surface: no way under or through, so Kai jumps out of the
     // water to get over it (owner asked for one per level). A hint shows if he waits at it.
+    // A little rocky island (tile Y) sticking up out of the water, with a seal napping on top. Halfway through the level
+    // (owner: a mix-up). Jumping out of the water near it is a big dolphin leap with a flip, over an arc of gems.
     function leapChunk() {
-      const s = flat(10); rock(s + 4, 2, WS - 1);
-      L.leaps.push({ c: s + 4, told: false, t: 0 });
-      coin(s + 4, WS - 3); coin(s + 5, WS - 3, 5);
+      const s = flat(12), c = s + 5;
+      for (let r = WS - 1; r < GR; r++) { const spread = r < WS + 2 ? 0 : r < WS + 5 ? 1 : 2; for (let i = -spread; i < 3 + spread; i++) map[r][c + i] = 'Y'; }   // wider toward the sea floor, like a little island
+      L.leaps.push({ c, told: false, t: 0, seal: 'sit', st: 0 });
+      [[-1, WS - 2], [0, WS - 3], [1, WS - 4], [2, WS - 3], [3, WS - 2]].forEach(([dc, r], i) => coin(c + dc, r, i === 2 ? 5 : 1));
     }
     function clamChunk() {   // a treasure clam on the sea floor: swim down to it for a question; right = it opens, pearls spill out as gems
       const s = flat(8); L.clams.push({ x: (s + 4) * T + T / 2, y: GR * T, used: false, open: 0, state: 'shut', t: 0 });
@@ -1463,7 +1466,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
       const n = ri(rng, 1, 2);
       for (let k = 0; k < n; k++) seaChunk(kinds[ri(rng, 0, kinds.length - 1)]);
       if (i === 1) caveChunk();
-      if (i === 0) leapChunk();
+      if (i === calm) leapChunk();
       if (i === 2 || i === def.n - 3) clamChunk();
       if (i === calm) seaChunk('vent');   // every level has at least one vent
       if (i === calm) {   // breathing room: an easy swim with gems (in the Sunken Ship it's where the old ship lies)
@@ -2660,7 +2663,7 @@ const keys = { left: false, right: false, jump: false, down: false, jumpPressed:
 const ambient = [];         // falling petals / rising embers, in screen space
 
 // ---------------------------------------------------------------- physics
-const SOLID = new Set(['W', '#', 'B', '?', 'U', 'S', 'P', 'Q', 'p', 'q', 'G', 'A', 'K', 'N', 'b', 'R', 'J', 'C', 'c', 'I', 'O', 'X', 'Z', 'F']);
+const SOLID = new Set(['W', '#', 'B', '?', 'U', 'S', 'P', 'Q', 'p', 'q', 'G', 'A', 'K', 'N', 'b', 'R', 'J', 'C', 'c', 'I', 'O', 'X', 'Z', 'F', 'Y']);
 function solid(c, r) {
   if (c < 0 || c >= L.w) return true;
   if (r >= ROWS) return false;
@@ -4006,8 +4009,11 @@ const inWater = p => !!L.water && p.y + p.h * 0.5 > L.water - 8 && p.vy > -6;
 function swimY(p) {
   const depth = p.y + p.h * 0.5 - L.water;   // 0 = floating at the surface
   p.coyote = 0;
-  if (p.jbuf > 0 && depth < 14) {   // leap out of the water
-    p.vy = -9.2; p.bounce = true; p.jbuf = 0; sfx.jump(); burst(p.x + p.w / 2, L.water, '#e8f8ff', 6, 2); return;   // always a full leap (a quick tap on a phone too)
+  if (p.jbuf > 0 && depth < 14) {   // leap out of the water (by the rocky island: a big dolphin leap with a flip)
+    const lp = (L.leaps || []).find(l => p.x + p.w > (l.c - 4) * T && p.x < (l.c + 3) * T);
+    if (lp) { p.vy = -11.5; p.flipT = 40; if (lp.seal === 'sit') { lp.seal = 'dive'; lp.st = 0; } burst(p.x + p.w / 2, L.water, '#e8f8ff', 14, 4); floatText(p.x + p.w / 2, p.y - 20, 'Splash!', '#9be7ff', 24); }
+    else p.vy = -9.2;
+    p.bounce = true; p.jbuf = 0; sfx.jump(); burst(p.x + p.w / 2, L.water, '#e8f8ff', 6, 2); return;   // always a full leap (a quick tap on a phone too)
   }
   if (keys.downPressed) { keys.downPressed = false; p.vy = Math.max(p.vy, 0) + 4.4; }   // a tap of ▼ is a kick down (about a tile and a half)
   if (keys.down) p.vy = Math.min(p.vy + 0.45, 3.8);
@@ -5095,6 +5101,7 @@ function updatePlayer() {
   }
   if (wasAir && p.onGround && fallSpeed > 6) { p.squash = 8; burst(p.x + p.w / 2, p.y + p.h, '#e8e0d0', 4, 1.5); }
   if (p.squash > 0) p.squash--; else if (p.squash < 0) p.squash++;
+  if (p.flipT > 0) p.flipT--;
   if (p.inv > 0) p.inv--;
   if (p.throwT > 0) p.throwT--;
   p.anim += Math.abs(p.vx) * 0.06;
@@ -5127,7 +5134,7 @@ function updatePlayer() {
   if (L.vault && overlap(p, doorBox(L.exitC))) { leaveVault(); return; }
 
   for (const c of L.coins) {
-    if (!c.taken && Math.abs(c.x - (p.x + p.w / 2)) < 22 && Math.abs(c.y - (p.y + p.h / 2)) < 30) {
+    if (!c.taken && Math.abs(c.x - (p.x + p.w / 2)) < (p.flipT > 0 ? 40 : 22) && Math.abs(c.y - (p.y + p.h / 2)) < (p.flipT > 0 ? 46 : 30)) {
       c.taken = true; G.coins += c.v; G.score += 100 * c.v; gemSound(); flyGem(c.x, c.y, c.v);
       if (c.gold) {
         prog.golden[L.idx] = true; save(); G.score += 2500; sfx.win(); confetti(c.x, c.y); shake(8, 3); petSay('wow');
@@ -6481,6 +6488,17 @@ function drawSeaScenery() {
 }
 // Bubble vents and treasure clams on the sea floor.
 function drawSeaFloorThings() {
+  for (const lp of L.leaps || []) {   // the seal napping on the rocky island; it flops into the water when Kai flies over
+    if (lp.seal === 'gone' || (lp.c + 1.5) * T < cam - 80 || (lp.c + 1.5) * T > cam + VW + 80) continue;
+    const img = bakeSpr('seal', ANIMAL_SPR.seal, 2), top = (SEA_TOP - 1) * T;
+    let x = (lp.c + 1.5) * T, y = top - img.height + 4;
+    if (lp.seal === 'dive') {
+      lp.st++; const u = lp.st / 40; x += u * 90; y += -Math.sin(Math.min(u, 1) * Math.PI) * 40 + Math.max(0, u - 0.6) * 160;
+      if (lp.st === 30) { burst(x, L.water, '#e8f8ff', 10, 3); }
+      if (lp.st > 40) { lp.seal = 'gone'; continue; }
+    } else if (tick % 120 < 60) hudText('z', x + 18, top - 34 - (tick % 60) * 0.3, 14, '#ffffff', 'center');
+    ctx.imageSmoothingEnabled = false; ctx.drawImage(img, Math.round(x - img.width / 2), Math.round(y));
+  }
   for (const v of L.vents || []) {
     if (v.x < cam - 80 || v.x > cam + VW + 80) continue;
     const b = GR * T;
@@ -7339,6 +7357,19 @@ function drawTile(t, x, y, c, r) {
       break;
     }
     case 'A': drawAnswer(x, y, c, r); break;
+    case 'Y': {   // the rocky little island: dark rock under the water, a sandy top with a tuft of grass
+      const top = L.map[r - 1] && L.map[r - 1][c] !== 'Y', left = L.map[r][c - 1] !== 'Y', right = L.map[r][c + 1] !== 'Y';
+      ctx.fillStyle = '#4a5a5e'; ctx.fillRect(x, y, T, T);
+      ctx.fillStyle = '#5e7074'; const h = (c * 29 + r * 13) % 7; ctx.fillRect(x + 4 + h, y + 6, 10, 8); ctx.fillRect(x + 20 - h, y + 20, 9, 7);
+      ctx.fillStyle = '#3a8a5a'; if (r > SEA_TOP && (c + r) % 3 === 0) ctx.fillRect(x + 6, y + 26, 6, 4);   // moss
+      if (left) { ctx.fillStyle = '#3a484c'; ctx.fillRect(x, y, 4, T); } if (right) { ctx.fillStyle = '#3a484c'; ctx.fillRect(x + T - 4, y, 4, T); }
+      if (top && r >= SEA_TOP) { ctx.fillStyle = '#6e8286'; ctx.fillRect(x, y, T, 5); ctx.fillStyle = '#3a8a5a'; ctx.fillRect(x + 4, y, 8, 3); ctx.fillRect(x + 22, y, 6, 3); }   // an underwater ledge: mossy rock
+      else if (top) {
+        ctx.fillStyle = '#e8cf96'; ctx.fillRect(x, y, T, 10); ctx.fillStyle = '#c9a463'; ctx.fillRect(x, y + 10, T, 3);
+        if (!left && !right) { ctx.fillStyle = '#4ab06a'; ctx.fillRect(x + 8, y - 8, 4, 8); ctx.fillRect(x + 14, y - 12, 4, 12); ctx.fillRect(x + 20, y - 7, 4, 7); }
+      }
+      break;
+    }
     case 'F': {   // a floating wooden raft (the sea): dive under it
       block(x, y, '#a8743f', '#5e3a1c', '#d9b26a');
       ctx.fillStyle = '#7a4f28'; ctx.fillRect(x + 2, y + T / 2 - 1, T - 4, 2);
@@ -8620,7 +8651,14 @@ function drawPlayer() {
     for (const back of [9, 6, 3]) { ctx.globalAlpha = 0.12 + (9 - back) * 0.04; drawKaiPose(p, trainPoseAt(rmS, rmS.showT - back)); }
     ctx.globalAlpha = 1;
   }
-  if (pose) drawKaiPose(p, pose); else drawBaked(SPR, k, p.face < 0, p);
+  if (p.flipT > 0) {   // the dolphin-leap flip: upside down in the middle (a mirror, pixel-exact) with swoosh marks
+    const u = 1 - p.flipT / 40, cx = p.x + p.w / 2, cy = p.y + p.h / 2;
+    if (u > 0.28 && u < 0.72) { ctx.translate(cx, cy); ctx.scale(1, -1); ctx.translate(-cx, -cy); }
+    ctx.fillStyle = 'rgba(255,255,255,.75)';
+    for (let i = 0; i < 6; i++) { const a = u * 6.28 + i * 0.35; ctx.fillRect(Math.round(cx + Math.cos(a) * 34), Math.round(cy + Math.sin(a) * 34), 4, 4); }
+    k = 'jump';
+  }
+  if (pose && !(p.flipT > 0)) drawKaiPose(p, pose); else drawBaked(SPR, k, p.face < 0, p);
   ctx.restore();
   if (hasPower('shield')) {
     ctx.strokeStyle = `rgba(125,249,255,${0.5 + 0.3 * Math.sin(tick * 0.2)})`; ctx.lineWidth = 3;
