@@ -456,7 +456,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 7, 2026 10:52 AM PT · Coral Sea: coral, fish, clams, bubble vents</div>
+  <div class="build">Updated Nov 7, 2026 11:20 AM PT · Fix: Kai stuck at sea doors</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -2658,7 +2658,7 @@ function moveY(b) {
       const d = Math.abs((c + 0.5) * T - (b.x + b.w / 2));
       if (d < best) { best = d; hit = c; }
     }
-    if (hit === null && b === P && r >= 0) {   // forgiving edges: a head that just grazes the side of an answer block counts
+    if (hit === null && b === P && r >= 0 && !L.water) {   // forgiving edges: a head that just grazes the side of an answer block counts (not in the sea: Kai floats up along the wall)
       for (const c of [Math.floor((b.x - 6) / T), Math.floor((b.x + b.w + 6) / T)]) if (c >= 0 && c < L.w && (L.map[r][c] === 'A' || L.map[r][c] === 'Z')) { hit = c; break; }
     }
     if (hit !== null) { b.y = (r + 1) * T; b.vy = 0; return { c: hit, r }; }
@@ -2753,7 +2753,7 @@ function bump(c, r) {
   }
   bumpFriendKey(c, r);
   if (t === '?') boxPrize(c, r);
-  else if (t === 'A') answer(c, r);
+  else if (t === 'A' && !L.water) answer(c, r);
   else if (t === 'B') {
     L.map[r][c] = '.'; G.score += 50; sfx.brick();
     burst(c * T + T / 2, r * T + T / 2, L.world.brick[0], 8);
@@ -3977,12 +3977,11 @@ function swimY(p) {
   if (p.vy > 4.5) p.vy *= 0.82;   // splashing in from a leap
   if (depth > 20 && tick % 26 === 0) G.parts.push({ k: 'bit', x: p.x + p.w / 2 + p.face * 8, y: p.y + 6, vx: 0, vy: -1.2, life: 40, col: 'rgba(225,245,255,.85)', s: 4 });
 }
-// Swimming into something: a door in a reef wall counts as a bonk (an answer); at the surface, a beach or step with
-// open air above it gets a little hop up onto it.
+// Swimming into something at the surface: a beach or step with open air above it gets a little hop up onto it.
+// Touching a door never answers it (owner saw Kai stuck at a wall, answering by accident over and over): sea doors are
+// picked with the buttons or keys, and the right one swims Kai through.
 function seaWall(p, wet) {
   const c = Math.floor((p.face > 0 ? p.x + p.w + 2 : p.x - 2) / T);
-  if (p.sideT > 0) p.sideT--;
-  else for (let r = Math.floor(p.y / T); r <= Math.floor((p.y + p.h - 1) / T); r++) if (L.map[r] && L.map[r][c] === 'A') { p.sideT = 30; bump(c, r); return; }
   if (wet && (keys.left || keys.right) && p.y + p.h * 0.5 - L.water < 30 && !solid(c, SEA_TOP - 1) && !solid(c, SEA_TOP - 2)) p.vy = -8.6;
 }
 // After a right answer at a sea gate: Kai swims to the open door's depth, then through it.
