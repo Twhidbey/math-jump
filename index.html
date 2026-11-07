@@ -93,6 +93,7 @@
   .tbtn.on { background: rgba(255,255,255,.45); }
   .tbtn[data-k="move"] { display: none; left: 18px; bottom: 120px; background: rgba(255,120,60,.45); }
   body.canmove .tbtn[data-k="move"] { display: flex; }
+  .tbtn[data-k="move"] .pix { width: 44px; height: 44px; pointer-events: none; }
   /* Tap-to-answer bar for gates and bosses */
   #ansbar { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 7; display: flex; flex-direction: column; align-items: center; gap: 6px;
     -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; }
@@ -192,7 +193,9 @@
   .tablegrid span.weak { background: rgba(255,90,90,.35); color: #fff; }
   .tablegrid span.silver { background: #c9ccd6; color: #2a2a3a; }
   .tablegrid span.gold { background: #ffd23f; color: #3a2200; }
-  .winrow { font-size: 26px; letter-spacing: 4px; margin: 10px 0; }
+  .winrow { margin: 10px 0; display: flex; gap: 6px; justify-content: center; }
+  .winrow i { width: 20px; height: 20px; background: #5a5a72; box-shadow: inset 0 0 0 3px #1a1426; }   /* plain pixel squares: gold = right and fast, red = missed */
+  .winrow i.ok { background: #ffd23f; } .winrow i.no { background: #e63946; }
   .expert { color: #7df9ff; font-size: 14px; margin-bottom: 8px; }
   .ttag { position: absolute; top: -10px; right: 6px; font-size: 18px; }
   .padkeys.keypad { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 300px; margin: 0 auto; }
@@ -435,7 +438,7 @@
   </div>
   <div class="iconrow">
     <button class="ibtn" id="raceBtn" type="button"><span data-pix="race"></span>Race</button>
-    <button class="ibtn" id="shopBtn" type="button"><span data-pix="pagoda"></span>Shop <b id="bankMenu">0</b></button>
+    <button class="ibtn" id="shopBtn" type="button"><span data-pix="pagoda"></span>Shop <b id="bankMenu">0</b><span data-pixsm="gem"></span></button>
     <button class="ibtn" id="factBtn" type="button"><span data-pix="book"></span>Facts</button>
     <button class="ibtn" id="badgeBtn" type="button"><span data-pix="medal"></span>Badges <b id="badgeMenu"></b></button>
     <button class="ibtn" id="settingsBtn" type="button"><span data-pix="gear"></span>Settings</button>
@@ -444,7 +447,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 7, 2026 9:19 AM PT · pixel-art badges, work it out with Sensei</div>
+  <div class="build">Updated Nov 7, 2026 9:25 AM PT · pixel icons everywhere, work it out with Sensei</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -524,7 +527,7 @@
   <div class="card shopcard">
     <h2>Dojo Shop</h2>
     <div class="shoptop"><canvas id="shopPreview" width="110" height="56"></canvas>
-      <div><div class="bankline">💎 <b id="bank">0</b> gems</div><div class="shophint">Collect gems in levels and races.</div></div></div>
+      <div><div class="bankline"><span data-pixsm="gem"></span> <b id="bank">0</b> gems</div><div class="shophint">Collect gems in levels and races.</div></div></div>
     <div class="buybox hidden" id="buyBox"></div>
     <div class="shopgrid" id="shopGrid"></div>
     <div class="row"><button class="btn alt" id="shopClose" type="button">Back</button></div>
@@ -545,7 +548,7 @@
 
 <div id="facts" class="overlay hidden">
   <div class="card factcard">
-    <h2>📒 Fact Book</h2>
+    <h2><span data-pixsm="book"></span> Fact Book</h2>
     <div class="factnav"><button class="btn alt" id="fbPrev" type="button">◀</button><div id="fbTitle"></div><button class="btn alt" id="fbNext" type="button">▶</button></div>
     <div id="fbBody"></div>
     <div class="factlegend"><span class="ft new">new</span><span class="ft weak">practice</span><span class="ft silver">got it</span><span class="ft gold">mastered</span></div>
@@ -589,7 +592,7 @@
   <div class="tbtn" data-k="left">◀</div>
   <div class="tbtn" data-k="right">▶</div>
   <div class="tbtn" data-k="jump">▲</div>
-  <div class="tbtn" data-k="move">✊</div>
+  <div class="tbtn" data-k="move"><span data-pix="fist"></span></div>
 </div>
 
 <script>
@@ -871,7 +874,7 @@ function checkTrophies() {
   for (const k of SKILLS) {
     if (prog.trophies[k.id] || !skillProgress(k).allGold) continue;
     prog.trophies[k.id] = true; prog.bank += 25; save();
-    $('toast').innerHTML = `<span>🏆</span> Mastered: <b>${k.name}</b> · +25 💎`;
+    $('toast').innerHTML = `${pixSm('trophy')} Mastered: <b>${k.name}</b> · +25 ${gemSm()}`;
     show('toast'); clearTimeout(toastTimer); toastTimer = setTimeout(() => hide('toast'), 3600);
     [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.2, 'triangle', 0.05, null, 0.1 + i * 0.1));
   }
@@ -889,11 +892,11 @@ function pathRound(skill, how = {}) {
   }
   save();
   if (pr.ready) return '';
-  if (pr.done) return `<span title="Gold facts: remembered on two days">🥇 ${pr.gold}/${pr.n} · Come back tomorrow!</span>`;
+  if (pr.done) return `<span title="Gold facts: remembered on two days">${medalImg(3, 'pix sm')} ${pr.gold}/${pr.n} · Come back tomorrow!</span>`;
   return `<span title="Facts learned">${pixImg('book', 'pix sm')} ${pr.learned}/${pr.n}</span>`;
 }
 
-const SKILL_CATS = [['add', '➕ Add'], ['sub', '➖ Take away'], ['mul', '✖️ Times'], ['div', '➗ Divide'], ['think', '🧩 Think']];
+const SKILL_CATS = [['add', '+ Add'], ['sub', '− Take away'], ['mul', '× Times'], ['div', '÷ Divide'], ['think', '? Think']];
 const TIER_GEMS = [1, 1.5, 2, 2.5, 3];   // harder math pays more gems
 const stars = t => '★'.repeat(t) + '☆'.repeat(5 - t);
 function harderSkill(k) { return SKILLS.find(x => x.cat === k.cat && x.tier > k.tier) || k; }
@@ -1645,7 +1648,7 @@ function roomAnswer(c) {
   const x = c * T + T / 2, y = (GR - 3) * T;
   if (room.opts[i] !== room.q.ans) {
     room.state[i] = 'wrong'; room.wobble = 30; room.gems = Math.max(5, room.gems - 5);
-    sfx.wrong(); petSay('sad'); floatText(x, y - 20, 'Not that one... −5 💎', '#ff6b6b', 24);
+    sfx.wrong(); petSay('sad'); floatText(x, y - 20, 'Not that one... −5 gems', '#ff6b6b', 24);
     return;
   }
   room.state[i] = 'right'; room.step++; room.wobble = 0;
@@ -3572,7 +3575,7 @@ function endRescue(r) {
   G.rescue = null;
   P.x = r.backX - P.w / 2; P.y = GR * T - P.h; P.vx = P.vy = 0; P.inv = 60; P.onGround = false;
   floatText(P.x + P.w / 2, P.y - 30, r.again ? `${r.f.name} rescued again! +5 gems` : `${r.f.pname}! ${r.f.ptip}`, '#7df9ff', 22);
-  if (r.f.id === 'hana' && !r.again) floatText(P.x + P.w / 2, P.y - 70, isTouch ? 'High kick! Tap ✊ to kick in Japan.' : 'High kick! Press X to kick in Japan.', '#ffd23f', 22);
+  if (r.f.id === 'hana' && !r.again) floatText(P.x + P.w / 2, P.y - 70, isTouch ? 'High kick! Tap the fist button to kick in Japan.' : 'High kick! Press X to kick in Japan.', '#ffd23f', 22);
   syncAnsBar();
 }
 const rescueTitle = r => (r.phase === 'ask' && r.q ? qShow(r.q) : r.phase === 'guard' ? 'A guard!' : r.phase === 'standoff' ? 'The guard steps out!' : r.phase === 'find' ? (r.f.way === 'key' ? 'Get ready to kick!' : `You found ${RESCUE_TOOL[r.f.way].name}!`) : r.phase === 'in' || r.phase === 'arrive' ? `Find ${r.f.name}!` : `${r.f.name} is free!`);
@@ -4536,11 +4539,17 @@ function drawFlavorFront() {
 
 // ---------------------------------------------------------------- level twists
 const TWIST_HINT = {
-  kite: '🎏 Grab the koi kite to fly!', spring: '🎋 Land on springy bamboo to jump super high!', koi: '🐟 Bounce on the jumping koi! Lily pads sink...',
-  rocks: '🪨 Watch out for falling rocks!', chase: '🌋 The lava is coming! Keep moving!', dark: '🔦 Dark cave! Touch crystals to light them',
-  gears: '⚙️ Ride the spinning gears', conveyor: '🏭 Conveyor belts and crushers!', lasers: '⚡ Lasers blink on and off. Time your run!',
-  ice: '⛸️ Slippery ice! Slide carefully', icicles: '🧊 Icicles fall when you run under them!', avalanche: '☃️ Giant snowballs! Jump over them',
-  walljump: '🧗 Wall jump: jump again while touching a wall', ladders: '🪜 Hold jump to climb ladders', sneak: '🔦 Sneak past the guards. Hide in barrels!',
+  kite: 'Grab the koi kite to fly!', spring: 'Land on springy bamboo to jump super high!', koi: 'Bounce on the jumping koi! Lily pads sink...',
+  rocks: 'Watch out for falling rocks!', chase: 'The lava is coming! Keep moving!', dark: 'Dark cave! Touch crystals to light them',
+  gears: 'Ride the spinning gears', conveyor: 'Conveyor belts and crushers!', lasers: 'Lasers blink on and off. Time your run!',
+  ice: 'Slippery ice! Slide carefully', icicles: 'Icicles fall when you run under them!', avalanche: 'Giant snowballs! Jump over them',
+  walljump: 'Wall jump: jump again while touching a wall', ladders: 'Hold jump to climb ladders', sneak: 'Sneak past the guards. Hide in barrels!',
+};
+// the pixel icon in front of each hint (pix name, optional recolour)
+const TWIST_PIX = {
+  kite: ['kite'], spring: ['bamboo'], koi: ['fish'], rocks: ['rock'], chase: ['volcano'], dark: ['gem', { c: '#c9a8ff', b: '#6a3fb5' }],
+  gears: ['gear'], conveyor: ['crate'], lasers: ['bolt'], ice: ['flake'], icicles: ['icicle'], avalanche: ['snowball'],
+  walljump: ['bricks'], ladders: ['ladder'], sneak: ['barrel'],
 };
 // no rolling snowballs while the ninja is working out a gate
 function currentStationNear() { const cs = currentStation(); return cs && cs.s && Math.abs(P.x - (cs.s + 6) * T) < 9 * T; }
@@ -5348,14 +5357,14 @@ function showRaceSetup() {
   RC = null; document.body.classList.remove('racing');
   hide('menu'); hide('msg'); hide('pauseBtn'); showTouch(false);
   const k = curSkill(), best = prog.raceBest[k.id];
-  $('raceMath').innerHTML = `Math: <b>${k.name}</b> <span class="tier">${stars(k.tier)}</span> · 💎 ×${TIER_GEMS[k.tier - 1]}${best ? ` · best ${best.toFixed(1)} s` : ''}`;
+  $('raceMath').innerHTML = `Math: <b>${k.name}</b> <span class="tier">${stars(k.tier)}</span> · ${gemSm()} ×${TIER_GEMS[k.tier - 1]}${best ? ` · best ${best.toFixed(1)} s` : ''}`;
   if (!RIDES[prog.ride] || (RIDES[prog.ride].lock && !prog.badges[RIDES[prog.ride].lock])) prog.ride = 'panda';
   if (!TRACKS[prog.track]) prog.track = 'cherry';
   $('rideGrid').innerHTML = '';
   for (const [id, ride] of Object.entries(RIDES)) {
     const locked = ride.lock && !prog.badges[ride.lock];
     const b = document.createElement('button'); b.type = 'button'; b.className = 'pick' + (prog.ride === id ? ' on' : ''); b.disabled = locked;
-    b.innerHTML = `<canvas width="72" height="72"></canvas><span>${ride.name}</span>${locked ? '<small>🔒 Win a race</small>' : ''}`;
+    b.innerHTML = `<canvas width="72" height="72"></canvas><span>${ride.name}</span>${locked ? `<small>${pixSm('lock')} Win a race</small>` : ''}`;
     const c = b.querySelector('canvas').getContext('2d'); c.imageSmoothingEnabled = false;
     c.drawImage(bakeRide(id, pickRiderPal()).a[0], -12, -12, 96, 96);
     b.onclick = () => { audio(); prog.ride = id; save(); showRaceSetup(); };
@@ -5471,7 +5480,7 @@ function finishRace() {
     mode = 'racedone'; hide('pauseBtn'); showTouch(false);
     const medal = r.place === 4 ? pixImg('race', 'pix big') : medalImg(4 - r.place);
     const path = pathRound(r.topic, { right: r.right, wrong: GATES - r.right, fast: r.fastN, race: true }), up = path.startsWith('<div');
-    let body = `<div class="bigicon">${medal}</div><div class="statrow"><span>${pixImg('clock', 'pix sm')} ${r.time.toFixed(1)}s${best ? ' NEW!' : ''}</span><span>✔ ${r.right}/${GATES}</span><span>💎 +${reward}</span>${up ? '' : path}</div>`;
+    let body = `<div class="bigicon">${medal}</div><div class="statrow"><span>${pixImg('clock', 'pix sm')} ${r.time.toFixed(1)}s${best ? ' NEW!' : ''}</span><span>✔ ${r.right}/${GATES}</span><span>${gemSm()} +${reward}</span>${up ? '' : path}</div>`;
     if (up) body += path;
     if (r.missed.size) body += `<div class="practice">🔁 ${[...r.missed.values()].slice(0, 3).map(q => `<span>${qSolved(q)}</span>`).join('')}</div>`;
     const title = ['1st place!', '2nd place!', '3rd place!', '4th place'][r.place - 1];
@@ -5690,7 +5699,7 @@ function rider(set, p, x, anim, isPlayer, ride = 'horse') {
 }
 function drawRaceHUD() {
   const r = RC, narrow = VW < 700, by = narrow ? 70 : 10, next = r.gates.find(g => !g.done);
-  hudText(`⏱ ${r.time.toFixed(1)} s`, 18, 26, 20, '#fff');
+  drawPix('clock', 14, 12, 2); hudText(`${r.time.toFixed(1)} s`, 46, 26, 20, '#fff');
   const place = r.finished ? r.place : racePlace();
   hudText(`${['1st', '2nd', '3rd', '4th'][place - 1]} of 4`, VW - 70, 26, 22, '#ffd23f', 'right');
   // progress: everyone's position along the track
@@ -8223,6 +8232,13 @@ function hudText(txt, x, y, size, col = '#fff', align = 'left') {
   ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.strokeText(txt, x, y);
   ctx.fillStyle = col; ctx.fillText(txt, x, y);
 }
+// A pixel icon, then the text; centred on x together.
+function hudIconText(pix, swap, txt, x, y, size, col = '#fff') {
+  ctx.font = `${size}px "Lilita One", "Trebuchet MS", sans-serif`;
+  const sc = size / 14 * 1.3, iw = 14 * sc, gap = 6, w = iw + gap + ctx.measureText(txt).width, x0 = x - w / 2;
+  drawPix(pix, x0, y - iw / 2, sc, swap);
+  hudText(txt, x0 + iw + gap, y, size, col, 'left');
+}
 
 // The dojo drill: the power bar (with the two step marks) and, on computers, three big answer tiles.
 function drawDrill(rm, y) {
@@ -8261,11 +8277,11 @@ function kidPic() {
 }
 function drawHUD() {
   const narrow = VW < 700, st = STAGES[G.idx], pic = kidPic(), picH = pic ? (narrow ? 46 : 56) : 0;
-  if (L.twist && G.time < 300 && !L.vault && !G.rescue) hudText(TWIST_HINT[L.twist], VW / 2, (narrow ? 92 : 10) + 104 + (pic ? picH + 6 : 0), narrow ? 15 : 19, '#ffd23f', 'center');
+  if (L.twist && G.time < 300 && !L.vault && !G.rescue) hudIconText((TWIST_PIX[L.twist] || ['star'])[0], (TWIST_PIX[L.twist] || [])[1] || null, TWIST_HINT[L.twist], VW / 2, (narrow ? 92 : 10) + 104 + (pic ? picH + 6 : 0), narrow ? 15 : 19, '#ffd23f');
   for (let i = 0; i < G.maxHearts; i++) heart(30 + i * 36, 16, 13, i < G.hearts ? '#ff4d6d' : 'rgba(0,0,0,.35)');
   drawGem(34, 64, 1, tick * 0.06);
   hudText('× ' + G.coins, 54, 65, 22 + G.pulse);
-  if (G.streak >= 2) hudText(`🔥 ${G.streak} in a row`, 20, 100, 18, '#ffb627');
+  if (G.streak >= 2) { drawPix('flame', 16, 88, 1.6); hudText(`${G.streak} in a row`, 42, 100, 18, '#ffb627'); }
   if (G.power) { const pw = POWERS[G.power.kind]; drawPix(pw.pix, 18, 112, 2); hudText(`${G.power.name || pw.name} ${Math.ceil(G.power.t / 60)}s`, 50, 126, 17, '#7df9ff'); }
   const label = st.boss ? `World ${st.w + 1}: Boss` : `Level ${st.label}: ${st.name}`;
   if (narrow) hudText('Score ' + G.score, VW - 72, 64, 20, '#ffd23f', 'right');
@@ -8464,7 +8480,7 @@ function begin() {
   stopReading(); mode = 'play'; hide('msg'); show('pauseBtn'); showTouch(true);
   if (G && !G.kickTip && kickOn() && (prog.kickTips || 0) < 3) {
     G.kickTip = true; prog.kickTips = (prog.kickTips || 0) + 1; save();
-    floatText(cam + VW / 2, P.y - 60, isTouch ? 'High kick! Tap ✊ to kick.' : 'High kick! Press X to kick.', '#ffd23f', 22);
+    floatText(cam + VW / 2, P.y - 60, isTouch ? 'High kick! Tap the fist button to kick.' : 'High kick! Press X to kick.', '#ffd23f', 22);
   }
 }
 
@@ -8507,9 +8523,9 @@ function drawMenuBackdrop() {
 // Numbers that tick up to their new value instead of jumping.
 function countUp(el, to) {
   const from = Number(el.dataset.v ?? to); el.dataset.v = to;
-  if (from === to) { el.textContent = `${to}💎`; return; }
+  if (from === to) { el.textContent = `${to}`; return; }
   const t0 = performance.now();
-  const step = now => { const f = Math.min(1, (now - t0) / 700); el.textContent = `${Math.round(from + (to - from) * f)}💎`; if (f < 1) requestAnimationFrame(step); };
+  const step = now => { const f = Math.min(1, (now - t0) / 700); el.textContent = `${Math.round(from + (to - from) * f)}`; if (f < 1) requestAnimationFrame(step); };
   requestAnimationFrame(step);
 }
 // A puff of ninja smoke covers every screen change.
@@ -8526,7 +8542,7 @@ function buildMenu() {
   const dl = prog.daily, live = dl.last >= today() - 1 ? dl.streak : 0;
   $('dojoBtn').innerHTML = dl.last === today() ? `${pixImg('flame', 'pix sm')} ${live} ✔` : `${pixImg('flame', 'pix sm')} Daily Dojo${live ? ` · ${live}` : ''}`;
   $('dojoBtn').classList.toggle('done', dl.last === today());
-  $('bankMenu').textContent = `${prog.bank}💎`;
+  $('bankMenu').textContent = `${prog.bank}`;
   // The scroll row: one slot per world, filled once its boss is beaten; tap to reread that part of the story.
   const sr = $('scrollRow'); sr.innerHTML = '';
   WORLDS.forEach((W, w) => {
@@ -8581,7 +8597,7 @@ function confirmStage(i) {
   const what = !pl || pl.focus ? `<b>${pk.name}</b> <span class="tier">${stars(pk.tier)}</span>${tag}`
     : `<b>Mixed</b>${pl.home ? ` · mostly <b>${pl.home}</b>` : ''}<br><small>with ${pl.mix.filter(m => m.track !== pl.mix[0].track || !pl.home).map(m => m.track).join(', ')}</small>`;
   showMsg(st.boss ? W.boss.name : `${st.label} · ${st.name}`, `<p class="mathline">Math: ${what}${pl && pl.note ? `<br><small>${pl.note}</small>` : ''}<br>
-    <small>${pl && !pl.focus ? '' : `like ${pk.ex} · `}💎 ×${TIER_GEMS[pk.tier - 1]}</small></p>`,
+    <small>${pl && !pl.focus ? '' : `like ${pk.ex} · `}${gemSm()} ×${TIER_GEMS[pk.tier - 1]}</small></p>`,
     [{ label: 'Start ▶', fn: () => startStage(i), primary: true }, { label: 'Change math', fn: () => openSkills(() => confirmStage(i)), alt: true }, { label: 'Back', fn: toMenu, alt: true }]);
 }
 
@@ -8593,19 +8609,19 @@ function openSkills(then) {
 }
 function renderSkills() {
   const plan = trackPlan();
-  $('autoBtn').innerHTML = !prog.auto ? '🧭 Auto: <b>off</b> · tap to move up by itself'
-    : plan ? `🧭 Auto: <b>on</b> · mixes ${GRADES[plan.gi].name} math and steps up` : '🧭 Auto: <b>on</b> · moves up after 2 great rounds';
+  $('autoBtn').innerHTML = !prog.auto ? `${pixSm('compass')} Auto: <b>off</b> · tap to move up by itself`
+    : plan ? `${pixSm('compass')} Auto: <b>on</b> · mixes ${GRADES[plan.gi].name} math and steps up` : `${pixSm('compass')} Auto: <b>on</b> · moves up after 2 great rounds`;
   $('autoBtn').classList.toggle('on', prog.auto);
   // grade tracks: one row per kind of math, one square per skill (gold = passed, green = learned, ring = next up)
   $('trackBox').innerHTML = prog.auto && plan ? plan.sts.map(x => `<div class="trow"><span class="tn">${x.t.name}</span><span class="tcells">${x.t.ids.map((id, i) => {
     const kp = skillProgress(SKILL[id]), cls = kp.ready ? 'pass' : kp.done ? 'learn' : '';
     return `<i class="${cls}${id === prog.skill ? ' now' : ''}" title="${SKILL[id].name}"></i>`;
-  }).join('')}</span><span class="tx">${x.done ? '✔' : x.locked ? `🔒 ${SKILL[TRACK_REQ[x.t.ids[x.f]]].name} first` : SKILL[x.t.ids[x.f]].name}</span></div>`).join('') : '';
+  }).join('')}</span><span class="tx">${x.done ? '✔' : x.locked ? `${pixSm('lock')} ${SKILL[TRACK_REQ[x.t.ids[x.f]]].name} first` : SKILL[x.t.ids[x.f]].name}</span></div>`).join('') : '';
   const tb = $('testBtn'), canTest = prog.auto && plan && testSkills(plan.gi).length > 0;
   tb.classList.toggle('hidden', !canTest);
   if (canTest) {
     const tried = (prog.testDay || {})[GRADES[plan.gi].id] === today();
-    tb.innerHTML = tried ? `🎓 Test out of ${GRADES[plan.gi].name}: <b>try again tomorrow</b>` : `🎓 Already know it? <b>Test out of ${GRADES[plan.gi].name}</b>`;
+    tb.innerHTML = tried ? `${pixSm('cap')} Test out of ${GRADES[plan.gi].name}: <b>try again tomorrow</b>` : `${pixSm('cap')} Already know it? <b>Test out of ${GRADES[plan.gi].name}</b>`;
     tb.disabled = tried; tb.onclick = () => { audio(); startTest(plan.gi); };
   }
   $('skillTabs').innerHTML = '';
@@ -8617,11 +8633,11 @@ function renderSkills() {
   $('skillGrid').innerHTML = '';
   for (const k of SKILLS.filter(x => x.cat === skillTab)) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'skill' + (k.id === prog.skill ? ' on' : '');
-    const medal = ['', '🥉', '🥈', '🥇'][prog.mastery[k.id] || 0];
+    const medal = prog.mastery[k.id] ? medalImg(prog.mastery[k.id], 'pix sm') : '';
     const g = GRADE[curPlayer().grade], mine = g && g.picks.includes(k.id);
     if (mine) b.classList.add('grade');
     const kp = skillProgress(k);
-    b.innerHTML = `${prog.trophies[k.id] ? '<span class="ttag">🏆</span>' : ''}${mine ? `<span class="gtag">🎒 ${g.id === 'K' ? 'K' : g.name.split(' ')[0]}</span>` : ''}<span class="sn">${k.name} ${medal}</span><span class="se">like ${k.ex}</span><span class="st">${stars(k.tier)}</span><span class="sm">💎 ×${TIER_GEMS[k.tier - 1]} · 📒 ${kp.learned}/${kp.n}</span>`;
+    b.innerHTML = `${prog.trophies[k.id] ? `<span class="ttag">${pixSm('trophy')}</span>` : ''}${mine ? `<span class="gtag">${g.id === 'K' ? 'K' : g.name.split(' ')[0]}</span>` : ''}<span class="sn">${k.name} ${medal}</span><span class="se">like ${k.ex}</span><span class="st">${stars(k.tier)}</span><span class="sm">${gemSm()} ×${TIER_GEMS[k.tier - 1]} · ${pixSm('book')} ${kp.learned}/${kp.n}</span>`;
     b.onclick = () => { audio(); prog.skill = k.id; prog.pickOnce = !!prog.auto; save(); hide('skills'); (skillsThen || toMenu)(); };
     $('skillGrid').appendChild(b);
   }
@@ -8667,10 +8683,10 @@ function renderShop() {
   for (const it of SHOP) {
     const owned = prog.owned.includes(it.id), on = prog.equip[it.slot] === it.id;
     const el = document.createElement('div'); el.className = 'item';
-    el.innerHTML = `<canvas width="90" height="54"></canvas><div class="nm">${it.name}</div><div class="pr">${owned ? 'Owned' : `💎 ${it.price}`}</div><button type="button"></button>`;
+    el.innerHTML = `<canvas width="90" height="54"></canvas><div class="nm">${it.name}</div><div class="pr">${owned ? 'Owned' : `${gemSm()} ${it.price}`}</div><button type="button"></button>`;
     drawItemPreview(el.querySelector('canvas'), it);
     const b = el.querySelector('button');
-    if (it.badge && !prog.badges[it.badge] && !owned) { b.textContent = '🔒 Badge: Golden Hunter'; b.disabled = true; el.querySelector('.pr').textContent = 'Find all 8 golden gems'; }
+    if (it.badge && !prog.badges[it.badge] && !owned) { b.innerHTML = `${pixSm('lock')} Badge: Golden Hunter`; b.disabled = true; el.querySelector('.pr').textContent = 'Find all 8 golden gems'; }
     else if (on) { b.textContent = it.slot === 'trail' || it.slot === 'pet' ? 'Take off' : 'Wearing'; b.disabled = !(it.slot === 'trail' || it.slot === 'pet'); }
     else if (owned) b.textContent = 'Wear';
     else if (prog.bank >= it.price) { b.textContent = 'Buy'; b.className = 'buy'; }
@@ -8749,7 +8765,7 @@ $('autoBtn').onclick = () => { audio(); prog.auto = !prog.auto; save(); renderSk
 
 // ---------------------------------------------------------------- pixel icons for the menus
 // 12×12 pixel pictures (with the same dark outline as the game's sprites) instead of emoji.
-const PIX_COL = { w: '#f4f4f4', d: '#3a3a4a', r: '#e63946', y: '#ffd23f', Y: '#c9961a', b: '#5b6bd6', g: '#9aa7b8', G: '#2f8a4a', p: '#ff9cc4', P: '#ffd6e8', o: '#c9a24f', W: '#fff6c8', q: '#8b5a2b', c: '#7df9ff' };
+const PIX_COL = { w: '#f4f4f4', d: '#3a3a4a', r: '#e63946', y: '#ffd23f', Y: '#c9961a', b: '#5b6bd6', g: '#9aa7b8', G: '#2f8a4a', p: '#ff9cc4', P: '#ffd6e8', o: '#c9a24f', W: '#fff6c8', q: '#8b5a2b', c: '#7df9ff', L: '#7cc85a', n: '#ff8a3c', k: '#26262e', s: '#f2c79a', S: '#c98f5c' };
 const PIX = {
   race: ['qdddwwwddd', 'qdddwwwddd', 'qwwwdddwww', 'qwwwdddwww', 'qdddwwwddd', 'qdddwwwddd', 'q', 'q', 'q', 'q', 'q', 'qq'],
   pagoda: ['.....yy', '....rrrr', '..rrrrrrrr', '.r..wwww..r', '....wddw', '...rrrrrr', '.rrrrrrrrrr', 'r..wwwwww..r', '...wdwwdw', '...wdwwdw', '...wwwwww', '.GGGGGGGGGG'],
@@ -8791,6 +8807,19 @@ const PIX = {
   brain: ['', '...pp.pp', '.ppPppPpppp', 'pPpppPpPpppp', 'ppPppppPpPpp', 'pppPpPppppPp', 'pPppppPpPppp', '.ppPpppppPp', '..pppppppp', '......pp', '......pp'],
   house: ['.....rr', '....rrrr', '...rrrrrr', '..rrrrrrrr', '.rrrrrrrrrr', 'rrrrrrrrrrrr', '.wwwwwwwwww', '.wbbwwwwqqw', '.wbbwwwwqqw', '.wwwwwwwqqw', '.wwwwwwwqqw', 'GGGGGGGGGGGG'],
   calendar: ['..d......d', 'rrdrrrrrrdrr', 'rrrrrrrrrrrr', 'wwwwwwwwwwww', 'wwwddddddwww', 'wwwwwwwddwww', 'wwwwwwddwwww', 'wwwwwddwwwww', 'wwwwwddwwwww', 'wwwwwddwwwww', 'wwwwwwwwwwww'],
+  // level hints, kick button, test out
+  kite: ['.....r', '....rrr', '...rrwrr', '..rrrwrrr', '.rrrrwrrrr', 'wwwwwwwwwww', '.rrrrwrrrr', '..rrrwrrr', '...rrwrr', '....rrr', '.....r.q', '......q'],
+  bamboo: ['...LL...LL', '...LL...LL', '...LL..GLLG', '...GG...GG', '...LL...LL', '.GLLL...LL', '...LL...LL', '...GG...GG', '...LL...LL', '...LL...LL', '...LL...LL', '...GG...GG'],
+  fish: ['', '', '....nnnn', '..nnnnnnn..n', '.nnwnnwwnnnn', 'nnknnwwnnnn', '.nnnnnnnnnnn', '..nnnnnnn..n', '....nnnn'],
+  rock: ['', '', '....gggg', '..gggggggg', '.ggwggggggg', '.gwggggdggg', 'gggggggddggg', 'ggggggggdggg', 'gggdgggggggg', '.gggdggggggg', '..gggggggg'],
+  crate: ['qqqqqqqqqqqq', 'qqooooooooqq', 'qoqooooooqoq', 'qooqooooqooq', 'qoooqooqoooq', 'qooooqqooooq', 'qooooqqooooq', 'qoooqooqoooq', 'qooqooooqooq', 'qoqooooooqoq', 'qqooooooooqq', 'qqqqqqqqqqqq'],
+  icicle: ['cccccccccccc', 'cwcccwcccwcc', '.cc..ccc..cc', '.cc..ccc..c', '.c...cc...c', '.c...cc', '.....c', '.....c'],
+  snowball: ['', '...wwwwww', '..wwwwwwww', '.wwwwwwwwcw', 'wwwwwwwwwwcw', 'wwwwwwwwwwcw', 'wwwwwwwwwccw', 'wwwwwwwwwcww', '.wwwwwwwccw', '..wwwwccww', '...wwwwww'],
+  bricks: ['rrrrgrrrrrgr', 'gggggggggggg', 'rrgrrrrrgrrr', 'gggggggggggg', 'rrrrgrrrrrgr', 'gggggggggggg', 'rrgrrrrrgrrr', 'gggggggggggg', 'rrrrgrrrrrgr', 'gggggggggggg', 'rrgrrrrrgrrr'],
+  ladder: ['.q......q', '.qqqqqqqq', '.q......q', '.q......q', '.qqqqqqqq', '.q......q', '.q......q', '.qqqqqqqq', '.q......q', '.q......q', '.qqqqqqqq', '.q......q'],
+  barrel: ['...oooooo', '..kkkkkkkk', '.oooooooooo', '.oWoooooooo', '.oWoooooooo', '.kkkkkkkkkk', '.oWoooooooo', '.oooooooooo', '.oooooooooo', '..kkkkkkkk', '...oooooo'],
+  fist: ['', '...ssssssss', '..ssSssSssSs', '..ssSssSssSs', '..ssssssssss', 'sssSSSSsssss', 'sssssssSssss', '.ssssssssss', '..ssssssss', '...rrrrrr', '...rrrrrr'],
+  cap: ['', '', '.....dd', '...dddddd', '.dddddddddd', 'dddddddddddd', '.dddddddddyd', '...dddddd.y', '...dddddd.y', '..........y'],
   qmark: ['', '...gggggg', '..gg....gg', '........gg', '.......gg', '......gg', '.....gg', '.....gg', '', '.....gg', '.....gg'],
 };
 const pixCache = {};
@@ -8807,11 +8836,14 @@ function pixURL(name, scale = 3, swap = null) {
 }
 // The same pixel icons drawn on the game canvas.
 const pixImgs = {};
-function drawPix(name, x, y, sc = 2) {
-  if (!pixImgs[name]) { const im = new Image(); im.src = pixURL(name, 3); pixImgs[name] = im; }
-  const im = pixImgs[name]; if (im.complete && im.naturalWidth) { ctx.imageSmoothingEnabled = false; ctx.drawImage(im, x, y, 14 * sc, 14 * sc); }
+function drawPix(name, x, y, sc = 2, swap = null) {
+  const key = name + (swap ? JSON.stringify(swap) : '');
+  if (!pixImgs[key]) { const im = new Image(); im.src = pixURL(name, 3, swap); pixImgs[key] = im; }
+  const im = pixImgs[key]; if (im.complete && im.naturalWidth) { ctx.imageSmoothingEnabled = false; ctx.drawImage(im, x, y, 14 * sc, 14 * sc); }
 }
 const pixImg = (name, cls = 'pix', swap = null) => `<img class="${cls}" src="${pixURL(name, 3, swap)}" alt="">`;
+const pixSm = (name, swap = null) => pixImg(name, 'pix sm', swap);   // a small icon inside a line of text
+const gemSm = () => pixSm('gem');
 const MEDAL_SWAP = [null, { y: '#e0e6ee', Y: '#9aa7b8' }, { y: '#e09a5a', Y: '#a0602a' }, { y: '#ffd23f', Y: '#c9961a' }];   // bronze, silver, gold
 const medalImg = (n, cls = 'pix big') => pixImg('medal', cls, n === 3 ? null : n === 2 ? MEDAL_SWAP[1] : MEDAL_SWAP[2]);
 function kaiImg() { const cv = document.createElement('canvas'); cv.width = 40; cv.height = 40; drawNinjaPreview(cv, { ...prog.equip, pet: null }, 2); return `<img class="pix big" src="${cv.toDataURL()}" alt="">`; }
@@ -9329,10 +9361,10 @@ let fbAt = 0;
 function openFacts() { fbAt = Math.max(0, PATH.indexOf(prog.skill)); hide('menu'); renderFacts(); show('facts'); }
 function renderFacts() {
   const k = SKILL[PATH[fbAt]], pr = skillProgress(k);
-  $('fbTitle').innerHTML = `${prog.trophies[k.id] ? '🏆 ' : ''}${k.name} <span class="tier">${stars(k.tier)}</span><small>🥇 ${pr.gold} · got it ${pr.learned} of ${pr.n}</small>`;
+  $('fbTitle').innerHTML = `${prog.trophies[k.id] ? pixSm('trophy') + ' ' : ''}${k.name} <span class="tier">${stars(k.tier)}</span><small>${medalImg(3, 'pix sm')} ${pr.gold} · got it ${pr.learned} of ${pr.n}</small>`;
   const learned = MOVES.filter(m => prog.moves[m.name]);
-  let html = `<div class="expert">🥋 Moves learned: ${learned.length} of ${MOVES.length}${learned.length ? ': ' + learned.map(m => m.name).join(', ') : ' (find the door in each level!)'}</div>`;
-  html += pr.mature ? '<div class="expert">⚡ Expert mode: 5 answer blocks and a keypad for bosses</div>' : '';
+  let html = `<div class="expert">${pixSm('gi')} Moves learned: ${learned.length} of ${MOVES.length}${learned.length ? ': ' + learned.map(m => m.name).join(', ') : ' (find the door in each level!)'}</div>`;
+  html += pr.mature ? `<div class="expert">${pixSm('bolt')} Expert mode: 5 answer blocks and a keypad for bosses</div>` : '';
   if (pr.list && (k.id === 'xall' || k.id === 'dmix' || k.id === 'xmix69' || k.id === 'xmix25')) {
     // a times-table grid that fills in gold
     const lo = k.id === 'xmix69' ? 6 : 2, hi = k.id === 'xmix25' ? 5 : k.id === 'xmix69' ? 9 : k.id === 'dmix' ? 10 : 12, cols = k.id === 'xall' || k.id === 'dmix' ? 12 : 10;
@@ -9350,7 +9382,7 @@ function renderFacts() {
     html += `<div class="factgrid">${pr.list.map((q, i) => { const st = pr.st[i]; return `<span class="ft ${st}">${st === 'silver' || st === 'gold' ? qSolved(q) : qShow(q)}</span>`; }).join('')}</div>`;
   } else {
     const w = pr.win;
-    html += `<p>Last 10 answers</p><div class="winrow">${range(0, 9).map(i => (i < w.length ? (w[i] ? '🟡' : '🔴') : '⚪')).join('')}</div><p>${pr.done ? 'Learned!' : '9 right and fast means learned.'}</p>`;
+    html += `<p>Last 10 answers</p><div class="winrow">${range(0, 9).map(i => `<i class="${i < w.length ? (w[i] ? 'ok' : 'no') : ''}"></i>`).join('')}</div><p>${pr.done ? 'Learned!' : '9 right and fast means learned.'}</p>`;
   }
   $('fbBody').innerHTML = html;
 }
@@ -9390,7 +9422,7 @@ function startTest(gi) {
   }
   prog.testDay = prog.testDay || {}; prog.testDay[GRADES[gi].id] = today(); save();
   hide('menu'); hide('skills');
-  $('djTitle').innerHTML = `🎓 Test out of ${GRADES[gi].name}`;
+  $('djTitle').innerHTML = `${pixSm('cap')} Test out of ${GRADES[gi].name}`;
   dojo = { qs, i: 0, right: 0, before: new Map(), lock: false, test: { gi, sk, res: [] } };
   show('dojo'); dojoNext();
 }
@@ -9505,7 +9537,7 @@ function finishDojo() {
   const golds = Object.keys(prog.facts).filter(k => factStatus(k) === 'gold' && dojo.before.get(k) !== 'gold').length;
   save(); checkTrophies();
   const right = dojo.right, n = dojo.qs.length; dojo = null; hide('dojo');
-  let body = `<div class="bigicon">${pixImg('flame', 'pix big')}<small>${dl.streak}</small></div><div class="statrow"><span>✔ ${right}/${n}</span>${gems ? `<span>${pixImg('gem', 'pix sm')} +${gems}</span>` : ''}${golds ? `<span>🥇 +${golds}</span>` : ''}</div>`;
+  let body = `<div class="bigicon">${pixImg('flame', 'pix big')}<small>${dl.streak}</small></div><div class="statrow"><span>✔ ${right}/${n}</span>${gems ? `<span>${pixImg('gem', 'pix sm')} +${gems}</span>` : ''}${golds ? `<span>${medalImg(3, 'pix sm')} +${golds}</span>` : ''}</div>`;
   body += first ? `<div class="promo">${dl.streak > 1 ? `${dl.streak} days in a row!` : 'Come back tomorrow to grow your streak!'}</div>` : '<p>Extra practice! Your streak counts once a day.</p>';
   showMsg(first ? 'Dojo done!' : 'Nice practice!', body, [{ label: 'Play ▶', fn: toMenu, primary: true }, { label: '🔁 One more round', fn: () => { hide('msg'); startDojo(); }, alt: true }, { label: '📒 Facts', fn: () => { hide('msg'); openFacts(); }, alt: true }]);
 }
@@ -9813,6 +9845,7 @@ window.addEventListener('resize', () => { layout(); relayoutVault(); });
 layout();
 document.body.classList.toggle('touch', isTouch);
 document.querySelectorAll('[data-pix]').forEach(el => { el.innerHTML = pixImg(el.dataset.pix); });
+document.querySelectorAll('[data-pixsm]').forEach(el => { el.innerHTML = pixSm(el.dataset.pixsm); });
 applyProg();
 toMenu();
 if (players.list.length > 1) showPlayers();   // shared device: ask who's playing first

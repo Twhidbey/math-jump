@@ -30,6 +30,8 @@ Everything is in `index.html`. `CLAUDE.md` maps the code and records the owner's
 - **New trick! cards**: the first time a question needs a trick the kid hasn't met (make 10, doubles, ×9, …), Sensei's card shows it with a sample fact as the question comes up. Once per trick per player.
 - **Work it out with Sensei**: missing the same fact twice in one day (even in different levels) pauses the game and opens a card that walks through the trick in small steps the kid answers (8 + 5: 8 + ? = 10 → 5 is 2 and ? → 10 + 3 = ?). ✕ closes it any time. The tip card also has a **Show me** button. A worked-out fact gets no silver that level, so it keeps coming back.
 
+- **Pixel art instead of emoji** in the Badge Book (21 icons), level hints (15), gem counts, streak, race timer, kick button, Pick your math and the Fact Book. Left for later (owner to decide): player animal icons (new art), Settings buttons, How to play rows, small labels.
+
 ## Open questions for the owner
 0. How do the kids find the Work it out card? Too often, too long (division by counting can be 7 steps)?
 1. Waiting for players' reactions to the guards, the finishing moves, the ski lift and the test-out.
