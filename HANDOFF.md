@@ -36,6 +36,15 @@ Everything is in `index.html`. `CLAUDE.md` maps the code and records the owner's
 
 - **Never get hurt** switch in Settings (per player, owner asked for a frustrated K kid): hits only make Kai blink and hop back, falls are free, no hearts lost.
 
+## Built Nov 7, 2026 (later): the Coral Sea, step 1 of 3 (owner asked for an underwater fractions world)
+- **World 5 is now the Coral Sea**; the Night Castle moved to world 6 (owner: castle stays last). Old saves move over (layout 6). Scroll names swapped (owner): Snow = Scroll of Sharing, Castle = Scroll of Patterns, Sea = Scroll of Parts.
+- **Swimming**: Kai floats at the surface; ▼ (new phone button, or S / ↓) dives, ▲ swims up, jump at the surface leaps out. Rafts float on the surface (dive under), coral arches leave a gap, reefs and coral blocks lower down, a little cave with the golden gem.
+- **Depth gates**: a reef wall with three doors. The right answer opens its door and Kai swims through by himself. Fraction answers sit at their real depth on a 0–1 ruler when they're far enough apart ("depth is the number line").
+- **Fractions** (6 skills: name the part, name the part 2, bigger or smaller, part of a group, same amount, add parts) on the grade tracks for grades 2–5; stacked fractions on blocks and buttons; a fraction bar picture with "3 of 4 parts".
+- **The Great Octopus** (basic version): 8 hits (its bar is in eighths), squirts ink at Kai's depth; held-out hand ending; a simple sea song and story pictures.
+- **Step 2 (next)**: a fuller octopus fight and story, music polish. **Step 3**: the sea's own animal, training room, stepping-stone / swing crossing, lost friend, twist, 3 more moves (sea levels have ~11 problems until then, the others ~16–21).
+- Built on branch `claude/bold-pasteur-i1sjev` (not on `main` yet, so not live).
+
 ## Open questions for the owner
 0. How do the kids find the Work it out card? Too often, too long (division by counting can be 7 steps)?
 1. Waiting for players' reactions to the guards, the finishing moves, the ski lift and the test-out.

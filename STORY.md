@@ -7,7 +7,7 @@ This file is the one source for the story. Every bit of story text in `index.htm
 ## The heart of it
 
 - **Theme:** you don't have to earn love. A father who never stops loving the son who ran away (the prodigal son). A little brother who saves the brother who fought him. A welcome home.
-- **Kai** is Sensei's youngest son. **Kuro** is his big brother, who took the five Math Scrolls, ran away and became the **Shadow Shogun**. **Sensei** wants both sons home.
+- **Kai** is Sensei's youngest son. **Kuro** is his big brother, who took the six Math Scrolls, ran away and became the **Shadow Shogun**. **Sensei** wants both sons home.
 - The Golem, Mega-Bot and the Snowman turn good when Kai is kind to them. Kage runs away.
 - The last right answer in every boss fight is a hand held out: "Take my hand?"
 
@@ -15,7 +15,7 @@ This file is the one source for the story. Every bit of story text in `index.htm
 
 | Page | Text | Pictures (captions) |
 |---|---|---|
-| Opening ("The Stolen Scrolls") | Kuro is Kai's big brother. He took the five Math Scrolls and ran away. He put on a mask. Now he is the **Shadow Shogun**. Sensei says: *"Bring the scrolls home, Kai. And bring your brother home too."* | Kuro took the Math Scrolls. · Now he is the Shadow Shogun. · "Bring your brother home, Kai." |
+| Opening ("The Stolen Scrolls") | Kuro is Kai's big brother. He took the six Math Scrolls and ran away. He put on a mask. Now he is the **Shadow Shogun**. Sensei says: *"Bring the scrolls home, Kai. And bring your brother home too."* | Kuro took the Math Scrolls. · Now he is the Shadow Shogun. · "Bring your brother home, Kai." |
 | World 1: Japan Village | Bandits are in the bamboo forest. Be brave! | Bandits ran into the bamboo. · Kage leads the bandits. |
 | Kage (win card) | Kage runs away. You got the Scroll of Adding! | "Take my hand?" · "Never!" · Kage runs away. |
 | World 2: Lava Volcano | The Golem is angry. Be kind to him. | The Golem is angry. · "Be kind to him." |
@@ -24,7 +24,9 @@ This file is the one source for the story. Every bit of story text in `index.htm
 | Mega-Bot (win card) | The robots can rest now. | "You can rest now." · "EVERYONE REST!" · The robots rest. |
 | World 4: Frozen Peaks | The Snowman is all alone. | The Snowman lives up here. · He is all alone. |
 | Snowman (win card) | The Snowman has a friend now: you! | "Nobody should be alone." · "You're not running away?" · Now he has a friend! |
-| World 5: Night Castle | Kuro is in the castle. Sensei says: *"Love him anyway."* | Kuro's castle. · Sensei hugs Kai. · "Love him anyway." |
+| World 5: Coral Sea | The Octopus keeps every piece for himself. Swim down to get past! | The Coral Sea. · The Octopus keeps every piece. |
+| Octopus (win card) | The Octopus shares now. Everyone gets a piece! | "Pieces are better shared." · Everyone gets a piece! |
+| World 6: Night Castle | Kuro is in the castle. Sensei says: *"Love him anyway."* | Kuro's castle. · Sensei hugs Kai. · "Love him anyway." |
 | The Castle Falls | The castle falls! Kai pushes Kuro out of the way. | A beam falls! · Kai pushes Kuro away. · The beam hits Kai. |
 | Morning | Kuro cries. *"Why did you save me?"* Kai smiles. *"Because you're my brother."* | Kai wakes up. · Kuro is crying. · "Because you're my brother." |
 | Welcome Home | Sensei runs to hug his two sons. **"Welcome home!"** | Two brothers walk home. · Sensei runs to them. · "Welcome home!" |
