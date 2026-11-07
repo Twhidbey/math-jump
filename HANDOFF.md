@@ -34,6 +34,8 @@ Everything is in `index.html`. `CLAUDE.md` maps the code and records the owner's
 - Sensei's (and Kai's) eye no longer turns into two pixels when he bows.
 - **Rescue powers last only to the end of that level** (owner). Replaying a rescue gives the power again for that level, plus 5 gems. Hana's high kick still works in all of Japan (it's the rescue treasure, not the power).
 
+- **Never get hurt** switch in Settings (per player, owner asked for a frustrated K kid): hits only make Kai blink and hop back, falls are free, no hearts lost.
+
 ## Open questions for the owner
 0. How do the kids find the Work it out card? Too often, too long (division by counting can be 7 steps)?
 1. Waiting for players' reactions to the guards, the finishing moves, the ski lift and the test-out.

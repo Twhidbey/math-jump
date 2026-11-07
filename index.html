@@ -447,7 +447,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 7, 2026 9:33 AM PT · Sensei's bow fixed, friend powers last one level</div>
+  <div class="build">Updated Nov 7, 2026 2:10 PM PT · Never get hurt switch in Settings</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -457,6 +457,7 @@
       <button class="btn alt" id="muteBtn" type="button">🔊 Sound on</button>
       <button class="btn alt" id="musicBtn" type="button">🎵 Music on</button>
       <button class="btn alt" id="easyBtn" type="button">🐣 Easy mode: off</button>
+      <button class="btn alt" id="safeBtn" type="button">🛡️ Never get hurt: off</button>
       <button class="btn alt" id="unlockBtn" type="button">🔓 Unlock all levels</button>
       <button class="btn alt" id="playersBtn" type="button">👥 Players</button>
       <button class="btn alt" id="storyBtn" type="button">📖 Read the story</button>
@@ -3732,6 +3733,10 @@ function swingCatch(p) {
 
 function hurt() {
   if (P.inv > 0 || mode !== 'play' || hasPower('star') || G.swing) return;
+  if (prog.safe) {   // "Never get hurt" (Settings, per player): Kai blinks and hops back a little, no heart lost
+    P.inv = 70; P.vy = -5; P.vx = -P.face * 3; sfx.bump();
+    return;
+  }
   if (hasPower('shield')) {
     G.power = null; P.inv = 60; sfx.stomp();
     burst(P.x + P.w / 2, P.y + P.h / 2, '#7df9ff', 16, 5); floatText(P.x + P.w / 2, P.y - 20, 'Shield blocked it!', '#7df9ff', 24);
@@ -3751,7 +3756,7 @@ function fell() {
   // The first fall at each bridge is free too, with a hint that this pit needs a bridge.
   const b = activeBridge(), first = b && !b.fell;
   if (b) b.fell = true;
-  if (prog.easy || first) sfx.bump();
+  if (prog.easy || prog.safe || first) sfx.bump();
   else { G.hearts--; G.hit = true; sfx.hurt(); if (G.hearts <= 0) { gameOver(); return; } }
   // Keep any stones Kai is carrying, so a missed jump doesn't undo the work.
   P.x = G.checkpoint; P.y = GR * T - P.h; P.vx = P.vy = 0; P.inv = 100;
@@ -8758,6 +8763,7 @@ function togglePause() {
 function setMusic(on) { musicOn = prog.music = on; save(); $('musicBtn').textContent = on ? '🎵 Music on' : '🎵 Music off'; }
 function setMuted(m) { muted = m; $('muteBtn').textContent = muted ? '🔇 Sound off' : '🔊 Sound on'; }
 function setEasy(on) { prog.easy = on; save(); $('easyBtn').textContent = on ? '🐣 Easy mode: on' : '🐣 Easy mode: off'; }
+function setSafe(on) { prog.safe = !!on; save(); $('safeBtn').textContent = on ? '🛡️ Never get hurt: on' : '🛡️ Never get hurt: off'; }
 // Levels open by finishing the one before; "unlock all" is a switch on top that can be turned back off.
 function setAllOpen(on) {
   prog.allOpen = on; save(); buildMenu();
@@ -8768,6 +8774,7 @@ $('muteBtn').onclick = () => setMuted(!muted);
 $('wkSkip').onclick = () => { audio(); closeWork(); };
 $('musicBtn').onclick = () => { audio(); setMusic(!musicOn); };
 $('easyBtn').onclick = () => setEasy(!prog.easy);
+$('safeBtn').onclick = () => setSafe(!prog.safe);
 $('unlockBtn').onclick = () => setAllOpen(!prog.allOpen);
 $('storyBtn').onclick = () => { hide('settings'); storyBook(0); };
 $('skillChip').onclick = () => { audio(); openSkills(toMenu); };
@@ -9682,6 +9689,7 @@ $('playerChip').onclick = () => { audio(); showPlayers(); };
 $('playersBtn').onclick = () => { audio(); showPlayers(); };
 function applyProg() {
   setEasy(prog.easy === null ? isTouch : prog.easy);   // touch devices start in easy mode
+  setSafe(prog.safe);
   setAllOpen(prog.allOpen);
   setMusic(prog.music !== false);
 }
