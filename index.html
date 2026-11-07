@@ -459,7 +459,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 7, 2026 4:30 PM PT · Deep sea diver merged in; swing back and forth, clearer diver arms and legs</div>
+  <div class="build">Updated Nov 7, 2026 4:50 PM PT · Deep sea: fewer jellyfish, they stay in place</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -6475,8 +6475,10 @@ function bgAbyss() {
     const a = 0.25 + 0.25 * Math.sin(tick * 0.05 + i * 1.7);
     glowAt(x, y, 14, `rgba(110,255,220,${a})`); ctx.fillStyle = `rgba(180,255,240,${a + 0.3})`; ctx.fillRect(Math.round(x) - 1, Math.round(y) - 1, 3, 3);
   }
-  for (let j = 0; j < 3; j++) {   // far-off jellyfish, glowing softly as they pulse upward
-    const cyc = 1600 + j * 400, u = ((tick + j * 700) % cyc) / cyc, x = ((hash(j + 700) * VW + j * 300) % VW), y = floor - u * (floor + 80), pulse = Math.sin(tick * 0.08 + j) * 2;
+  for (let j = 0; j < 2; j++) {   // far-off jellyfish (just two, far apart), glowing softly as they pulse upward
+    // They scroll with the far background (owner: fixed on screen they seemed to follow Kai), so they drift past.
+    const cyc = 1600 + j * 400, u = ((tick + j * 700) % cyc) / cyc, x = ((j * 1300 + hash(j + 700) * 400 - cam * 0.2) % 2600 + 2600) % 2600 - 100, y = floor - u * (floor + 80), pulse = Math.sin(tick * 0.08 + j) * 2;
+    if (x > VW + 40) continue;
     glowAt(x, y, 30, 'rgba(200,140,255,.25)');
     ctx.fillStyle = 'rgba(210,170,255,.5)'; ctx.beginPath(); ctx.ellipse(x, y, 12 + pulse, 8, 0, Math.PI, 0); ctx.fill();
     ctx.fillStyle = 'rgba(210,170,255,.35)'; for (let t = -2; t <= 2; t++) for (let k = 0; k < 4; k++) ctx.fillRect(Math.round(x + t * 4 + Math.sin(tick * 0.06 + k + t) * 2), Math.round(y + 2 + k * 5), 2, 4);
