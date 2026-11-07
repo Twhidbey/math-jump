@@ -459,7 +459,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 7, 2026 3:50 PM PT · Sea: rocky island with a seal, dolphin flip leap</div>
+  <div class="build">Updated Nov 7, 2026 4:05 PM PT · Fix: boss question shows again</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -9163,7 +9163,7 @@ function drawHUD() {
   else if (L.room) txt = L.room.open ? 'Treasure!' : { scale: 'Balance the scale!', square: 'Magic square!', machine: 'Number machine!' }[L.room.kind];
   else if (br) txt = `Make ${br.target}!`;
   else if (miniTarget()) txt = qShow(miniTarget().q);
-  else if (cur && cur !== L.arena) txt = gateNear(cur) ? qShow(cur.q) : null;   // far from the gate: no question yet
+  else if (cur) txt = cur === L.arena || gateNear(cur) ? qShow(cur.q) : null;   // a boss's question always; a gate's only near it
   else if (L.boss) txt = G.hand ? 'Take my hand?' : L.boss.outro && !L.boss.outro.done ? L.boss.name : L.boss.dead || L.boss.dying || L.boss.outro ? 'Grab the scroll!' : L.arena.wait ? 'Nice hit!' : `Dodge! ${Math.ceil(L.arena.phaseT / 60)}`;
   else txt = 'Get the scroll piece!';
   if (txt) {
