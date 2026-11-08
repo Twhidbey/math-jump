@@ -378,7 +378,7 @@
   .badge .bbar { height: 8px; border-radius: 4px; background: rgba(255,255,255,.15); overflow: hidden; }
   .badge .bbar i { display: block; height: 100%; background: #3ae374; border-radius: 4px; }
   .badge .bp { font-size: 11px; font-weight: 800; }
-  .badge .bpz { width: 45px; height: 27px; image-rendering: pixelated; } .badge .bpz.dark, .tt img.dark { filter: brightness(0) opacity(.7); }
+  .badge .bpz { width: 45px; height: 27px; image-rendering: pixelated; } .badge .bpz.dark, .tt img.dark { opacity: .5; }   /* prizes show from the start, faded until won (owner) */
   .badge .btitle, .badge .bgems, .badge .bnext { font-size: 11px; font-weight: 800; color: #7df9ff; } .badge .bgems { color: #3ae374; } .badge .bnext { color: #fff; opacity: .85; }
   .badge.wide { grid-column: span 2; opacity: 1; } .badge.tables { grid-column: 1 / -1; }
   .tmeds { display: flex; justify-content: space-around; gap: 4px; }
@@ -499,7 +499,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 8, 2026 4:30 PM PT · Pattern wall badges: new pictures, 5 walls each</div>
+  <div class="build">Updated Nov 8, 2026 4:30 PM PT · Times-table prizes show before you win them</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -3259,7 +3259,7 @@ const barHTML = (now, need) => `<div class="bbar"><i style="width:${Math.min(100
 // One card per badge, all the same shape: picture, name, text, then one bottom line (bar and a small prize picture).
 function badgeCard(b) {
   const on = !!prog.badges[b.id], pr = !on && b.prog ? b.prog() : null;
-  const prize = b.prize && ITEM[b.prize] ? `<img class="bpz${on ? '' : ' dark'}" src="${prizeSrc(b.prize)}" alt="" title="${on ? ITEM[b.prize].name : 'Prize'}">` : '';
+  const prize = b.prize && ITEM[b.prize] ? `<img class="bpz${on ? '' : ' dark'}" src="${prizeSrc(b.prize)}" alt="" title="${ITEM[b.prize].name}">` : '';
   const extra = b.title ? `<span class="btitle">Title: ${b.title}</span>` : b.gems ? `<span class="bgems">+${b.gems} ${gemSm()}</span>` : '';
   const foot = (pr && pr[1] > 0 ? `<div class="bfill">${barHTML(pr[0], pr[1])}</div>` : '') + prize + extra;
   return `<div class="badge${on ? ' got' : ''}"><div class="bi">${badgeImg(b)}</div><div class="bn">${b.name}</div><div class="bt">${b.text}</div>
@@ -3287,9 +3287,9 @@ function tablesCard() {
 }
 function ttInfo(n) {
   const el = $('ttInfo'); if (!el) return;
-  if (n === null) { el.textContent = 'Tap a table to see its prize.'; return; }
+  if (n === null) { el.textContent = 'Tap a table to see how close you are.'; return; }
   const b = BADGE['t' + n], on = !!prog.badges[b.id], [g, all] = tableProg(n);
-  el.innerHTML = on ? `<b>Master of ${n}s!</b> Prize: ${ITEM[b.prize].name}` : `<b>${n}s:</b> ${g} / ${all} facts gold. Prize: ???`;
+  el.innerHTML = on ? `<b>Master of ${n}s!</b> Prize: ${ITEM[b.prize].name}` : `<b>${n}s:</b> ${g} / ${all} facts gold. Prize: ${ITEM[b.prize].name}`;
   $('badgeGrid').querySelectorAll('[data-tt]').forEach(t => t.classList.toggle('sel', Number(t.dataset.tt) === n));
 }
 // A picture of a shop item (Badge Book prizes, the New gear! card).
