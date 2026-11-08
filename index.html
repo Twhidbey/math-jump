@@ -499,7 +499,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 8, 2026 4:00 PM PT · Badge Book: tables in one card, medal sets, no secrets</div>
+  <div class="build">Updated Nov 8, 2026 4:30 PM PT · Pattern wall badges: new pictures, 5 walls each</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1258,7 +1258,7 @@ function wallTap(wx, wy) {   // a tap or click on the wall itself
   return false;
 }
 function wallDone(w) {
-  award('wall-' + w.kind);
+  const wc = prog.stats.walls || (prog.stats.walls = {}); wc[w.kind] = (wc[w.kind] || 0) + 1; statBadges();   // 5 of a kind earns its badge
   w.endT = 80; w.opts = [];
   const info = wallInfo(w.kind), x = (w.c0 + w.w / 2) * T;
   sfx.streak(); confetti(x, GR * T - 4 * T);
@@ -3185,9 +3185,10 @@ const BADGES = [
   { id: 'light10', pix: 'bolt', swap: { y: '#7df9ff' }, sec: 'adv', name: 'Lightning Fast', text: 'Get 10 Lightning bonuses (answer before you reach the gate).', prog: () => [statOf('light'), 10], gems: 15 },
   { id: 'bridge', pix: 'bridge', sec: 'adv', name: 'Bridge Builder', text: 'Build a number-stone bridge.' },
   { id: 'bridge10', pix: 'hammer', sec: 'adv', name: 'Master Builder', text: 'Build 10 bridges.', prog: () => [statOf('bridges'), 10] },
-  { id: 'wall-pascal', pix: 'piece', sec: 'adv', name: 'Triangle Builder', text: "Finish a Pascal's Triangle wall.", gems: 15 },
-  { id: 'wall-fib', pix: 'piece', swap: { y: '#7df9ff' }, sec: 'adv', name: 'Stair Climber', text: 'Finish a Fibonacci Stairs wall.', gems: 15 },
-  { id: 'wall-prime', pix: 'piece', swap: { y: '#ff9cc4' }, sec: 'adv', name: 'Prime Hunter', text: 'Find all the primes in a Prime Wall.', gems: 15 },
+  // Pattern walls (owner: one wall was far too easy): 5 of each kind. New ids, so the old one-wall badges don't count.
+  { id: 'walls5-pascal', pix: 'pascal', sec: 'adv', name: 'Triangle Builder', text: "Finish 5 Pascal's Triangle walls.", prog: () => [(prog.stats.walls || {}).pascal || 0, 5], gems: 15 },
+  { id: 'walls5-fib', pix: 'fibstep', sec: 'adv', name: 'Stair Climber', text: 'Finish 5 Fibonacci Stairs walls.', prog: () => [(prog.stats.walls || {}).fib || 0, 5], gems: 15 },
+  { id: 'walls5-prime', pix: 'target', sec: 'adv', name: 'Prime Hunter', text: 'Find all the primes in 5 Prime Walls.', prog: () => [(prog.stats.walls || {}).prime || 0, 5], gems: 15 },
   { id: 'fed15', pix: 'fish', sec: 'adv', name: 'Animal Friend', text: 'Feed all 15 hungry animals.', prog: () => [nKeys(prog.stats.fed), 15], gems: 15 },
   { id: 'dojo7', pix: 'calendar', sec: 'adv', name: 'Dedicated', text: 'Do the Daily Dojo 7 days in a row.', prog: () => [Math.max(prog.daily.best || 0, prog.daily.streak || 0), 7] },
   { id: 'vault', pix: 'gi', sec: 'adv', name: 'Sensei\'s Student', text: 'Learn a move in a training room.' },
@@ -10218,6 +10219,9 @@ const PIX = {
   bricks: ['rrrrgrrrrrgr', 'gggggggggggg', 'rrgrrrrrgrrr', 'gggggggggggg', 'rrrrgrrrrrgr', 'gggggggggggg', 'rrgrrrrrgrrr', 'gggggggggggg', 'rrrrgrrrrrgr', 'gggggggggggg', 'rrgrrrrrgrrr'],
   ladder: ['.q......q', '.qqqqqqqq', '.q......q', '.q......q', '.qqqqqqqq', '.q......q', '.q......q', '.qqqqqqqq', '.q......q', '.q......q', '.qqqqqqqq', '.q......q'],
   barrel: ['...oooooo', '..kkkkkkkk', '.oooooooooo', '.oWoooooooo', '.oWoooooooo', '.kkkkkkkkkk', '.oWoooooooo', '.oooooooooo', '.oooooooooo', '..kkkkkkkk', '...oooooo'],
+  pascal: ['.....yy', '.....yy', '', '...nn.nn', '...nn.nn', '', '..rr.rr.rr', '..rr.rr.rr', '', 'bb.bb.bb.bb', 'bb.bb.bb.bb'],   // Triangle Builder: Pascal's blocks
+  fibstep: ['.........w', '........www', '........yy', '........yy', '........yy', '........yy', '......nnyy', '......nnyy', '....rrnnyy', '....rrnnyy', 'bbpprrnnyy', 'bbpprrnnyy'],   // Stair Climber: steps 1, 1, 2, 3, 5
+  target: ['.....rr', '...rrwwrr', '..rwwrrwwr', '.rwrrwwrrwr', '.rwrwyywrwr', 'rwrwyyyywrwr', 'rwrwyyyywrwr', '.rwrwyywrwr', '.rwrrwwrrwr', '..rwwrrwwr', '...rrwwrr', '.....rr'],   // Prime Hunter
   vanish: ['...w.w.w....', '..........w.', '.w..........', '..rrrrrrrr.w', 'w.r.w..w.r..', '..........w.', '.w..........', '..........w.', '...w.w.w....'],
   fist: ['', '...ssssssss', '..ssSssSssSs', '..ssSssSssSs', '..ssssssssss', 'sssSSSSsssss', 'sssssssSssss', '.ssssssssss', '..ssssssss', '...rrrrrr', '...rrrrrr'],
   cap: ['', '', '.....dd', '...dddddd', '.dddddddddd', 'dddddddddddd', '.dddddddddyd', '...dddddd.y', '...dddddd.y', '..........y'],
