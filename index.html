@@ -406,6 +406,17 @@
   .promo.gear .gtitle { font: 24px "Lilita One", "Trebuchet MS", sans-serif; color: #7df9ff; }
   .promo.gear .gimg { width: 180px; height: 108px; image-rendering: pixelated; display: block; margin: 0 auto; }
   .promo.gear .wear { margin-top: 6px; padding: 6px 18px; }
+  .promo.chestbox { background: rgba(255,210,63,.12); border: 2px solid #ffd23f; overflow: visible; }
+  .chestbox .cpics { position: relative; width: 72px; height: 72px; margin: 0 auto; }
+  .chestbox .cpics .pix { position: absolute; left: 0; top: 0; width: 72px; height: 72px; }
+  .chestbox .cshut { animation: cshake .7s ease-in-out forwards; }
+  .chestbox .copen { opacity: 0; animation: cpop .35s ease-out .7s forwards; }
+  .chestbox .cg { position: absolute; left: 30px; top: 24px; opacity: 0; animation: cfly .9s ease-out var(--d) forwards; }
+  .chestbox .ctext { font: 22px "Lilita One", "Trebuchet MS", sans-serif; color: #ffd23f; } .chestbox .ctext b { font-size: 1.3em; }
+  .chestbox small { display: block; opacity: .8; font-size: 12px; }
+  @keyframes cshake { 0%, 100% { transform: none; } 15%, 45% { transform: rotate(-8deg); } 30%, 60% { transform: rotate(8deg); } 99% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes cpop { from { opacity: 0; transform: scale(.7); } 60% { transform: scale(1.2); } to { opacity: 1; transform: none; } }
+  @keyframes cfly { 0% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.3); } }
   @keyframes gearpop { 0% { transform: scale(.6); opacity: 0; } 70% { transform: scale(1.06); } }
   #toast { position: fixed; top: max(14px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 30;
     background: #22224a; color: #fff; border: 3px solid #ffd23f; border-radius: 14px; padding: 10px 18px; font-size: 18px;
@@ -499,7 +510,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 8, 2026 4:30 PM PT · Times-table prizes show before you win them</div>
+  <div class="build">Updated Nov 8, 2026 5:15 PM PT · Badge gems: bigger prizes, treasure chest</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -3165,7 +3176,7 @@ const nKeys = o => Object.keys(o || {}).length;
 const GOLD_N = STAGES.filter(s => !s.boss).length;   // one flaming golden gem per level
 const TABLE_PRIZE = { 2: 'trail-petal', 3: 'band-bolt', 4: 'trail-bubble', 5: 'suit-ocean', 6: 'trail-snow', 7: 'suit-lava', 8: 'pet-octo', 9: 'band-rainbow', 10: 'pet-owl' };
 const tableProg = n => { const pr = skillProgressRaw(SKILL['x' + n]); return [pr.gold, pr.n]; };
-const TIER_GEMS_B = [10, 25, 0];
+const TIER_GEMS_B = [30, 75, 150];   // bronze, silver, gold (gold also gives a title)
 const tierBadges = (txt, pix, key, list) => list.map(([id, name, need, title], t) => ({ id, pix, sec: 'tier', grp: list[0][0], tier: t + 1, name, need, title,
   text: txt(need), prog: () => [key(), need], gems: TIER_GEMS_B[t] }));
 const BADGES = [
@@ -3182,14 +3193,14 @@ const BADGES = [
   // adventures
   { id: 'first-gate', pix: 'torii', sec: 'adv', name: 'First Gate', text: 'Open your first math gate.' },
   { id: 'power', pix: 'bolt', sec: 'adv', name: 'Powered Up', text: 'Earn a streak power-up.' },
-  { id: 'light10', pix: 'bolt', swap: { y: '#7df9ff' }, sec: 'adv', name: 'Lightning Fast', text: 'Get 10 Lightning bonuses (answer before you reach the gate).', prog: () => [statOf('light'), 10], gems: 15 },
+  { id: 'light10', pix: 'bolt', swap: { y: '#7df9ff' }, sec: 'adv', name: 'Lightning Fast', text: 'Get 10 Lightning bonuses (answer before you reach the gate).', prog: () => [statOf('light'), 10], gems: 50 },
   { id: 'bridge', pix: 'bridge', sec: 'adv', name: 'Bridge Builder', text: 'Build a number-stone bridge.' },
   { id: 'bridge10', pix: 'hammer', sec: 'adv', name: 'Master Builder', text: 'Build 10 bridges.', prog: () => [statOf('bridges'), 10] },
   // Pattern walls (owner: one wall was far too easy): 5 of each kind. New ids, so the old one-wall badges don't count.
-  { id: 'walls5-pascal', pix: 'pascal', sec: 'adv', name: 'Triangle Builder', text: "Finish 5 Pascal's Triangle walls.", prog: () => [(prog.stats.walls || {}).pascal || 0, 5], gems: 15 },
-  { id: 'walls5-fib', pix: 'fibstep', sec: 'adv', name: 'Stair Climber', text: 'Finish 5 Fibonacci Stairs walls.', prog: () => [(prog.stats.walls || {}).fib || 0, 5], gems: 15 },
-  { id: 'walls5-prime', pix: 'target', sec: 'adv', name: 'Prime Hunter', text: 'Find all the primes in 5 Prime Walls.', prog: () => [(prog.stats.walls || {}).prime || 0, 5], gems: 15 },
-  { id: 'fed15', pix: 'fish', sec: 'adv', name: 'Animal Friend', text: 'Feed all 15 hungry animals.', prog: () => [nKeys(prog.stats.fed), 15], gems: 15 },
+  { id: 'walls5-pascal', pix: 'pascal', sec: 'adv', name: 'Triangle Builder', text: "Finish 5 Pascal's Triangle walls.", prog: () => [(prog.stats.walls || {}).pascal || 0, 5], gems: 50 },
+  { id: 'walls5-fib', pix: 'fibstep', sec: 'adv', name: 'Stair Climber', text: 'Finish 5 Fibonacci Stairs walls.', prog: () => [(prog.stats.walls || {}).fib || 0, 5], gems: 50 },
+  { id: 'walls5-prime', pix: 'target', sec: 'adv', name: 'Prime Hunter', text: 'Find all the primes in 5 Prime Walls.', prog: () => [(prog.stats.walls || {}).prime || 0, 5], gems: 50 },
+  { id: 'fed15', pix: 'fish', sec: 'adv', name: 'Animal Friend', text: 'Feed all 15 hungry animals.', prog: () => [nKeys(prog.stats.fed), 15], gems: 50 },
   { id: 'dojo7', pix: 'calendar', sec: 'adv', name: 'Dedicated', text: 'Do the Daily Dojo 7 days in a row.', prog: () => [Math.max(prog.daily.best || 0, prog.daily.streak || 0), 7] },
   { id: 'vault', pix: 'gi', sec: 'adv', name: 'Sensei\'s Student', text: 'Learn a move in a training room.' },
   { id: 'moves-all', pix: 'dragon', sec: 'adv', name: 'Master\'s Student', text: 'Learn all 15 moves from Sensei.', prog: () => [nKeys(prog.moves), 15] },
@@ -3199,7 +3210,7 @@ const BADGES = [
   { id: 'boss-all', pix: 'scroll', sec: 'adv', name: 'Scroll Keeper', text: 'Win back all six scrolls.' },
   { id: 'race-win', pix: 'trophy', sec: 'adv', name: 'Champion Rider', text: 'Win a race.' },
   { id: 'race-perfect', pix: 'horse', sec: 'adv', name: 'Perfect Ride', text: 'Get every gate right in a race.' },
-  { id: 'roads', pix: 'race', sec: 'adv', name: 'Every Road', text: 'Win a race on every track.', prog: () => [nKeys(prog.stats.roads), 5], gems: 15 },
+  { id: 'roads', pix: 'race', sec: 'adv', name: 'Every Road', text: 'Win a race on every track.', prog: () => [nKeys(prog.stats.roads), 5], gems: 50 },
   { id: 'shopper', pix: 'bag', sec: 'adv', name: 'Shopper', text: 'Buy something in the Dojo Shop.' },
   { id: 'gems500', pix: 'gem', sec: 'adv', name: 'Gem Collector', text: 'Collect 500 gems in total.', prog: () => [statOf('gems'), 500] },
   { id: 'black-belt', pix: 'belt', swap: { b: '#26262e' }, sec: 'adv', name: 'Black Belt', text: 'Reach the Black Belt rank.' },
@@ -3224,7 +3235,10 @@ function award(id) {
   if (prog.badges[id]) return;
   const b = BADGE[id]; if (!b) return;
   prog.badges[id] = true;
-  if (b.gems) { prog.bank += b.gems; prog.stats.gems += b.gems; }
+  if (b.gems) {   // paid now, shown as a treasure chest on the next end card (chestHTML)
+    prog.bank += b.gems; prog.stats.gems += b.gems;
+    const c = prog.chest || (prog.chest = { gems: 0, names: [] }); c.gems += b.gems; c.names.push(b.name);
+  }
   if (b.prize && !prog.owned.includes(b.prize)) { prog.owned.push(b.prize); (prog.newGear || (prog.newGear = [])).push(b.prize); }
   if (b.title && !prog.title) prog.title = b.title;
   save();
@@ -3300,6 +3314,14 @@ function prizeSrc(id) {
   return (prizeCache[id] = c.toDataURL());
 }
 // New gear from a badge, shown on the next end card with a Wear it button (showMsg wires data-wear).
+// Badge gems: a chest on the end card that shakes, pops open, sprays gems and counts up (owner: make gem prizes feel big).
+function chestHTML() {
+  const c = prog.chest; if (!c || !c.gems) return '';
+  prog.chest = null; save();
+  const bits = Array.from({ length: 10 }, (_, i) => `<i class="cg" style="--dx:${Math.round(Math.cos(i * 0.63 - 2.2) * 90)}px;--dy:${Math.round(-60 - Math.abs(Math.sin(i * 1.7)) * 70)}px;--d:${(0.75 + i * 0.04).toFixed(2)}s">${gemSm()}</i>`).join('');
+  return `<div class="promo chestbox" data-chest="${c.gems}"><div class="cpics">${pixImg('chest', 'pix big cshut')}${pixImg('chestopen', 'pix big copen')}${bits}</div>
+    <div class="ctext">Badge treasure! <b>+<span class="cnum">0</span></b> ${gemSm()}</div><small>${c.names.join(' · ')}</small></div>`;
+}
 function gearHTML() {
   const ids = (prog.newGear || []).filter(id => ITEM[id]); if (!prog.newGear || !prog.newGear.length) return '';
   prog.newGear = []; save();
@@ -5983,7 +6005,7 @@ function finishLevel() {
       + (prev && G.solved > prev ? '<p class="sumnew">New record!</p>' : prev ? `<p class="sumnew">Record: ${prev}</p>` : '');
   }
   if (after.idx > before.idx) body += `<div class="promo">${beltHTML(after)} &nbsp;<b>${after.name} Belt!</b></div>`;
-  body += gearHTML();
+  body += chestHTML() + gearHTML();
   if (G.practice.size) body += `<div class="practice">🔁 ${[...G.practice.values()].slice(0, 3).map(q => `<span>${qSolved(q)}</span>`).join('')}</div>`;
   const btns = [];
   const wolfOffer = i === 0 && !prog.owned.includes('pet-wolf');
@@ -6277,7 +6299,7 @@ function finishRace() {
     const path = pathRound(r.topic, { right: r.right, wrong: GATES - r.right, fast: r.fastN, race: true }), up = path.startsWith('<div');
     let body = `<div class="bigicon">${medal}</div><div class="statrow"><span>${pixImg('clock', 'pix sm')} ${r.time.toFixed(1)}s${best ? ' NEW!' : ''}</span><span>✔ ${r.right}/${GATES}</span><span>${gemSm()} +${reward}</span>${up ? '' : path}</div>`;
     if (up) body += path;
-    body += gearHTML();
+    body += chestHTML() + gearHTML();
     if (r.missed.size) body += `<div class="practice">🔁 ${[...r.missed.values()].slice(0, 3).map(q => `<span>${qSolved(q)}</span>`).join('')}</div>`;
     const title = ['1st place!', '2nd place!', '3rd place!', '4th place'][r.place - 1];
     if (r.travel !== null) showMsg(title, body, [   // a ride between worlds: on to the next world, whatever your place
@@ -9827,6 +9849,11 @@ function showMsg(title, body, btns) {
   $('msgBody').querySelectorAll('[data-wear]').forEach(el => {   // New gear! cards
     el.onclick = () => { audio(); const it = ITEM[el.dataset.wear]; prog.equip[it.slot] = it.id; save(); el.textContent = 'Wearing it!'; el.disabled = true; sfx.correct(); };
   });
+  const chest = $('msgBody').querySelector('[data-chest]');
+  if (chest) setTimeout(() => {   // after the lid pops: count up with coin ticks
+    const el = chest.querySelector('.cnum'), n = Number(chest.dataset.chest); el.dataset.v = 0; countUp(el, n);
+    for (let i = 0; i < 6; i++) tone(1200 + i * 120, 0.08, 'square', 0.03, null, i * 0.11);
+  }, 800);
   if (body.includes('class="promo gear"')) [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.22, 'triangle', 0.05, null, 0.3 + i * 0.1));
   const box = $('msgBtns'); box.innerHTML = ''; msgPrimary = null;
   for (const b of btns) {
@@ -10222,6 +10249,8 @@ const PIX = {
   pascal: ['.....yy', '.....yy', '', '...nn.nn', '...nn.nn', '', '..rr.rr.rr', '..rr.rr.rr', '', 'bb.bb.bb.bb', 'bb.bb.bb.bb'],   // Triangle Builder: Pascal's blocks
   fibstep: ['.........w', '........www', '........yy', '........yy', '........yy', '........yy', '......nnyy', '......nnyy', '....rrnnyy', '....rrnnyy', 'bbpprrnnyy', 'bbpprrnnyy'],   // Stair Climber: steps 1, 1, 2, 3, 5
   target: ['.....rr', '...rrwwrr', '..rwwrrwwr', '.rwrrwwrrwr', '.rwrwyywrwr', 'rwrwyyyywrwr', 'rwrwyyyywrwr', '.rwrwyywrwr', '.rwrrwwrrwr', '..rwwrrwwr', '...rrwwrr', '.....rr'],   // Prime Hunter
+  chest: ['', '', '.qqqqqqqqqq', 'qqqqqqqqqqqq', 'yyyyyyyyyyyy', 'qqqqqyyqqqqq', 'qqqqqYYqqqqq', 'qqqqqqqqqqqq', 'yyyyyyyyyyyy', 'qqqqqqqqqqqq', 'qqqqqqqqqqqq'],
+  chestopen: ['.qqqqqqqqqq', 'qqqqqqqqqqqq', 'yyyyyyyyyyyy', '', '..cw.yc.wc', '.ccyccwccyc', 'qqqqqqqqqqqq', 'yyyyyyyyyyyy', 'qqqqqyyqqqqq', 'qqqqqYYqqqqq', 'qqqqqqqqqqqq', 'qqqqqqqqqqqq'],
   vanish: ['...w.w.w....', '..........w.', '.w..........', '..rrrrrrrr.w', 'w.r.w..w.r..', '..........w.', '.w..........', '..........w.', '...w.w.w....'],
   fist: ['', '...ssssssss', '..ssSssSssSs', '..ssSssSssSs', '..ssssssssss', 'sssSSSSsssss', 'sssssssSssss', '.ssssssssss', '..ssssssss', '...rrrrrr', '...rrrrrr'],
   cap: ['', '', '.....dd', '...dddddd', '.dddddddddd', 'dddddddddddd', '.dddddddddyd', '...dddddd.y', '...dddddd.y', '..........y'],
@@ -10977,7 +11006,7 @@ function finishDojo() {
   save(); checkTrophies();
   const right = dojo.right, n = dojo.qs.length; dojo = null; hide('dojo');
   let body = `<div class="bigicon">${pixImg('flame', 'pix big')}<small>${dl.streak}</small></div><div class="statrow"><span>✔ ${right}/${n}</span>${gems ? `<span>${pixImg('gem', 'pix sm')} +${gems}</span>` : ''}${golds ? `<span>${medalImg(3, 'pix sm')} +${golds}</span>` : ''}</div>`;
-  body += gearHTML();
+  body += chestHTML() + gearHTML();
   body += first ? `<div class="promo">${dl.streak > 1 ? `${dl.streak} days in a row!` : 'Come back tomorrow to grow your streak!'}</div>` : '<p>Extra practice! Your streak counts once a day.</p>';
   showMsg(first ? 'Dojo done!' : 'Nice practice!', body, [{ label: 'Play ▶', fn: toMenu, primary: true }, { label: '🔁 One more round', fn: () => { hide('msg'); startDojo(); }, alt: true }, { label: '📒 Facts', fn: () => { hide('msg'); openFacts(); }, alt: true }]);
 }

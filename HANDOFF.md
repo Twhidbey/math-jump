@@ -68,6 +68,7 @@ Everything is in `index.html`. `CLAUDE.md` maps the code and records the owner's
 - Pattern wall badges now need **5 walls of each kind** (owner: one was far too easy) and have their own pixel pictures: a block triangle (Pascal), stairs growing 1, 1, 2, 3, 5 (Fibonacci) and a target (Prime). New badge ids, so everyone starts these at 0.
 - Badge prizes now show **from the start, faded** (owner: switched from dark mystery shapes); tapping a times-table tile names its prize.
 - Suggested next for badges (not built): a matching card of adding/taking-away facts with prizes for the younger player (the times tables are out of their reach).
+- **Badge gems are bigger** (bronze 30, silver 75, gold 150 + title, adventures 50) and show as a **treasure chest** on the next end card (shakes, pops open, gems fly, the number counts up). Offered, not built: victory moves for the gold medals, a race ride for Every Road.
 
 ## Open questions for the owner
 0. How do the kids find the Work it out card? Too often, too long (division by counting can be 7 steps)?
