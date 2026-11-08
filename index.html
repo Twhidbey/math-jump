@@ -371,6 +371,29 @@
   .badge .bi { font-size: 34px; } .badge .bi .pix { margin: 0 auto; width: 48px; height: 48px; }
   .badge .bn { font-weight: 800; font-size: 15px; margin-top: 2px; }
   .badge .bt { font-size: 12px; opacity: .85; }
+  .badge.tier1.got { border-color: #d08a4a; background: rgba(208,138,74,.14); } .badge.tier2.got { border-color: #c9d2de; background: rgba(201,210,222,.12); }
+  .badge .btier { font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; opacity: .8; }
+  .tier1 .btier { color: #e0a060; } .tier2 .btier { color: #dfe6ee; } .tier3 .btier { color: #ffd23f; }
+  .badge .bbar { height: 8px; border-radius: 4px; background: rgba(255,255,255,.15); margin: 6px 4px 1px; overflow: hidden; }
+  .badge .bbar i { display: block; height: 100%; background: #3ae374; border-radius: 4px; }
+  .badge .bp { font-size: 11px; font-weight: 800; }
+  .badge .bprize img { width: 90px; height: 54px; image-rendering: pixelated; display: block; margin: 4px auto 0; }
+  .badge .bprize.dark img { filter: brightness(0) opacity(.75); }
+  .badge .bprize small { font-size: 11px; font-weight: 800; color: #ffd23f; }
+  .badge .btitle, .badge .bgems { font-size: 11px; font-weight: 800; color: #7df9ff; margin-top: 2px; } .badge .bgems { color: #3ae374; }
+  .bsec { grid-column: 1 / -1; margin: 10px 0 0; text-align: left; font-size: 18px; } .bsec small { opacity: .7; font-size: 14px; }
+  .tnum { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 8px; background: #2a2050; border: 3px solid #ffd23f;
+    color: #ffd23f; font: 26px "Lilita One", "Trebuchet MS", sans-serif; box-sizing: border-box; } .tnum i { font-style: normal; font-size: .6em; }
+  .tnum.sm { width: 24px; height: 24px; font-size: 13px; border-width: 2px; border-radius: 5px; vertical-align: middle; }
+  .titlerow { margin: 8px 0 2px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; }
+  .tchip { border: 2px solid rgba(255,255,255,.35); background: rgba(255,255,255,.08); color: #fff; border-radius: 999px; padding: 3px 10px; font: 14px "Lilita One", "Trebuchet MS", sans-serif; }
+  .tchip.on { border-color: #7df9ff; background: rgba(125,249,255,.2); }
+  .ptitle { display: block; color: #7df9ff; font-size: .85em; }
+  .promo.gear { background: rgba(125,249,255,.12); border: 2px solid #7df9ff; animation: gearpop .6s ease-out; }
+  .promo.gear .gtitle { font: 24px "Lilita One", "Trebuchet MS", sans-serif; color: #7df9ff; }
+  .promo.gear .gimg { width: 180px; height: 108px; image-rendering: pixelated; display: block; margin: 0 auto; }
+  .promo.gear .wear { margin-top: 6px; padding: 6px 18px; }
+  @keyframes gearpop { 0% { transform: scale(.6); opacity: 0; } 70% { transform: scale(1.06); } }
   #toast { position: fixed; top: max(14px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 30;
     background: #22224a; color: #fff; border: 3px solid #ffd23f; border-radius: 14px; padding: 10px 18px; font-size: 18px;
     box-shadow: 0 6px 24px rgba(0,0,0,.4); animation: toastin .35s ease-out; white-space: nowrap; }
@@ -463,7 +486,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 8, 2026 10:00 AM PT · Mei gives Ninja vanish (tap to hide 5 s)</div>
+  <div class="build">Updated Nov 8, 2026 2:00 PM PT · 51 badges, times-table prizes, titles; faded vanish</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -982,10 +1005,10 @@ function checkTrophies() {
   for (const k of SKILLS) {
     if (prog.trophies[k.id] || !skillProgress(k).allGold) continue;
     prog.trophies[k.id] = true; prog.bank += 25; save();
-    $('toast').innerHTML = `${pixSm('trophy')} Mastered: <b>${k.name}</b> · +25 ${gemSm()}`;
-    show('toast'); clearTimeout(toastTimer); toastTimer = setTimeout(() => hide('toast'), 3600);
+    toastMsg(`${pixSm('trophy')} Mastered: <b>${k.name}</b> · +25 ${gemSm()}`, 3600);
     [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.2, 'triangle', 0.05, null, 0.1 + i * 0.1));
   }
+  statBadges();   // times tables and the other goals
 }
 // Called at the end of a level, boss or race with how it went ({ right, wrong, fast }). Returns what to tell the
 // player, or '' when auto is off. Players with a grade use the grade tracks (trackRound); others walk PATH.
@@ -1222,6 +1245,7 @@ function wallTap(wx, wy) {   // a tap or click on the wall itself
   return false;
 }
 function wallDone(w) {
+  award('wall-' + w.kind);
   w.endT = 80; w.opts = [];
   const info = wallInfo(w.kind), x = (w.c0 + w.w / 2) * T;
   sfx.streak(); confetti(x, GR * T - 4 * T);
@@ -2227,18 +2251,39 @@ const SHOP = [
   { id: 'band-blue', slot: 'band', name: 'Blue headband', price: 40, col: ['#3a86ff', '#1d4fa8'] },
   { id: 'band-pink', slot: 'band', name: 'Pink headband', price: 55, col: ['#ff6fb5', '#c43d84'] },
   { id: 'band-gold', slot: 'band', name: 'Gold headband', price: 90, col: ['#ffd23f', '#c99a1a'] },
+  // Badge prizes (can't be bought): the times tables (t2..t10) and Times-Table Master. anim = headband colours it cycles through.
+  { id: 'band-bolt', slot: 'band', name: 'Lightning headband', price: 0, col: ['#ffd23f', '#c99a1a'], badge: 't3', anim: [['#ffd23f', '#c99a1a'], ['#fffbe0', '#ffe066']] },
+  { id: 'band-rainbow', slot: 'band', name: 'Rainbow headband', price: 0, col: ['#e63946', '#a91d2b'], badge: 't9', anim: [['#e63946', '#a91d2b'], ['#ff8c1a', '#c45f00'], ['#ffd23f', '#c99a1a'], ['#3fbf6a', '#2a8a4a'], ['#3a86ff', '#1d4fa8'], ['#9b59d6', '#6b2fa3']] },
   { id: 'suit-navy', slot: 'suit', name: 'Navy suit', price: 0, col: ['#2c3a6b', '#5a72c2'] },
   { id: 'suit-black', slot: 'suit', name: 'Midnight suit', price: 70, col: ['#1c1a24', '#3d3a52'] },
   { id: 'suit-green', slot: 'suit', name: 'Forest suit', price: 85, col: ['#1f6b3a', '#3fa35f'] },
   { id: 'suit-red', slot: 'suit', name: 'Crimson suit', price: 105, col: ['#8b1e2b', '#c43a4b'] },
   { id: 'suit-gold', slot: 'suit', name: 'Golden suit', price: 0, col: ['#d9a21e', '#ffd86b'], badge: 'golden-all' },
   { id: 'suit-white', slot: 'suit', name: 'Snow suit', price: 135, col: ['#c9d2de', '#f4f7fb'] },
+  { id: 'suit-ocean', slot: 'suit', name: 'Ocean suit', price: 0, col: ['#0f6f7a', '#36c6c0'], badge: 't5' },
+  { id: 'suit-lava', slot: 'suit', name: 'Lava suit', price: 0, col: ['#2a1416', '#ff6a1a'], badge: 't7', fx: 'ember' },
+  { id: 'suit-diamond', slot: 'suit', name: 'Diamond suit', price: 0, col: ['#6fbfe0', '#e8fbff'], badge: 't-all', fx: 'sparkle' },
   { id: 'trail-spark', slot: 'trail', name: 'Sparkle trail', price: 120 },
   { id: 'trail-fire', slot: 'trail', name: 'Flame trail', price: 180 },
+  { id: 'trail-petal', slot: 'trail', name: 'Petal trail', price: 0, badge: 't2' },
+  { id: 'trail-bubble', slot: 'trail', name: 'Bubble trail', price: 0, badge: 't4' },
+  { id: 'trail-snow', slot: 'trail', name: 'Snowflake trail', price: 0, badge: 't6' },
   { id: 'pet-wolf', slot: 'pet', name: 'Wolf pup', price: 5 },
   { id: 'pet-fox', slot: 'pet', name: 'Kitsune pup', price: 225 },
   { id: 'pet-dragon', slot: 'pet', name: 'Baby dragon', price: 330 },
+  { id: 'pet-octo', slot: 'pet', name: 'Little octopus', price: 0, badge: 't8' },
+  { id: 'pet-owl', slot: 'pet', name: 'Owl', price: 0, badge: 't10' },
 ];
+// Trails: the bits Kai leaves when he runs. up: no gravity (they drift by vy).
+const TRAIL_LOOK = {
+  'trail-spark': { cols: ['#ffffff', '#fff3a0', '#9be7ff'] },
+  'trail-fire': { cols: ['#ff6a00', '#ffd23f', '#ff3b1f'] },
+  'trail-petal': { cols: ['#ffb3d1', '#ffd6e8', '#ff8fbf'], vy: 0.45, vx: 1.1, life: 50, up: true },
+  'trail-bubble': { cols: ['#bfefff', '#e8fbff', '#7fd6ff'], vy: -1.5, life: 40, s: 5, up: true },
+  'trail-snow': { cols: ['#ffffff', '#e8f4ff', '#cfe6ff'], vy: 0.55, vx: 0.4, life: 54, up: true },
+};
+const FLY_PETS = ['pet-dragon', 'pet-owl'];
+let SPR_ANIM = null;   // an animated headband: one baked Kai per colour (startStage)
 const ITEM = Object.fromEntries(SHOP.map(i => [i.id, i]));
 // The hero's colours: the equipped headband and suit, and the belt that matches the current rank.
 function heroPal(equip = prog.equip) {
@@ -2266,6 +2311,19 @@ const PET_SPR = {
     if (f) E(4, 6, 2.6, 1.6, 'G'); else E(4, 3.5, 2.4, 2, 'G');
     L(4, 9, 1, 10, 'g'); E(7, 7.5, 3.4, 2.8, 'g'); E(7, 8.5, 2, 1.5, 'y');
     E(11, 4.5, 2.6, 2.3, 'g'); P(13, 5, 'g'); P(10, 2, 'w'); P(12, 2, 'w'); P(12, 4, 'e'); P(13, 6, 'r');
+  }, 2), ['a', 'b']),
+  'pet-octo': bake(makeFrames(14, 12, { p: '#b968e0', P: '#8a3fb0', w: '#ffffff', e: '#16121f', k: '#ff9cc4' }, ({ P, R, E }, f) => {   // Master of 8s
+    E(7, 4.2, 4.3, 3.8, 'p'); P(5, 2, 'w');
+    R(5, 4, 1, 2, 'w'); R(9, 4, 1, 2, 'w'); P(5, 5, 'e'); P(9, 5, 'e'); P(4, 6, 'k'); P(10, 6, 'k'); P(7, 7, 'P');
+    [3, 5, 7, 9, 11].forEach((x, i) => { const w = (i + f) % 2 ? 1 : -1; P(x, 8, 'p'); P(x, 9, 'p'); P(x + w, 10, 'P'); });
+  }, 2), ['a', 'b']),
+  'pet-owl': bake(makeFrames(14, 12, { o: '#a0703c', O: '#6e4a24', c: '#f4e2c0', w: '#ffffff', e: '#16121f', y: '#ffb627' }, ({ P, R, E }, f) => {   // Master of 10s
+    E(7, 6, 3.8, 4.6, 'o'); E(7, 7.6, 2.4, 2.8, 'c');
+    P(4, 1, 'O'); P(10, 1, 'O'); P(4, 2, 'o'); P(10, 2, 'o');
+    R(4, 3, 2, 2, 'w'); R(8, 3, 2, 2, 'w'); P(5, 4, 'e'); P(9, 4, 'e'); P(7, 5, 'y');
+    if (f) { R(2, 4, 1, 3, 'O'); R(11, 4, 1, 3, 'O'); P(1, 3, 'O'); P(12, 3, 'O'); }   // wings up
+    else { R(3, 6, 1, 4, 'O'); R(10, 6, 1, 4, 'O'); }
+    P(6, 11, 'y'); P(8, 11, 'y');
   }, 2), ['a', 'b']),
 };
 
@@ -2822,8 +2880,9 @@ function setStationQ(st, q) {
 function streakUp(x, y) {
   G.vanCool = 0;   // a right answer refills Ninja vanish
   G.streak++; G.bestStreak = Math.max(G.bestStreak, G.streak);
+  stat('right'); if (G.streak > statOf('bestStreak')) prog.stats.bestStreak = G.streak;
+  if (statOf('right') % 25 === 0 || G.streak === 10 || G.streak === 25 || G.streak === 50) statBadges();
   G.score += 500 * Math.min(G.streak, 5);
-  if (G.streak >= 10) award('streak10');
   if (G.streak % 3 === 0 && !L.boss) startDash(x, y);
   if (G.streak >= 2) floatText(x, y - 48, `${G.streak} in a row!`, '#ffb627', 22 + Math.min(G.streak, 6) * 2);
   if (G.streak % 5 === 0) { confetti(x, y - 30); confetti(x, y - 30); sfx.streak(); grantPower(); }
@@ -2858,7 +2917,7 @@ function bump(c, r) {
     G.parts.push({ k: 'coin', x: c * T + T / 2, y: r * T, vx: 0, vy: -9, life: 40, v: 25 });
     G.coins += 25; G.score += 2500; sfx.win(); confetti(c * T + T / 2, r * T); shake(8, 3); petSay('wow');
     floatText(c * T + T / 2, r * T - 50, 'Golden gem! +25', '#ffd23f', 28);
-    award('golden'); if (Object.keys(prog.golden).length >= 15) award('golden-all');
+    award('golden'); statBadges();
   }
   else sfx.bump();
 }
@@ -2917,7 +2976,7 @@ function resolveAnswer(st, a) {
   G.checkpoint = (st.gate[1] + 1) * T;
   setTimeout(sfx.gate, 350);
   if (st.quick) {
-    G.lightN++; G.score += 300; sfx.streak(); payGems(cx, cy + T / 2, 3, 3);
+    G.lightN++; stat('light'); G.score += 300; sfx.streak(); payGems(cx, cy + T / 2, 3, 3);
     floatText(cx, cy - 20, 'Lightning! +3', '#7df9ff', 32);
   } else floatText(cx, cy - 20, st.q.retry ? 'You remembered it!' : ['Correct!', 'Great job!', 'Awesome!', 'You got it!', 'Super!', 'Hi-yah!'][R(0, 5)], '#3ae374', 30);
   const next = currentStation();
@@ -3083,50 +3142,127 @@ function openBossPad() {
 }
 
 // ---------------------------------------------------------------- badges
+// Badges (owner, Nov 8 2026: "they really motivate a 3rd grader"). Sections: math (times tables, each with a prize you
+// can't buy), keep going (bronze / silver / gold of the same badge; gold gives a title), adventures (things to do) and
+// secret (??? until earned). b.prog() = [now, need] shows a progress bar and is checked by statBadges(); b.gems pays
+// gems, b.prize puts a SHOP item in the owned list (shown at the end card: gearHTML), b.title can be worn (prog.title).
+const stat = (k, d = 1) => { prog.stats[k] = (prog.stats[k] || 0) + d; return prog.stats[k]; };
+const statOf = k => prog.stats[k] || 0;
+const nKeys = o => Object.keys(o || {}).length;
+const GOLD_N = STAGES.filter(s => !s.boss).length;   // one flaming golden gem per level
+const TABLE_PRIZE = { 2: 'trail-petal', 3: 'band-bolt', 4: 'trail-bubble', 5: 'suit-ocean', 6: 'trail-snow', 7: 'suit-lava', 8: 'pet-octo', 9: 'band-rainbow', 10: 'pet-owl' };
+const tableProg = n => { const pr = skillProgressRaw(SKILL['x' + n]); return [pr.gold, pr.n]; };
+const TIER_GEMS_B = [10, 25, 0];
+const tierBadges = (txt, pix, key, list) => list.map(([id, name, need, title], t) => ({ id, pix, sec: 'tier', grp: list[0][0], tier: t + 1, name, need, title,
+  text: txt(need), prog: () => [key(), need], gems: TIER_GEMS_B[t] }));
 const BADGES = [
-  { id: 'first-gate', pix: 'torii', name: 'First Gate', text: 'Open your first math gate.' },
-  { id: 'perfect', pix: 'shuriken', name: 'Perfect Ninja', text: 'Finish a level with no wrong answers.' },
-  { id: 'streak10', pix: 'flame', name: 'On Fire', text: 'Get 10 answers in a row.' },
-  { id: 'power', pix: 'bolt', name: 'Powered Up', text: 'Earn a streak power-up.' },
-  { id: 'bridge', pix: 'bridge', name: 'Bridge Builder', text: 'Build a number-stone bridge.' },
-  { id: 'bridge10', pix: 'hammer', name: 'Master Builder', text: 'Build 10 bridges.' },
-  { id: 'dojo7', pix: 'calendar', name: 'Dedicated', text: 'Do the Daily Dojo 7 days in a row.' },
-  { id: 'vault', pix: 'gi', name: 'Sensei\'s Student', text: 'Learn a move in a training room.' },
-  { id: 'moves-all', pix: 'dragon', name: 'Master\'s Student', text: 'Learn all 15 moves from Sensei.' },
-  { id: 'golden', pix: 'gem', swap: { c: '#ffd23f', b: '#e8452c', w: '#fff6c8' }, name: 'Golden Gem', text: 'Grab a flaming golden gem.' },
-  { id: 'golden-all', pix: 'crown', name: 'Golden Hunter', text: 'Grab all 15 golden gems. Unlocks the Golden suit!' },
-  { id: 'boss-nohit', pix: 'shield', name: 'Untouchable', text: 'Beat a boss without getting hit.' },
-  { id: 'boss-all', pix: 'scroll', name: 'Scroll Keeper', text: 'Win back all six scrolls.' },
-  { id: 'race-win', pix: 'trophy', name: 'Champion Rider', text: 'Win a race.' },
-  { id: 'race-perfect', pix: 'horse', name: 'Perfect Ride', text: 'Get every gate right in a race.' },
-  { id: 'shopper', pix: 'bag', name: 'Shopper', text: 'Buy something in the Dojo Shop.' },
-  { id: 'gems500', pix: 'gem', name: 'Gem Collector', text: 'Collect 500 gems in total.' },
-  { id: 'black-belt', pix: 'belt', swap: { b: '#26262e' }, name: 'Black Belt', text: 'Reach the Black Belt rank.' },
-  { id: 'gold-medal', pix: 'medal', name: 'Gold Medal', text: 'Win a gold medal in a math skill (no mistakes).' },
-  { id: 'brave', pix: 'brain', name: 'Brave Brain', text: 'Finish a level with ★★★★ math or harder.' },
-  { id: 'friends', pix: 'house', name: 'Every One Matters', text: 'Find all five lost friends and bring them home.' },
+  // math
+  ...[2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => ({ id: 't' + n, num: n, sec: 'math', name: `Master of ${n}s`, text: `Make every ${n}s fact gold in the Fact Book.`, prog: () => tableProg(n), prize: TABLE_PRIZE[n] })),
+  { id: 't-all', pix: 'crown', swap: { y: '#9fe8ff', Y: '#4fb3d9' }, sec: 'math', name: 'Times-Table Master', text: 'Master every table from 2s to 10s.', prog: () => [[2, 3, 4, 5, 6, 7, 8, 9, 10].filter(n => prog.badges['t' + n]).length, 9], prize: 'suit-diamond', title: 'Times-Table Master' },
+  { id: 'gold-medal', pix: 'medal', sec: 'math', name: 'Gold Medal', text: 'Win a gold medal in a math skill (no mistakes).' },
+  { id: 'brave', pix: 'brain', sec: 'math', name: 'Brave Brain', text: 'Finish a level with ★★★★ math or harder.' },
+  // keep going: bronze, silver, gold
+  ...tierBadges(n => `Open ${n} math gates.`, 'torii', () => statOf('gates'), [['gates50', 'Gate Opener', 50], ['gates250', 'Gate Crasher', 250], ['gates1000', 'Gate Breaker', 1000, 'Gate Breaker']]),
+  ...tierBadges(n => `Get ${n} answers right.`, 'brain', () => statOf('right'), [['right100', 'Quick Thinker', 100], ['right500', 'Number Ninja', 500], ['right2000', 'Math Machine', 2000, 'Math Machine']]),
+  ...tierBadges(n => `Get ${n} answers in a row.`, 'flame', () => statOf('bestStreak'), [['streak10', 'On Fire', 10], ['streak25', 'Blazing', 25], ['streak50', 'Unstoppable', 50, 'Unstoppable']]),
+  ...tierBadges(n => (n === 1 ? 'Finish a level with no wrong answers.' : `Finish ${n} levels with no wrong answers.`), 'shuriken', () => statOf('perfect'), [['perfect', 'Perfect!', 1], ['perfect5', 'Flawless', 5], ['perfect20', 'Perfect Ninja', 20, 'Perfect Ninja']]),
+  // adventures
+  { id: 'first-gate', pix: 'torii', sec: 'adv', name: 'First Gate', text: 'Open your first math gate.' },
+  { id: 'power', pix: 'bolt', sec: 'adv', name: 'Powered Up', text: 'Earn a streak power-up.' },
+  { id: 'light10', pix: 'bolt', swap: { y: '#7df9ff' }, sec: 'adv', name: 'Lightning Fast', text: 'Get 10 Lightning bonuses (answer before you reach the gate).', prog: () => [statOf('light'), 10], gems: 15 },
+  { id: 'bridge', pix: 'bridge', sec: 'adv', name: 'Bridge Builder', text: 'Build a number-stone bridge.' },
+  { id: 'bridge10', pix: 'hammer', sec: 'adv', name: 'Master Builder', text: 'Build 10 bridges.', prog: () => [statOf('bridges'), 10] },
+  { id: 'wall-pascal', pix: 'piece', sec: 'adv', name: 'Triangle Builder', text: "Finish a Pascal's Triangle wall.", gems: 15 },
+  { id: 'wall-fib', pix: 'piece', swap: { y: '#7df9ff' }, sec: 'adv', name: 'Stair Climber', text: 'Finish a Fibonacci Stairs wall.', gems: 15 },
+  { id: 'wall-prime', pix: 'piece', swap: { y: '#ff9cc4' }, sec: 'adv', name: 'Prime Hunter', text: 'Find all the primes in a Prime Wall.', gems: 15 },
+  { id: 'fed15', pix: 'fish', sec: 'adv', name: 'Animal Friend', text: 'Feed all 15 hungry animals.', prog: () => [nKeys(prog.stats.fed), 15], gems: 15 },
+  { id: 'dojo7', pix: 'calendar', sec: 'adv', name: 'Dedicated', text: 'Do the Daily Dojo 7 days in a row.', prog: () => [Math.max(prog.daily.best || 0, prog.daily.streak || 0), 7] },
+  { id: 'vault', pix: 'gi', sec: 'adv', name: 'Sensei\'s Student', text: 'Learn a move in a training room.' },
+  { id: 'moves-all', pix: 'dragon', sec: 'adv', name: 'Master\'s Student', text: 'Learn all 15 moves from Sensei.', prog: () => [nKeys(prog.moves), 15] },
+  { id: 'golden', pix: 'gem', swap: { c: '#ffd23f', b: '#e8452c', w: '#fff6c8' }, sec: 'adv', name: 'Golden Gem', text: 'Grab a flaming golden gem.' },
+  { id: 'golden-all', pix: 'crown', sec: 'adv', name: 'Golden Hunter', text: `Grab all ${GOLD_N} golden gems.`, prog: () => [nKeys(prog.golden), GOLD_N], prize: 'suit-gold' },
+  { id: 'boss-nohit', pix: 'shield', sec: 'adv', name: 'Untouchable', text: 'Beat a boss without getting hit.' },
+  { id: 'boss-all', pix: 'scroll', sec: 'adv', name: 'Scroll Keeper', text: 'Win back all six scrolls.' },
+  { id: 'race-win', pix: 'trophy', sec: 'adv', name: 'Champion Rider', text: 'Win a race.' },
+  { id: 'race-perfect', pix: 'horse', sec: 'adv', name: 'Perfect Ride', text: 'Get every gate right in a race.' },
+  { id: 'roads', pix: 'race', sec: 'adv', name: 'Every Road', text: 'Win a race on every track.', prog: () => [nKeys(prog.stats.roads), 5], gems: 15 },
+  { id: 'shopper', pix: 'bag', sec: 'adv', name: 'Shopper', text: 'Buy something in the Dojo Shop.' },
+  { id: 'gems500', pix: 'gem', sec: 'adv', name: 'Gem Collector', text: 'Collect 500 gems in total.', prog: () => [statOf('gems'), 500] },
+  { id: 'black-belt', pix: 'belt', swap: { b: '#26262e' }, sec: 'adv', name: 'Black Belt', text: 'Reach the Black Belt rank.' },
+  { id: 'friends', pix: 'house', sec: 'adv', name: 'Every One Matters', text: 'Find all five lost friends and bring them home.', prog: () => [nKeys(prog.friends), 5] },
+  // secret
+  { id: 'ghost', pix: 'vanish', sec: 'secret', name: 'Ghost Ninja', text: 'Got through Shadow Walls without being spotted.', gems: 20 },
+  { id: 'eight', pix: 'gem', swap: { c: '#ffd23f', b: '#c99a1a', w: '#fff6c8' }, sec: 'secret', name: 'Pieces of Eight', text: 'Opened the pirate chest.', gems: 20 },
+  { id: 'dolphin', pix: 'fish', swap: { b: '#7fb8ff' }, sec: 'secret', name: 'Dolphin Leap', text: 'Leapt out of the sea like a dolphin.', gems: 20 },
+  { id: 'again', pix: 'house', swap: { r: '#ff9cc4' }, sec: 'secret', name: 'Old Friends', text: 'Rescued a friend a second time.', gems: 20 },
 ];
-const badgeImg = (b, cls = 'pix big') => pixImg(b.pix, cls, b.swap || null);
-let toastTimer = null;
+const BADGE = Object.fromEntries(BADGES.map(b => [b.id, b]));
+const BADGE_SECS = [['math', 'Math'], ['tier', 'Keep going'], ['adv', 'Adventures'], ['secret', 'Secret']];
+const TITLES = () => BADGES.filter(b => b.title && prog.badges[b.id]).map(b => b.title);
+const badgeImg = (b, cls = 'pix big') => (b.num ? `<span class="tnum${cls.includes('sm') ? ' sm' : ''}">${b.num}<i>×</i></span>` : pixImg(b.pix, cls, b.swap || null));
+// Toasts wait their turn, so two badges at once both show.
+let toastTimer = null; const toastQ = [];
+function toastMsg(html, ms = 3200) {
+  toastQ.push([html, ms]); if (toastQ.length === 1) toastNext();
+}
+function toastNext() {
+  if (!toastQ.length) { hide('toast'); return; }
+  const [html, m0] = toastQ[0], ms = toastQ.length > 2 ? 1800 : m0; $('toast').innerHTML = html; show('toast');   // a pile of badges at once goes faster
+  const el = $('toast'); el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { toastQ.shift(); toastNext(); }, ms);
+}
 function award(id) {
   if (prog.badges[id]) return;
+  const b = BADGE[id]; if (!b) return;
   prog.badges[id] = true;
-  if (id === 'golden-all' && !prog.owned.includes('suit-gold')) prog.owned.push('suit-gold');   // the secret costume
+  if (b.gems) { prog.bank += b.gems; prog.stats.gems += b.gems; }
+  if (b.prize && !prog.owned.includes(b.prize)) { prog.owned.push(b.prize); (prog.newGear || (prog.newGear = [])).push(b.prize); }
+  if (b.title && !prog.title) prog.title = b.title;
   save();
-  const b = BADGES.find(x => x.id === id);
-  $('toast').innerHTML = `${badgeImg(b, 'pix sm')} Badge unlocked: <b>${b.name}</b>`;
-  show('toast'); clearTimeout(toastTimer); toastTimer = setTimeout(() => hide('toast'), 3200);
+  toastMsg(`${badgeImg(b, 'pix sm')} Badge: <b>${b.name}</b>${b.gems ? ` · +${b.gems} ${gemSm()}` : ''}${b.prize ? ' · New gear!' : ''}${b.title ? ' · New title!' : ''}`);
   [659, 784, 988, 1319].forEach((f, i) => tone(f, 0.18, 'triangle', 0.05, null, 0.15 + i * 0.09));
 }
+// Every badge with a goal (prog) is checked here: after right answers, at the end of a level / race / dojo, and when the
+// Badge Book opens (so badges earned before this update show up too).
+function statBadges() {
+  for (const b of BADGES) if (b.prog && !prog.badges[b.id]) { const [now, need] = b.prog(); if (need > 0 && now >= need) award(b.id); }
+}
 function openBadges() {
-  hide('menu');
-  const got = BADGES.filter(b => prog.badges[b.id]).length;
-  $('badgeCount').innerHTML = `${got} of ${BADGES.length} badges · ${pixImg('gem', 'pix sm', { c: '#ffd23f', b: '#e8452c', w: '#fff6c8' })} ${Object.keys(prog.golden).length} of 15 golden gems
+  hide('menu'); statBadges();
+  const got = BADGES.filter(b => prog.badges[b.id]).length, titles = TITLES();
+  $('badgeCount').innerHTML = `${got} of ${BADGES.length} badges · ${pixImg('gem', 'pix sm', { c: '#ffd23f', b: '#e8452c', w: '#fff6c8' })} ${nKeys(prog.golden)} of ${GOLD_N} golden gems
+    ${titles.length ? `<div class="titlerow">Your title: ${['', ...titles].map(t => `<button type="button" class="tchip${(prog.title || '') === t ? ' on' : ''}" data-title="${t}">${t || 'None'}</button>`).join('')}</div>` : ''}
     <div class="friendrow">${FRIENDS.map(f => (prog.friends || {})[f.id] ? `<span><span class="pair">${kidImg(f.id)}${toolImg(f.way)}</span><small><b>${f.name}</b> ${f.pname} · ${RESCUE_TOOL[f.way].short}</small></span>`
       : `<span><i class="kidq">?</i><small>Lost in ${WORLDS[f.w].name}</small></span>`).join('')}</div>`;
-  $('badgeGrid').innerHTML = BADGES.map(b => `<div class="badge ${prog.badges[b.id] ? 'got' : ''}"><div class="bi">${prog.badges[b.id] ? badgeImg(b) : pixImg('qmark', 'pix big')}</div>
-    <div class="bn">${b.name}</div><div class="bt">${b.text}</div></div>`).join('');
+  $('badgeCount').querySelectorAll('[data-title]').forEach(el => { el.onclick = () => { audio(); prog.title = el.dataset.title || null; save(); openBadges(); }; });
+  $('badgeGrid').innerHTML = BADGE_SECS.map(([sec, name]) => {
+    const list = BADGES.filter(b => b.sec === sec), n = list.filter(b => prog.badges[b.id]).length;
+    return `<h3 class="bsec">${name} <small>${n} / ${list.length}</small></h3>${list.map(badgeCard).join('')}`;
+  }).join('');
   show('badges');
+}
+const TIER_NAME = ['', 'Bronze', 'Silver', 'Gold'];
+function badgeCard(b) {
+  const on = !!prog.badges[b.id], hid = b.sec === 'secret' && !on, pr = !on && b.prog ? b.prog() : null;
+  const bar = pr && pr[1] > 0 ? `<div class="bbar"><i style="width:${Math.min(100, Math.round(pr[0] / pr[1] * 100))}%"></i></div><div class="bp">${Math.min(pr[0], pr[1])} / ${pr[1]}</div>` : '';
+  const prize = b.prize && ITEM[b.prize] ? `<div class="bprize${on ? '' : ' dark'}"><img src="${prizeSrc(b.prize)}" alt=""><small>${on ? ITEM[b.prize].name : 'Prize: ???'}</small></div>` : '';
+  const extra = (b.title ? `<div class="btitle">Title: ${b.title}</div>` : '') + (b.gems ? `<div class="bgems">+${b.gems} ${gemSm()}</div>` : '');
+  return `<div class="badge${on ? ' got' : ''}${b.tier ? ` tier${b.tier}` : ''}"><div class="bi">${hid ? pixImg('qmark', 'pix big') : badgeImg(b)}</div>
+    ${b.tier ? `<div class="btier">${TIER_NAME[b.tier]}</div>` : ''}<div class="bn">${hid ? '???' : b.name}</div><div class="bt">${hid ? 'A secret badge. Keep exploring!' : b.text}</div>${hid ? '' : bar + prize + extra}</div>`;
+}
+// A picture of a shop item (Badge Book prizes, the New gear! card).
+const prizeCache = {};
+function prizeSrc(id) {
+  if (prizeCache[id]) return prizeCache[id];
+  const c = document.createElement('canvas'); c.width = 90; c.height = 54; drawItemPreview(c, ITEM[id]);
+  return (prizeCache[id] = c.toDataURL());
+}
+// New gear from a badge, shown on the next end card with a Wear it button (showMsg wires data-wear).
+function gearHTML() {
+  const ids = (prog.newGear || []).filter(id => ITEM[id]); if (!prog.newGear || !prog.newGear.length) return '';
+  prog.newGear = []; save();
+  return ids.map(id => `<div class="promo gear"><div class="gtitle">New gear!</div><img class="gimg" src="${prizeSrc(id)}" alt=""><div><b>${ITEM[id].name}</b></div>
+    <button type="button" class="btn wear" data-wear="${id}">Wear it</button></div>`).join('');
 }
 
 // ---------------------------------------------------------------- pet reactions and Sensei's tips
@@ -3147,7 +3283,7 @@ function petSay(mood) {
 function petTick() {
   if (!G.pet) return;
   const p = P, pt = G.pet;
-  const tx = p.x + p.w / 2 - p.face * 34, ty = p.y + (prog.equip.pet === 'pet-dragon' ? -14 : 14) + Math.sin(tick * 0.12) * 3;
+  const tx = p.x + p.w / 2 - p.face * 34, ty = p.y + (FLY_PETS.includes(prog.equip.pet) ? -14 : 14) + Math.sin(tick * 0.12) * 3;
   pt.x += (tx - pt.x) * 0.12; pt.y += (ty - pt.y) * 0.12;
   if (pt.moodT > 0) pt.moodT--;
   if (G.bubble && --G.bubble.t <= 0) G.bubble = null;
@@ -3941,7 +4077,7 @@ function freeFriend(r) {
   save();
   sfx.win();
   (G.friendPow || (G.friendPow = {}))[f.power] = true; G.braveUsed = false;   // the power, for the rest of this level (a replay gives it again)
-  if (r.again) { const { fy, fx } = rescueSpots(); payGems(cam + fx, fy - 90, 5); }   // a replay: bonus gems too
+  if (r.again) { const { fy, fx } = rescueSpots(); payGems(cam + fx, fy - 90, 5); award('again'); }   // a replay: bonus gems too
   if (f.way === 'falls') CHIME_TUNE.slice(0, 8).forEach((n, i) => tone(n, 0.5, 'triangle', 0.05, null, 0.4 + i * 0.32));   // Amazing Grace
   if (FRIENDS.every(x => prog.friends[x.id])) award('friends');
 }
@@ -4136,7 +4272,7 @@ function swimY(p) {
   if (L.abyss && p.jbuf > 0) p.jbuf = 0;   // deep sea: no surface to leap out of (▲ just swims up)
   if (p.jbuf > 0 && depth < 14) {   // leap out of the water (by the rocky island: a big dolphin leap with a flip)
     const lp = (L.leaps || []).find(l => p.x + p.w > (l.c - 4) * T && p.x < (l.c + 3) * T);
-    if (lp) { p.vy = -11.5; p.flipT = 40; if (lp.seal === 'sit') { lp.seal = 'dive'; lp.st = 0; } burst(p.x + p.w / 2, L.water, '#e8f8ff', 14, 4); floatText(p.x + p.w / 2, p.y - 20, 'Splash!', '#9be7ff', 24); }
+    if (lp) { p.vy = -11.5; p.flipT = 40; award('dolphin'); if (lp.seal === 'sit') { lp.seal = 'dive'; lp.st = 0; } burst(p.x + p.w / 2, L.water, '#e8f8ff', 14, 4); floatText(p.x + p.w / 2, p.y - 20, 'Splash!', '#9be7ff', 24); }
     else p.vy = -9.2;
     p.bounce = true; p.jbuf = 0; sfx.jump(); burst(p.x + p.w / 2, L.water, '#e8f8ff', 6, 2); return;   // always a full leap (a quick tap on a phone too)
   }
@@ -4462,6 +4598,7 @@ function feedPick(fd, i) {
   if (right) {
     G.solved++; if (fd.fast = fast) G.fastN++;
     fd.mood = 'yum'; sfx.correct(); streakUp(fd.ax, y); gotIt();
+    (prog.stats.fed || (prog.stats.fed = {}))[slotOf(L.def)] = true;   // Animal Friend badge
     floatText(fd.ax, y - 50, `${qSolved(fd.q)}! Yum!`, '#3ae374', 26);
   } else {
     G.mistakes++; G.streak = 0; remember(fd.q); missed(fd.q); sfx.wrong();
@@ -4504,7 +4641,7 @@ function chestQ(cl) {
 function clamDone(cl, right, fast, q) {
   if (right && cl.chest) {   // pieces of eight: eight gems, and gold coins fly out
     cl.state = 'open';
-    payGems(cl.x, cl.y - 30, 8); sfx.win();
+    payGems(cl.x, cl.y - 30, 8); sfx.win(); award('eight');
     floatText(cl.x, cl.y - 6.6 * T, 'Pieces of eight!', '#ffd23f', 26);
     for (let i = 0; i < 16; i++) G.parts.push({ k: 'bit', x: cl.x, y: cl.y - 30, vx: (Math.random() - 0.5) * 6, vy: -2.5 - Math.random() * 3.5, life: 60, col: i % 2 ? '#ffd23f' : '#c99a1a', s: 7 });
     return;
@@ -5105,7 +5242,7 @@ function updateTwist() {
       const hidden = vanished() || L.fx.some(b => b.k === 'barrel' && Math.abs(p.x + p.w / 2 - b.x) < 20 && Math.abs(p.vx) < 0.6 && p.onGround);
       G.hidden = hidden;
       if (!f.seen && !hidden && dx > 0 && dx < 4.5 * T && dy < dx * 0.45 + 24) {
-        f.seen = true; G.alarm = 120; sfx.wrong(); floatText(f.x, GR * T - 80, '❗ Spotted!', '#ff4d4d', 26);
+        f.seen = true; G.spotted = true; G.alarm = 120; sfx.wrong(); floatText(f.x, GR * T - 80, '❗ Spotted!', '#ff4d4d', 26);
         if (!kEasy()) for (const k of [7, 9]) L.enemies.push(walkerFor('shadow', Math.floor(p.x / T) + k * (p.face || 1), 1.4));   // none for kindergarten in Easy mode
       }
     }
@@ -5255,10 +5392,18 @@ function updatePlayer() {
 
   if (G.power && --G.power.t <= 0) { G.power = null; floatText(p.x + p.w / 2, p.y - 20, 'Power faded', '#cccccc', 20); }
   if (hasPower('fire') && tick % 2 === 0) G.parts.push({ k: 'bit', x: p.x + Math.random() * p.w, y: p.y + p.h - Math.random() * p.h, vx: 0, vy: -1.5, life: 22, col: ['#ff6a00', '#ffd23f', '#ff3b1f'][R(0, 2)], s: 5 });
-  const trail = prog.equip.trail;
-  if (trail && p.onGround && Math.abs(p.vx) > 2 && tick % 3 === 0) {
-    const cols = trail === 'trail-fire' ? ['#ff6a00', '#ffd23f', '#ff3b1f'] : ['#ffffff', '#fff3a0', '#9be7ff'];
-    G.parts.push({ k: 'bit', x: p.x + p.w / 2 - p.face * 10, y: p.y + p.h - 6, vx: -p.face * 0.5, vy: -1 - Math.random(), life: 26, col: cols[R(0, 2)], s: 4 });
+  const trail = TRAIL_LOOK[prog.equip.trail], van = vanished();
+  if (trail && !van && p.onGround && Math.abs(p.vx) > 2 && tick % 3 === 0) {
+    G.parts.push({ k: 'bit', x: p.x + p.w / 2 - p.face * 10, y: p.y + p.h - 6 - (trail.up ? Math.random() * 20 : 0), vx: -p.face * (trail.vx ?? 0.5), vy: trail.vy ?? -1 - Math.random(), life: trail.life || 26, col: trail.cols[R(0, 2)], s: trail.s || 4, up: trail.up });
+  }
+  const suitFx = (ITEM[prog.equip.suit] || {}).fx;   // badge suits: the Diamond suit sparkles, the Lava suit sends up embers
+  if (suitFx && !van && tick % (suitFx === 'sparkle' ? 7 : 6) === 0) {
+    const sp = suitFx === 'sparkle';
+    G.parts.push({ k: 'bit', x: p.x + Math.random() * p.w, y: p.y + 10 + Math.random() * (p.h - 12), vx: 0, vy: sp ? -0.2 : -0.9, life: sp ? 18 : 26, col: sp ? ['#ffffff', '#bff4ff', '#e8fbff'][R(0, 2)] : ['#ff6a1a', '#ffb627', '#ff3b1f'][R(0, 2)], s: 3, up: true });
+  }
+  if (SPR_ANIM) {   // animated headbands: the Lightning one flashes, the Rainbow one slowly changes colour
+    const t50 = tick % 50;
+    SPR = SPR_ANIM[SPR_ANIM.length === 2 ? (t50 < 4 || (t50 >= 8 && t50 < 11) ? 1 : 0) : Math.floor(tick / 10) % SPR_ANIM.length];
   }
   petTick();
   updateRoom();
@@ -5282,7 +5427,7 @@ function updatePlayer() {
       if (c.gold) {
         prog.golden[L.idx] = true; save(); G.score += 2500; sfx.win(); confetti(c.x, c.y); shake(8, 3); petSay('wow');
         floatText(c.x, c.y - 50, 'Golden gem! +25', '#ffd23f', 28);
-        award('golden'); if (Object.keys(prog.golden).length >= 15) award('golden-all');
+        award('golden'); statBadges();
       } else if (c.v > 1) floatText(c.x, c.y - 24, '+' + c.v, GEM_COL[c.v][0], 22);
     }
   }
@@ -5671,6 +5816,7 @@ function updateShotsAndProjectiles() {
 // Gates don't just lift: Japan's paper screens slide open in a shower of petals, lava rock crumbles,
 // the factory's force field shorts out, ice shatters, and the castle's shadow wall turns into doves.
 function openGate(st) {
+  if (G && !st.counted) { st.counted = true; stat('gates'); statBadges(); }   // badges: gates opened
   const ls = MOVES.filter(m => prog.moves[m.name]);   // Kai shows off a move he has learned
   if (ls.length && G) G.flourish = { pose: ls[R(0, ls.length - 1)].steps[2].pose, t: 30 };
   if (st.sea) {   // the reef wall stays: only the right door opened. Bubbles pour out and Kai swims down through it.
@@ -5776,13 +5922,15 @@ function finishLevel() {
   body += `<div class="medalrow"><span class="dots">${'●'.repeat(dots) + '○'.repeat(3 - dots)}</span> ${medalImg(dots, 'pix sm')}</div>`;
   const earned = Math.round((G.coins + (st.boss ? 20 : 0)) * TIER_GEMS[sk.tier - 1]);
   prog.bank += earned; prog.stats.gems += earned; save();
-  if (G.mistakes === 0) award('perfect');
+  if (G.mistakes === 0) stat('perfect');
+  if (!st.boss && L.fx && L.fx.some(f => f.k === 'guard') && !G.spotted) award('ghost');   // Shadow Walls, never spotted
   if (st.boss && !G.hit) award('boss-nohit');
   if (WORLDS.every((_, w) => prog.best[bossOf(w)])) award('boss-all');
   if (prog.stats.gems >= 500) award('gems500');
   if (currentBelt().name === 'Black') award('black-belt');
   if (dots === 3) award('gold-medal');
   if (sk.tier >= 4) award('brave');
+  statBadges();
   const path = pathRound(sk, { right: G.solved, wrong: G.mistakes, fast: G.fastN }), up = path.startsWith('<div');
   body += `<div class="statrow"><span>${pixImg('gem', 'pix sm')} +${earned}</span><span>${pixImg('belt', 'pix sm')} +${pts}</span>${up ? '' : path}</div>`;
   if (up) body += path;
@@ -5794,6 +5942,7 @@ function finishLevel() {
       + (prev && G.solved > prev ? '<p class="sumnew">New record!</p>' : prev ? `<p class="sumnew">Record: ${prev}</p>` : '');
   }
   if (after.idx > before.idx) body += `<div class="promo">${beltHTML(after)} &nbsp;<b>${after.name} Belt!</b></div>`;
+  body += gearHTML();
   if (G.practice.size) body += `<div class="practice">🔁 ${[...G.practice.values()].slice(0, 3).map(q => `<span>${qSolved(q)}</span>`).join('')}</div>`;
   const btns = [];
   const wolfOffer = i === 0 && !prog.owned.includes('pet-wolf');
@@ -6076,8 +6225,9 @@ function finishRace() {
   const best = !prev || r.time < prev;
   if (best) prog.raceBest[r.topic.id] = r.time;
   prog.bank += reward; prog.stats.gems += reward; save();
-  if (r.place === 1) award('race-win');
+  if (r.place === 1) { award('race-win'); const tid = r.track; if (TRACKS[tid]) (prog.stats.roads || (prog.stats.roads = {}))[tid] = true; }
   if (r.right === GATES) award('race-perfect');
+  statBadges();
   if (prog.stats.gems >= 500) award('gems500');
   setTimeout(() => {
     if (RC !== r) return;
@@ -6086,6 +6236,7 @@ function finishRace() {
     const path = pathRound(r.topic, { right: r.right, wrong: GATES - r.right, fast: r.fastN, race: true }), up = path.startsWith('<div');
     let body = `<div class="bigicon">${medal}</div><div class="statrow"><span>${pixImg('clock', 'pix sm')} ${r.time.toFixed(1)}s${best ? ' NEW!' : ''}</span><span>✔ ${r.right}/${GATES}</span><span>${gemSm()} +${reward}</span>${up ? '' : path}</div>`;
     if (up) body += path;
+    body += gearHTML();
     if (r.missed.size) body += `<div class="practice">🔁 ${[...r.missed.values()].slice(0, 3).map(q => `<span>${qSolved(q)}</span>`).join('')}</div>`;
     const title = ['1st place!', '2nd place!', '3rd place!', '4th place'][r.place - 1];
     if (r.travel !== null) showMsg(title, body, [   // a ride between worlds: on to the next world, whatever your place
@@ -8973,7 +9124,7 @@ function drawPlayer() {
   if (diver) drawBaked(DIVER || (DIVER = bakeDiver(heroPal())), k === 'jump' || k === 'walkA' ? k : 'stand', p.face < 0, p);
   else if (pose && !(p.flipT > 0)) drawKaiPose(p, pose); else drawBaked(SPR, k, p.face < 0, p);
   ctx.restore();
-  if (van) { ctx = keepCtx; vanishDots(p); }
+  if (van) { ctx = keepCtx; ctx.globalAlpha = 0.2; ctx.drawImage(VAN.c, VAN.ox, VAN.oy); ctx.globalAlpha = 1; vanishDots(p); }   // a faded Kai inside the dots
   if (hasPower('shield')) {
     ctx.strokeStyle = `rgba(125,249,255,${0.5 + 0.3 * Math.sin(tick * 0.2)})`; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(p.x + p.w / 2, p.y + p.h / 2, 34, 0, 7); ctx.stroke();
@@ -9632,6 +9783,10 @@ function showMsg(title, body, btns) {
   if (window.speechSynthesis && body.includes('scenebox')) btns = [...btns, { label: '🔊 Read to me', fn: readAloud, alt: true }];
   $('msgTitle').textContent = title;
   $('msgBody').innerHTML = body;
+  $('msgBody').querySelectorAll('[data-wear]').forEach(el => {   // New gear! cards
+    el.onclick = () => { audio(); const it = ITEM[el.dataset.wear]; prog.equip[it.slot] = it.id; save(); el.textContent = 'Wearing it!'; el.disabled = true; sfx.correct(); };
+  });
+  if (body.includes('class="promo gear"')) [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.22, 'triangle', 0.05, null, 0.3 + i * 0.1));
   const box = $('msgBtns'); box.innerHTML = ''; msgPrimary = null;
   for (const b of btns) {
     const el = document.createElement('button');
@@ -9658,6 +9813,7 @@ function startStage(i) {
   G = { idx: i, skill: L.skill, hearts, maxHearts: hearts, coins: 0, score: 0, shake: 0, shakeAmp: 0, freeze: 0, slow: 0, flash: 0, flyers: [], pulse: 0, chain: 0, lastGem: -99, mistakes: 0, streak: 0, bestStreak: 0, solved: 0, fastN: 0, lightN: 0, missed: [], practice: new Map(), power: null, powerN: 0, carry: null, saved: null,
     pet: prog.equip.pet ? { x: P.x, y: P.y, mood: null, moodT: 0 } : null, glide: 0, alarm: 0, climb: false, hidden: false, bubble: null, tip: null, mbox: null, dash: 0, cross: null, wrongRun: 0, tipSoon: !!(plan && plan.mode === 'back'), byTrack: plan ? {} : null, checkpoint: 1.5 * T, time: 0, parts: [], shots: [], bumps: new Map(), winT: 0 };
   SPR = bakeNinja(heroPal());   // equipped headband and suit, plus the belt you've earned
+  const bandIt = ITEM[prog.equip.band]; SPR_ANIM = bandIt && bandIt.anim ? bandIt.anim.map(c => bakeNinja({ ...heroPal(), r: c[0], R: c[1] })) : null;
   DIVER = null;
   if (prog.vanishNext === i) G.friendPow = { vanish: true };   // Mei was freed in the level before: Ninja vanish here too (kept on a restart)
   else if (prog.vanishNext != null) { delete prog.vanishNext; save(); }   // the diving suit picks up the headband again
@@ -9736,7 +9892,8 @@ function puff() {
 }
 function buildMenu() {
   const pts = totalPoints(), b = beltFor(pts), k = curSkill();
-  $('rank').innerHTML = `${beltHTML(b)} <span><b>${b.name} Belt</b> · ${pts} pts</span>`;
+  if (prog.title && !TITLES().includes(prog.title)) prog.title = null;
+  $('rank').innerHTML = `${beltHTML(b)} <span><b>${b.name} Belt</b> · ${pts} pts</span>${prog.title ? `<span class="ptitle">${prog.title}</span>` : ''}`;
   const me = curPlayer(); $('playerChip').innerHTML = `${playerIcon(me.icon, 'picon sm')} `; $('playerChip').append(`${me.name} ▾`);
   const pr = skillProgress(k);
   $('skillChip').innerHTML = `${pixImg('compass', 'pix sm')} ${k.name} <span class="tier">${stars(k.tier)}</span> <span class="dots">${pr.learned}/${pr.n}</span> ✎`;
@@ -9872,7 +10029,7 @@ function drawItemPreview(cv, it) {
     c.drawImage(set.stand[0], (cv.width - 48) / 2, cv.height - 48);
   } else if (it.slot === 'pet') c.drawImage(PET_SPR[it.id].a[0], (cv.width - 42) / 2, cv.height - 40);
   else {
-    const cols = it.id === 'trail-fire' ? ['#ff6a00', '#ffd23f', '#ff3b1f'] : ['#ffffff', '#fff3a0', '#9be7ff'];
+    const cols = (TRAIL_LOOK[it.id] || TRAIL_LOOK['trail-spark']).cols;
     for (let i = 0; i < 18; i++) { c.fillStyle = cols[i % 3]; c.fillRect(8 + i * 4, cv.height - 10 - Math.abs(Math.sin(i * 1.3)) * 30, 5, 5); }
   }
 }
@@ -9887,7 +10044,7 @@ function renderShop() {
     el.innerHTML = `<canvas width="90" height="54"></canvas><div class="nm">${it.name}</div><div class="pr">${owned ? 'Owned' : `${gemSm()} ${it.price}`}</div><button type="button"></button>`;
     drawItemPreview(el.querySelector('canvas'), it);
     const b = el.querySelector('button');
-    if (it.badge && !prog.badges[it.badge] && !owned) { b.innerHTML = `${pixSm('lock')} Badge: Golden Hunter`; b.disabled = true; el.querySelector('.pr').textContent = 'Find all 8 golden gems'; }
+    if (it.badge && !prog.badges[it.badge] && !owned) { b.innerHTML = `${pixSm('lock')} Badge: ${BADGE[it.badge].name}`; b.disabled = true; el.querySelector('.pr').textContent = BADGE[it.badge].text; }
     else if (on) { b.textContent = it.slot === 'trail' || it.slot === 'pet' ? 'Take off' : 'Wearing'; b.disabled = !(it.slot === 'trail' || it.slot === 'pet'); }
     else if (owned) b.textContent = 'Wear';
     else if (prog.bank >= it.price) { b.textContent = 'Buy'; b.className = 'buy'; }
@@ -10776,6 +10933,7 @@ function finishDojo() {
   save(); checkTrophies();
   const right = dojo.right, n = dojo.qs.length; dojo = null; hide('dojo');
   let body = `<div class="bigicon">${pixImg('flame', 'pix big')}<small>${dl.streak}</small></div><div class="statrow"><span>✔ ${right}/${n}</span>${gems ? `<span>${pixImg('gem', 'pix sm')} +${gems}</span>` : ''}${golds ? `<span>${medalImg(3, 'pix sm')} +${golds}</span>` : ''}</div>`;
+  body += gearHTML();
   body += first ? `<div class="promo">${dl.streak > 1 ? `${dl.streak} days in a row!` : 'Come back tomorrow to grow your streak!'}</div>` : '<p>Extra practice! Your streak counts once a day.</p>';
   showMsg(first ? 'Dojo done!' : 'Nice practice!', body, [{ label: 'Play ▶', fn: toMenu, primary: true }, { label: '🔁 One more round', fn: () => { hide('msg'); startDojo(); }, alt: true }, { label: '📒 Facts', fn: () => { hide('msg'); openFacts(); }, alt: true }]);
 }

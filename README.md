@@ -106,7 +106,12 @@ Each rescue has a treasure to find, and every right answer uses it: Kai's **high
 - **Sensei's tips:** two wrong answers in a row brings Sensei with a tip and a picture for the fact you missed: ten frames for adding and taking away within 20, dot arrays for times, groups for division, number-line hops for bigger numbers and patterns, and a balance for balance problems.
 - **Golden gems:** each level has one flaming golden gem high above a pillar or stairs; climb and jump for it (worth 25). The level card shows 🌟 once it's found.
 - **Scroll row (home screen, under the buttons):** one slot per world. Beating a boss fills its slot with that world's scroll; tap it to read that part of the story again.
-- **Badge Book:** 16 badges, such as First Gate, Perfect Ninja, Bridge Builder, Untouchable (beat a boss without getting hit) and Champion Rider. Finding all 15 golden gems unlocks a secret Golden suit in the shop.
+- **Badge Book:** 51 badges in four sections, each badge not yet earned showing a progress bar:
+  - **Math:** a badge for each times table from 2s to 10s (every fact gold in the Fact Book). Each one unlocks gear you can't buy: Petal trail (2s), Lightning headband (3s, flashes), Bubble trail (4s), Ocean suit (5s), Snowflake trail (6s), Lava suit with embers (7s), a little octopus pet (8s), Rainbow headband (9s), an owl pet (10s). All nine make you a **Times-Table Master**: the sparkling Diamond suit and a title. The prizes show as dark shapes until earned. Plus Gold Medal and Brave Brain.
+  - **Keep going:** bronze, silver and gold for math gates opened (50 / 250 / 1000), right answers (100 / 500 / 2000), answers in a row (10 / 25 / 50) and perfect levels (1 / 5 / 20). Bronze pays 10 gems, silver 25, and gold gives a **title** (Gate Breaker, Math Machine, Unstoppable, Perfect Ninja) that the player can pick in the Badge Book; it shows under the belt on the home screen.
+  - **Adventures:** things to do, such as finishing each kind of pattern wall, feeding all 15 hungry animals, 10 Lightning bonuses, winning a race on every track, all 18 golden gems (unlocks the Golden suit), Untouchable and Champion Rider.
+  - **Secret:** "???" until found (Ghost Ninja, Pieces of Eight, Dolphin Leap, Old Friends), 20 gems each.
+  - New gear pops up on the next end-of-level card with a **Wear it** button.
 
 ## Mastery
 
