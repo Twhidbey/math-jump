@@ -391,8 +391,9 @@
     display: flex; flex-direction: column; align-items: center; gap: 2px; font: 18px "Lilita One", "Trebuchet MS", sans-serif; }
   .tt.on { border-color: #ffd23f; background: rgba(255,210,63,.14); } .tt.sel { border-color: #7df9ff; }
   .tt img { width: 45px; height: 27px; image-rendering: pixelated; }
-  .ttbar { display: block; width: 80%; height: 6px; border-radius: 3px; background: rgba(255,255,255,.15); overflow: hidden; } .ttbar i { display: block; height: 100%; background: #3ae374; }
-  .tt.on .ttbar i { background: #ffd23f; }
+  .ttbar { display: block; position: relative; width: 80%; height: 6px; border-radius: 3px; background: rgba(255,255,255,.15); overflow: hidden; }
+  .ttbar i { position: absolute; left: 0; top: 0; height: 100%; background: #ffd23f; } .ttbar i.sv { background: #c9d2de; }   /* silver under gold */
+  .ttbtns { display: flex; gap: 8px; justify-content: center; margin-top: 6px; } .ttbtns .btn { padding: 6px 14px; font-size: 16px; }
   .ttinfo { font-size: 13px; min-height: 18px; }
   .bsec { grid-column: 1 / -1; margin: 10px 0 0; text-align: left; font-size: 18px; } .bsec small { opacity: .7; font-size: 14px; }
   .tnum { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 8px; background: #2a2050; border: 3px solid #ffd23f;
@@ -510,7 +511,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 8, 2026 5:15 PM PT · Badge gems: bigger prizes, treasure chest</div>
+  <div class="build">Updated Nov 8, 2026 6:00 PM PT · Practice / Play a times table from the Badge Book</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1444,11 +1445,19 @@ function seaDoors(st, map) {
 }
 // The grade-track plan of the level being built (set by startStage, null otherwise): questions come from mixGen.
 var LEVEL_MIX = null;
+// "Play 7s" from the Badge Book (set by startStage for that one level): questions favour the facts not gold yet.
+var FOCUS = false;
+function focusGen(skill) {
+  const base = genFor(skill, false), rank = q => { const f = prog.facts[factKey(q)]; return f && (f.weak || f.practice) ? 2 : factStatus(factKey(q)) === 'silver' ? 1 : 0; };
+  const want = shuffle((factList(skill) || []).filter(q => factStatus(factKey(q)) !== 'gold')).sort((a, b) => rank(b) - rank(a));
+  let i = 0;
+  return () => (want.length && Math.random() < 0.75 ? { ...want[i++ % want.length] } : base());
+}
 function buildLevel(idx, easy = false, skill = curSkill()) {
   const def = STAGES[idx], W = WORLDS[def.w], rng = mulberry32(1234 + def.si * 7919);
   const map = newMap();
   const twist = def.boss ? null : TWISTS[slotOf(def)];
-  const L = { idx, def, skill, twist, fx: [], plats: [], chaseX: -8 * T, gen: LEVEL_MIX ? mixGen(LEVEL_MIX) : genFor(skill), expert: skillProgress(skill).mature, world: W, sky: W.skies[def.k], map, w: 0, enemies: [], coins: [], stations: [], walls: [], wallCells: new Map(), bridges: [], doors: [], decor: [], flagC: 0, castleC: 0, boss: null, proj: [] };
+  const L = { idx, def, skill, twist, fx: [], plats: [], chaseX: -8 * T, gen: LEVEL_MIX ? mixGen(LEVEL_MIX) : FOCUS ? focusGen(skill) : genFor(skill), expert: skillProgress(skill).mature, world: W, sky: W.skies[def.k], map, w: 0, enemies: [], coins: [], stations: [], walls: [], wallCells: new Map(), bridges: [], doors: [], decor: [], flagC: 0, castleC: 0, boss: null, proj: [] };
   const addCols = n => { for (let i = 0; i < n; i++) { for (let r = 0; r < ROWS; r++) map[r].push('.'); L.w++; } return L.w - n; };
   const flat = n => {
     const s = addCols(n);
@@ -2149,7 +2158,7 @@ const BOSS_SPECS = {
 function buildArena(idx, easy = false, skill = curSkill()) {
   const def = STAGES[idx], W = WORLDS[def.w], map = newMap(), narrow = VW < 700, cols = narrow ? 18 : 27;
   for (let c = 0; c < cols; c++) { for (let r = 0; r < ROWS; r++) map[r].push('.'); map[GR][c] = '#'; map[GR + 1][c] = '#'; }
-  const L = { idx, def, skill, gen: LEVEL_MIX ? mixGen(LEVEL_MIX) : genFor(skill), expert: skillProgress(skill).mature, world: W, sky: W.skies[2], map, w: cols, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [1, cols - 4], flagC: -99, castleC: -99, proj: [] };
+  const L = { idx, def, skill, gen: LEVEL_MIX ? mixGen(LEVEL_MIX) : FOCUS ? focusGen(skill) : genFor(skill), expert: skillProgress(skill).mature, world: W, sky: W.skies[2], map, w: cols, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [1, cols - 4], flagC: -99, castleC: -99, proj: [] };
   const padC = narrow ? 5 : 7;
   // Fights take turns: a 'dodge' phase where the boss attacks, then an 'open' phase where it is dizzy and you answer.
   L.arena = { q: L.gen(), padC, wait: 0, phase: 'dodge', phaseT: 150 };
@@ -3291,20 +3300,54 @@ function tierCard(grp) {
 // The nine times tables in one card: a tile each (bar = gold facts, tiny prize picture); tap a tile to read about it.
 function tablesCard() {
   const tiles = [2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => {
-    const b = BADGE['t' + n], on = !!prog.badges[b.id], [g, all] = tableProg(n);
+    const b = BADGE['t' + n], on = !!prog.badges[b.id], pr = skillProgressRaw(SKILL['x' + n]), w = v => (on ? 100 : Math.round(v / Math.max(1, pr.n) * 100));
     return `<button type="button" class="tt${on ? ' on' : ''}" data-tt="${n}"><b>${n}×</b><img class="${on ? '' : 'dark'}" src="${prizeSrc(b.prize)}" alt="">
-      <i class="ttbar"><i style="width:${on ? 100 : Math.round(g / Math.max(1, all) * 100)}%"></i></i></button>`;
+      <i class="ttbar"><i class="sv" style="width:${w(pr.learned)}%"></i><i style="width:${w(pr.gold)}%"></i></i></button>`;
   }).join('');
   const got = [2, 3, 4, 5, 6, 7, 8, 9, 10].filter(n => prog.badges['t' + n]).length;
   return `<div class="badge wide tables${got ? ' got' : ''}"><div class="bn">Times Tables <small>${got} / 9</small></div>
-    <div class="bt">Make every fact in a table gold in the Fact Book to win its prize.</div><div class="ttgrid">${tiles}</div><div class="ttinfo" id="ttInfo"></div></div>`;
+    <div class="bt">Get every fact in a table gold (right and fast on two different days) to win its prize.</div><div class="ttgrid">${tiles}</div><div class="ttinfo" id="ttInfo"></div></div>`;
 }
 function ttInfo(n) {
   const el = $('ttInfo'); if (!el) return;
   if (n === null) { el.textContent = 'Tap a table to see how close you are.'; return; }
-  const b = BADGE['t' + n], on = !!prog.badges[b.id], [g, all] = tableProg(n);
-  el.innerHTML = on ? `<b>Master of ${n}s!</b> Prize: ${ITEM[b.prize].name}` : `<b>${n}s:</b> ${g} / ${all} facts gold. Prize: ${ITEM[b.prize].name}`;
+  const b = BADGE['t' + n], on = !!prog.badges[b.id], pr = skillProgressRaw(SKILL['x' + n]), sv = pr.learned - pr.gold;
+  el.innerHTML = on ? `<b>Master of ${n}s!</b> Prize: ${ITEM[b.prize].name}`
+    : `<b>${n}s:</b> ${pr.gold} / ${pr.n} gold${sv ? `, ${sv} silver` : ''}. Prize: ${ITEM[b.prize].name}`
+      + (tableBtns() ? `<div class="ttbtns"><button type="button" class="btn" id="ttPractice">Practice ${n}s</button><button type="button" class="btn alt" id="ttPlay">Play ${n}s</button></div>` : '');
+  if ($('ttPractice')) { $('ttPractice').onclick = () => { audio(); hide('badges'); startPractice(n); }; $('ttPlay').onclick = () => { audio(); playTable(n); }; }
   $('badgeGrid').querySelectorAll('[data-tt]').forEach(t => t.classList.toggle('sel', Number(t.dataset.tt) === n));
+}
+// Practice / Play buttons on the times tables: not for K and 1st grade players (owner agreed: the tables are out of their reach).
+const tableBtns = () => !['K', '1'].includes(curPlayer().grade);
+// "Play 7s": the newest level, with the 7s for one level and the facts not gold yet first (focusGen).
+function playTable(n) {
+  prog.skill = 'x' + n; prog.pickOnce = !!prog.auto; prog.focusOnce = true; save();
+  hide('badges'); confirmStage(Math.min(unlockedCount(), STAGES.length) - 1);
+}
+// "Practice 7s": up to 10 questions in the Daily Dojo screen, from the facts of that table that aren't gold (missed ones
+// first, then silver, then new), topped up with gold ones to at least 6. No streak and no gems: the prize is the reward.
+function startPractice(n) {
+  const k = SKILL['x' + n], list = factList(k) || [], rank = q => { const f = prog.facts[factKey(q)]; return f && (f.weak || f.practice) ? 2 : factStatus(factKey(q)) === 'silver' ? 1 : 0; };
+  let qs = shuffle(list.filter(q => factStatus(factKey(q)) !== 'gold')).sort((a, b) => rank(b) - rank(a)).slice(0, 10);
+  if (qs.length < 6) qs = qs.concat(shuffle(list.filter(q => factStatus(factKey(q)) === 'gold')).slice(0, 6 - qs.length));
+  hide('menu');
+  $('djTitle').innerHTML = `${pixImg('medal', 'pix sm')} Practice ${n}s`;
+  dojo = { qs: shuffle(qs.map(q => ({ ...q }))), i: 0, right: 0, before: new Map(), lock: false, practice: { n } };
+  show('dojo'); dojoNext();
+}
+function finishPractice() {
+  const n = dojo.practice.n, right = dojo.right, tot = dojo.qs.length;
+  dojo = null; hide('dojo'); $('djTitle').innerHTML = `${pixImg('flame', 'pix sm')} Daily Dojo`;
+  save(); checkTrophies();
+  const pr = skillProgressRaw(SKILL['x' + n]), sv = pr.learned - pr.gold, won = prog.badges['t' + n];
+  let body = `<div class="statrow"><span>✔ ${right} / ${tot}</span><span>${n}s: ${pr.gold} / ${pr.n} gold</span></div>`;
+  body += chestHTML() + gearHTML();
+  body += won ? `<div class="promo">Master of ${n}s!</div>` : sv ? `<div class="promo">${sv} ${sv === 1 ? 'fact is' : 'facts are'} silver! Come back tomorrow to make ${sv === 1 ? 'it' : 'them'} gold.</div>`
+    : '<p>Answer right and fast to make a fact silver.</p>';
+  showMsg(won ? 'You did it!' : 'Nice practice!', body, [{ label: 'Play ▶', fn: toMenu, primary: true },
+    ...(won ? [] : [{ label: `Practice ${n}s again`, fn: () => { hide('msg'); startPractice(n); }, alt: true }]),
+    { label: 'Badges', fn: () => { hide('msg'); openBadges(); }, alt: true }]);
 }
 // A picture of a shop item (Badge Book prizes, the New gear! card).
 const prizeCache = {};
@@ -9873,9 +9916,10 @@ function startStage(i) {
   RC = null; document.body.classList.remove('racing');
   playMusic(W.key, st.boss ? 3 : st.k);   // the world's theme, stronger each level; the boss at full strength
   const plan = planStage(i, true); if (plan) plan.stage = i; else prog.trackNow = null;
+  FOCUS = !!prog.focusOnce && !plan; prog.focusOnce = false;
   prog.pickOnce = false; LEVEL_MIX = plan;
   L = st.boss ? buildArena(i, prog.easy) : buildLevel(i, prog.easy);
-  LEVEL_MIX = null;
+  LEVEL_MIX = null; FOCUS = false;
   P = { x: 1.5 * T, y: GR * T - 44, w: 24, h: 44, vx: 0, vy: 0, onGround: false, face: 1, inv: 0, anim: 0, coyote: 0, jbuf: 0, throwT: 0 };
   const hearts = prog.easy ? 5 : 3;
   G = { idx: i, skill: L.skill, hearts, maxHearts: hearts, coins: 0, score: 0, shake: 0, shakeAmp: 0, freeze: 0, slow: 0, flash: 0, flyers: [], pulse: 0, chain: 0, lastGem: -99, mistakes: 0, streak: 0, bestStreak: 0, solved: 0, fastN: 0, lightN: 0, missed: [], practice: new Map(), power: null, powerN: 0, carry: null, saved: null,
@@ -10995,6 +11039,7 @@ function dojoKey(e) {
 }
 function finishDojo() {
   if (dojo.test) { finishTest(); return; }
+  if (dojo.practice) { finishPractice(); return; }
   const d = today(), dl = prog.daily, first = dl.last !== d;
   let gems = 0;
   if (first) {
