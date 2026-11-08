@@ -96,7 +96,10 @@
   .tbtn[data-k="down"] { display: none; right: 138px; bottom: 18px; background: rgba(90,200,255,.4); }   /* swim down, beside ▲ (right thumb: up and down; left thumb steers). Only in the sea */
   body.swim .tbtn[data-k="down"] { display: flex; }
   body.asking .tbtn[data-k="down"] { display: none; }   /* the answer buttons go there; a right door swims Kai through anyway */
-  .tbtn[data-k="move"] .pix { width: 44px; height: 44px; pointer-events: none; }
+  .tbtn[data-k="move"] .pix, .tbtn[data-k="vanish"] .pix { width: 44px; height: 44px; pointer-events: none; }
+  .tbtn[data-k="vanish"] { display: none; left: 116px; bottom: 120px; background: conic-gradient(rgba(170,140,255,.6) var(--f, 0%), rgba(255,255,255,.12) 0); }   /* Mei's Ninja vanish; fills up while it recharges */
+  .tbtn[data-k="vanish"]:not(.ready) .pix { opacity: .45; }
+  body.canvanish .tbtn[data-k="vanish"] { display: flex; }
   /* Tap-to-answer bar for gates and bosses */
   #ansbar { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 7; display: flex; flex-direction: column; align-items: center; gap: 6px;
     -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; }
@@ -130,6 +133,7 @@
   body.portrait .tbtn[data-k="jump"] { right: 12px; width: 120px; height: 120px; }
   body.portrait .tbtn:not([data-k="jump"]) { bottom: calc(max(36px, env(safe-area-inset-bottom)) + 10px); }
   body.portrait .tbtn[data-k="move"] { left: 12px; bottom: calc(max(36px, env(safe-area-inset-bottom)) + 122px); }
+  body.portrait .tbtn[data-k="vanish"] { left: 122px; bottom: calc(max(36px, env(safe-area-inset-bottom)) + 122px); }
   body.portrait .tbtn[data-k="down"] { right: 22px; bottom: calc(max(36px, env(safe-area-inset-bottom)) + 132px); }   /* above ▲ */   /* above the left arrow (after the rule above, which would win otherwise) */
   body.touch .keys { display: none; }
   body.racing .tbtn[data-k="jump"] { display: none; }
@@ -459,7 +463,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 7, 2026 5:30 PM PT · Sunken Ship: anglerfish buddy, pirate chest</div>
+  <div class="build">Updated Nov 8, 2026 10:00 AM PT · Mei gives Ninja vanish (tap to hide 5 s)</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -607,6 +611,7 @@
   <div class="tbtn" data-k="jump">▲</div>
   <div class="tbtn" data-k="move"><span data-pix="fist"></span></div>
   <div class="tbtn" data-k="down">▼</div>
+  <div class="tbtn" data-k="vanish"><span data-pix="vanish"></span></div>
 </div>
 
 <script>
@@ -1356,7 +1361,7 @@ const FRIENDS = [
   { id: 'tomo', name: 'Tomo', w: 1, k: 0, way: 'vent', dir: -1, power: 'brave', pname: 'Brave heart', ptip: "The next hit won't hurt." },
   { id: 'niko', name: 'Niko', w: 2, k: 1, way: 'crate', dir: 1, power: 'magnet', pname: 'Gem magnet', ptip: 'Gems near you fly to you.' },
   { id: 'yuki', name: 'Yuki', w: 3, k: 1, way: 'falls', dir: 1, power: 'spring', pname: 'Spring feet', ptip: 'You jump a little higher.' },
-  { id: 'mei', name: 'Mei', w: 5, k: 1, way: 'ladder', dir: -1, power: 'eyes', pname: 'Night eyes', ptip: 'Secret spots sparkle.' },
+  { id: 'mei', name: 'Mei', w: 5, k: 1, way: 'ladder', dir: -1, power: 'vanish', pname: 'Ninja vanish', ptip: 'Vanish for 5 seconds. Nothing can hurt you!' },
 ];
 const friendOf = def => (def.boss ? null : FRIENDS.find(f => f.w === def.w && f.k === def.k) || null);
 const FLAVORS = ['sakura', 'grove', 'frogs', 'vents', 'bubbles', 'shrooms', 'steam', 'boxes', 'lab', 'snowmen', 'chimes', 'wind', 'lanterns', 'owls', 'bats'];   // addFlavor
@@ -2815,6 +2820,7 @@ function setStationQ(st, q) {
 }
 // First-try answers build a streak that multiplies the points.
 function streakUp(x, y) {
+  G.vanCool = 0;   // a right answer refills Ninja vanish
   G.streak++; G.bestStreak = Math.max(G.bestStreak, G.streak);
   G.score += 500 * Math.min(G.streak, 5);
   if (G.streak >= 10) award('streak10');
@@ -3494,6 +3500,58 @@ function leaveVault() {
 }
 
 function hasFriend(power) { return !!(G && G.friendPow && G.friendPow[power]); }   // a freed friend's power lasts to the end of that level (owner)
+// Mei's Ninja vanish (owner): tap the vanish button (V) and Kai turns into a dotted outline for 5 s; nothing hurts him and
+// the Shadow Walls guards can't spot him. Refills in 15 s, or at once with a right answer (streakUp). Works in Moon Tower
+// and, once she's freed there, in Shadow Walls too (prog.vanishNext, startStage).
+const VANISH_T = 300, VANISH_CHARGE = 900;
+const vanishOn = () => !!(G && hasFriend('vanish') && !L.boss && !L.room && !G.rescue);
+const vanished = () => !!(G && G.vanish > 0);
+function vanishPuff() {
+  for (let i = 0; i < 14; i++) G.parts.push({ k: 'bit', x: P.x + P.w / 2 + (Math.random() - 0.5) * 30, y: P.y + P.h / 2 + (Math.random() - 0.5) * 36, vx: (Math.random() - 0.5) * 2.4, vy: -0.6 - Math.random(), life: 34, col: Math.random() < 0.5 ? '#d9dcea' : '#a9a3c9', s: 6 });
+}
+function doVanish() {
+  if (mode !== 'play' || !vanishOn() || G.vanish > 0 || G.vanCool > 0) return;
+  G.vanish = VANISH_T; G.vanCool = VANISH_CHARGE; vanishPuff();
+  tone(700, 0.22, 'triangle', 0.04, 1500); tone(1400, 0.15, 'sine', 0.03, 2000, 0.08);
+  floatText(P.x + P.w / 2, P.y - 24, 'Vanish!', '#e6e2ff', 22);
+}
+function vanishTick() {
+  if (G.vanish > 0) { if (--G.vanish === 0) { vanishPuff(); tone(1200, 0.18, 'triangle', 0.03, 600); } }
+  else if (G.vanCool > 0) G.vanCool--;
+  const on = vanishOn(); document.body.classList.toggle('canvanish', on);
+  const f = on ? (G.vanish > 0 ? 0 : Math.round(100 - (G.vanCool || 0) / VANISH_CHARGE * 100)) : 0;
+  if (on && f !== vanishBtnF) { vanishBtnF = f; const b = document.querySelector('.tbtn[data-k="vanish"]'); b.style.setProperty('--f', f + '%'); b.classList.toggle('ready', f >= 100); }
+}
+let vanishBtnF = -1;
+// Kai while vanished: drawn into a small canvas first, then only the cells just outside his shape, every other one (dotted),
+// on his own pixel grid. The dots swap every 10 frames and blink in the last second.
+const VAN_S = 128, VAN = {};
+function vanishCtx(p) {
+  if (!VAN.c) { VAN.c = document.createElement('canvas'); VAN.c.width = VAN.c.height = VAN_S; VAN.x = VAN.c.getContext('2d', { willReadFrequently: true }); }
+  VAN.ox = Math.round(p.x + p.w / 2) - VAN_S / 2; VAN.oy = Math.round(p.y + p.h) - VAN_S + 16;
+  VAN.x.setTransform(1, 0, 0, 1, 0, 0); VAN.x.clearRect(0, 0, VAN_S, VAN_S); VAN.x.setTransform(1, 0, 0, 1, -VAN.ox, -VAN.oy);
+  return VAN.x;
+}
+function vanishDots(p) {
+  if (G.vanish < 60 && Math.floor(G.vanish / 6) % 2) return;
+  const S = VAN_S, d = VAN.x.getImageData(0, 0, S, S).data, { ox, oy } = VAN;
+  const ax = ((Math.round(p.x + p.w / 2 - (p.face < 0 ? SPR.cxFlip : SPR.cx)) - ox) % PX + PX) % PX, ay = ((Math.round(p.y + p.h - SPR.bottom) - oy) % PX + PX) % PX;
+  const n = Math.floor((S - ax) / PX), m = Math.floor((S - ay) / PX);
+  const on = (i, j) => i >= 0 && j >= 0 && i < n && j < m && d[((ay + j * PX + 1) * S + ax + i * PX + 1) * 4 + 3] > 100;
+  const edge = new Set();   // the cells just outside his shape
+  for (let j = 0; j < m; j++) for (let i = 0; i < n; i++) if (!on(i, j) && (on(i - 1, j) || on(i + 1, j) || on(i, j - 1) || on(i, j + 1))) edge.add(j * 1000 + i);
+  const sh = Math.floor(tick / 10) % 2, NB = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]];
+  ctx.fillStyle = 'rgba(236,238,255,.95)';
+  while (edge.size) {   // walk round the outline so every other dot is lit, evenly spaced; the dots creep along it
+    let c = edge.values().next().value, k = 0;
+    while (c !== undefined) {
+      edge.delete(c); const i = c % 1000, j = Math.floor(c / 1000);
+      if ((k++ + sh) % 2 === 0) ctx.fillRect(ox + ax + i * PX, oy + ay + j * PX, PX, PX);
+      c = undefined;
+      for (const [di, dj] of NB) { const e = (j + dj) * 1000 + i + di; if (edge.has(e)) { c = e; break; } }
+    }
+  }
+}
 function friendNear() { const fr = L.friend; return !!fr && !fr.done && Math.abs(P.x + P.w / 2 - (fr.c + 0.5) * T) < 10 * T; }
 // The secret ways in, during play.
 function updateFriend() {
@@ -3878,7 +3936,9 @@ function rescuePick(r, i) {
 }
 function freeFriend(r) {
   const f = r.f;
-  prog.friends = prog.friends || {}; prog.friends[f.id] = true; r.fr.done = true; save();
+  prog.friends = prog.friends || {}; prog.friends[f.id] = true; r.fr.done = true;
+  if (f.power === 'vanish') prog.vanishNext = G.idx + 1;   // Ninja vanish works in the next level (Shadow Walls) too (owner)
+  save();
   sfx.win();
   (G.friendPow || (G.friendPow = {}))[f.power] = true; G.braveUsed = false;   // the power, for the rest of this level (a replay gives it again)
   if (r.again) { const { fy, fx } = rescueSpots(); payGems(cam + fx, fy - 90, 5); }   // a replay: bonus gems too
@@ -3889,6 +3949,7 @@ function endRescue(r) {
   G.rescue = null;
   P.x = r.backX - P.w / 2; P.y = GR * T - P.h; P.vx = P.vy = 0; P.inv = 60; P.onGround = false;
   floatText(P.x + P.w / 2, P.y - 30, `${r.again ? `${r.f.name} rescued again! +5 gems. ` : ''}${r.f.pname} for this level! ${r.f.ptip}`, '#7df9ff', 22);
+  if (r.f.power === 'vanish') floatText(P.x + P.w / 2, P.y - 70, isTouch ? 'Tap the vanish button to hide!' : 'Press V to vanish!', '#e6e2ff', 22);
   if (r.f.id === 'hana' && !r.again) floatText(P.x + P.w / 2, P.y - 70, isTouch ? 'High kick! Tap the fist button to kick in Japan.' : 'High kick! Press X to kick in Japan.', '#ffd23f', 22);
   syncAnsBar();
 }
@@ -4109,7 +4170,7 @@ function diveTick(p) {
   if (p.x > d.x || d.t > 300) { G.dive = null; p.vx = 2; }
 }
 function hurt() {
-  if (P.inv > 0 || mode !== 'play' || hasPower('star') || G.swing || G.dive) return;
+  if (P.inv > 0 || mode !== 'play' || hasPower('star') || G.swing || G.dive || vanished()) return;   // (vanished: Mei's Ninja vanish)
   if (prog.safe) {   // "Never get hurt" (Settings, per player): Kai blinks and hops back a little, no heart lost
     P.inv = 70; P.vy = -5; P.vx = -P.face * 3; sfx.bump();
     return;
@@ -5041,7 +5102,7 @@ function updateTwist() {
     if (f.k === 'guard') {
       f.x += f.dir * 0.8; if (f.x < f.min || f.x > f.max) f.dir *= -1;
       const dx = (p.x + p.w / 2 - f.x) * f.dir, dy = Math.abs(p.y + p.h / 2 - (GR * T - 30));
-      const hidden = L.fx.some(b => b.k === 'barrel' && Math.abs(p.x + p.w / 2 - b.x) < 20 && Math.abs(p.vx) < 0.6 && p.onGround);
+      const hidden = vanished() || L.fx.some(b => b.k === 'barrel' && Math.abs(p.x + p.w / 2 - b.x) < 20 && Math.abs(p.vx) < 0.6 && p.onGround);
       G.hidden = hidden;
       if (!f.seen && !hidden && dx > 0 && dx < 4.5 * T && dy < dx * 0.45 + 24) {
         f.seen = true; G.alarm = 120; sfx.wrong(); floatText(f.x, GR * T - 80, '❗ Spotted!', '#ff4d4d', 26);
@@ -5101,6 +5162,7 @@ function twistMove(p, feetBefore, fallSpeed) {
 
 function updatePlayer() {
   const p = P;
+  vanishTick();   // Mei's Ninja vanish (button / V)
   if (G.rescue) { rescueTick(); petTick(); return; }   // in a lost friend's scene
   if (G.swing) { swingTick(); petTick(); return; }   // on a swing crossing
   if (G.dive) { diveTick(p); petTick(); return; }   // the sea: swimming through the door that just opened
@@ -8426,14 +8488,7 @@ function drawFriendSpot() {
       ctx.fillStyle = '#22224a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(help, bx, by + 1);
     }
   }
-  if (G && hasFriend('eyes') && tick % 9 === 0) {   // Night eyes: secret spots sparkle
-    const spots = [];
-    if (fr && !fr.done) spots.push([(fr.c + 0.5) * T, GR * T - T]);
-    for (const d of L.doors || []) if (d.hidden) spots.push([(d.c + 0.7) * T, (d.r || GR) * T - T]);
-    const c0 = Math.max(0, Math.floor(cam / T)), c1 = Math.min(L.w - 1, c0 + Math.ceil(VW / T) + 1);
-    for (let r = 0; r < GR; r++) for (let c = c0; c <= c1; c++) if (L.map[r][c] === 'H' || L.map[r][c] === 'W') spots.push([(c + 0.5) * T, (r + 0.5) * T]);
-    for (const [x, y] of spots) G.parts.push({ k: 'bit', x: x + (Math.random() - 0.5) * T, y: y + (Math.random() - 0.5) * T, vx: 0, vy: -0.4, life: 26, col: Math.random() < 0.5 ? '#fff6c9' : '#ffd23f', s: 3 });
-  }
+
 }
 
 // The five treasures, drawn with plain shapes at (x, y) = where the hand holds it, turned by ang.
@@ -8892,7 +8947,9 @@ function drawPlayer() {
   let k = 'stand';
   if (p.throwT > 0 || (!p.onGround && mode !== 'win')) k = 'jump';
   else if (Math.abs(p.vx) > 0.3) k = Math.floor(p.anim) % 2 ? 'walkA' : 'stand';
-  if (hasPower('fire')) {
+  const van = G && G.vanish > 0, keepCtx = ctx;   // Ninja vanish: draw Kai off screen, then only a dotted outline
+  if (van) ctx = vanishCtx(p);
+  if (hasPower('fire') && !van) {
     const g = ctx.createRadialGradient(p.x + p.w / 2, p.y + p.h / 2, 6, p.x + p.w / 2, p.y + p.h / 2, 40);
     g.addColorStop(0, 'rgba(255,140,0,.5)'); g.addColorStop(1, 'rgba(255,80,0,0)');
     ctx.fillStyle = g; ctx.fillRect(p.x - 30, p.y - 20, p.w + 60, p.h + 40);
@@ -8916,6 +8973,7 @@ function drawPlayer() {
   if (diver) drawBaked(DIVER || (DIVER = bakeDiver(heroPal())), k === 'jump' || k === 'walkA' ? k : 'stand', p.face < 0, p);
   else if (pose && !(p.flipT > 0)) drawKaiPose(p, pose); else drawBaked(SPR, k, p.face < 0, p);
   ctx.restore();
+  if (van) { ctx = keepCtx; vanishDots(p); }
   if (hasPower('shield')) {
     ctx.strokeStyle = `rgba(125,249,255,${0.5 + 0.3 * Math.sin(tick * 0.2)})`; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(p.x + p.w / 2, p.y + p.h / 2, 34, 0, 7); ctx.stroke();
@@ -9600,7 +9658,9 @@ function startStage(i) {
   G = { idx: i, skill: L.skill, hearts, maxHearts: hearts, coins: 0, score: 0, shake: 0, shakeAmp: 0, freeze: 0, slow: 0, flash: 0, flyers: [], pulse: 0, chain: 0, lastGem: -99, mistakes: 0, streak: 0, bestStreak: 0, solved: 0, fastN: 0, lightN: 0, missed: [], practice: new Map(), power: null, powerN: 0, carry: null, saved: null,
     pet: prog.equip.pet ? { x: P.x, y: P.y, mood: null, moodT: 0 } : null, glide: 0, alarm: 0, climb: false, hidden: false, bubble: null, tip: null, mbox: null, dash: 0, cross: null, wrongRun: 0, tipSoon: !!(plan && plan.mode === 'back'), byTrack: plan ? {} : null, checkpoint: 1.5 * T, time: 0, parts: [], shots: [], bumps: new Map(), winT: 0 };
   SPR = bakeNinja(heroPal());   // equipped headband and suit, plus the belt you've earned
-  DIVER = null;   // the diving suit picks up the headband again
+  DIVER = null;
+  if (prog.vanishNext === i) G.friendPow = { vanish: true };   // Mei was freed in the level before: Ninja vanish here too (kept on a restart)
+  else if (prog.vanishNext != null) { delete prog.vanishNext; save(); }   // the diving suit picks up the headband again
   cam = 0; ambient.length = 0;
   hide('menu');
   if (st.boss) {
@@ -9615,6 +9675,10 @@ function intro(title, body, label) { mode = 'intro'; hide('pauseBtn'); showTouch
 function begin() {
   stopReading(); mode = 'play'; hide('msg'); show('pauseBtn'); showTouch(true);
   if (G && L.abyss && !G.deepTip) { G.deepTip = true; floatText(P.x + 120, GR * T - 4.5 * T, 'The deep sea! Kai has his diving suit on.', '#9be7ff', 22); }
+  if (G && !G.vanTip && vanishOn() && !G.rescue) {
+    G.vanTip = true;
+    floatText(cam + VW / 2, P.y - 60, isTouch ? 'Tap the vanish button to hide!' : 'Press V to vanish!', '#e6e2ff', 22);
+  }
   if (G && !G.kickTip && kickOn() && (prog.kickTips || 0) < 3) {
     G.kickTip = true; prog.kickTips = (prog.kickTips || 0) + 1; save();
     floatText(cam + VW / 2, P.y - 60, isTouch ? 'High kick! Tap the fist button to kick.' : 'High kick! Press X to kick.', '#ffd23f', 22);
@@ -9957,6 +10021,7 @@ const PIX = {
   bricks: ['rrrrgrrrrrgr', 'gggggggggggg', 'rrgrrrrrgrrr', 'gggggggggggg', 'rrrrgrrrrrgr', 'gggggggggggg', 'rrgrrrrrgrrr', 'gggggggggggg', 'rrrrgrrrrrgr', 'gggggggggggg', 'rrgrrrrrgrrr'],
   ladder: ['.q......q', '.qqqqqqqq', '.q......q', '.q......q', '.qqqqqqqq', '.q......q', '.q......q', '.qqqqqqqq', '.q......q', '.q......q', '.qqqqqqqq', '.q......q'],
   barrel: ['...oooooo', '..kkkkkkkk', '.oooooooooo', '.oWoooooooo', '.oWoooooooo', '.kkkkkkkkkk', '.oWoooooooo', '.oooooooooo', '.oooooooooo', '..kkkkkkkk', '...oooooo'],
+  vanish: ['...w.w.w....', '..........w.', '.w..........', '..rrrrrrrr.w', 'w.r.w..w.r..', '..........w.', '.w..........', '..........w.', '...w.w.w....'],
   fist: ['', '...ssssssss', '..ssSssSssSs', '..ssSssSssSs', '..ssssssssss', 'sssSSSSsssss', 'sssssssSssss', '.ssssssssss', '..ssssssss', '...rrrrrr', '...rrrrrr'],
   cap: ['', '', '.....dd', '...dddddd', '.dddddddddd', 'dddddddddddd', '.dddddddddyd', '...dddddd.y', '...dddddd.y', '..........y'],
   qmark: ['', '...gggggg', '..gg....gg', '........gg', '.......gg', '......gg', '.....gg', '.....gg', '', '.....gg', '.....gg'],
@@ -10917,6 +10982,7 @@ window.addEventListener('keydown', e => {
     keys[k] = true;
   }
   if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
+  if (mode === 'play' && e.code === 'KeyV' && !e.repeat && G) doVanish();   // Mei's Ninja vanish
   if (mode === 'play' && e.code === 'KeyH' && G && G.tip && G.tip.q) openWork(G.tip.q, !!G.tip.example);
   if (mode === 'play' && /^Digit[1-5]$/.test(e.code)) tapAnswer(Number(e.code[5]) - 1);
   if (mode === 'play' && ['KeyN', 'KeyM', 'Comma', 'Period', 'Slash'].includes(e.code)) {   // the row just above the arrow keys
@@ -10956,6 +11022,7 @@ document.querySelectorAll('.tbtn').forEach(el => {
   const k = el.dataset.k;
   const down = e => {
     e.preventDefault(); audio();
+    if (k === 'vanish') { if (G) doVanish(); el.classList.add('on'); return; }   // right away: a quick tap ends before the next frame
     if (mode === 'race') raceSteer(k === 'left' ? -1 : k === 'right' ? 1 : 0);
     if (k === 'jump' && !keys.jump) keys.jumpPressed = true; if (k === 'down' && !keys.down) keys.downPressed = true; keys[k] = true; el.classList.add('on');
   };

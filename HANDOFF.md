@@ -60,6 +60,9 @@ Everything is in `index.html`. `CLAUDE.md` maps the code and records the owner's
 
 - **Sunken Ship spiced up** (owner picked 1 and 2 of 6 ideas): an **anglerfish buddy** swims ahead of Kai, and every right answer makes its lamp brighter (the dark gets lighter as he does math); a **pirate chest** by the wreck asks "k of 8 coins" (readers / fraction players; younger kids get their own math), right = "Pieces of eight!" and 8 gems. Background jellyfish now drift past (they seemed to follow Kai) and there are two. Other ideas not built yet: current tunnel crossing, glow coral switches, a sea animal to feed, lost friend in a bubble.
 
+## Built Nov 8, 2026
+- **Mei's power is now Ninja vanish** (owner: replaced Night eyes). Tap the new vanish button (above ▶ on phones; V on a computer) and Kai becomes a dotted outline of himself for 5 seconds: nothing hurts him and the Shadow Walls guards can't spot him. The button fills up again in 15 seconds, or at once with any right answer. It works in Moon Tower and in Shadow Walls, the next level (owner chose), even after a restart there. Not in bosses, training rooms or rescues.
+
 ## Open questions for the owner
 0. How do the kids find the Work it out card? Too often, too long (division by counting can be 7 steps)?
 1. Waiting for players' reactions to the guards, the finishing moves, the ski lift and the test-out.
