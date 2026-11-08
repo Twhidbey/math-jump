@@ -365,22 +365,35 @@
   .howto { text-align: left; display: grid; gap: 8px; font-size: 16px; margin: 6px 0 14px; }
   .howto div { display: grid; grid-template-columns: 34px 1fr; gap: 8px; align-items: start; }
   .howto span { font-size: 24px; line-height: 1.1; }
-  .badgegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin: 12px 0 14px; }
+  .badgegrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 12px 0 14px; }
+  @media (min-width: 640px) { .badgegrid { grid-template-columns: repeat(4, 1fr); } }   /* always even: the wide (2-column) cards pair up */
   .badge { background: rgba(255,255,255,.05); border-radius: 12px; padding: 10px 8px; opacity: .55; }
   .badge.got { background: rgba(255,210,63,.14); border: 2px solid #ffd23f; opacity: 1; }
   .badge .bi { font-size: 34px; } .badge .bi .pix { margin: 0 auto; width: 48px; height: 48px; }
   .badge .bn { font-weight: 800; font-size: 15px; margin-top: 2px; }
   .badge .bt { font-size: 12px; opacity: .85; }
-  .badge.tier1.got { border-color: #d08a4a; background: rgba(208,138,74,.14); } .badge.tier2.got { border-color: #c9d2de; background: rgba(201,210,222,.12); }
-  .badge .btier { font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; opacity: .8; }
-  .tier1 .btier { color: #e0a060; } .tier2 .btier { color: #dfe6ee; } .tier3 .btier { color: #ffd23f; }
-  .badge .bbar { height: 8px; border-radius: 4px; background: rgba(255,255,255,.15); margin: 6px 4px 1px; overflow: hidden; }
+  .badge { display: flex; flex-direction: column; }
+  .badge .bfoot { margin-top: auto; padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+  .badge .bfill { flex: 1 1 70px; min-width: 70px; }
+  .badge .bbar { height: 8px; border-radius: 4px; background: rgba(255,255,255,.15); overflow: hidden; }
   .badge .bbar i { display: block; height: 100%; background: #3ae374; border-radius: 4px; }
   .badge .bp { font-size: 11px; font-weight: 800; }
-  .badge .bprize img { width: 90px; height: 54px; image-rendering: pixelated; display: block; margin: 4px auto 0; }
-  .badge .bprize.dark img { filter: brightness(0) opacity(.75); }
-  .badge .bprize small { font-size: 11px; font-weight: 800; color: #ffd23f; }
-  .badge .btitle, .badge .bgems { font-size: 11px; font-weight: 800; color: #7df9ff; margin-top: 2px; } .badge .bgems { color: #3ae374; }
+  .badge .bpz { width: 45px; height: 27px; image-rendering: pixelated; } .badge .bpz.dark, .tt img.dark { filter: brightness(0) opacity(.7); }
+  .badge .btitle, .badge .bgems, .badge .bnext { font-size: 11px; font-weight: 800; color: #7df9ff; } .badge .bgems { color: #3ae374; } .badge .bnext { color: #fff; opacity: .85; }
+  .badge.wide { grid-column: span 2; opacity: 1; } .badge.tables { grid-column: 1 / -1; }
+  .tmeds { display: flex; justify-content: space-around; gap: 4px; }
+  .tmed { flex: 1; opacity: .4; } .tmed.on { opacity: 1; } .tmed .bi .pix { width: 40px; height: 40px; } .tmed .bn { font-size: 13px; }
+  .btier { font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+  .tier1 .btier { color: #e0a060; } .tier2 .btier { color: #dfe6ee; } .tier3 .btier { color: #ffd23f; }
+  @media (min-width: 640px) { .ttgrid { grid-template-columns: repeat(9, 1fr) !important; } }
+  .ttgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 8px 0 4px; }
+  .tt { border: 2px solid rgba(255,255,255,.2); background: rgba(255,255,255,.06); border-radius: 10px; color: #ffd23f; padding: 4px 2px 6px;
+    display: flex; flex-direction: column; align-items: center; gap: 2px; font: 18px "Lilita One", "Trebuchet MS", sans-serif; }
+  .tt.on { border-color: #ffd23f; background: rgba(255,210,63,.14); } .tt.sel { border-color: #7df9ff; }
+  .tt img { width: 45px; height: 27px; image-rendering: pixelated; }
+  .ttbar { display: block; width: 80%; height: 6px; border-radius: 3px; background: rgba(255,255,255,.15); overflow: hidden; } .ttbar i { display: block; height: 100%; background: #3ae374; }
+  .tt.on .ttbar i { background: #ffd23f; }
+  .ttinfo { font-size: 13px; min-height: 18px; }
   .bsec { grid-column: 1 / -1; margin: 10px 0 0; text-align: left; font-size: 18px; } .bsec small { opacity: .7; font-size: 14px; }
   .tnum { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 8px; background: #2a2050; border: 3px solid #ffd23f;
     color: #ffd23f; font: 26px "Lilita One", "Trebuchet MS", sans-serif; box-sizing: border-box; } .tnum i { font-style: normal; font-size: .6em; }
@@ -486,7 +499,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 8, 2026 2:00 PM PT · 51 badges, times-table prizes, titles; faded vanish</div>
+  <div class="build">Updated Nov 8, 2026 4:00 PM PT · Badge Book: tables in one card, medal sets, no secrets</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -3143,8 +3156,8 @@ function openBossPad() {
 
 // ---------------------------------------------------------------- badges
 // Badges (owner, Nov 8 2026: "they really motivate a 3rd grader"). Sections: math (times tables, each with a prize you
-// can't buy), keep going (bronze / silver / gold of the same badge; gold gives a title), adventures (things to do) and
-// secret (??? until earned). b.prog() = [now, need] shows a progress bar and is checked by statBadges(); b.gems pays
+// can't buy), keep going (bronze / silver / gold of the same badge; gold gives a title) and adventures (things to do).
+// (Four secret badges were tried and removed: owner didn't like them.) b.prog() = [now, need] shows a progress bar and is checked by statBadges(); b.gems pays
 // gems, b.prize puts a SHOP item in the owned list (shown at the end card: gearHTML), b.title can be worn (prog.title).
 const stat = (k, d = 1) => { prog.stats[k] = (prog.stats[k] || 0) + d; return prog.stats[k]; };
 const statOf = k => prog.stats[k] || 0;
@@ -3190,14 +3203,9 @@ const BADGES = [
   { id: 'gems500', pix: 'gem', sec: 'adv', name: 'Gem Collector', text: 'Collect 500 gems in total.', prog: () => [statOf('gems'), 500] },
   { id: 'black-belt', pix: 'belt', swap: { b: '#26262e' }, sec: 'adv', name: 'Black Belt', text: 'Reach the Black Belt rank.' },
   { id: 'friends', pix: 'house', sec: 'adv', name: 'Every One Matters', text: 'Find all five lost friends and bring them home.', prog: () => [nKeys(prog.friends), 5] },
-  // secret
-  { id: 'ghost', pix: 'vanish', sec: 'secret', name: 'Ghost Ninja', text: 'Got through Shadow Walls without being spotted.', gems: 20 },
-  { id: 'eight', pix: 'gem', swap: { c: '#ffd23f', b: '#c99a1a', w: '#fff6c8' }, sec: 'secret', name: 'Pieces of Eight', text: 'Opened the pirate chest.', gems: 20 },
-  { id: 'dolphin', pix: 'fish', swap: { b: '#7fb8ff' }, sec: 'secret', name: 'Dolphin Leap', text: 'Leapt out of the sea like a dolphin.', gems: 20 },
-  { id: 'again', pix: 'house', swap: { r: '#ff9cc4' }, sec: 'secret', name: 'Old Friends', text: 'Rescued a friend a second time.', gems: 20 },
 ];
 const BADGE = Object.fromEntries(BADGES.map(b => [b.id, b]));
-const BADGE_SECS = [['math', 'Math'], ['tier', 'Keep going'], ['adv', 'Adventures'], ['secret', 'Secret']];
+const BADGE_SECS = [['math', 'Math'], ['tier', 'Keep going'], ['adv', 'Adventures']];
 const TITLES = () => BADGES.filter(b => b.title && prog.badges[b.id]).map(b => b.title);
 const badgeImg = (b, cls = 'pix big') => (b.num ? `<span class="tnum${cls.includes('sm') ? ' sm' : ''}">${b.num}<i>×</i></span>` : pixImg(b.pix, cls, b.swap || null));
 // Toasts wait their turn, so two badges at once both show.
@@ -3235,20 +3243,53 @@ function openBadges() {
     <div class="friendrow">${FRIENDS.map(f => (prog.friends || {})[f.id] ? `<span><span class="pair">${kidImg(f.id)}${toolImg(f.way)}</span><small><b>${f.name}</b> ${f.pname} · ${RESCUE_TOOL[f.way].short}</small></span>`
       : `<span><i class="kidq">?</i><small>Lost in ${WORLDS[f.w].name}</small></span>`).join('')}</div>`;
   $('badgeCount').querySelectorAll('[data-title]').forEach(el => { el.onclick = () => { audio(); prog.title = el.dataset.title || null; save(); openBadges(); }; });
+  // Times tables clump into one card and each bronze/silver/gold set into one card (owner: the book felt repetitive).
+  const card = b => (b.sec === 'tier' ? (b.tier === 1 ? tierCard(b.grp) : '') : /^t\d+$/.test(b.id) ? (b.id === 't2' ? tablesCard() : '') : badgeCard(b));
   $('badgeGrid').innerHTML = BADGE_SECS.map(([sec, name]) => {
     const list = BADGES.filter(b => b.sec === sec), n = list.filter(b => prog.badges[b.id]).length;
-    return `<h3 class="bsec">${name} <small>${n} / ${list.length}</small></h3>${list.map(badgeCard).join('')}`;
+    return `<h3 class="bsec">${name} <small>${n} / ${list.length}</small></h3>${list.map(card).join('')}`;
   }).join('');
+  $('badgeGrid').querySelectorAll('[data-tt]').forEach(el => { el.onclick = () => { audio(); ttInfo(Number(el.dataset.tt)); }; });
+  ttInfo(null);
   show('badges');
 }
 const TIER_NAME = ['', 'Bronze', 'Silver', 'Gold'];
+const barHTML = (now, need) => `<div class="bbar"><i style="width:${Math.min(100, Math.round(now / need * 100))}%"></i></div><div class="bp">${Math.min(now, need)} / ${need}</div>`;
+// One card per badge, all the same shape: picture, name, text, then one bottom line (bar and a small prize picture).
 function badgeCard(b) {
-  const on = !!prog.badges[b.id], hid = b.sec === 'secret' && !on, pr = !on && b.prog ? b.prog() : null;
-  const bar = pr && pr[1] > 0 ? `<div class="bbar"><i style="width:${Math.min(100, Math.round(pr[0] / pr[1] * 100))}%"></i></div><div class="bp">${Math.min(pr[0], pr[1])} / ${pr[1]}</div>` : '';
-  const prize = b.prize && ITEM[b.prize] ? `<div class="bprize${on ? '' : ' dark'}"><img src="${prizeSrc(b.prize)}" alt=""><small>${on ? ITEM[b.prize].name : 'Prize: ???'}</small></div>` : '';
-  const extra = (b.title ? `<div class="btitle">Title: ${b.title}</div>` : '') + (b.gems ? `<div class="bgems">+${b.gems} ${gemSm()}</div>` : '');
-  return `<div class="badge${on ? ' got' : ''}${b.tier ? ` tier${b.tier}` : ''}"><div class="bi">${hid ? pixImg('qmark', 'pix big') : badgeImg(b)}</div>
-    ${b.tier ? `<div class="btier">${TIER_NAME[b.tier]}</div>` : ''}<div class="bn">${hid ? '???' : b.name}</div><div class="bt">${hid ? 'A secret badge. Keep exploring!' : b.text}</div>${hid ? '' : bar + prize + extra}</div>`;
+  const on = !!prog.badges[b.id], pr = !on && b.prog ? b.prog() : null;
+  const prize = b.prize && ITEM[b.prize] ? `<img class="bpz${on ? '' : ' dark'}" src="${prizeSrc(b.prize)}" alt="" title="${on ? ITEM[b.prize].name : 'Prize'}">` : '';
+  const extra = b.title ? `<span class="btitle">Title: ${b.title}</span>` : b.gems ? `<span class="bgems">+${b.gems} ${gemSm()}</span>` : '';
+  const foot = (pr && pr[1] > 0 ? `<div class="bfill">${barHTML(pr[0], pr[1])}</div>` : '') + prize + extra;
+  return `<div class="badge${on ? ' got' : ''}"><div class="bi">${badgeImg(b)}</div><div class="bn">${b.name}</div><div class="bt">${b.text}</div>
+    ${foot ? `<div class="bfoot">${foot}</div>` : ''}</div>`;
+}
+// Bronze, silver and gold of one goal in one wide card, with a bar to the next medal.
+function tierCard(grp) {
+  const set = BADGES.filter(b => b.grp === grp), next = set.find(b => !prog.badges[b.id]), any = set.some(b => prog.badges[b.id]);
+  const [now] = set[0].prog();
+  return `<div class="badge wide tiers${any ? ' got' : ''}"><div class="tmeds">${set.map(b => `<div class="tmed tier${b.tier}${prog.badges[b.id] ? ' on' : ''}">
+      <div class="bi">${badgeImg(b)}</div><div class="btier">${TIER_NAME[b.tier]}</div><div class="bn">${b.name}</div><div class="bp">${b.need}</div></div>`).join('')}</div>
+    <div class="bt">${set[2].text.replace(/\d+/, 'more')}</div>
+    <div class="bfoot">${next ? `<div class="bfill">${barHTML(now, next.need)}</div><span class="bnext">Next: ${next.name}${next.gems ? ` +${next.gems} ${gemSm()}` : ''}${next.title ? ' · title!' : ''}</span>` : '<span class="btitle">All three!</span>'}</div></div>`;
+}
+// The nine times tables in one card: a tile each (bar = gold facts, tiny prize picture); tap a tile to read about it.
+function tablesCard() {
+  const tiles = [2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => {
+    const b = BADGE['t' + n], on = !!prog.badges[b.id], [g, all] = tableProg(n);
+    return `<button type="button" class="tt${on ? ' on' : ''}" data-tt="${n}"><b>${n}×</b><img class="${on ? '' : 'dark'}" src="${prizeSrc(b.prize)}" alt="">
+      <i class="ttbar"><i style="width:${on ? 100 : Math.round(g / Math.max(1, all) * 100)}%"></i></i></button>`;
+  }).join('');
+  const got = [2, 3, 4, 5, 6, 7, 8, 9, 10].filter(n => prog.badges['t' + n]).length;
+  return `<div class="badge wide tables${got ? ' got' : ''}"><div class="bn">Times Tables <small>${got} / 9</small></div>
+    <div class="bt">Make every fact in a table gold in the Fact Book to win its prize.</div><div class="ttgrid">${tiles}</div><div class="ttinfo" id="ttInfo"></div></div>`;
+}
+function ttInfo(n) {
+  const el = $('ttInfo'); if (!el) return;
+  if (n === null) { el.textContent = 'Tap a table to see its prize.'; return; }
+  const b = BADGE['t' + n], on = !!prog.badges[b.id], [g, all] = tableProg(n);
+  el.innerHTML = on ? `<b>Master of ${n}s!</b> Prize: ${ITEM[b.prize].name}` : `<b>${n}s:</b> ${g} / ${all} facts gold. Prize: ???`;
+  $('badgeGrid').querySelectorAll('[data-tt]').forEach(t => t.classList.toggle('sel', Number(t.dataset.tt) === n));
 }
 // A picture of a shop item (Badge Book prizes, the New gear! card).
 const prizeCache = {};
@@ -4077,7 +4118,7 @@ function freeFriend(r) {
   save();
   sfx.win();
   (G.friendPow || (G.friendPow = {}))[f.power] = true; G.braveUsed = false;   // the power, for the rest of this level (a replay gives it again)
-  if (r.again) { const { fy, fx } = rescueSpots(); payGems(cam + fx, fy - 90, 5); award('again'); }   // a replay: bonus gems too
+  if (r.again) { const { fy, fx } = rescueSpots(); payGems(cam + fx, fy - 90, 5); }   // a replay: bonus gems too
   if (f.way === 'falls') CHIME_TUNE.slice(0, 8).forEach((n, i) => tone(n, 0.5, 'triangle', 0.05, null, 0.4 + i * 0.32));   // Amazing Grace
   if (FRIENDS.every(x => prog.friends[x.id])) award('friends');
 }
@@ -4272,7 +4313,7 @@ function swimY(p) {
   if (L.abyss && p.jbuf > 0) p.jbuf = 0;   // deep sea: no surface to leap out of (▲ just swims up)
   if (p.jbuf > 0 && depth < 14) {   // leap out of the water (by the rocky island: a big dolphin leap with a flip)
     const lp = (L.leaps || []).find(l => p.x + p.w > (l.c - 4) * T && p.x < (l.c + 3) * T);
-    if (lp) { p.vy = -11.5; p.flipT = 40; award('dolphin'); if (lp.seal === 'sit') { lp.seal = 'dive'; lp.st = 0; } burst(p.x + p.w / 2, L.water, '#e8f8ff', 14, 4); floatText(p.x + p.w / 2, p.y - 20, 'Splash!', '#9be7ff', 24); }
+    if (lp) { p.vy = -11.5; p.flipT = 40; if (lp.seal === 'sit') { lp.seal = 'dive'; lp.st = 0; } burst(p.x + p.w / 2, L.water, '#e8f8ff', 14, 4); floatText(p.x + p.w / 2, p.y - 20, 'Splash!', '#9be7ff', 24); }
     else p.vy = -9.2;
     p.bounce = true; p.jbuf = 0; sfx.jump(); burst(p.x + p.w / 2, L.water, '#e8f8ff', 6, 2); return;   // always a full leap (a quick tap on a phone too)
   }
@@ -4641,7 +4682,7 @@ function chestQ(cl) {
 function clamDone(cl, right, fast, q) {
   if (right && cl.chest) {   // pieces of eight: eight gems, and gold coins fly out
     cl.state = 'open';
-    payGems(cl.x, cl.y - 30, 8); sfx.win(); award('eight');
+    payGems(cl.x, cl.y - 30, 8); sfx.win();
     floatText(cl.x, cl.y - 6.6 * T, 'Pieces of eight!', '#ffd23f', 26);
     for (let i = 0; i < 16; i++) G.parts.push({ k: 'bit', x: cl.x, y: cl.y - 30, vx: (Math.random() - 0.5) * 6, vy: -2.5 - Math.random() * 3.5, life: 60, col: i % 2 ? '#ffd23f' : '#c99a1a', s: 7 });
     return;
@@ -5242,7 +5283,7 @@ function updateTwist() {
       const hidden = vanished() || L.fx.some(b => b.k === 'barrel' && Math.abs(p.x + p.w / 2 - b.x) < 20 && Math.abs(p.vx) < 0.6 && p.onGround);
       G.hidden = hidden;
       if (!f.seen && !hidden && dx > 0 && dx < 4.5 * T && dy < dx * 0.45 + 24) {
-        f.seen = true; G.spotted = true; G.alarm = 120; sfx.wrong(); floatText(f.x, GR * T - 80, '❗ Spotted!', '#ff4d4d', 26);
+        f.seen = true; G.alarm = 120; sfx.wrong(); floatText(f.x, GR * T - 80, '❗ Spotted!', '#ff4d4d', 26);
         if (!kEasy()) for (const k of [7, 9]) L.enemies.push(walkerFor('shadow', Math.floor(p.x / T) + k * (p.face || 1), 1.4));   // none for kindergarten in Easy mode
       }
     }
@@ -5923,7 +5964,6 @@ function finishLevel() {
   const earned = Math.round((G.coins + (st.boss ? 20 : 0)) * TIER_GEMS[sk.tier - 1]);
   prog.bank += earned; prog.stats.gems += earned; save();
   if (G.mistakes === 0) stat('perfect');
-  if (!st.boss && L.fx && L.fx.some(f => f.k === 'guard') && !G.spotted) award('ghost');   // Shadow Walls, never spotted
   if (st.boss && !G.hit) award('boss-nohit');
   if (WORLDS.every((_, w) => prog.best[bossOf(w)])) award('boss-all');
   if (prog.stats.gems >= 500) award('gems500');
