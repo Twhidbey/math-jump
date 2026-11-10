@@ -390,6 +390,8 @@
   .btier { font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
   .tier1 .btier { color: #e0a060; } .tier2 .btier { color: #dfe6ee; } .tier3 .btier { color: #ffd23f; }
   @media (min-width: 640px) { .ttgrid { grid-template-columns: repeat(9, 1fr) !important; } }
+  @media (min-width: 640px) { .addsub .ttgrid { grid-template-columns: repeat(6, 1fr) !important; } }
+  .addsub .tt b { font-size: 15px; white-space: nowrap; }
   .ttgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 8px 0 4px; }
   .tt { border: 2px solid rgba(255,255,255,.2); background: rgba(255,255,255,.06); border-radius: 10px; color: #ffd23f; padding: 4px 2px 6px;
     display: flex; flex-direction: column; align-items: center; gap: 2px; font: 18px "Lilita One", "Trebuchet MS", sans-serif; }
@@ -515,7 +517,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 10, 2026 4:00 PM PT · Sea levels: a hungry animal and a counting bubble line</div>
+  <div class="build">Updated Nov 10, 2026 5:00 PM PT · Adding & Taking Away prizes in the Badge Book</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -2303,6 +2305,8 @@ const SHOP = [
   { id: 'band-gold', slot: 'band', name: 'Gold headband', price: 90, col: ['#ffd23f', '#c99a1a'] },
   // Badge prizes (can't be bought): the times tables (t2..t10) and Times-Table Master. anim = headband colours it cycles through.
   { id: 'band-bolt', slot: 'band', name: 'Lightning headband', price: 0, col: ['#ffd23f', '#c99a1a'], badge: 't3', anim: [['#ffd23f', '#c99a1a'], ['#fffbe0', '#ffe066']] },
+  { id: 'band-mint', slot: 'band', name: 'Mint headband', price: 0, col: ['#3fe0b0', '#1f9a78'], badge: 'as-add10' },
+  { id: 'band-royal', slot: 'band', name: 'Royal headband', price: 0, col: ['#9b59d6', '#6b2fa3'], badge: 'as-sub20' },
   { id: 'band-rainbow', slot: 'band', name: 'Rainbow headband', price: 0, col: ['#e63946', '#a91d2b'], badge: 't9', anim: [['#e63946', '#a91d2b'], ['#ff8c1a', '#c45f00'], ['#ffd23f', '#c99a1a'], ['#3fbf6a', '#2a8a4a'], ['#3a86ff', '#1d4fa8'], ['#9b59d6', '#6b2fa3']] },
   { id: 'suit-navy', slot: 'suit', name: 'Navy suit', price: 0, col: ['#2c3a6b', '#5a72c2'] },
   { id: 'suit-black', slot: 'suit', name: 'Midnight suit', price: 70, col: ['#1c1a24', '#3d3a52'] },
@@ -2310,11 +2314,16 @@ const SHOP = [
   { id: 'suit-red', slot: 'suit', name: 'Crimson suit', price: 105, col: ['#8b1e2b', '#c43a4b'] },
   { id: 'suit-gold', slot: 'suit', name: 'Golden suit', price: 0, col: ['#d9a21e', '#ffd86b'], badge: 'golden-all' },
   { id: 'suit-white', slot: 'suit', name: 'Snow suit', price: 135, col: ['#c9d2de', '#f4f7fb'] },
+  { id: 'suit-sunset', slot: 'suit', name: 'Sunset suit', price: 0, col: ['#d8642a', '#ffb36b'], badge: 'as-sub10' },
   { id: 'suit-ocean', slot: 'suit', name: 'Ocean suit', price: 0, col: ['#0f6f7a', '#36c6c0'], badge: 't5' },
   { id: 'suit-lava', slot: 'suit', name: 'Lava suit', price: 0, col: ['#2a1416', '#ff6a1a'], badge: 't7', fx: 'ember' },
   { id: 'suit-diamond', slot: 'suit', name: 'Diamond suit', price: 0, col: ['#6fbfe0', '#e8fbff'], badge: 't-all', fx: 'sparkle' },
   { id: 'trail-spark', slot: 'trail', name: 'Sparkle trail', price: 120 },
   { id: 'trail-fire', slot: 'trail', name: 'Flame trail', price: 180 },
+  { id: 'trail-star', slot: 'trail', name: 'Star trail', price: 0, badge: 'as-add5' },
+  { id: 'trail-heart', slot: 'trail', name: 'Heart trail', price: 0, badge: 'as-make10' },
+  { id: 'trail-leaf', slot: 'trail', name: 'Leaf trail', price: 0, badge: 'as-add20' },
+  { id: 'trail-rainbow', slot: 'trail', name: 'Rainbow trail', price: 0, badge: 'as-all' },
   { id: 'trail-petal', slot: 'trail', name: 'Petal trail', price: 0, badge: 't2' },
   { id: 'trail-bubble', slot: 'trail', name: 'Bubble trail', price: 0, badge: 't4' },
   { id: 'trail-snow', slot: 'trail', name: 'Snowflake trail', price: 0, badge: 't6' },
@@ -2329,6 +2338,10 @@ const TRAIL_LOOK = {
   'trail-spark': { cols: ['#ffffff', '#fff3a0', '#9be7ff'] },
   'trail-fire': { cols: ['#ff6a00', '#ffd23f', '#ff3b1f'] },
   'trail-petal': { cols: ['#ffb3d1', '#ffd6e8', '#ff8fbf'], vy: 0.45, vx: 1.1, life: 50, up: true },
+  'trail-star': { cols: ['#ffd23f', '#fff6c8', '#ffffff'], vy: -0.6, life: 34, s: 5, up: true },
+  'trail-heart': { cols: ['#ff5a8a', '#ff9cbf', '#ffffff'], vy: -0.8, life: 40, s: 5, up: true },
+  'trail-leaf': { cols: ['#3fbf6a', '#7bd36a', '#2a8a4a'], vy: 0.5, vx: 1, life: 50, up: true },
+  'trail-rainbow': { cols: ['#ff4d6d', '#ff8c1a', '#ffd23f', '#3ae374', '#3a86ff', '#9b59d6'], vy: -0.4, life: 36, s: 5, up: true },
   'trail-bubble': { cols: ['#bfefff', '#e8fbff', '#7fd6ff'], vy: -1.5, life: 40, s: 5, up: true },
   'trail-snow': { cols: ['#ffffff', '#e8f4ff', '#cfe6ff'], vy: 0.55, vx: 0.4, life: 54, up: true },
 };
@@ -3202,12 +3215,20 @@ const nKeys = o => Object.keys(o || {}).length;
 const GOLD_N = STAGES.filter(s => !s.boss).length;   // one flaming golden gem per level
 const TABLE_PRIZE = { 2: 'trail-petal', 3: 'band-bolt', 4: 'trail-bubble', 5: 'suit-ocean', 6: 'trail-snow', 7: 'suit-lava', 8: 'pet-octo', 9: 'band-rainbow', 10: 'pet-owl' };
 const tableProg = n => { const pr = skillProgressRaw(SKILL['x' + n]); return [pr.gold, pr.n]; };
+const ADDSUB = [['add5', '+ to 5', 'adding to 5', 'Adding to 5', 'trail-star'], ['add10', '+ to 10', 'adding to 10', 'Adding to 10', 'band-mint'],
+  ['make10', 'Make 10', 'Make 10', 'Make 10', 'trail-heart'], ['sub10', '− to 10', 'taking away to 10', 'Taking Away to 10', 'suit-sunset'],
+  ['add20', '+ to 20', 'adding to 20', 'Adding to 20', 'trail-leaf', 0.9], ['sub20', '− to 20', 'taking away to 20', 'Taking Away to 20', 'band-royal', 0.9]];
+const factGoal = b => { const pr = skillProgressRaw(SKILL[b.sk]); return [pr.gold, b.pct ? Math.ceil(pr.n * b.pct) : pr.n]; };   // a fact-set tile: gold facts / needed
 const TIER_GEMS_B = [30, 75, 150];   // bronze, silver, gold (gold also gives a title)
 const tierBadges = (txt, pix, key, list) => list.map(([id, name, need, title], t) => ({ id, pix, sec: 'tier', grp: list[0][0], tier: t + 1, name, need, title,
   text: txt(need), prog: () => [key(), need], gems: TIER_GEMS_B[t] }));
 const BADGES = [
   // math
-  ...[2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => ({ id: 't' + n, num: n, sec: 'math', name: `Master of ${n}s`, text: `Make every ${n}s fact gold in the Fact Book.`, prog: () => tableProg(n), prize: TABLE_PRIZE[n] })),
+  // Adding & Taking Away (owner: the younger player needs math prizes too): one card, a tile per skill. The two "to 20"
+  // skills have ~60 facts, so they need 90% gold; the others every fact.
+  ...ADDSUB.map(([sk, tile, short, name, prize, pct]) => ({ id: 'as-' + sk, set: 'addsub', sk, tile, short, pct, sec: 'math', name, text: `Make the ${short} facts gold.`, prize })),
+  { id: 'as-all', pix: 'star', sec: 'math', name: 'Math Star', text: 'Win all six adding and taking-away prizes.', prog: () => [ADDSUB.filter(a => prog.badges['as-' + a[0]]).length, 6], prize: 'trail-rainbow', title: 'Math Star' },
+  ...[2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => ({ id: 't' + n, num: n, set: 'tables', sk: 'x' + n, tile: `${n}×`, short: `${n}s`, sec: 'math', name: `Master of ${n}s`, text: `Make every ${n}s fact gold in the Fact Book.`, prize: TABLE_PRIZE[n] })),
   { id: 't-all', pix: 'crown', swap: { y: '#9fe8ff', Y: '#4fb3d9' }, sec: 'math', name: 'Times-Table Master', text: 'Master every table from 2s to 10s.', prog: () => [[2, 3, 4, 5, 6, 7, 8, 9, 10].filter(n => prog.badges['t' + n]).length, 9], prize: 'suit-diamond', title: 'Times-Table Master' },
   { id: 'gold-medal', pix: 'medal', sec: 'math', name: 'Gold Medal', text: 'Win a gold medal in a math skill (no mistakes).' },
   { id: 'brave', pix: 'brain', sec: 'math', name: 'Brave Brain', text: 'Finish a level with ★★★★ math or harder.' },
@@ -3242,10 +3263,16 @@ const BADGES = [
   { id: 'black-belt', pix: 'belt', swap: { b: '#26262e' }, sec: 'adv', name: 'Black Belt', text: 'Reach the Black Belt rank.' },
   { id: 'friends', pix: 'house', sec: 'adv', name: 'Every One Matters', text: 'Find all six lost friends and bring them home.', prog: () => [FRIENDS.filter(f => (prog.friends || {})[f.id]).length, FRIENDS.length] },
 ];
+for (const b of BADGES) if (b.sk && !b.prog) b.prog = () => factGoal(b);   // fact-set tiles count gold facts
 const BADGE = Object.fromEntries(BADGES.map(b => [b.id, b]));
+// The two fact cards in the Badge Book: a tile per skill (tap for progress, the prize, Practice and Play).
+const FACT_SETS = {
+  addsub: { title: 'Adding & Taking Away', tip: 'Get the facts gold (right and fast on two different days) to win each prize.', btns: () => true },
+  tables: { title: 'Times Tables', tip: 'Get every fact in a table gold (right and fast on two different days) to win its prize.', btns: () => tableBtns() },
+};
 const BADGE_SECS = [['math', 'Math'], ['tier', 'Keep going'], ['adv', 'Adventures']];
 const TITLES = () => BADGES.filter(b => b.title && prog.badges[b.id]).map(b => b.title);
-const badgeImg = (b, cls = 'pix big') => (b.num ? `<span class="tnum${cls.includes('sm') ? ' sm' : ''}">${b.num}<i>×</i></span>` : pixImg(b.pix, cls, b.swap || null));
+const badgeImg = (b, cls = 'pix big') => (b.set === 'addsub' ? `<span class="tnum${cls.includes('sm') ? ' sm' : ''}">${b.tile.replace(' to ', '')}</span>` : b.num ? `<span class="tnum${cls.includes('sm') ? ' sm' : ''}">${b.num}<i>×</i></span>` : pixImg(b.pix, cls, b.swap || null));
 // Toasts wait their turn, so two badges at once both show.
 let toastTimer = null; const toastQ = [];
 function toastMsg(html, ms = 3200) {
@@ -3285,13 +3312,13 @@ function openBadges() {
       : `<span><i class="kidq">?</i><small>Lost in ${WORLDS[f.w].name}</small></span>`).join('')}</div>`;
   $('badgeCount').querySelectorAll('[data-title]').forEach(el => { el.onclick = () => { audio(); prog.title = el.dataset.title || null; save(); openBadges(); }; });
   // Times tables clump into one card and each bronze/silver/gold set into one card (owner: the book felt repetitive).
-  const card = b => (b.sec === 'tier' ? (b.tier === 1 ? tierCard(b.grp) : '') : /^t\d+$/.test(b.id) ? (b.id === 't2' ? tablesCard() : '') : badgeCard(b));
+  const card = b => (b.sec === 'tier' ? (b.tier === 1 ? tierCard(b.grp) : '') : b.set ? (BADGES.find(x => x.set === b.set) === b ? setCard(b.set) : '') : badgeCard(b));
   $('badgeGrid').innerHTML = BADGE_SECS.map(([sec, name]) => {
     const list = BADGES.filter(b => b.sec === sec), n = list.filter(b => prog.badges[b.id]).length;
     return `<h3 class="bsec">${name} <small>${n} / ${list.length}</small></h3>${list.map(card).join('')}`;
   }).join('');
-  $('badgeGrid').querySelectorAll('[data-tt]').forEach(el => { el.onclick = () => { audio(); ttInfo(Number(el.dataset.tt)); }; });
-  ttInfo(null);
+  $('badgeGrid').querySelectorAll('[data-tt]').forEach(el => { el.onclick = () => { audio(); ttInfo(el.dataset.tt); }; });
+  for (const set in FACT_SETS) ttInfo(null, set);
   show('badges');
 }
 const TIER_NAME = ['', 'Bronze', 'Silver', 'Gold'];
@@ -3315,55 +3342,56 @@ function tierCard(grp) {
     <div class="bfoot">${next ? `<div class="bfill">${barHTML(now, next.need)}</div><span class="bnext">Next: ${next.name}${next.gems ? ` +${next.gems} ${gemSm()}` : ''}${next.title ? ' · title!' : ''}</span>` : '<span class="btitle">All three!</span>'}</div></div>`;
 }
 // The nine times tables in one card: a tile each (bar = gold facts, tiny prize picture); tap a tile to read about it.
-function tablesCard() {
-  const tiles = [2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => {
-    const b = BADGE['t' + n], on = !!prog.badges[b.id], pr = skillProgressRaw(SKILL['x' + n]), w = v => (on ? 100 : Math.round(v / Math.max(1, pr.n) * 100));
-    return `<button type="button" class="tt${on ? ' on' : ''}" data-tt="${n}"><b>${n}×</b><img class="${on ? '' : 'dark'}" src="${prizeSrc(b.prize)}" alt="">
+function setCard(set) {
+  const list = BADGES.filter(b => b.set === set), S = FACT_SETS[set];
+  const tiles = list.map(b => {
+    const on = !!prog.badges[b.id], pr = skillProgressRaw(SKILL[b.sk]), need = factGoal(b)[1], w = v => (on ? 100 : Math.round(Math.min(1, v / Math.max(1, need)) * 100));
+    return `<button type="button" class="tt${on ? ' on' : ''}" data-tt="${b.id}"><b>${b.tile}</b><img class="${on ? '' : 'dark'}" src="${prizeSrc(b.prize)}" alt="">
       <i class="ttbar"><i class="sv" style="width:${w(pr.learned)}%"></i><i style="width:${w(pr.gold)}%"></i></i></button>`;
   }).join('');
-  const got = [2, 3, 4, 5, 6, 7, 8, 9, 10].filter(n => prog.badges['t' + n]).length;
-  return `<div class="badge wide tables${got ? ' got' : ''}"><div class="bn">Times Tables <small>${got} / 9</small></div>
-    <div class="bt">Get every fact in a table gold (right and fast on two different days) to win its prize.</div><div class="ttgrid">${tiles}</div><div class="ttinfo" id="ttInfo"></div></div>`;
+  const got = list.filter(b => prog.badges[b.id]).length;
+  return `<div class="badge wide tables ${set}${got ? ' got' : ''}"><div class="bn">${S.title} <small>${got} / ${list.length}</small></div>
+    <div class="bt">${S.tip}</div><div class="ttgrid">${tiles}</div><div class="ttinfo" id="ttInfo-${set}"></div></div>`;
 }
-function ttInfo(n) {
-  const el = $('ttInfo'); if (!el) return;
-  if (n === null) { el.textContent = 'Tap a table to see how close you are.'; return; }
-  const b = BADGE['t' + n], on = !!prog.badges[b.id], pr = skillProgressRaw(SKILL['x' + n]), sv = pr.learned - pr.gold;
-  el.innerHTML = on ? `<b>Master of ${n}s!</b> Prize: ${ITEM[b.prize].name}`
-    : `<b>${n}s:</b> ${pr.gold} / ${pr.n} gold${sv ? `, ${sv} silver` : ''}. Prize: ${ITEM[b.prize].name}`
-      + (tableBtns() ? `<div class="ttbtns"><button type="button" class="btn" id="ttPractice">Practice ${n}s</button><button type="button" class="btn alt" id="ttPlay">Play ${n}s</button></div>` : '');
-  if ($('ttPractice')) { $('ttPractice').onclick = () => { audio(); hide('badges'); startPractice(n); }; $('ttPlay').onclick = () => { audio(); playTable(n); }; }
-  $('badgeGrid').querySelectorAll('[data-tt]').forEach(t => t.classList.toggle('sel', Number(t.dataset.tt) === n));
+function ttInfo(id, set = BADGE[id] && BADGE[id].set) {
+  const el = $('ttInfo-' + set); if (!el) return;
+  if (id === null) { el.textContent = 'Tap a tile to see how close you are.'; return; }
+  const b = BADGE[id], on = !!prog.badges[b.id], pr = skillProgressRaw(SKILL[b.sk]), sv = pr.learned - pr.gold, need = factGoal(b)[1];
+  el.innerHTML = on ? `<b>${b.name}!</b> Prize: ${ITEM[b.prize].name}`
+    : `<b>${b.tile}:</b> ${pr.gold} / ${need} gold${sv ? `, ${sv} silver` : ''}. Prize: ${ITEM[b.prize].name}`
+      + (FACT_SETS[set].btns() ? `<div class="ttbtns"><button type="button" class="btn" id="ttPractice-${set}">Practice</button><button type="button" class="btn alt" id="ttPlay-${set}">Play</button></div>` : '');
+  if ($('ttPractice-' + set)) { $('ttPractice-' + set).onclick = () => { audio(); hide('badges'); startPractice(b.id); }; $('ttPlay-' + set).onclick = () => { audio(); playTable(b.id); }; }
+  $('badgeGrid').querySelectorAll(`.${set} [data-tt]`).forEach(t => t.classList.toggle('sel', t.dataset.tt === id));
 }
 // Practice / Play buttons on the times tables: not for K and 1st grade players (owner agreed: the tables are out of their reach).
 const tableBtns = () => !['K', '1'].includes(curPlayer().grade);
-// "Play 7s": the newest level, with the 7s for one level and the facts not gold yet first (focusGen).
-function playTable(n) {
-  prog.skill = 'x' + n; prog.pickOnce = !!prog.auto; prog.focusOnce = true; save();
+// "Play": the newest level, with that skill (the 7s, Make 10...) for one level and the facts not gold yet first (focusGen).
+function playTable(id) {
+  prog.skill = BADGE[id].sk; prog.pickOnce = !!prog.auto; prog.focusOnce = true; save();
   hide('badges'); confirmStage(Math.min(unlockedCount(), STAGES.length) - 1);
 }
 // "Practice 7s": up to 10 questions in the Daily Dojo screen, from the facts of that table that aren't gold (missed ones
 // first, then silver, then new), topped up with gold ones to at least 6. No streak and no gems: the prize is the reward.
-function startPractice(n) {
-  const k = SKILL['x' + n], list = factList(k) || [], rank = q => { const f = prog.facts[factKey(q)]; return f && (f.weak || f.practice) ? 2 : factStatus(factKey(q)) === 'silver' ? 1 : 0; };
+function startPractice(id) {
+  const b = BADGE[id], k = SKILL[b.sk], list = factList(k) || [], rank = q => { const f = prog.facts[factKey(q)]; return f && (f.weak || f.practice) ? 2 : factStatus(factKey(q)) === 'silver' ? 1 : 0; };
   let qs = shuffle(list.filter(q => factStatus(factKey(q)) !== 'gold')).sort((a, b) => rank(b) - rank(a)).slice(0, 10);
   if (qs.length < 6) qs = qs.concat(shuffle(list.filter(q => factStatus(factKey(q)) === 'gold')).slice(0, 6 - qs.length));
   hide('menu');
-  $('djTitle').innerHTML = `${pixImg('medal', 'pix sm')} Practice ${n}s`;
-  dojo = { qs: shuffle(qs.map(q => ({ ...q }))), i: 0, right: 0, before: new Map(), lock: false, practice: { n } };
+  $('djTitle').innerHTML = `${pixImg('medal', 'pix sm')} Practice ${b.short}`;
+  dojo = { qs: shuffle(qs.map(q => ({ ...q }))), i: 0, right: 0, before: new Map(), lock: false, practice: { id } };
   show('dojo'); dojoNext();
 }
 function finishPractice() {
-  const n = dojo.practice.n, right = dojo.right, tot = dojo.qs.length;
+  const id = dojo.practice.id, b = BADGE[id], right = dojo.right, tot = dojo.qs.length;
   dojo = null; hide('dojo'); $('djTitle').innerHTML = `${pixImg('flame', 'pix sm')} Daily Dojo`;
   save(); checkTrophies();
-  const pr = skillProgressRaw(SKILL['x' + n]), sv = pr.learned - pr.gold, won = prog.badges['t' + n];
-  let body = `<div class="statrow"><span>✔ ${right} / ${tot}</span><span>${n}s: ${pr.gold} / ${pr.n} gold</span></div>`;
+  const pr = skillProgressRaw(SKILL[b.sk]), sv = pr.learned - pr.gold, won = prog.badges[id];
+  let body = `<div class="statrow"><span>✔ ${right} / ${tot}</span><span>${b.tile}: ${pr.gold} / ${factGoal(b)[1]} gold</span></div>`;
   body += chestHTML() + gearHTML();
-  body += won ? `<div class="promo">Master of ${n}s!</div>` : sv ? `<div class="promo">${sv} ${sv === 1 ? 'fact is' : 'facts are'} silver! Come back tomorrow to make ${sv === 1 ? 'it' : 'them'} gold.</div>`
+  body += won ? `<div class="promo">${b.name}!</div>` : sv ? `<div class="promo">${sv} ${sv === 1 ? 'fact is' : 'facts are'} silver! Come back tomorrow to make ${sv === 1 ? 'it' : 'them'} gold.</div>`
     : '<p>Answer right and fast to make a fact silver.</p>';
   showMsg(won ? 'You did it!' : 'Nice practice!', body, [{ label: 'Play ▶', fn: toMenu, primary: true },
-    ...(won ? [] : [{ label: `Practice ${n}s again`, fn: () => { hide('msg'); startPractice(n); }, alt: true }]),
+    ...(won ? [] : [{ label: 'Practice again', fn: () => { hide('msg'); startPractice(id); }, alt: true }]),
     { label: 'Badges', fn: () => { hide('msg'); openBadges(); }, alt: true }]);
 }
 // A picture of a shop item (Badge Book prizes, the New gear! card).
@@ -5702,7 +5730,7 @@ function updatePlayer() {
   if (hasPower('fire') && tick % 2 === 0) G.parts.push({ k: 'bit', x: p.x + Math.random() * p.w, y: p.y + p.h - Math.random() * p.h, vx: 0, vy: -1.5, life: 22, col: ['#ff6a00', '#ffd23f', '#ff3b1f'][R(0, 2)], s: 5 });
   const trail = TRAIL_LOOK[prog.equip.trail], van = vanished();
   if (trail && !van && p.onGround && Math.abs(p.vx) > 2 && tick % 3 === 0) {
-    G.parts.push({ k: 'bit', x: p.x + p.w / 2 - p.face * 10, y: p.y + p.h - 6 - (trail.up ? Math.random() * 20 : 0), vx: -p.face * (trail.vx ?? 0.5), vy: trail.vy ?? -1 - Math.random(), life: trail.life || 26, col: trail.cols[R(0, 2)], s: trail.s || 4, up: trail.up });
+    G.parts.push({ k: 'bit', x: p.x + p.w / 2 - p.face * 10, y: p.y + p.h - 6 - (trail.up ? Math.random() * 20 : 0), vx: -p.face * (trail.vx ?? 0.5), vy: trail.vy ?? -1 - Math.random(), life: trail.life || 26, col: trail.cols[R(0, trail.cols.length - 1)], s: trail.s || 4, up: trail.up });
   }
   const suitFx = (ITEM[prog.equip.suit] || {}).fx;   // badge suits: the Diamond suit sparkles, the Lava suit sends up embers
   if (suitFx && !van && tick % (suitFx === 'sparkle' ? 7 : 6) === 0) {
@@ -10483,7 +10511,7 @@ function drawItemPreview(cv, it) {
   } else if (it.slot === 'pet') c.drawImage(PET_SPR[it.id].a[0], (cv.width - 42) / 2, cv.height - 40);
   else {
     const cols = (TRAIL_LOOK[it.id] || TRAIL_LOOK['trail-spark']).cols;
-    for (let i = 0; i < 18; i++) { c.fillStyle = cols[i % 3]; c.fillRect(8 + i * 4, cv.height - 10 - Math.abs(Math.sin(i * 1.3)) * 30, 5, 5); }
+    for (let i = 0; i < 18; i++) { c.fillStyle = cols[i % cols.length]; c.fillRect(8 + i * 4, cv.height - 10 - Math.abs(Math.sin(i * 1.3)) * 30, 5, 5); }
   }
 }
 function openShop() { hide('menu'); hide('buyBox'); renderShop(); show('shop'); }
