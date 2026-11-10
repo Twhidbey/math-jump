@@ -86,6 +86,12 @@ Everything is in `index.html`. `CLAUDE.md` maps the code and records the owner's
 - **Polish your gear** (owner picked 1 + 2): opening a gear room again on a later day closes its walls again with the kid's tricky facts; the chest makes the item shinier (plain → silver trim → gold trim with sparkles). Same day = open room, "Come back tomorrow". The Gear Pack shows each item's shine.
 - **Idea for later (owner, not built): replace the anglerfish buddy with a headlight on Kai's diving helmet** (kids didn't like the anglerfish). Keep the rule that right answers make the light brighter.
 
+## Built Nov 11, 2026 (later)
+- **Bridge falls put carried stones back**; a head bump ends a Jetpack flight (no more beep-beep bonking).
+- **Fact Book opens on a summary**: grade, working on / next, a row per kind of math (gold / silver / practice bar, skill chips to tap into), "Coming later", and "Needs practice" with a Practice these button.
+- **Boss entrances** (replaces the boss card): letterbox bars, the boss drops in with a THUD (golem, bot, snowman), rises from the deep (octopus), leaps in (Shogun) or appears in smoke (Kage); name slams in with a gong, taunt, then FIGHT! Jump / tap skips.
+- **Victory moves**: at the end of every level (after catching the scroll) and after each boss, Kai does one of his learned dojo moves (or Hana's high kick) with its name, else a victory jump. The deep-sea diver cheers "Hooray!".
+
 ## Open questions for the owner
 0. How do the kids find the Work it out card? Too often, too long (division by counting can be 7 steps)?
 1. Waiting for players' reactions to the guards, the finishing moves, the ski lift and the test-out.

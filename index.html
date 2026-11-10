@@ -547,7 +547,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 11, 2026 5:00 PM PT · Polish your gear: open its room on another day, silver then gold</div>
+  <div class="build">Updated Nov 11, 2026 6:00 PM PT · Boss entrances (name slam, FIGHT!) and a victory move at the end of each level</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -717,6 +717,7 @@
 const cv = document.getElementById('game');
 cv.addEventListener('pointerdown', e => {   // click / tap the big answer tiles in the dojo, or the blocks of a pattern wall
   if (!L || mode !== 'play') return;
+  if (G && G.bossIn) { keys.jumpPressed = true; return; }   // a tap skips the boss's entrance
   const rm = L.room, tr = G && G.rescue ? G.rescue.tiles : rm && rm.tiles;
   const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) * VW / r.width, y = (e.clientY - r.top) * VH / r.height;
   const tb = G && G.tip && G.tip.box;
@@ -6505,21 +6506,123 @@ function updateGates() {
   }
 }
 
+// ---------------------------------------------------------------- boss entrances (owner approved: a short cinematic + name slam)
+// Letterbox bars slide in, the boss arrives its own way (drops in with a THUD, rises from the deep, leaps in, appears
+// in smoke), its name slams onto the screen with a gong, its taunt, then FIGHT! Kai waits in guard. Jump / a tap skips.
+// Replaces the boss card (its taunt and "Dodge! Then grab the right answer." are in the scene).
+const BOSS_IN = 240, BOSS_LAND = 70, BOSS_SLAM = 92, BOSS_FIGHT = 196;
+const BOSS_ENTRY = { kage: 'smoke', golem: 'drop', bot: 'drop', yeti: 'drop', octo: 'rise', shogun: 'leap' };
+function startBossIn() {
+  const b = L.boss;
+  G.bossIn = { t: 0, how: BOSS_ENTRY[b.kind] || 'drop', hx: b.x, hy: b.y };
+  keys.left = keys.right = keys.jump = keys.down = false; keys.jumpPressed = false;
+  hide('pauseBtn'); showTouch(false); bossInPlace(G.bossIn);
+}
+function bossInPlace(bi) {   // where the boss is at this frame of its entrance
+  const b = L.boss, e = Math.min(1, bi.t / BOSS_LAND);
+  b.x = bi.hx; b.y = bi.hy; delete b.alpha; b.face = -1;
+  if (bi.how === 'drop') b.y = bi.hy - (1 - e * e) * (bi.hy + b.h + 40);
+  else if (bi.how === 'rise') b.y = bi.hy + (1 - e) * (1 - e) * (VH - bi.hy + 30);
+  else if (bi.how === 'leap') { b.x = bi.hx + (1 - e) * 7 * T; b.y = bi.hy - Math.sin(e * Math.PI) * 4 * T; }
+  else if (bi.how === 'smoke') b.alpha = clamp((bi.t - (BOSS_LAND - 14)) / 14, 0, 1);
+}
+function bossInTick() {
+  const bi = G.bossIn, b = L.boss;
+  bi.t++;
+  if (keys.jumpPressed && bi.t > 15 && bi.t < BOSS_FIGHT) bi.t = BOSS_FIGHT;   // skip to FIGHT!
+  keys.jumpPressed = false; keys.jump = false;
+  bossInPlace(bi);
+  P.vx = 0; P.face = 1; P.vy = Math.min(P.vy + 0.55, 12); moveY(P);
+  const cx = b.x + b.w / 2, feet = b.y + b.h;
+  if (bi.how === 'smoke' && bi.t === BOSS_LAND - 16) { for (let i = 0; i < 3; i++) burst(cx, feet - b.h / 2, ['#3a3448', '#6a6480', '#9a94b0'][i], 12, 4); tone(180, 0.4, 'sawtooth', 0.03, 60); }
+  if (bi.t === BOSS_LAND) {
+    if (bi.how === 'rise') { burst(cx, feet - b.h / 2, '#bfefff', 16, 4); tone(300, 0.5, 'sine', 0.05, 120); }
+    else if (bi.how !== 'smoke') { shake(bi.how === 'drop' ? 20 : 12, bi.how === 'drop' ? 8 : 5); tone(70, 0.5, 'square', 0.07, 40); burst(cx - b.w / 2, feet - 4, '#b8a890', 10, 4); burst(cx + b.w / 2, feet - 4, '#b8a890', 10, 4); }
+  }
+  if (bi.t === BOSS_SLAM) { shake(12, 5); G.flash = 0.3; tone(98, 1.4, 'sine', 0.09); tone(196, 1.1, 'sine', 0.04); tone(147, 0.25, 'square', 0.04); }   // the gong
+  if (bi.t === BOSS_FIGHT) { shake(8, 3); [392, 523, 659].forEach((f, i) => tone(f, 0.14, 'square', 0.045, null, i * 0.06)); }
+  if (bi.t >= BOSS_IN) { G.bossIn = null; delete b.alpha; b.x = bi.hx; b.y = bi.hy; show('pauseBtn'); showTouch(true); }
+}
+function drawBossIn() {
+  const bi = G.bossIn, t = bi.t, b = L.boss, narrow = VW < 700;
+  const bar = VH * 0.11 * Math.min(1, t / 18, (BOSS_IN - t) / 18);
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, VW, bar); ctx.fillRect(0, VH - bar, VW, bar);
+  const ny = VH * 0.38;   // under the HUD banner
+  if (t >= BOSS_SLAM - 8 && t < BOSS_FIGHT) {
+    const e = Math.min(1, (t - (BOSS_SLAM - 8)) / 8), sc = 1 + (1 - e) * 2.2;
+    ctx.fillStyle = `rgba(0,0,0,${0.45 * e})`; ctx.fillRect(0, ny - 44, VW, 88 + (t > BOSS_SLAM + 14 ? 34 : 0));
+    ctx.save(); ctx.globalAlpha = e; ctx.translate(VW / 2, ny - 8); ctx.scale(sc, sc);
+    hudText(b.name.toUpperCase(), 0, 0, narrow ? 30 : 50, '#ffd23f', 'center'); ctx.restore();
+    if (t > BOSS_SLAM + 14) {
+      ctx.globalAlpha = Math.min(1, (t - BOSS_SLAM - 14) / 12);
+      hudText(`“${b.taunt}”`, VW / 2, ny + 40, narrow ? 15 : 21, '#ffb3b3', 'center');
+      ctx.globalAlpha = 1;
+    }
+  }
+  if (t >= BOSS_FIGHT) {
+    const e = Math.min(1, (t - BOSS_FIGHT) / 8), sc = 1 + (1 - e) * 1.6;
+    ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(e, (BOSS_IN - t) / 12)); ctx.translate(VW / 2, ny); ctx.scale(sc, sc);
+    hudText('FIGHT!', 0, 0, narrow ? 64 : 84, '#ff4d6d', 'center'); ctx.restore();
+    ctx.globalAlpha = Math.max(0, Math.min(1, (BOSS_IN - t) / 12));
+    hudText('Dodge! Then grab the right answer.', VW / 2, ny + 58, narrow ? 17 : 22, '#fff', 'center');
+    ctx.globalAlpha = 1;
+  } else if (t > 30) hudText(isTouch ? 'Tap to skip' : 'Jump to skip', VW - 14, VH - bar / 2, 14, 'rgba(255,255,255,.6)', 'right');
+}
+
+// ---------------------------------------------------------------- victory moves (owner approved)
+// At the end of a level Kai catches the scroll, then shows off a move: one of the dojo moves he has learned (or Hana's
+// high kick), else a victory jump with a fist in the air. After a boss too. The deep-sea diver just cheers.
+const VIC_SEGS = [16, 14, 6], VIC_STRIKE = 36, VIC_LEN = 70;
+const VICTORY_JUMP = { name: 'Victory!', steps: [{ pose: { r: 10, arm: [60, 10], arm2: [60, 8] } }, { pose: { r: 14, arm: [70, 10], arm2: [65, 8] } }, { pose: { y: 26, arm: [-92, 24], arm2: [60, 8] } }] };
+function startVictory() {
+  const diver = L.world && L.world.key === 'sea' && !L.boss && (L.abyss || G.suit);
+  const ls = MOVES.filter(m => prog.moves[m.name] && m.name !== 'Bow');
+  if (prog.friends && prog.friends.hana) ls.push(HIGH_KICK_MOVE);
+  G.victory = { t: 0, mv: diver ? null : ls.length ? ls[R(0, ls.length - 1)] : VICTORY_JUMP };
+}
+function victoryPose(v) {
+  const fr = [TRAIN_READY, ...v.mv.steps.map(s => s.pose)];
+  let t0 = 0;
+  for (let i = 0; i < 3; i++) {
+    if (v.t < t0 + VIC_SEGS[i]) {
+      const e = (v.t - t0) / VIC_SEGS[i], ps = mixPose(fr[i], fr[i + 1], i === 2 ? e : e * e * (3 - 2 * e));
+      if (v.mv.spin && i === 2) ps.r += 360 * e;
+      return ps;
+    }
+    t0 += VIC_SEGS[i];
+  }
+  return v.t < VIC_LEN - 8 ? fr[3] : mixPose(fr[3], {}, (v.t - (VIC_LEN - 8)) / 8);
+}
+function victoryTick() {
+  const v = G.victory; if (!v) return;
+  if (++v.t === VIC_STRIKE) {
+    const p = P, cx = p.x + p.w / 2;
+    if (v.mv) {
+      const at = limbEnd(p, v.mv.steps[2].pose);
+      burst(at.x, at.y, '#ffffff', 10, 4); burst(at.x, at.y, '#ffd23f', 8, 3); shake(6, 3); sfx.throw(); tone(500, 0.12, 'square', 0.045, 150, 0.03);
+      floatText(cx, p.y - 64, v.mv === VICTORY_JUMP ? 'Victory!' : `${v.mv.name}!`, '#ffd23f', 28);
+    } else { burst(cx, p.y, '#bfefff', 14, 3); floatText(cx, p.y - 64, 'Hooray!', '#ffd23f', 28); }
+  }
+  if (v.t >= VIC_LEN) G.victory = null;
+}
+
 function updateWin() {
-  const p = P; G.winT++; petTick();
+  const p = P; G.winT++; petTick(); victoryTick();
   if (L.boss) {
     p.vx *= 0.8; p.vy = Math.min(p.vy + 0.55, 12); moveX(p); moveY(p);
-    if (G.winT === 120) finishLevel();
+    if (G.winT === 30) startVictory();
+    if (G.winT === 30 + VIC_LEN + 30) finishLevel();
     return;
   }
   const fall = L.abyss ? 3 : 12;   // deep sea: Kai sinks gently down to the sea floor
-  if (G.winT < 50) {
+  if (G.winT === 40) startVictory();   // he caught the scroll: a victory move, then he walks home
+  if (G.winT < 40 + VIC_LEN) {
     p.vx *= 0.8; p.vy = Math.min(p.vy + 0.55, fall); moveX(p); moveY(p);   // stop and catch the scroll
   } else {
     p.face = 1; p.vx = 2.6; p.vy = Math.min(p.vy + 0.55, fall);
     moveX(p); moveY(p); p.anim += 0.16;
   }
-  if (G.winT === 210) finishLevel();
+  if (G.winT === 40 + VIC_LEN + 160) finishLevel();
 }
 
 function updateAmbient() {
@@ -6650,10 +6753,13 @@ function update() {
   if (!G) { cam = (tick * 1.2) % (L.w * T - VW); return; }
   G.time++;
   { const cs = currentStation(); if (cs && cs.answers && cs.shownAt == null) cs.shownAt = G.time; }
-  if (G.hand && mode === 'play') updateHand();
-  if (mode === 'play') { updatePlayer(); updateEnemies(); }
-  else if (mode === 'win') { updateWin(); updateEnemies(); }
-  if (mode === 'play' || mode === 'win') { updateBoss(); if (L.boss) { updateArena(); updateOrbs(); updateShotsAndProjectiles(); } }
+  if (G.bossIn) bossInTick();   // the boss's entrance: nothing else moves
+  else {
+    if (G.hand && mode === 'play') updateHand();
+    if (mode === 'play') { updatePlayer(); updateEnemies(); }
+    else if (mode === 'win') { updateWin(); updateEnemies(); }
+    if (mode === 'play' || mode === 'win') { updateBoss(); if (L.boss) { updateArena(); updateOrbs(); updateShotsAndProjectiles(); } }
+  }
   updateGates();
   for (const [k, v] of G.bumps) { if (v <= 1) G.bumps.delete(k); else G.bumps.set(k, v - 1); }
   for (const p of G.parts) {
@@ -9958,6 +10064,8 @@ function mixPose(a, b, e) {
 // The pose Kai shows right now, or null for the normal running sprite.
 function kaiPose() {
   if (!G) return null;
+  if (G.victory && G.victory.mv) return victoryPose(G.victory);
+  if (G.bossIn) return TRAIN_READY;   // in guard while the boss makes its entrance
   if (G.moveT > 0) {
     const fin = G.moveOf.steps[2].pose, e = Math.min(1, (28 - G.moveT) / 12);
     if (e >= 1) return fin;
@@ -10426,6 +10534,7 @@ function drawHUD() {
     hudText('Score ' + G.score, VW - 70, 52, 20, '#ffd23f', 'right');
   }
 
+  if (G.bossIn) { drawBossIn(); return; }   // the boss's entrance: no banner or hints yet
   const cur = currentStation(), by = narrow ? 92 : 10;   // banner sits below the hearts on narrow screens
   const br = activeBridge();
   let txt;
@@ -10632,10 +10741,8 @@ function startStage(i) {
   else if (prog.vanishNext != null) { delete prog.vanishNext; save(); }   // the diving suit picks up the headband again
   cam = 0; ambient.length = 0;
   hide('menu');
-  if (st.boss) {
-    intro(`BOSS: ${W.boss.name}`, `<p class="taunt">“${W.boss.taunt}”</p>
-      <p><b>Dodge!</b> Then grab the right answer.</p>`, 'Fight!');
-  } else if (!prog.seenWorld[st.w]) {
+  if (st.boss) { begin(); startBossIn(); }   // the boss makes its entrance (it used to be a card)
+  else if (!prog.seenWorld[st.w]) {
     prog.seenWorld[st.w] = true; save();
     intro(`World ${st.w + 1}: ${W.name}`, `${sceneHTML(W.key)}<p>${W.intro}</p>`, "Let's go!");
   } else begin();
