@@ -339,7 +339,7 @@
     border-radius: 999px; padding: 8px 18px; cursor: pointer; }
   .mathchip .tier, .mathline .tier { color: #d35400; letter-spacing: 1px; }
   .mathline .tier { color: #ffd23f; }
-  .iconrow { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; width: min(720px, 100%); margin: 6px 0 4px; }
+  .iconrow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; width: min(720px, 100%); margin: 6px 0 4px; }
   .ibtn { font: inherit; font-weight: 800; font-size: 13px; color: #fff; background: rgba(255,255,255,.1); border: none; border-radius: 14px;
     padding: 8px 2px; cursor: pointer; display: grid; justify-items: center; gap: 2px; }
   .ibtn span { font-size: 26px; line-height: 1; }
@@ -386,7 +386,7 @@
   .gearslot img { width: 72px; height: 72px; image-rendering: pixelated; display: block; margin: 0 auto 4px; }
   .gearslot.lost img { filter: brightness(0) opacity(.55); } .gearslot.lost { cursor: default; opacity: .8; }
   .gearslot.on { border-color: #7df9ff; background: rgba(125,249,255,.15); }
-  .gearslot small { display: block; font: 12px "Nunito", sans-serif; opacity: .85; }
+  .gearslot small { display: block; font: 12px "Nunito", sans-serif; opacity: .85; } .gearslot .gpow { color: #ffb627; opacity: 1; font-weight: 800; }
   .badge .bt { font-size: 12px; opacity: .85; }
   .badge { display: flex; flex-direction: column; }
   .badge .bfoot { margin-top: auto; padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
@@ -521,16 +521,14 @@
   <div class="iconrow">
     <button class="ibtn" id="raceBtn" type="button"><span data-pix="race"></span>Race</button>
     <button class="ibtn" id="shopBtn" type="button"><span data-pix="pagoda"></span>Shop <b id="bankMenu">0</b><span data-pixsm="gem"></span></button>
-    <button class="ibtn" id="factBtn" type="button"><span data-pix="book"></span>Facts</button>
     <button class="ibtn" id="badgeBtn" type="button"><span data-pix="medal"></span>Badges <b id="badgeMenu"></b></button>
     <button class="ibtn" id="packBtn" type="button"><span data-pix="chest"></span>Gear <b id="packMenu"></b></button>
     <button class="ibtn" id="settingsBtn" type="button"><span data-pix="gear"></span>Settings</button>
-    <button class="ibtn" id="helpBtn" type="button"><span data-pix="help"></span>How to</button>
   </div>
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 10, 2026 8:00 PM PT · Gear Pack: find lost gear in old chests and wear it</div>
+  <div class="build">Updated Nov 11, 2026 9:00 AM PT · Gear powers: jetpack, lantern, fire cape; tidier menu</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -544,6 +542,7 @@
       <button class="btn alt" id="unlockBtn" type="button">🔓 Unlock all levels</button>
       <button class="btn alt" id="playersBtn" type="button">👥 Players</button>
       <button class="btn alt" id="storyBtn" type="button">📖 Read the story</button>
+      <button class="btn alt" id="helpBtn" type="button">❓ How to play</button>
       <button class="btn alt" id="resetBtn" type="button">↺ Reset progress</button>
     </div>
     <div class="row"><button class="btn" id="settingsClose" type="button">Done</button></div>
@@ -621,7 +620,7 @@
 <div id="pack" class="overlay hidden">
   <div class="card shopcard">
     <h2>Gear Pack</h2>
-    <div class="shophint">Lost gear is hidden in old chests up on high ledges. Tap a piece to wear it.</div>
+    <div class="shophint">Lost gear is hidden in old chests up on high ledges. Tap a piece to wear it. Only one piece with a power at a time.</div>
     <canvas id="packPreview" width="200" height="150"></canvas>
     <div class="packgrid" id="packGrid"></div>
     <div class="row"><button class="btn alt" id="packClose" type="button">Back</button></div>
@@ -633,7 +632,7 @@
     <h2>Badge Book</h2>
     <div class="shophint" id="badgeCount"></div>
     <div class="badgegrid" id="badgeGrid"></div>
-    <div class="row"><button class="btn alt" id="badgesClose" type="button">Back</button></div>
+    <div class="row"><button class="btn alt" id="factBtn" type="button"><span data-pixsm="book"></span> Fact Book</button><button class="btn alt" id="badgesClose" type="button">Back</button></div>
   </div>
 </div>
 
@@ -1485,18 +1484,29 @@ var LEVEL_MIX = null;
 const GEAR = {
   helmet: { name: 'Samurai Helmet', slot: 'head', w: 0, k: 1, gx: 3, gy: -3, pal: { d: '#3a3a4a', D: '#5a5a6e', y: '#ffd23f' },
     rows: ['.ky......yk.', '..ky....yk..', '...kyyyyk...', '..kkDDDDkk..', '.kddDDddddk.', 'kddddddddddk', 'kk........kk'] },
-  cape: { name: 'Fire Cape', slot: 'back', w: 1, k: 2, gx: 0, gy: 8, pal: { r: '#e63946', R: '#a91d2b', o: '#ff8c1a', y: '#ffd23f' },
+  cape: { name: 'Fire Cape', slot: 'back', power: 'Flame Dash', w: 1, k: 2, gx: 0, gy: 8, pal: { r: '#e63946', R: '#a91d2b', o: '#ff8c1a', y: '#ffd23f' },
     rows: ['...krr', '..krRr', '.krrRr', '.krrRr', 'krrRrr', 'krorrr', 'koyoko', '.k.k..'] },
-  jetpack: { name: 'Jetpack', slot: 'back', w: 2, k: 2, gx: 1, gy: 7, pal: { g: '#9aa7b8', G: '#6c7a89', r: '#ff3355', c: '#7df9ff' },
+  jetpack: { name: 'Jetpack', slot: 'back', power: 'Short flight', w: 2, k: 2, gx: 1, gy: 7, pal: { g: '#9aa7b8', G: '#6c7a89', r: '#ff3355', c: '#7df9ff' },
     rows: ['kkkk', 'kggk', 'kgrk', 'kcgk', 'kggk', 'kGGk', 'kkkk'] },
   viking: { name: 'Viking Helmet', slot: 'head', w: 3, k: 0, gx: 2, gy: -3, pal: { w: '#f4ead2', W: '#c9bfa6', g: '#9aa7b8', G: '#6c7a89', y: '#ffd23f' },
     rows: ['kw..........wk', 'kwk........kwk', '.kwk.kkkkk.kwk', '..kkkggggGkk..', '..kgggggggGk..', '..kyyyyyyyyk..'] },
   trident: { name: 'Trident', slot: 'hand', w: 4, k: 0, gx: 12, gy: 0, pal: { y: '#ffd23f', Y: '#c99a1a' },
     rows: ['y.y.y', 'y.y.y', 'yyyyy', '.kYk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '..k..'] },
-  lantern: { name: 'Paper Lantern', slot: 'hand', w: 5, k: 0, gx: 12, gy: 8, pal: { o: '#ffb627', O: '#ff8c1a', r: '#a8323e' },
+  lantern: { name: 'Paper Lantern', slot: 'hand', power: 'Light in the dark', w: 5, k: 0, gx: 12, gy: 8, pal: { o: '#ffb627', O: '#ff8c1a', r: '#a8323e' },
     rows: ['.k.', '.k.', 'krk', 'koO', 'koO', 'krk', '.k.'] },
 };
 const GEAR_SLOTS = ['head', 'back', 'hand'];
+// Three pieces have a power (owner, Nov 2026), only one of them worn at a time; none needs a button: the Jetpack flies
+// while jump is held in the air (a fuel bar, refilled on landing; off over crossings), the Lantern makes a big circle of
+// light in the dark levels, and the Fire Cape turns the Math Dash (3 right in a row) into a Flame Dash (a ball of fire).
+const gearOn = id => (prog.gear || {})[GEAR[id].slot] === id;
+function wearGear(id) {
+  const g = GEAR[id], eq = { ...(prog.gear || {}) };
+  if (eq[g.slot] === id) eq[g.slot] = null;
+  else { if (g.power) for (const sl of GEAR_SLOTS) if (eq[sl] && GEAR[eq[sl]].power) eq[sl] = null; eq[g.slot] = id; }   // one power piece at a time
+  prog.gear = eq;
+}
+const JET_FUEL = 60;   // frames of flight per jump
 const gearAt = (w, k) => Object.keys(GEAR).find(id => GEAR[id].w === w && GEAR[id].k === k);
 // Draws one gear item on a sprite drawn at (ox, oy) with px-sized cells, 16 cells wide (flip = facing left).
 function gearPix(c, id, ox, oy, px, flip) {
@@ -4606,7 +4616,7 @@ function diveTick(p) {
   if (p.x > d.x || d.t > 300) { G.dive = null; p.vx = 2; }
 }
 function hurt() {
-  if (P.inv > 0 || mode !== 'play' || hasPower('star') || G.swing || G.dive || vanished() || (G.dol && G.dol.ph === 'ride')) return;   // (vanished: Mei's Ninja vanish)
+  if (P.inv > 0 || mode !== 'play' || hasPower('star') || G.swing || G.dive || vanished() || (G.dol && G.dol.ph === 'ride') || (G.flame && G.dash > 0)) return;   // (vanished: Mei's Ninja vanish)
   if (prog.safe) {   // "Never get hurt" (Settings, per player): Kai blinks and hops back a little, no heart lost
     P.inv = 70; P.vy = -5; P.vx = -P.face * 3; sfx.bump();
     return;
@@ -4848,7 +4858,8 @@ function drawSteps() {
 }
 // Math dash: every 3 right answers in a row, Kai gets a few seconds of super speed.
 function startDash(x, y) {
-  G.dash = 300; floatText(P.x + P.w / 2, P.y - 50, 'Math dash!', '#7df9ff', 30);
+  G.dash = 300; G.flame = gearOn('cape') && !inWater(P);   // the Fire Cape: a Flame Dash
+  floatText(P.x + P.w / 2, P.y - 50, G.flame ? 'Flame dash!' : 'Math dash!', G.flame ? '#ff8c1a' : '#7df9ff', 30);
   tone(300, 0.4, 'sawtooth', 0.04, 1200); tone(600, 0.3, 'triangle', 0.04, 1600, 0.1);
 }
 
@@ -4942,7 +4953,7 @@ function gearFound(gc) {
   const g = GEAR[gc.id];
   gc.open = 0.01; gc.fly = 0; sfx.win(); confetti(gc.x, gc.y - 40);
   prog.gearOwned = [...new Set([...(prog.gearOwned || []), gc.id])];
-  prog.gear = { ...(prog.gear || {}), [g.slot]: gc.id };   // put it on right away
+  if (!gearOn(gc.id)) wearGear(gc.id);   // put it on right away (one power piece at a time)
   prog.newPack = true; save();
   floatText(gc.x, gc.y - 110, `You found the ${g.name}!`, '#ffd23f', 28);
   floatText(gc.x, gc.y - 80, "It's in your Gear Pack.", '#ffffff', 20);
@@ -4984,11 +4995,11 @@ function openPack() {
   $('packGrid').innerHTML = Object.keys(GEAR).map(id => {
     const g = GEAR[id], got = owned.includes(id), on = eq[g.slot] === id, st = STAGES.find(x => x.w === g.w && x.k === g.k);
     return `<button type="button" class="gearslot${got ? '' : ' lost'}${on ? ' on' : ''}" data-gear="${id}"><img src="${gearImg(id, 6).toDataURL()}" alt="">${got ? g.name : '???'}
-      <small>${got ? (on ? 'Wearing' : 'Tap to wear') : `Lost in ${st ? st.name : WORLDS[g.w].name}`}</small></button>`;
+      <small>${got ? (on ? 'Wearing' : 'Tap to wear') : `Lost in ${st ? st.name : WORLDS[g.w].name}`}</small>${g.power ? `<small class="gpow">Power: ${g.power}</small>` : ''}</button>`;
   }).join('');
   $('packGrid').querySelectorAll('[data-gear]').forEach(el => { el.onclick = () => {
     const id = el.dataset.gear, g = GEAR[id]; if (!owned.includes(id)) return;
-    audio(); prog.gear = { ...(prog.gear || {}), [g.slot]: prog.gear && prog.gear[g.slot] === id ? null : id }; save(); openPack();
+    audio(); wearGear(id); save(); openPack();
   }; });
   show('pack');
 }
@@ -5817,7 +5828,7 @@ function updatePlayer() {
   keys.downPressed = false;
   if (p.onGround) p.coyote = 7; else if (p.coyote > 0) p.coyote--;
   if (p.jbuf > 0 && p.coyote > 0) { p.vy = hasPower('jump') ? -16.5 : hasFriend('spring') ? -14.2 : -13.2; p.onGround = false; p.coyote = 0; p.jbuf = 0; p.squash = -8; sfx.jump(); }
-  if (p.onGround) p.usedDouble = false;
+  if (p.onGround) { p.usedDouble = false; G.jetFuel = JET_FUEL; G.jetFly = false; }   // (the Jetpack refills on landing)
   else if (p.jbuf > 0 && p.coyote === 0 && hasPower('double') && !p.usedDouble) {
     p.vy = -12; p.usedDouble = true; p.jbuf = 0; sfx.jump(); burst(p.x + p.w / 2, p.y + p.h, '#ffffff', 8, 2);
   }
@@ -5828,6 +5839,16 @@ function updatePlayer() {
     if (p.vy >= 0) p.bounce = false;
     if (!keys.jump && p.vy < -4.5 && !G.climb && !p.bounce) p.vy = -4.5;   // short hop when jump is released early
     p.vy = Math.min(p.vy + 0.55, 12);
+    if (G.jetTold > 0) G.jetTold--;
+    if (!keys.jump) G.jetFly = false;
+    if (keys.jump && !p.onGround && (G.jetFly || p.vy > -2) && !G.climb && gearOn('jetpack') && (G.jetFuel ?? JET_FUEL) > 0) {   // the Jetpack: hold jump in the air to fly a little (about a second, ~3 tiles up)
+      if (noFlyHere(p)) { if (!G.jetTold) { G.jetTold = 120; floatText(p.x + p.w / 2, p.y - 30, 'No flying here!', '#ffb627', 20); tone(160, 0.15, 'square', 0.03, 90); } }
+      else {
+        G.jetFly = true; p.vy = Math.max(p.vy - 1.1, -1.9); G.jetFuel = (G.jetFuel ?? JET_FUEL) - 1; G.jetOn = 4;
+        if (tick % 2 === 0) G.parts.push({ k: 'bit', x: p.x + p.w / 2 - p.face * 8, y: p.y + p.h, vx: (Math.random() - 0.5), vy: 2 + Math.random() * 2, life: 16, col: ['#ffd23f', '#ff8c1a', '#ff3b1f'][R(0, 2)], s: 4 });
+        if (tick % 6 === 0) tone(90, 0.06, 'sawtooth', 0.02, 70);
+      }
+    }
     if (keys.jump && p.vy > 2.2 && !G.climb && hasFriend('glide')) {   // Hana's fan: hold jump to float down
       p.vy = 2.2; if (tick % 5 === 0) G.parts.push({ k: 'bit', x: p.x + p.w / 2 + (Math.random() - 0.5) * 20, y: p.y - 4, vx: 0, vy: 0.5, life: 20, col: '#ff8fbf', s: 4 });
     }
@@ -5838,6 +5859,12 @@ function updatePlayer() {
     if (p.vy > -8) { sfx.jump(); burst(v.x, p.y + p.h, '#e8f8ff', 6, 2); }
     p.vy = -12.5;
   }
+  if (G.flame && G.dash > 0) {   // Flame Dash: a ball of fire; enemies go poof, bricks in front burn
+    if (tick % 2 === 0) G.parts.push({ k: 'bit', x: p.x + Math.random() * p.w, y: p.y + Math.random() * p.h, vx: -p.face * 1.5, vy: -1 - Math.random(), life: 20, col: ['#ff3b1f', '#ff8c1a', '#ffd23f'][R(0, 2)], s: 5, up: true });
+    for (const e of L.enemies) if (!e.dead && overlap(p, e)) { e.dead = 'flip'; e.vy = -7; e.vx = p.face * 3; G.score += 200; sfx.stomp(); burst(e.x + e.w / 2, e.y + e.h / 2, '#ff6a00', 12, 4); floatText(e.x + 15, e.y, 'POOF!', '#ffd23f', 22); }
+    const fc = Math.floor((p.x + p.w / 2 + p.face * (p.w / 2 + 6)) / T);
+    for (let r = Math.floor(p.y / T); r <= Math.floor((p.y + p.h - 1) / T); r++) if (L.map[r] && L.map[r][fc] === 'B') { L.map[r][fc] = '.'; G.score += 50; sfx.brick(); burst(fc * T + T / 2, r * T + T / 2, '#ff8c1a', 10); }
+  } else if (G.flame && !G.dash) G.flame = false;
   const riding = G.dol && G.dol.ph === 'ride';
   if (riding) { p.vx = G.dol.dir * 8; p.vy = 0; p.face = G.dol.dir; }   // holding the dolphin's fin
   const hitWall = moveX(p);
@@ -7219,7 +7246,7 @@ function drawSeaDark() {
   d.fillStyle = g; d.fillRect(0, top, VW, VH - top);
   d.globalCompositeOperation = 'destination-out';
   const hole = (x, y, r) => { const h = d.createRadialGradient(x - cam, y, r * 0.3, x - cam, y, r); h.addColorStop(0, 'rgba(0,0,0,1)'); h.addColorStop(1, 'rgba(0,0,0,0)'); d.fillStyle = h; d.fillRect(x - cam - r, y - r, r * 2, r * 2); };
-  hole(P.x + P.w / 2, P.y + P.h / 2, 150);
+  hole(P.x + P.w / 2, P.y + P.h / 2, gearOn('lantern') ? 360 : 150);   // the Paper Lantern lights a big circle
   for (const f of L.lfish || []) hole(f.x || 0, f.y || 0, 120);
   if (L.angler && L.angler.on) hole(L.angler.x + L.angler.face * 30, L.angler.y - 26, anglerR() + L.angler.pulse * 2);
   const cs = currentStation(); if (cs && cs.answers) cs.answers.forEach(o => hole(o.c * T + T, o.r * T + T, 70));
@@ -7778,7 +7805,7 @@ function drawDarkness() {
   d.globalCompositeOperation = 'source-over'; d.clearRect(0, 0, VW, VH); d.fillStyle = 'rgba(6,2,10,.93)'; d.fillRect(0, 0, VW, VH);
   d.globalCompositeOperation = 'destination-out';
   const hole = (x, y, r) => { const g = d.createRadialGradient(x - cam, y, r * 0.3, x - cam, y, r); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); d.fillStyle = g; d.fillRect(x - cam - r, y - r, r * 2, r * 2); };
-  hole(P.x + P.w / 2, P.y + P.h / 2, 170 + Math.sin(tick * 0.1) * 4);
+  hole(P.x + P.w / 2, P.y + P.h / 2, (gearOn('lantern') ? 360 : 170) + Math.sin(tick * 0.1) * 4);   // the Paper Lantern lights a big circle
   for (const f of L.fx) if (f.k === 'crystal') hole(f.x, f.y, f.lit ? 190 : 46);
   for (const fd of L.squads || []) if (!fd.done) { fd.foods.forEach(f => hole(f.x, f.y, 44)); hole(fd.ax, GR * T - 40, 70); }   // animals and their food glow in the dark
   if (G.mbox) G.mbox.bubbles.forEach(b => hole(b.x, b.y, 40));
@@ -9705,21 +9732,38 @@ function drawSwings() {
     }
   }
 }
+// No Jetpack flying over the crossings that are crossed with math: stepping stones, number bridges, swings and the ski lift.
+function noFlyHere(p) {
+  const c = (p.x + p.w / 2) / T;
+  return (L.steps || []).some(z => c > z.c0 - 3 && c < z.c0 + z.w + 3) || (L.bridges || []).some(b => c > b.c0 - 3 && c < b.c0 + b.w + 3) || (L.swings || []).some(w => c > w.s - 1 && c < w.e + 1);
+}
 function drawGearOn(p, frame, layer, diver) {
   const eq = prog.gear || {}; if (!eq.head && !eq.back && !eq.hand) return;
   const flip = p.face < 0, set = SPR, ox = Math.round(p.x + p.w / 2 - (flip ? set.cxFlip : set.cx)), oy = Math.round(p.y + p.h - set.bottom) + (frame === 'walkA' ? 0 : 0);
   if (layer === 'back' && eq.back) {
     gearPix(ctx, eq.back, ox, oy, PX, flip);
-    if (eq.back === 'jetpack' && !p.onGround && !inWater(p)) { ctx.fillStyle = tick % 4 < 2 ? '#ffd23f' : '#ff8c1a'; const fx = ox + (flip ? 15 - 2 : 2) * PX; ctx.fillRect(fx - PX / 2, oy + 14 * PX, PX * 2, PX * (2 + (tick % 3))); }   // little flames in the air
+    if (eq.back === 'jetpack' && !p.onGround && !inWater(p)) { const big = G.jetOn > 0 ? 3 : 0; if (G.jetOn > 0) G.jetOn--; ctx.fillStyle = tick % 4 < 2 ? '#ffd23f' : '#ff8c1a'; const fx = ox + (flip ? 15 - 2 : 2) * PX; ctx.fillRect(fx - PX / 2, oy + 14 * PX, PX * 2, PX * (2 + (tick % 3) + big)); }   // flames: little in the air, big while flying
   }
   if (layer === 'front') {
     if (eq.head && !diver) gearPix(ctx, eq.head, ox, oy, PX, flip);   // (the diving helmet covers his head in the deep sea)
-    if (eq.hand) { gearPix(ctx, eq.hand, ox, oy, PX, flip); if (eq.hand === 'lantern') glowAt(ox + (flip ? 15 - 13 : 13) * PX + PX / 2, oy + 12 * PX, 26, 'rgba(255,190,80,.35)'); }
+    if (eq.hand) { gearPix(ctx, eq.hand, ox, oy, PX, flip); if (eq.hand === 'lantern') glowAt(ox + (flip ? 15 - 13 : 13) * PX + PX / 2, oy + 12 * PX, 70, 'rgba(255,200,100,.28)'); }
   }
 }
 function drawPlayer() {
   const p = P;
   if (p.inv > 0 && Math.floor(p.inv / 4) % 2 === 0) return;
+  if (G && G.flame && G.dash > 0 && !(G.vanish > 0)) {   // Flame Dash: Kai is a ball of fire (his eyes peek out)
+    const cx = p.x + p.w / 2, cy = p.y + p.h / 2, fl = Math.sin(tick * 0.6) * 3, end = G.dash < 60 && Math.floor(G.dash / 6) % 2;
+    glowAt(cx, cy, 70, 'rgba(255,140,30,.45)');
+    if (!end) {
+      ctx.fillStyle = '#ff3b1f'; ctx.beginPath(); ctx.arc(cx, cy, 26 + fl, 0, 7); ctx.fill();
+      ctx.fillStyle = '#ff8c1a'; ctx.beginPath(); ctx.arc(cx + p.face * 3, cy, 19 + fl * 0.6, 0, 7); ctx.fill();
+      ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(cx + p.face * 5, cy - 2, 11, 0, 7); ctx.fill();
+      for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 - p.face * 0.9 + (i - 2) * 0.35, r0 = 24 + ((tick * 3 + i * 7) % 14); ctx.fillStyle = i % 2 ? '#ff8c1a' : '#ff3b1f'; ctx.fillRect(Math.round(cx - p.face * 10 + Math.cos(a) * r0), Math.round(cy + Math.sin(a) * r0), 6, 6); }   // flame tips trailing behind
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(cx + p.face * 4 - 4), Math.round(cy - 5), 3, 6); ctx.fillRect(Math.round(cx + p.face * 4 + 3), Math.round(cy - 5), 3, 6);   // eyes
+      return;
+    }
+  }
   if ((mode === 'win' || mode === 'done') && !L.boss && p.x > (L.castleC + 2.2) * T) return;
   let k = 'stand';
   if (p.throwT > 0 || (!p.onGround && mode !== 'win')) k = 'jump';
@@ -11466,7 +11510,7 @@ function renderFacts() {
   }
   $('fbBody').innerHTML = html;
 }
-$('factBtn').onclick = () => { audio(); openFacts(); };
+$('factBtn').onclick = () => { audio(); hide('badges'); openFacts(); };   // (the Fact Book lives in the Badge Book now; owner: less prominent)
 $('fbPrev').onclick = () => { audio(); fbAt = (fbAt + PATH.length - 1) % PATH.length; renderFacts(); };
 $('fbNext').onclick = () => { audio(); fbAt = (fbAt + 1) % PATH.length; renderFacts(); };
 $('fbClose').onclick = () => { audio(); hide('facts'); toMenu(); };
@@ -11769,7 +11813,7 @@ $('raceBack').onclick = () => { hide('raceSetup'); toMenu(); };
 $('raceMathBtn').onclick = () => { hide('raceSetup'); openSkills(showRaceSetup); };
 $('settingsBtn').onclick = () => { audio(); hide('menu'); show('settings'); };
 $('settingsClose').onclick = () => { hide('settings'); buildMenu(); show('menu'); };
-$('helpBtn').onclick = () => { audio(); showHowTo(); };
+$('helpBtn').onclick = () => { audio(); hide('settings'); showHowTo(); };   // (How to play lives in Settings now)
 $('resetBtn').onclick = () => {
   if (confirm(`Reset ${curPlayer().name}'s belts, points and unlocked levels?`)) { prog.best = {}; prog.mastery = {}; prog.seenWorld = {}; setAllOpen(false); }
 };
