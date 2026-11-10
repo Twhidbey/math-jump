@@ -74,6 +74,10 @@ Outside the kindergarten skills there are no "+1", "× 1" or "8 ÷ 8" problems.
 
 Each level also has one extra touch that fits its name: cherry trees to shake, bamboo, frogs, ash vents that puff you up, glow mushrooms, snowmen with hats, ice crystals that play Amazing Grace, wind gusts, lanterns to stand on, owls under a huge moon, bats and torches.
 
+## Gear Pack
+
+Each world hides one piece of lost gear in an old chest up on a high ledge (in the Coral Reef, on the sea floor between two coral rocks). Stand by the chest and answer 5 questions to open its lock; the gear goes straight on Kai: a Samurai Helmet (Bamboo Grove), a Fire Cape (Obsidian Caves), a Jetpack (Laser Lab), a Viking Helmet (Frosty Slopes), a Trident (Coral Reef) and a Paper Lantern (Lantern Roofs). The **Gear** button on the home screen opens the Gear Pack: Kai in his outfit and a slot for each piece (lost ones show as dark shapes with where they're hidden). Tap a piece to wear it or take it off; one on his head, one on his back, one in his hand. It's just for looks for now.
+
 ## Lost friends
 
 Five little students from Sensei's dojo got lost, one in each world. Each is hidden behind a secret way in, and a small "Help!" bubble shows when Kai is close:

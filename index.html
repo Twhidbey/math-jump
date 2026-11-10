@@ -380,6 +380,13 @@
   .badge.got { background: rgba(255,210,63,.14); border: 2px solid #ffd23f; opacity: 1; }
   .badge .bi { font-size: 34px; } .badge .bi .pix { margin: 0 auto; width: 48px; height: 48px; }
   .badge .bn { font-weight: 800; font-size: 15px; margin-top: 2px; }
+  #packPreview { display: block; margin: 8px auto; image-rendering: pixelated; }
+  .packgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 8px 0 14px; }
+  .gearslot { border: 2px solid rgba(255,255,255,.2); background: rgba(255,255,255,.05); border-radius: 12px; padding: 8px 4px; color: #fff; font: 14px "Lilita One", "Trebuchet MS", sans-serif; cursor: pointer; }
+  .gearslot img { width: 72px; height: 72px; image-rendering: pixelated; display: block; margin: 0 auto 4px; }
+  .gearslot.lost img { filter: brightness(0) opacity(.55); } .gearslot.lost { cursor: default; opacity: .8; }
+  .gearslot.on { border-color: #7df9ff; background: rgba(125,249,255,.15); }
+  .gearslot small { display: block; font: 12px "Nunito", sans-serif; opacity: .85; }
   .badge .bt { font-size: 12px; opacity: .85; }
   .badge { display: flex; flex-direction: column; }
   .badge .bfoot { margin-top: auto; padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
@@ -516,13 +523,14 @@
     <button class="ibtn" id="shopBtn" type="button"><span data-pix="pagoda"></span>Shop <b id="bankMenu">0</b><span data-pixsm="gem"></span></button>
     <button class="ibtn" id="factBtn" type="button"><span data-pix="book"></span>Facts</button>
     <button class="ibtn" id="badgeBtn" type="button"><span data-pix="medal"></span>Badges <b id="badgeMenu"></b></button>
+    <button class="ibtn" id="packBtn" type="button"><span data-pix="chest"></span>Gear <b id="packMenu"></b></button>
     <button class="ibtn" id="settingsBtn" type="button"><span data-pix="gear"></span>Settings</button>
     <button class="ibtn" id="helpBtn" type="button"><span data-pix="help"></span>How to</button>
   </div>
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 10, 2026 6:00 PM PT · Story pictures: faster, flip with arrows, storybook frame</div>
+  <div class="build">Updated Nov 10, 2026 8:00 PM PT · Gear Pack: find lost gear in old chests and wear it</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -607,6 +615,16 @@
     <div class="buybox hidden" id="buyBox"></div>
     <div class="shopgrid" id="shopGrid"></div>
     <div class="row"><button class="btn alt" id="shopClose" type="button">Back</button></div>
+  </div>
+</div>
+
+<div id="pack" class="overlay hidden">
+  <div class="card shopcard">
+    <h2>Gear Pack</h2>
+    <div class="shophint">Lost gear is hidden in old chests up on high ledges. Tap a piece to wear it.</div>
+    <canvas id="packPreview" width="200" height="150"></canvas>
+    <div class="packgrid" id="packGrid"></div>
+    <div class="row"><button class="btn alt" id="packClose" type="button">Back</button></div>
   </div>
 </div>
 
@@ -1460,6 +1478,31 @@ function seaDoors(st, map) {
 }
 // The grade-track plan of the level being built (set by startStage, null otherwise): questions come from mixGen.
 var LEVEL_MIX = null;
+// The Gear Pack (owner, Nov 10 2026: "a lost item they can wear or hold ... a gear pack they collect and add to").
+// One lost item per world for now (owner: one per level later), hidden in an old chest on a high ledge (Coral Reef: on
+// the sea floor between two coral rocks); 5 right answers open its lock. Looks only for now (owner: maybe actions later).
+// Art is drawn on Kai's own 16 × 16 cell grid (gx, gy = where the rows start; 'k' = outline), mirrored when he turns.
+const GEAR = {
+  helmet: { name: 'Samurai Helmet', slot: 'head', w: 0, k: 1, gx: 3, gy: -3, pal: { d: '#3a3a4a', D: '#5a5a6e', y: '#ffd23f' },
+    rows: ['.ky......yk.', '..ky....yk..', '...kyyyyk...', '..kkDDDDkk..', '.kddDDddddk.', 'kddddddddddk', 'kk........kk'] },
+  cape: { name: 'Fire Cape', slot: 'back', w: 1, k: 2, gx: 0, gy: 8, pal: { r: '#e63946', R: '#a91d2b', o: '#ff8c1a', y: '#ffd23f' },
+    rows: ['...krr', '..krRr', '.krrRr', '.krrRr', 'krrRrr', 'krorrr', 'koyoko', '.k.k..'] },
+  jetpack: { name: 'Jetpack', slot: 'back', w: 2, k: 2, gx: 1, gy: 7, pal: { g: '#9aa7b8', G: '#6c7a89', r: '#ff3355', c: '#7df9ff' },
+    rows: ['kkkk', 'kggk', 'kgrk', 'kcgk', 'kggk', 'kGGk', 'kkkk'] },
+  viking: { name: 'Viking Helmet', slot: 'head', w: 3, k: 0, gx: 2, gy: -3, pal: { w: '#f4ead2', W: '#c9bfa6', g: '#9aa7b8', G: '#6c7a89', y: '#ffd23f' },
+    rows: ['kw..........wk', 'kwk........kwk', '.kwk.kkkkk.kwk', '..kkkggggGkk..', '..kgggggggGk..', '..kyyyyyyyyk..'] },
+  trident: { name: 'Trident', slot: 'hand', w: 4, k: 0, gx: 12, gy: 0, pal: { y: '#ffd23f', Y: '#c99a1a' },
+    rows: ['y.y.y', 'y.y.y', 'yyyyy', '.kYk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '..k..'] },
+  lantern: { name: 'Paper Lantern', slot: 'hand', w: 5, k: 0, gx: 12, gy: 8, pal: { o: '#ffb627', O: '#ff8c1a', r: '#a8323e' },
+    rows: ['.k.', '.k.', 'krk', 'koO', 'koO', 'krk', '.k.'] },
+};
+const GEAR_SLOTS = ['head', 'back', 'hand'];
+const gearAt = (w, k) => Object.keys(GEAR).find(id => GEAR[id].w === w && GEAR[id].k === k);
+// Draws one gear item on a sprite drawn at (ox, oy) with px-sized cells, 16 cells wide (flip = facing left).
+function gearPix(c, id, ox, oy, px, flip) {
+  const g = GEAR[id];
+  g.rows.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch === '.') continue; const cx = g.gx + i; c.fillStyle = ch === 'k' ? OUTLINE : g.pal[ch]; c.fillRect(ox + (flip ? 15 - cx : cx) * px, oy + (g.gy + j) * px, px, px); } });
+}
 // "Play 7s" from the Badge Book (set by startStage for that one level): questions favour the facts not gold yet.
 var FOCUS = false;
 function focusGen(skill) {
@@ -1560,6 +1603,10 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
           // A pirate chest by the ship (owner picked): a question opens it and "pieces of eight" spill out as gems.
           L.clams.push({ chest: true, x: (s + 3) * T - 30, y: GR * T, used: false, open: 0, state: 'shut', t: 0, k: 0 });
         }
+      }
+      if (i === 3 && !def.boss && gearAt(def.w, def.k) && !L.gearChest) {   // the Gear Pack chest on the sea floor, between two coral rocks
+        const s0 = flat(10); rock(s0 + 2, 1, GR - 2); rock(s0 + 7, 1, GR - 2);
+        L.gearChest = { id: gearAt(def.w, def.k), x: (s0 + 4) * T + T, y: GR * T, lock: 0, open: 0 };
       }
       if (i === calm + 1) {   // one hungry animal on the sea floor; its three foods float at swimming depth (picked with the buttons / keys)
         const s0 = flat(12), [kind, food] = ANIMALS[slotOf(def)] || ANIMALS[0], q = wordQ(L.gen(), kind, food);
@@ -1798,6 +1845,8 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
   let skyLeft = 2;
   const sky = c => {
     for (let i = 0; i < 3; i++) { map[GR - 4][c + i] = 'S'; map[GR - 7][c + 5 + i] = 'S'; coin(c + i, GR - 5); coin(c + 5 + i, GR - 8); }
+    const gid = !def.boss && gearAt(def.w, def.k);
+    if (gid && !L.gearChest) { L.gearChest = { id: gid, x: (c + 7) * T + T / 2, y: (GR - 7) * T, lock: 0, open: 0 }; L.coins = L.coins.filter(g => !(Math.abs(g.x - L.gearChest.x) < T && Math.abs(g.y - (GR - 8) * T - T / 2) < T)); }   // the Gear Pack chest, up on the high ledge
   };
   const run = () => { const s = flat(ri(rng, 14, 18)); if (skyLeft > 0 && !def.boss) { skyLeft--; sky(s + 3); } };
   const wk = def.boss ? [] : wallKinds(skill), wallGate = wk.length && def.n >= 3 ? feedAt : -1;   // older players: the middle gate is a pattern wall
@@ -4816,6 +4865,7 @@ function miniTarget() {
   }
   if (!G || L.vault || L.boss) return null;
   const stp = stepsTarget(); if (stp) return stp;
+  const gt = gearTarget(); if (gt) return gt;
   if (G.cross) return null;
   const wt = wallTarget(); if (wt) return wt;
   const cx = P.x + P.w / 2;
@@ -4858,6 +4908,89 @@ function countPick(ct, i) {
     floatText(x, y - 46, `Oops! It's ${ans}`, '#ff6b6b', 24);
   }
   if (ct.k >= ct.n - 1) { ct.done = true; confetti(x, y - 30); floatText(x, y - 80, 'You counted them all!', '#ffd23f', 26); payGems(x, y, 2); }
+}
+// The Gear Pack chest in the level: stand by it and 5 right answers open its old lock; the item flies out onto Kai.
+function gearTick(p) {
+  const gc = L.gearChest; if (!gc) return;
+  if (gc.wait > 0) gc.wait--;
+  if (gc.open > 0 && gc.open < 1) gc.open = Math.min(1, gc.open + 0.04);
+  if (gc.fly != null && gc.fly < 60) gc.fly++;
+  const owned = (prog.gearOwned || []).includes(gc.id);
+  gc.near = !owned && !gc.open && Math.abs(p.x + p.w / 2 - gc.x) < 2.2 * T && Math.abs(p.y + p.h - gc.y) < T * 0.8;
+  if (gc.near && !gc.told) { gc.told = true; floatText(gc.x, gc.y - 132, 'An old chest! Answer 5 to open its lock.', '#ffd23f', 22); }
+}
+function gearTarget() {
+  const gc = L.gearChest; if (!gc || !gc.near || gc.wait > 0) return null;
+  if (!gc.q) { gc.q = L.gen(); gc.opts = choices(gc.q, 3); gc.shownAt = G.time; }
+  return { kind: 'gear', q: gc.q, vals: gc.opts, off: gc.opts.map(() => false), ref: gc };
+}
+function gearPick(gc, i) {
+  if (!gc.q || gc.wait > 0) return;
+  const q = gc.q, right = gc.opts[i] === q.ans, fast = G.time - (gc.shownAt ?? G.time) <= fastFrames(L.skill, q);
+  noteFact(q, right, right && fast, L.skill); gc.q = null;
+  if (right) {
+    G.solved++; if (fast) G.fastN++; gc.lock++; sfx.correct(); streakUp(gc.x, gc.y - 60); gotIt(); gc.shake = 12;
+    tone(900 + gc.lock * 120, 0.08, 'square', 0.03);   // click
+    floatText(gc.x, gc.y - 70, `${qSolved(q)}!  (${gc.lock}/5)`, '#3ae374', 22);
+    if (gc.lock >= 5) gearFound(gc);
+  } else {
+    G.mistakes++; G.streak = 0; remember(q); missed(q); sfx.wrong(); gc.wait = 70;
+    floatText(gc.x, gc.y - 70, `Oops! ${qSolved(q)}`, '#ff6b6b', 22);
+  }
+}
+function gearFound(gc) {
+  const g = GEAR[gc.id];
+  gc.open = 0.01; gc.fly = 0; sfx.win(); confetti(gc.x, gc.y - 40);
+  prog.gearOwned = [...new Set([...(prog.gearOwned || []), gc.id])];
+  prog.gear = { ...(prog.gear || {}), [g.slot]: gc.id };   // put it on right away
+  prog.newPack = true; save();
+  floatText(gc.x, gc.y - 110, `You found the ${g.name}!`, '#ffd23f', 28);
+  floatText(gc.x, gc.y - 80, "It's in your Gear Pack.", '#ffffff', 20);
+}
+function drawGearChest() {
+  const gc = L.gearChest; if (!gc || gc.x < cam - 80 || gc.x > cam + VW + 80) return;
+  const owned = (prog.gearOwned || []).includes(gc.id) && !gc.fly && !gc.open, sh = gc.shake > 0 ? (gc.shake--, Math.sin(gc.shake * 2) * 2) : 0;
+  if (!owned && !gc.open) glowAt(gc.x, gc.y - 20, 40 + Math.sin(tick * 0.1) * 5, 'rgba(255,220,120,.35)');
+  drawPix(gc.open || owned ? 'chestopen' : 'chest', gc.x - 18 + sh, gc.y - 36, 3);
+  if (!gc.open && !owned) for (let i = 0; i < 5; i++) { ctx.fillStyle = i < gc.lock ? '#ffd23f' : 'rgba(0,0,0,.45)'; ctx.fillRect(gc.x - 24 + i * 10, gc.y - 50, 8, 6); }   // the lock: 5 bars
+  if (gc.fly != null && gc.fly < 60) {   // the item rises out of the chest
+    const u = gc.fly / 60, cv = gearImg(gc.id, 4), y = gc.y - 40 - Math.sin(Math.min(1, u * 1.5) * Math.PI / 2) * 60;
+    glowAt(gc.x, y, 50, 'rgba(255,240,160,.6)'); ctx.globalAlpha = 1 - Math.max(0, u - 0.7) / 0.3; ctx.drawImage(cv, Math.round(gc.x - cv.width / 2), Math.round(y - cv.height / 2)); ctx.globalAlpha = 1;
+  }
+  if (gc.near && gc.opts && !(gc.wait > 0)) gc.opts.forEach((v, j) => {   // the choices over the chest (computers press , . /)
+    const tx = gc.x + (j - 1) * 50, ty = gc.y + 58, [c1] = ansCol(j);   // just under the ledge (the top of the screen has the question banner and the K picture)
+    ctx.fillStyle = c1; rrect(tx - 21, ty - 17, 42, 34, 9); ctx.fill(); ctx.fillStyle = '#ffffff'; rrect(tx - 18, ty - 14, 36, 28, 7); ctx.fill();
+    ctx.font = `${String(v).length > 3 ? 14 : 18}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.fillStyle = '#1a1426'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(v, tx, ty + 1);
+    if (!isTouch) keyTag(ANS_KEYS(3)[j], tx + 18, ty - 16);
+  });
+}
+// A gear item on its own (Gear Pack page, the chest): its rows at a cell size, cached.
+const gearImgs = {};
+function gearImg(id, px) {
+  const key = id + px; if (gearImgs[key]) return gearImgs[key];
+  const g = GEAR[id], w = Math.max(...g.rows.map(r => r.length)), c = document.createElement('canvas'); c.width = w * px; c.height = g.rows.length * px;
+  const x = c.getContext('2d'); g.rows.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch === '.') continue; x.fillStyle = ch === 'k' ? OUTLINE : g.pal[ch]; x.fillRect(i * px, j * px, px, px); } });
+  return (gearImgs[key] = c);
+}
+function openPack() {
+  hide('menu'); prog.newPack = false; save();
+  const owned = prog.gearOwned || [], eq = prog.gear || {};
+  const cv = $('packPreview'), c = cv.getContext('2d');   // Kai wearing his gear, big
+  drawNinjaPreview(cv, { ...prog.equip, pet: null }, 5);
+  const ox = (cv.width - 16 * 5) / 2, oy = cv.height - 16 * 5 - 2;   // (where drawNinjaPreview puts Kai)
+  if (eq.back) { const tmp = document.createElement('canvas'); tmp.width = cv.width; tmp.height = cv.height; gearPix(tmp.getContext('2d'), eq.back, ox, oy, 5, false); c.globalCompositeOperation = 'destination-over'; c.drawImage(tmp, 0, 0); c.globalCompositeOperation = 'source-over'; }
+  if (eq.head) gearPix(c, eq.head, ox, oy, 5, false);
+  if (eq.hand) gearPix(c, eq.hand, ox, oy, 5, false);
+  $('packGrid').innerHTML = Object.keys(GEAR).map(id => {
+    const g = GEAR[id], got = owned.includes(id), on = eq[g.slot] === id, st = STAGES.find(x => x.w === g.w && x.k === g.k);
+    return `<button type="button" class="gearslot${got ? '' : ' lost'}${on ? ' on' : ''}" data-gear="${id}"><img src="${gearImg(id, 6).toDataURL()}" alt="">${got ? g.name : '???'}
+      <small>${got ? (on ? 'Wearing' : 'Tap to wear') : `Lost in ${st ? st.name : WORLDS[g.w].name}`}</small></button>`;
+  }).join('');
+  $('packGrid').querySelectorAll('[data-gear]').forEach(el => { el.onclick = () => {
+    const id = el.dataset.gear, g = GEAR[id]; if (!owned.includes(id)) return;
+    audio(); prog.gear = { ...(prog.gear || {}), [g.slot]: prog.gear && prog.gear[g.slot] === id ? null : id }; save(); openPack();
+  }; });
+  show('pack');
 }
 function countsTick(p) {   // the current: Kai can't swim past the next bubble until it's answered
   for (const ct of L.counts || []) {
@@ -4903,6 +5036,7 @@ function miniAnswer(m, i) {
   if (m.kind === 'rescue') { rescuePick(m.ref, i); return; }
   if (m.kind === 'swing') { swingPick(m.ref, i); return; }
   if (m.kind === 'count') { countPick(m.ref, i); return; }
+  if (m.kind === 'gear') { gearPick(m.ref, i); return; }
   P.throwT = 14; sfx.throw(); boxPick(m.ref, i);
 }
 function feedPick(fd, i) {
@@ -5005,6 +5139,7 @@ function updateMini() {
   }
 }
 function drawMini() {
+  drawGearChest();   // the Gear Pack chest
   if (L.counts) drawCounts();   // the sea's counting bubble line
   for (const fd of L.squads || []) {
     if (fd.ax < cam - 6 * T || fd.foods[0].x > cam + VW + 60) continue;
@@ -5708,6 +5843,7 @@ function updatePlayer() {
   const hitWall = moveX(p);
   if (riding && hitWall) dolphinLetGo();   // a wall (a gate) ends the ride
   if (L.counts) countsTick(p);   // the sea's counting bubble line
+  gearTick(p);   // the Gear Pack chest
   if (hitWall && L.water) seaWall(p, wet);
   const wasAir = !p.onGround, fallSpeed = p.vy, feetBefore = p.y + p.h;
   const hit = moveY(p);
@@ -9569,6 +9705,18 @@ function drawSwings() {
     }
   }
 }
+function drawGearOn(p, frame, layer, diver) {
+  const eq = prog.gear || {}; if (!eq.head && !eq.back && !eq.hand) return;
+  const flip = p.face < 0, set = SPR, ox = Math.round(p.x + p.w / 2 - (flip ? set.cxFlip : set.cx)), oy = Math.round(p.y + p.h - set.bottom) + (frame === 'walkA' ? 0 : 0);
+  if (layer === 'back' && eq.back) {
+    gearPix(ctx, eq.back, ox, oy, PX, flip);
+    if (eq.back === 'jetpack' && !p.onGround && !inWater(p)) { ctx.fillStyle = tick % 4 < 2 ? '#ffd23f' : '#ff8c1a'; const fx = ox + (flip ? 15 - 2 : 2) * PX; ctx.fillRect(fx - PX / 2, oy + 14 * PX, PX * 2, PX * (2 + (tick % 3))); }   // little flames in the air
+  }
+  if (layer === 'front') {
+    if (eq.head && !diver) gearPix(ctx, eq.head, ox, oy, PX, flip);   // (the diving helmet covers his head in the deep sea)
+    if (eq.hand) { gearPix(ctx, eq.hand, ox, oy, PX, flip); if (eq.hand === 'lantern') glowAt(ox + (flip ? 15 - 13 : 13) * PX + PX / 2, oy + 12 * PX, 26, 'rgba(255,190,80,.35)'); }
+  }
+}
 function drawPlayer() {
   const p = P;
   if (p.inv > 0 && Math.floor(p.inv / 4) % 2 === 0) return;
@@ -9599,8 +9747,10 @@ function drawPlayer() {
     k = 'jump';
   }
   const diver = L.world && L.world.key === 'sea' && !L.boss && !L.room && (L.abyss || G.suit);
+  if (!(pose && !(p.flipT > 0))) drawGearOn(p, k, 'back', diver);   // the Gear Pack: things on his back go behind him
   if (diver) drawBaked(DIVER || (DIVER = bakeDiver(heroPal())), k === 'jump' || k === 'walkA' ? k : 'stand', p.face < 0, p);
   else if (pose && !(p.flipT > 0)) drawKaiPose(p, pose); else drawBaked(SPR, k, p.face < 0, p);
+  if (!(pose && !(p.flipT > 0))) drawGearOn(p, k, 'front', diver);   // hats and things in his hand
   ctx.restore();
   if (van) { ctx = keepCtx; ctx.globalAlpha = 0.2; ctx.drawImage(VAN.c, VAN.ox, VAN.oy); ctx.globalAlpha = 1; vanishDots(p); }   // a faded Kai inside the dots
   if (hasPower('shield')) {
@@ -10397,6 +10547,7 @@ function buildMenu() {
     sr.appendChild(b);
   });
   $('badgeMenu').textContent = `${BADGES.filter(x => prog.badges[x.id]).length}/${BADGES.length}`;
+  $('packMenu').textContent = `${(prog.gearOwned || []).length}/${Object.keys(GEAR).length}${prog.newPack ? ' ★' : ''}`;
   countUp($('bankMenu'), prog.bank);
   // The world map: four coloured zones with a winding path; Kai stands on the newest level.
   const box = $('worlds'); box.innerHTML = '';
@@ -11628,6 +11779,8 @@ $('shopBtn').onclick = () => { audio(); openShop(); };
 $('raceBtn').onclick = () => { audio(); showRaceSetup(); };
 $('shopClose').onclick = () => { hide('shop'); buildMenu(); show('menu'); };
 $('badgeBtn').onclick = () => { audio(); openBadges(); };
+$('packBtn').onclick = () => { audio(); openPack(); };
+$('packClose').onclick = () => { hide('pack'); buildMenu(); show('menu'); };
 $('badgesClose').onclick = () => { hide('badges'); buildMenu(); show('menu'); };
 
 // ---------------------------------------------------------------- input
