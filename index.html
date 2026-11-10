@@ -552,7 +552,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 11, 2026 8:00 PM PT · Gear button: every piece has a power (Ground Pound, Horn Charge, Water Blast, Light flash)</div>
+  <div class="build">Updated Nov 11, 2026 9:00 PM PT · Updates load after each level (no need to go home)</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -6765,7 +6765,7 @@ function updateAmbient() {
 }
 
 function finishLevel() {
-  mode = 'done';
+  mode = 'done'; checkUpdate(true);   // quietly look for a new version (loaded on the next tap)
   const i = G.idx, st = STAGES[i], W = WORLDS[st.w];
   const dots = G.mistakes === 0 ? 3 : G.mistakes <= 2 ? 2 : 1, sk = G.skill, pts = dots * sk.tier;
   const before = currentBelt();
@@ -10844,6 +10844,7 @@ function showMsg(title, body, btns) {
 }
 
 function startStage(i) {
+  if (updateBeforeLeaving(i)) return;   // a new version came out during the last level: load it, then this level
   puff();
   const st = STAGES[i], W = WORLDS[st.w];
   RC = null; document.body.classList.remove('racing');
@@ -11130,6 +11131,7 @@ function askChange(it) {
 }
 
 function toMenu() {
+  if (updateBeforeLeaving(null)) return;
   puff();
   mode = 'menu'; G = null; P = null; RC = null; document.body.classList.remove('racing'); playMusic('menu');
   const newest = Math.min(unlockedCount() - 1, STAGES.length - 1);
@@ -12428,18 +12430,32 @@ else if (!prog.seenIntro) {
 }
 // Auto-update: a home-screen icon always opens the same saved link, so the phone/iPad can keep an old copy.
 // On the home screen, fetch the page fresh and compare the build stamp; if it's newer, reload once with a new ?v=.
-function checkUpdate() {
-  if (!/^https?:/.test(location.protocol) || mode !== 'menu') return;
+// Also after every level (owner, Nov 11 2026): finishLevel checks quietly; if there's a new version, the next tap that
+// leaves the end card (next level, retry, levels) reloads instead and goes straight into that level ('mn-resume').
+// Only the top of the page is fetched (the stamp is in the first 64 KB); if the server sends the whole page, fine too.
+var updateReady = null;   // (var and function: startStage / toMenu may run before this line during startup)
+function fetchStamp() {
+  const url = location.pathname + '?check=' + Date.now(), pick = h => { const m = /class="build">([^<]*)</.exec(h || ''); return m && m[1]; };
+  const get = hd => fetch(url, { cache: 'no-store', headers: hd }).then(r => (r.ok ? r.text() : '')).catch(() => '');
+  return get({ Range: 'bytes=0-65535' }).then(h => pick(h) || get({}).then(pick));
+}
+function checkUpdate(later) {
+  if (!/^https?:/.test(location.protocol) || (!later && mode !== 'menu')) return;
   const here = (document.querySelector('.build') || {}).textContent || '';
-  fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(html => {
-    const m = /class="build">([^<]*)</.exec(html), there = m && m[1];
-    if (!there || there === here || mode !== 'menu') return;
-    if (sessionStorage.getItem('mn-update') === there) return;   // tried once already: don't loop
-    sessionStorage.setItem('mn-update', there);
-    location.replace(location.pathname + '?v=' + Date.now());
+  fetchStamp().then(there => {
+    if (!there || there === here || sessionStorage.getItem('mn-update') === there) return;   // (tried once already: don't loop)
+    if (later) updateReady = there;
+    else if (mode === 'menu') reloadNow(there, null);
   }).catch(() => {});
 }
+function reloadNow(there, resume) {
+  sessionStorage.setItem('mn-update', there);
+  if (resume != null) sessionStorage.setItem('mn-resume', String(resume));
+  location.replace(location.pathname + '?v=' + Date.now());
+}
+function updateBeforeLeaving(resume) { if (!updateReady) return false; reloadNow(updateReady, resume); return true; }
 checkUpdate();
+{ const rs = sessionStorage.getItem('mn-resume'); sessionStorage.removeItem('mn-resume'); const i = Number(rs); if (rs !== null && i >= 0 && i < STAGES.length) startStage(i); }   // just updated after a level: on to the level the kid picked
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
 requestAnimationFrame(frame);
 })();
