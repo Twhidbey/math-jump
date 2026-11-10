@@ -202,6 +202,24 @@
   .ft.gold { background: #ffd23f; color: #3a2200; }
   .factlegend { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
   .factlegend .ft { font-size: 12px; }
+  /* Fact Book summary page: one row per kind of math, a bar (gold / silver / practice / new), skill chips that open a skill's page */
+  .fsnow { font-size: 15px; margin-bottom: 10px; line-height: 1.4; }
+  .fsnow b { color: #ffd23f; }
+  .fsrow { text-align: left; background: rgba(255,255,255,.05); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; }
+  .fshead { display: flex; justify-content: space-between; gap: 8px; font-weight: 800; font-size: 15px; }
+  .fshead small { font-weight: 400; opacity: .8; font-size: 13px; }
+  .fsbar { display: flex; height: 14px; margin: 6px 0; background: rgba(255,255,255,.08); box-shadow: inset 0 0 0 2px #1a1426; }
+  .fsbar i { display: block; height: 100%; }
+  .fsbar i.gold { background: #ffd23f; } .fsbar i.silver { background: #c9ccd6; } .fsbar i.weak { background: #e8705f; }
+  .fschips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .fschip { font: inherit; font-size: 13px; font-weight: 700; color: #fff; background: rgba(255,255,255,.1); border: 2px solid transparent; border-radius: 8px; padding: 3px 8px; cursor: pointer; }
+  .fschip.pass { background: #ffd23f; color: #3a2200; }
+  .fschip.now { border-color: #7df9ff; }
+  .fschip small { opacity: .75; font-weight: 400; }
+  .fslater { font-size: 13px; opacity: .75; margin: 4px 0 10px; }
+  .fsweak { text-align: left; background: rgba(255,90,90,.1); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; }
+  .fsweak .factgrid { justify-content: flex-start; margin: 6px 0 8px; }
+  .fsback { padding: 4px 12px !important; font-size: 14px !important; margin: 0 0 8px !important; }
   .tablegrid { display: grid; gap: 2px; margin: 0 auto 10px; max-width: 420px; }
   .tablegrid span { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; border-radius: 3px; background: rgba(255,255,255,.08); color: #aab; }
   .tablegrid span.h { background: none; color: #ffd23f; font-size: 13px; }
@@ -528,7 +546,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 11, 2026 2:00 PM PT · Falling at a bridge puts carried stones back; Jetpack stops when Kai bumps his head</div>
+  <div class="build">Updated Nov 11, 2026 3:00 PM PT · Fact Book opens on a summary: each kind of math, skills to tap, facts to practice</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -3449,7 +3467,24 @@ function startPractice(id) {
   dojo = { qs: shuffle(qs.map(q => ({ ...q }))), i: 0, right: 0, before: new Map(), lock: false, practice: { id } };
   show('dojo'); dojoNext();
 }
+// The Fact Book's "Practice these": the facts that need practice, in the practice screen (no streak, no gems).
+function startFactPractice(list) {
+  const qs = list.slice(0, 10); if (!qs.length) return;
+  hide('menu');
+  $('djTitle').innerHTML = `${pixImg('medal', 'pix sm')} Practice`;
+  dojo = { qs: shuffle(qs.map(q => ({ ...q }))), i: 0, right: 0, before: new Map(), lock: false, practice: { facts: true } };
+  show('dojo'); dojoNext();
+}
 function finishPractice() {
+  if (dojo.practice.facts) {
+    const right = dojo.right, tot = dojo.qs.length;
+    dojo = null; hide('dojo'); $('djTitle').innerHTML = `${pixImg('flame', 'pix sm')} Daily Dojo`;
+    save(); checkTrophies();
+    const left = weakFacts().length;
+    showMsg('Nice practice!', `<div class="statrow"><span>✔ ${right} / ${tot}</span></div>${chestHTML()}${gearHTML()}<p>${left ? 'Right and fast takes a fact off the practice list.' : 'Nothing left to practice!'}</p>`,
+      [{ label: 'Play ▶', fn: toMenu, primary: true }, { label: 'Fact Book', fn: () => { hide('msg'); openFacts(); }, alt: true }]);
+    return;
+  }
   const id = dojo.practice.id, b = BADGE[id], right = dojo.right, tot = dojo.qs.length;
   dojo = null; hide('dojo'); $('djTitle').innerHTML = `${pixImg('flame', 'pix sm')} Daily Dojo`;
   save(); checkTrophies();
@@ -11559,12 +11594,76 @@ Object.assign(SCENES, {
 
 // ---------------------------------------------------------------- fact book
 let fbAt = 0;
-function openFacts() { fbAt = Math.max(0, PATH.indexOf(prog.skill)); hide('menu'); renderFacts(); show('facts'); }
+let fbSum = true;   // the Fact Book opens on the summary page; tapping a skill opens its own page
+function openFacts() { fbAt = Math.max(0, PATH.indexOf(prog.skill)); fbSum = true; hide('menu'); renderFacts(); show('facts'); }
+function factSkill(id) { const i = PATH.indexOf(id); if (i < 0) return; fbAt = i; fbSum = false; audio(); renderFacts(); }
+// Facts the player misses most (missed, or right but slow twice), for the summary's "Needs practice" box.
+const weakFacts = (n = 8) => Object.values(prog.facts).filter(f => f.weak || f.practice).sort((a, b) => (b.weak - a.weak) || (b.miss - a.miss) || (b.last - a.last)).slice(0, n);
+// The summary (owner asked: an easy-to-read overview first, tap to dive in): what he's working on now, one row per kind
+// of math in his grade track (a gold / silver / practice / new bar over all its facts, skill chips), kinds still to come,
+// and the facts that need practice with a Practice button.
+function renderSummary() {
+  const pl = curPlayer(), plan = trackPlan(), now = SKILL[prog.skill];
+  $('fbTitle').innerHTML = `How ${pl.name} is doing`;
+  const counts = id => {   // gold / silver / practice / new across one skill's facts (skills without a fact list: their last 10 answers)
+    const pr = skillProgress(SKILL[id]), c = { gold: 0, silver: 0, weak: 0, new: 0 };
+    if (pr.st) pr.st.forEach(x => c[x]++);
+    else if (pr.ready) c.gold = 10;
+    else { c.silver = pr.learned; c.new = 10 - pr.learned; }
+    return c;
+  };
+  const chip = id => {
+    const pr = skillProgress(SKILL[id]), pct = Math.round(100 * pr.learned / Math.max(1, pr.n));
+    return `<button type="button" class="fschip${pr.ready ? ' pass' : ''}${id === prog.skill ? ' now' : ''}" data-sk="${id}">${SKILL[id].name} <small>${pr.ready ? '✔' : pct + '%'}</small></button>`;
+  };
+  const row = (name, ids, sub) => {
+    const c = { gold: 0, silver: 0, weak: 0, new: 0 };
+    ids.forEach(id => { const k = counts(id); for (const x in c) c[x] += k[x]; });
+    const tot = Math.max(1, c.gold + c.silver + c.weak + c.new), w = x => `${(100 * c[x] / tot).toFixed(1)}%`;
+    return `<div class="fsrow"><div class="fshead"><span>${name}</span><small>${sub}</small></div>
+      <div class="fsbar"><i class="gold" style="width:${w('gold')}"></i><i class="silver" style="width:${w('silver')}"></i><i class="weak" style="width:${w('weak')}"></i></div>
+      <div class="fschips">${ids.map(chip).join('')}</div></div>`;
+  };
+  let html = '', shown = new Set();
+  if (plan) {
+    const g = GRADES[plan.gi], mine = GRADE[pl.grade], open = plan.sts.filter(x => !x.done && !x.locked);
+    const cur = plan.sts.find(x => x.t.ids.includes(prog.skill)), after = cur && !cur.done && cur.t.ids[cur.t.ids.indexOf(prog.skill) + 1];
+    const next = after || (open.find(x => x !== cur) || {}).t?.ids[(open.find(x => x !== cur) || {}).f];
+    html += `<div class="fsnow">${g.name}${now ? ` · working on <b>${now.name}</b>` : ''}${next && next !== prog.skill ? ` · next: ${SKILL[next].name}` : ''}</div>`;
+    if (mine && GRADES.indexOf(mine) < plan.gi) html += `<div class="expert">${pixSm('star')} ${GRADES.slice(GRADES.indexOf(mine), plan.gi).map(x => x.name).join(', ')} math all passed!</div>`;
+    for (const x of plan.sts) {
+      const passed = x.t.ids.filter(id => skillProgress(SKILL[id]).ready).length;
+      html += row(x.t.name, x.t.ids, x.locked ? `${pixSm('lock')} ${SKILL[TRACK_REQ[x.t.ids[x.f]]].name} first` : `${passed} of ${x.t.ids.length} passed`);
+      x.t.ids.forEach(id => shown.add(SKILL[id].cat));
+    }
+  } else {   // no grade set: the kinds he has played (or is on now), in path order
+    if (now) html += `<div class="fsnow">Working on <b>${now.name}</b></div>`;
+    for (const [cat, label] of SKILL_CATS) {
+      const ids = PATH.filter(id => SKILL[id].cat === cat), played = ids.filter(id => id === prog.skill || skillProgress(SKILL[id]).learned > 0 || counts(id).weak);
+      if (!played.length) continue;
+      const upto = ids.slice(0, Math.min(ids.length, Math.max(...played.map(id => ids.indexOf(id))) + 2));   // what he's played, plus the next one
+      html += row(label.replace(/^\S+ /, ''), upto, `${upto.filter(id => skillProgress(SKILL[id]).ready).length} of ${upto.length} passed`);
+      shown.add(cat);
+    }
+  }
+  const later = SKILL_CATS.filter(([cat]) => !shown.has(cat)).map(([, label]) => label.replace(/^\S+ /, ''));
+  if (later.length) html += `<div class="fslater">Coming later: ${later.join(', ')}</div>`;
+  const weak = weakFacts();
+  html += weak.length ? `<div class="fsweak"><div class="fshead"><span>Needs practice</span><small>missed or slow</small></div>
+      <div class="factgrid">${weak.map(f => `<span class="ft weak">${qShow(f.q)}</span>`).join('')}</div>
+      <button type="button" class="btn" id="fbPractice">Practice these</button></div>`
+    : `<div class="fslater">${pixSm('star')} No facts need practice right now!</div>`;
+  $('fbBody').innerHTML = html;
+  $('fbBody').querySelectorAll('[data-sk]').forEach(b => { b.onclick = () => factSkill(b.dataset.sk); });
+  if ($('fbPractice')) $('fbPractice').onclick = () => { audio(); hide('facts'); startFactPractice(weakFacts().map(f => f.q)); };
+}
 function renderFacts() {
+  $('fbPrev').style.visibility = $('fbNext').style.visibility = fbSum ? 'hidden' : '';
+  if (fbSum) { renderSummary(); return; }
   const k = SKILL[PATH[fbAt]], pr = skillProgress(k);
   $('fbTitle').innerHTML = `${prog.trophies[k.id] ? pixSm('trophy') + ' ' : ''}${k.name} <span class="tier">${stars(k.tier)}</span><small>${medalImg(3, 'pix sm')} ${pr.gold} · got it ${pr.learned} of ${pr.n}</small>`;
   const learned = MOVES.filter(m => prog.moves[m.name]);
-  let html = `<div class="expert">${pixSm('gi')} Moves learned: ${learned.length} of ${MOVES.length}${learned.length ? ': ' + learned.map(m => m.name).join(', ') : ' (find the door in each level!)'}</div>`;
+  let html = `<button type="button" class="btn alt fsback" id="fbSumBtn">◀ Summary</button><div class="expert">${pixSm('gi')} Moves learned: ${learned.length} of ${MOVES.length}${learned.length ? ': ' + learned.map(m => m.name).join(', ') : ' (find the door in each level!)'}</div>`;
   html += pr.mature ? `<div class="expert">${pixSm('bolt')} Expert mode: 5 answer blocks and a keypad for bosses</div>` : '';
   if (pr.list && (k.id === 'xall' || k.id === 'dmix' || k.id === 'xmix69' || k.id === 'xmix25')) {
     // a times-table grid that fills in gold
@@ -11586,6 +11685,7 @@ function renderFacts() {
     html += `<p>Last 10 answers</p><div class="winrow">${range(0, 9).map(i => `<i class="${i < w.length ? (w[i] ? 'ok' : 'no') : ''}"></i>`).join('')}</div><p>${pr.done ? 'Learned!' : '9 right and fast means learned.'}</p>`;
   }
   $('fbBody').innerHTML = html;
+  $('fbSumBtn').onclick = () => { audio(); fbSum = true; renderFacts(); };
 }
 $('factBtn').onclick = () => { audio(); hide('badges'); openFacts(); };   // (the Fact Book lives in the Badge Book now; owner: less prominent)
 $('fbPrev').onclick = () => { audio(); fbAt = (fbAt + PATH.length - 1) % PATH.length; renderFacts(); };
