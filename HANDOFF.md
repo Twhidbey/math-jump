@@ -95,6 +95,11 @@ Everything is in `index.html`. `CLAUDE.md` maps the code and records the owner's
 - **Badge Book: lost friends say their level** ("Lost in Sunken Ship"), not the world (owner read "Coral Sea" as Coral Reef).
 - **Victory moves**: at the end of every level (after catching the scroll) and after each boss, Kai does one of his learned dojo moves (or Hana's high kick) with its name, else a victory jump. The deep-sea diver cheers "Hooray!".
 
+## Later: more gear (owner, Nov 11 2026: "put this on the list for later"; **about one new item a week** to keep things fresh)
+Each gets a secret room in a level that has none yet (3 math walls + chest) and its own power on the gear button.
+- **Picked to build first:** Golden Boomerang (throw, it curves back grabbing gems and bonking enemies; Koi Pond), Spring Boots (super bounce, twice as high; lava world), Magnet Gloves (every gem on screen zooms to Kai, nearby ? boxes pop; robot world).
+- Other ideas: Umbrella (hold to float down and drift far), Dragon Mask (fire breath), Bubble Helmet (float up in a bubble, bounce off enemies; sea), Snowboard (fast slide, ducks under things; snow).
+
 ## Open questions for the owner
 0. How do the kids find the Work it out card? Too often, too long (division by counting can be 7 steps)?
 1. Waiting for players' reactions to the guards, the finishing moves, the ski lift and the test-out.
