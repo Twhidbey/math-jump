@@ -528,7 +528,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 11, 2026 9:00 AM PT · Gear powers: jetpack, lantern, fire cape; tidier menu</div>
+  <div class="build">Updated Nov 11, 2026 11:00 AM PT · Gear rooms: a crack or cave leads to a tiny room with 3 walls</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -4616,7 +4616,7 @@ function diveTick(p) {
   if (p.x > d.x || d.t > 300) { G.dive = null; p.vx = 2; }
 }
 function hurt() {
-  if (P.inv > 0 || mode !== 'play' || hasPower('star') || G.swing || G.dive || vanished() || (G.dol && G.dol.ph === 'ride') || (G.flame && G.dash > 0)) return;   // (vanished: Mei's Ninja vanish)
+  if (P.inv > 0 || mode !== 'play' || hasPower('star') || G.swing || G.dive || G.groom || vanished() || (G.dol && G.dol.ph === 'ride') || (G.flame && G.dash > 0)) return;   // (vanished: Mei's Ninja vanish)
   if (prog.safe) {   // "Never get hurt" (Settings, per player): Kai blinks and hops back a little, no heart lost
     P.inv = 70; P.vy = -5; P.vx = -P.face * 3; sfx.bump();
     return;
@@ -4920,60 +4920,130 @@ function countPick(ct, i) {
   }
   if (ct.k >= ct.n - 1) { ct.done = true; confetti(x, y - 30); floatText(x, y - 80, 'You counted them all!', '#ffd23f', 26); payGems(x, y, 2); }
 }
-// The Gear Pack chest in the level: stand by it and 5 right answers open its old lock; the item flies out onto Kai.
+// The Gear Pack's secret room (owner, Nov 11 2026: "a tiny room enclosed by blocks ... answer questions to open 3 mini
+// walls to get to the treasure"): a glowing crack (Japan, factory, castle) or a cave mouth (volcano, snow, sea) at the end
+// of the high ledge. Walk in: a small room of the world's own bricks, Kai on the left, three short walls, the chest at
+// the end. Each wall asks one question when Kai reaches it; right = it sinks into the floor; wrong = it shakes, shows the
+// answer, then asks again (no penalty). After the third, the chest opens and the gear goes on him. Walk back out left.
+// Found already: the walls stay open and the chest stays open (nothing to answer).
+const GR_ROOM = { w: 12 * T, walls: [4.2 * T, 6.7 * T, 9.2 * T], chest: 10.9 * T };
+const gearCave = () => ['lava', 'snow', 'sea'].includes(L.world.key);
 function gearTick(p) {
-  const gc = L.gearChest; if (!gc) return;
-  if (gc.wait > 0) gc.wait--;
-  if (gc.open > 0 && gc.open < 1) gc.open = Math.min(1, gc.open + 0.04);
-  if (gc.fly != null && gc.fly < 60) gc.fly++;
+  const gc = L.gearChest; if (!gc || G.groom) return;
+  const near = Math.abs(p.x + p.w / 2 - gc.x) < 0.7 * T && Math.abs(p.y + p.h - gc.y) < (L.water ? T : 0.6 * T);
+  if (gc.rearm) { if (!near) gc.rearm = false; return; }
+  if (near && (p.onGround || L.water)) startGroom(gc);
+}
+function startGroom(gc) {
   const owned = (prog.gearOwned || []).includes(gc.id);
-  gc.near = !owned && !gc.open && Math.abs(p.x + p.w / 2 - gc.x) < 2.2 * T && Math.abs(p.y + p.h - gc.y) < T * 0.8;
-  if (gc.near && !gc.told) { gc.told = true; floatText(gc.x, gc.y - 132, 'An old chest! Answer 5 to open its lock.', '#ffd23f', 22); }
+  G.groom = { gc, x: 1.3 * T, face: 1, k: owned ? 3 : 0, walls: GR_ROOM.walls.map(x => ({ x, open: owned ? 1 : 0, shake: 0 })), done: owned, t: 0, wait: 0, msg: '', msgT: 0, fly: null, bits: [] };
+  G.mbox = null; P.vx = P.vy = 0; sfx.gate(); tone(220, 0.3, 'triangle', 0.04, 440);
 }
-function gearTarget() {
-  const gc = L.gearChest; if (!gc || !gc.near || gc.wait > 0) return null;
-  if (!gc.q) { gc.q = L.gen(); gc.opts = choices(gc.q, 3); gc.shownAt = G.time; }
-  return { kind: 'gear', q: gc.q, vals: gc.opts, off: gc.opts.map(() => false), ref: gc };
+function endGroom() { const gr = G.groom; G.groom = null; gr.gc.rearm = true; P.inv = 40; P.vx = P.vy = 0; syncAnsBar(); }
+function groomTick() {
+  const gr = G.groom; gr.t++;
+  if (gr.wait > 0 && --gr.wait === 0) gr.q = null;
+  if (gr.msgT > 0) gr.msgT--;
+  if (gr.fly != null && gr.fly < 70) gr.fly++;
+  for (const w of gr.walls) { if (w.open > 0 && w.open < 1) w.open = Math.min(1, w.open + 0.06); if (w.shake > 0) w.shake--; }
+  for (const b of gr.bits) { b.x += b.vx; b.y += b.vy; b.vy += 0.3; b.life--; } gr.bits = gr.bits.filter(b => b.life > 0);
+  const dir = (keys.right ? 1 : 0) - (keys.left ? 1 : 0); keys.jumpPressed = false;
+  if (dir) gr.face = dir;
+  const next = gr.walls[gr.k], max = next ? next.x - 0.75 * T : GR_ROOM.chest - 0.7 * T;
+  gr.x = clamp(gr.x + dir * 2.8, 0.4 * T, max); gr.walk = dir ? gr.walk + 1 : 0;
+  if (gr.x <= 0.4 * T && dir < 0) { endGroom(); return; }   // back out through the way in
+  if (!gr.done && !next && gr.x >= GR_ROOM.chest - 0.8 * T) { gr.done = true; gr.fly = 0; gearFound(gr.gc); }
 }
-function gearPick(gc, i) {
-  if (!gc.q || gc.wait > 0) return;
-  const q = gc.q, right = gc.opts[i] === q.ans, fast = G.time - (gc.shownAt ?? G.time) <= fastFrames(L.skill, q);
-  noteFact(q, right, right && fast, L.skill); gc.q = null;
+function groomTarget() {
+  const gr = G.groom, w = gr && gr.walls[gr.k]; if (!w || gr.wait > 0 || gr.x < w.x - 1.4 * T) return null;
+  if (!gr.q) { gr.q = L.gen(); gr.opts = choices(gr.q, 3); gr.shownAt = G.time; }
+  return { kind: 'gear', q: gr.q, vals: gr.opts, off: gr.opts.map(() => false), ref: gr };
+}
+function gearTarget() { return G.groom ? groomTarget() : null; }
+function gearPick(gr, i) {
+  if (!gr.q || gr.wait > 0) return;
+  const q = gr.q, right = gr.opts[i] === q.ans, fast = G.time - (gr.shownAt ?? G.time) <= fastFrames(L.skill, q), w = gr.walls[gr.k];
+  noteFact(q, right, right && fast, L.skill);
   if (right) {
-    G.solved++; if (fast) G.fastN++; gc.lock++; sfx.correct(); streakUp(gc.x, gc.y - 60); gotIt(); gc.shake = 12;
-    tone(900 + gc.lock * 120, 0.08, 'square', 0.03);   // click
-    floatText(gc.x, gc.y - 70, `${qSolved(q)}!  (${gc.lock}/5)`, '#3ae374', 22);
-    if (gc.lock >= 5) gearFound(gc);
+    G.solved++; if (fast) G.fastN++; sfx.correct(); gotIt(); G.streak++; G.bestStreak = Math.max(G.bestStreak, G.streak); stat('right');
+    w.open = 0.01; gr.k++; gr.q = null; sfx.brick();
+    gr.msg = `${qSolved(q)}!`; gr.msgCol = '#3ae374'; gr.msgT = 60;
+    for (let n = 0; n < 16; n++) gr.bits.push({ x: w.x + T / 2, y: -Math.random() * 3 * T, vx: (Math.random() - 0.5) * 5, vy: -Math.random() * 4, life: 34, col: n % 2 ? L.world.stair[0] : L.world.stair[1] });
   } else {
-    G.mistakes++; G.streak = 0; remember(q); missed(q); sfx.wrong(); gc.wait = 70;
-    floatText(gc.x, gc.y - 70, `Oops! ${qSolved(q)}`, '#ff6b6b', 22);
+    G.mistakes++; G.streak = 0; remember(q); missed(q); sfx.wrong();
+    w.shake = 24; gr.wait = 80; gr.msg = `Oops! ${qSolved(q)}`; gr.msgCol = '#ff6b6b'; gr.msgT = 90;
   }
 }
 function gearFound(gc) {
   const g = GEAR[gc.id];
-  gc.open = 0.01; gc.fly = 0; sfx.win(); confetti(gc.x, gc.y - 40);
+  sfx.win();
   prog.gearOwned = [...new Set([...(prog.gearOwned || []), gc.id])];
   if (!gearOn(gc.id)) wearGear(gc.id);   // put it on right away (one power piece at a time)
   prog.newPack = true; save();
-  floatText(gc.x, gc.y - 110, `You found the ${g.name}!`, '#ffd23f', 28);
-  floatText(gc.x, gc.y - 80, "It's in your Gear Pack.", '#ffffff', 20);
+  if (G.groom) { G.groom.msg = `You found the ${g.name}!`; G.groom.msgCol = '#ffd23f'; G.groom.msgT = 200; }
 }
+// The way in, on the ledge: a block of the world's stone with a glowing crack, or a little cave mouth.
 function drawGearChest() {
   const gc = L.gearChest; if (!gc || gc.x < cam - 80 || gc.x > cam + VW + 80) return;
-  const owned = (prog.gearOwned || []).includes(gc.id) && !gc.fly && !gc.open, sh = gc.shake > 0 ? (gc.shake--, Math.sin(gc.shake * 2) * 2) : 0;
-  if (!owned && !gc.open) glowAt(gc.x, gc.y - 20, 40 + Math.sin(tick * 0.1) * 5, 'rgba(255,220,120,.35)');
-  drawPix(gc.open || owned ? 'chestopen' : 'chest', gc.x - 18 + sh, gc.y - 36, 3);
-  if (!gc.open && !owned) for (let i = 0; i < 5; i++) { ctx.fillStyle = i < gc.lock ? '#ffd23f' : 'rgba(0,0,0,.45)'; ctx.fillRect(gc.x - 24 + i * 10, gc.y - 50, 8, 6); }   // the lock: 5 bars
-  if (gc.fly != null && gc.fly < 60) {   // the item rises out of the chest
-    const u = gc.fly / 60, cv = gearImg(gc.id, 4), y = gc.y - 40 - Math.sin(Math.min(1, u * 1.5) * Math.PI / 2) * 60;
-    glowAt(gc.x, y, 50, 'rgba(255,240,160,.6)'); ctx.globalAlpha = 1 - Math.max(0, u - 0.7) / 0.3; ctx.drawImage(cv, Math.round(gc.x - cv.width / 2), Math.round(y - cv.height / 2)); ctx.globalAlpha = 1;
+  const W = L.world, owned = (prog.gearOwned || []).includes(gc.id), x = gc.x, b = gc.y, pulse = 0.5 + 0.3 * Math.sin(tick * 0.08);
+  if (gearCave()) {   // a cave mouth: a rough rock arch with a dark opening
+    ctx.fillStyle = W.stair[1]; ctx.beginPath(); ctx.moveTo(x - 30, b); ctx.lineTo(x - 26, b - 46); ctx.lineTo(x - 10, b - 64); ctx.lineTo(x + 12, b - 62); ctx.lineTo(x + 28, b - 44); ctx.lineTo(x + 32, b); ctx.fill();
+    ctx.fillStyle = W.stair[0]; ctx.fillRect(x - 24, b - 50, 8, 6); ctx.fillRect(x + 12, b - 56, 10, 5);
+    ctx.fillStyle = '#0b0710'; ctx.beginPath(); ctx.moveTo(x - 16, b); ctx.lineTo(x - 14, b - 30); ctx.lineTo(x - 4, b - 42); ctx.lineTo(x + 8, b - 40); ctx.lineTo(x + 16, b - 28); ctx.lineTo(x + 18, b); ctx.fill();
+    if (!owned) glowAt(x, b - 20, 30, `rgba(255,220,120,${0.35 * pulse + 0.15})`);
+  } else {   // a crack in a block of the world's stone
+    block(x - T / 2, b - 2 * T, W.stair[0], W.stair[1], W.stair[2]); block(x - T / 2, b - T, W.stair[0], W.stair[1], W.stair[2]);
+    if (!owned) glowAt(x, b - T, 34, `rgba(255,220,120,${0.35 * pulse + 0.1})`);
+    ctx.fillStyle = owned ? '#1a1426' : `rgba(255,236,170,${0.7 + 0.3 * pulse})`;
+    for (const [dx, dy, w, h] of [[-2, -66, 4, 10], [0, -58, 4, 12], [-4, -48, 4, 12], [-1, -38, 5, 12], [2, -28, 4, 12], [-2, -18, 5, 14]]) ctx.fillRect(Math.round(x + dx), Math.round(b + dy), w, h);
   }
-  if (gc.near && gc.opts && !(gc.wait > 0)) gc.opts.forEach((v, j) => {   // the choices over the chest (computers press , . /)
-    const tx = gc.x + (j - 1) * 50, ty = gc.y + 58, [c1] = ansCol(j);   // just under the ledge (the top of the screen has the question banner and the K picture)
+  if (!owned && tick % 30 === 0 && G) G.parts.push({ k: 'bit', x: x + (Math.random() - 0.5) * 16, y: b - 30 - Math.random() * 20, vx: 0, vy: -0.6, up: true, life: 40, col: '#fff2b0', s: 3 });
+}
+// The room, over the level (like the rescue scenes, but Kai walks in it).
+function drawGroom() {
+  const gr = G.groom, W = L.world, rw = GR_ROOM.w, rx = Math.round((VW - rw) / 2), fy = Math.round(VH * 0.64), top = fy - 4 * T;
+  ctx.fillStyle = 'rgba(0,0,0,.72)'; ctx.fillRect(0, 0, VW, VH);
+  ctx.fillStyle = '#16101c'; ctx.fillRect(rx, top, rw, fy - top);   // the room's back wall
+  ctx.fillStyle = 'rgba(255,255,255,.04)'; for (let y = top + 18; y < fy; y += 24) ctx.fillRect(rx, y, rw, 2);
+  if (L.water) { ctx.fillStyle = 'rgba(40,120,200,.18)'; ctx.fillRect(rx, top, rw, fy - top); }
+  for (let x = rx - T; x < rx + rw + T; x += T) { block(x, top - T, W.stair[0], W.stair[1], W.stair[2]); block(x, fy, W.stair[0], W.stair[1], W.stair[2]); }   // roof and floor
+  for (let y = top; y < fy; y += T) { block(rx + rw, y, W.stair[0], W.stair[1], W.stair[2]); if (y < fy - 2 * T) block(rx - T, y, W.stair[0], W.stair[1], W.stair[2]); }   // walls (the way in on the left)
+  glowAt(rx - 6, fy - T, 40, 'rgba(255,230,160,.25)');
+  // the three short walls, sinking into the floor as they open
+  gr.walls.forEach((w, i) => {
+    if (w.open >= 1) return;
+    const sx = rx + w.x + (w.shake ? Math.sin(w.shake * 1.3) * 3 : 0), sink = w.open * 3 * T;
+    ctx.save(); ctx.beginPath(); ctx.rect(sx - 2, top, T + 4, fy - top); ctx.clip();
+    for (let h = 1; h <= 3; h++) block(sx, fy - h * T + sink, W.brick[0], W.brick[1], W.brick[0]);
+    ctx.restore();
+    if (i === gr.k && !gr.wait) glowAt(sx + T / 2, fy - 1.5 * T, 50, 'rgba(255,240,160,.18)');
+  });
+  for (const b of gr.bits) { ctx.globalAlpha = Math.min(1, b.life / 12); ctx.fillStyle = b.col; ctx.fillRect(rx + b.x, fy + b.y, 5, 5); } ctx.globalAlpha = 1;
+  // the chest
+  const cx = rx + GR_ROOM.chest;
+  if (!gr.done) glowAt(cx, fy - 20, 40 + Math.sin(tick * 0.1) * 5, 'rgba(255,220,120,.35)');
+  drawPix(gr.done ? 'chestopen' : 'chest', cx - 18, fy - 36, 3);
+  if (gr.fly != null && gr.fly < 70) {   // the gear rises out of the chest
+    const u = gr.fly / 70, cv = gearImg(gr.gc.id, 4), y = fy - 40 - Math.sin(Math.min(1, u * 1.5) * Math.PI / 2) * 70;
+    glowAt(cx, y, 50, 'rgba(255,240,160,.6)'); ctx.globalAlpha = 1 - Math.max(0, u - 0.75) / 0.25; ctx.drawImage(cv, Math.round(cx - cv.width / 2), Math.round(y - cv.height / 2)); ctx.globalAlpha = 1;
+  }
+  // Kai
+  const kp = { x: rx + gr.x - 12, y: fy - 44, w: 24, h: 44, face: gr.face, onGround: true, vx: 0, vy: 0 };
+  const frame = gr.walk && Math.floor(gr.walk / 6) % 2 ? 'walkA' : 'stand';
+  drawGearOn(kp, frame, 'back', false); drawBaked(SPR, frame, gr.face < 0, kp); drawGearOn(kp, frame, 'front', false);
+  // the question's choices over the next wall (computers press , . /; phones use the buttons)
+  const t = groomTarget();
+  if (t) t.vals.forEach((v, j) => {
+    const w = gr.walls[gr.k], tx = rx + w.x + T / 2 + (j - 1) * 50, ty = top + 26, [c1] = ansCol(j);
     ctx.fillStyle = c1; rrect(tx - 21, ty - 17, 42, 34, 9); ctx.fill(); ctx.fillStyle = '#ffffff'; rrect(tx - 18, ty - 14, 36, 28, 7); ctx.fill();
     ctx.font = `${String(v).length > 3 ? 14 : 18}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.fillStyle = '#1a1426'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(v, tx, ty + 1);
     if (!isTouch) keyTag(ANS_KEYS(3)[j], tx + 18, ty - 16);
   });
+  if (gr.msgT > 0) hudText(gr.msg, VW / 2, top - T - 22, 24, gr.msgCol, 'center');
+  else if (!gr.done && gr.t < 200) hudText('Open the walls to reach the chest!', VW / 2, top - T - 22, 20, '#ffffff', 'center');
+  else if (gr.done && gr.t > 60) hudText('◀ Walk back out', VW / 2, fy + 2 * T + 10, 18, '#ffffff', 'center');
+  // the walls left, as little marks
+  for (let i = 0; i < 3; i++) { ctx.fillStyle = i < gr.k ? '#3ae374' : 'rgba(255,255,255,.25)'; ctx.fillRect(VW / 2 - 30 + i * 22, fy + T + 14, 16, 8); }
 }
 // A gear item on its own (Gear Pack page, the chest): its rows at a cell size, cached.
 const gearImgs = {};
@@ -5784,6 +5854,7 @@ function updatePlayer() {
   vanishTick();   // Mei's Ninja vanish (button / V)
   dolphinTick();   // Nami's dolphin ride (button / F)
   if (G.rescue) { rescueTick(); petTick(); return; }   // in a lost friend's scene
+  if (G.groom) { groomTick(); petTick(); return; }   // in the Gear Pack's secret room
   if (G.swing) { swingTick(); petTick(); return; }   // on a swing crossing
   if (G.dive) { diveTick(p); petTick(); return; }   // the sea: swimming through the door that just opened
   updateTwist();
@@ -10298,6 +10369,7 @@ function drawHUD() {
   const br = activeBridge();
   let txt;
   if (G.rescue) txt = rescueTitle(G.rescue);
+  else if (G.groom) txt = miniTarget() ? qShow(miniTarget().q) : G.groom.done ? 'You found it!' : 'A secret room!';
   else if (L.room && L.room.kind === 'train') txt = L.room.open || L.room.show ? L.room.move.name : L.room.intro > 0 ? (L.room.intro > 150 ? L.room.move.name : L.room.intro > 90 ? 'Bow to Sensei' : L.room.intro > 40 ? 'Ready...' : 'Begin!') : qShow(L.room.q);
   else if (L.room) txt = L.room.open ? 'Treasure!' : { scale: 'Balance the scale!', square: 'Magic square!', machine: 'Number machine!' }[L.room.kind];
   else if (br) txt = `Make ${br.target}!`;
@@ -10405,6 +10477,7 @@ function render() {
   if (G && G.blackout) { ctx.fillStyle = `rgba(0,0,0,${G.blackout})`; ctx.fillRect(0, 0, VW, VH); }
   if (G && G.alarm > 0) { ctx.fillStyle = `rgba(255,0,0,${0.18 * Math.abs(Math.sin(G.alarm * 0.2))})`; ctx.fillRect(0, 0, VW, VH); }
   if (G && G.rescue) drawRescue();
+  if (G && G.groom) drawGroom();
   if (G) {
     drawHUD();
     // gems fly up into the counter
