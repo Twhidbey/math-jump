@@ -103,6 +103,10 @@
   .tbtn[data-k="vanish"] { display: none; left: 116px; bottom: 120px; background: conic-gradient(rgba(170,140,255,.6) var(--f, 0%), rgba(255,255,255,.12) 0); }   /* Mei's Ninja vanish; fills up while it recharges */
   .tbtn[data-k="vanish"]:not(.ready) .pix { opacity: .45; }
   body.canvanish .tbtn[data-k="vanish"] { display: flex; }
+  .tbtn[data-k="gear"] { display: none; left: 18px; bottom: 222px; background: conic-gradient(rgba(255,210,63,.6) var(--f, 0%), rgba(255,255,255,.12) 0); }   /* the worn gear's power; fills up while it recharges */
+  .tbtn[data-k="gear"] img { max-width: 52px; max-height: 52px; image-rendering: pixelated; pointer-events: none; }
+  .tbtn[data-k="gear"]:not(.ready) img { opacity: .45; }
+  body.cangear .tbtn[data-k="gear"] { display: flex; }
   /* Tap-to-answer bar for gates and bosses */
   #ansbar { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 7; display: flex; flex-direction: column; align-items: center; gap: 6px;
     -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; }
@@ -138,6 +142,7 @@
   body.portrait .tbtn[data-k="move"] { left: 12px; bottom: calc(max(36px, env(safe-area-inset-bottom)) + 122px); }
   body.portrait .tbtn[data-k="dolphin"] { left: 122px; bottom: calc(max(36px, env(safe-area-inset-bottom)) + 122px); }
   body.portrait .tbtn[data-k="vanish"] { left: 122px; bottom: calc(max(36px, env(safe-area-inset-bottom)) + 122px); }
+  body.portrait .tbtn[data-k="gear"] { left: 12px; bottom: calc(max(36px, env(safe-area-inset-bottom)) + 234px); }
   body.portrait .tbtn[data-k="down"] { right: 22px; bottom: calc(max(36px, env(safe-area-inset-bottom)) + 132px); }   /* above ▲ */   /* above the left arrow (after the rule above, which would win otherwise) */
   body.touch .keys { display: none; }
   body.racing .tbtn[data-k="jump"] { display: none; }
@@ -547,7 +552,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 11, 2026 6:00 PM PT · Boss entrances (name slam, FIGHT!) and a victory move at the end of each level</div>
+  <div class="build">Updated Nov 11, 2026 8:00 PM PT · Gear button: every piece has a power (Ground Pound, Horn Charge, Water Blast, Light flash)</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -639,7 +644,7 @@
 <div id="pack" class="overlay hidden">
   <div class="card shopcard">
     <h2>Gear Pack</h2>
-    <div class="shophint">Lost gear is hidden in old chests up on high ledges. Tap a piece to wear it. Only one piece with a power at a time. Open its room again on another day to polish it: silver, then gold.</div>
+    <div class="shophint">Lost gear is hidden in secret rooms. Tap a piece to wear it: Kai wears one at a time, and the gear button (G on a computer) uses its power. Right answers refill it. Open its room again on another day to polish it: silver, then gold.</div>
     <canvas id="packPreview" width="200" height="150"></canvas>
     <div class="packgrid" id="packGrid"></div>
     <div class="row"><button class="btn alt" id="packClose" type="button">Back</button></div>
@@ -708,6 +713,7 @@
   <div class="tbtn" data-k="down">▼</div>
   <div class="tbtn" data-k="vanish"><span data-pix="vanish"></span></div>
   <div class="tbtn" data-k="dolphin"><span data-pix="dolphin"></span></div>
+  <div class="tbtn" data-k="gear"><img alt=""></div>
 </div>
 
 <script>
@@ -1502,17 +1508,17 @@ var LEVEL_MIX = null;
 // the sea floor between two coral rocks); 5 right answers open its lock. Looks only for now (owner: maybe actions later).
 // Art is drawn on Kai's own 16 × 16 cell grid (gx, gy = where the rows start; 'k' = outline), mirrored when he turns.
 const GEAR = {
-  helmet: { name: 'Samurai Helmet', slot: 'head', w: 0, k: 1, gx: 3, gy: -3, pal: { d: '#3a3a4a', D: '#5a5a6e', y: '#ffd23f' },
+  helmet: { name: 'Samurai Helmet', slot: 'head', power: 'Ground Pound', w: 0, k: 1, gx: 3, gy: -3, pal: { d: '#3a3a4a', D: '#5a5a6e', y: '#ffd23f' },
     rows: ['.ky......yk.', '..ky....yk..', '...kyyyyk...', '..kkDDDDkk..', '.kddDDddddk.', 'kddddddddddk', 'kk........kk'] },
   cape: { name: 'Fire Cape', slot: 'back', power: 'Flame Dash', w: 1, k: 2, gx: 0, gy: 8, pal: { r: '#e63946', R: '#a91d2b', o: '#ff8c1a', y: '#ffd23f' },
     rows: ['...krr', '..krRr', '.krrRr', '.krrRr', 'krrRrr', 'krorrr', 'koyoko', '.k.k..'] },
-  jetpack: { name: 'Jetpack', slot: 'back', power: 'Short flight', w: 2, k: 2, gx: 1, gy: 7, pal: { g: '#9aa7b8', G: '#6c7a89', r: '#ff3355', c: '#7df9ff' },
+  jetpack: { name: 'Jetpack', slot: 'back', power: 'Jetpack flight', w: 2, k: 2, gx: 1, gy: 7, pal: { g: '#9aa7b8', G: '#6c7a89', r: '#ff3355', c: '#7df9ff' },
     rows: ['kkkk', 'kggk', 'kgrk', 'kcgk', 'kggk', 'kGGk', 'kkkk'] },
-  viking: { name: 'Viking Helmet', slot: 'head', w: 3, k: 0, gx: 2, gy: -3, pal: { w: '#f4ead2', W: '#c9bfa6', g: '#9aa7b8', G: '#6c7a89', y: '#ffd23f' },
+  viking: { name: 'Viking Helmet', slot: 'head', power: 'Horn Charge', w: 3, k: 0, gx: 2, gy: -3, pal: { w: '#f4ead2', W: '#c9bfa6', g: '#9aa7b8', G: '#6c7a89', y: '#ffd23f' },
     rows: ['kw..........wk', 'kwk........kwk', '.kwk.kkkkk.kwk', '..kkkggggGkk..', '..kgggggggGk..', '..kyyyyyyyyk..'] },
-  trident: { name: 'Trident', slot: 'hand', w: 4, k: 0, gx: 12, gy: 0, pal: { y: '#ffd23f', Y: '#c99a1a' },
+  trident: { name: 'Trident', slot: 'hand', power: 'Water Blast', w: 4, k: 0, gx: 12, gy: 0, pal: { y: '#ffd23f', Y: '#c99a1a' },
     rows: ['y.y.y', 'y.y.y', 'yyyyy', '.kYk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '..k..'] },
-  lantern: { name: 'Paper Lantern', slot: 'hand', power: 'Light in the dark', w: 5, k: 0, gx: 12, gy: 8, pal: { o: '#ffb627', O: '#ff8c1a', r: '#a8323e' },
+  lantern: { name: 'Paper Lantern', slot: 'hand', power: 'Light flash', w: 5, k: 0, gx: 12, gy: 8, pal: { o: '#ffb627', O: '#ff8c1a', r: '#a8323e' },
     rows: ['.k.', '.k.', 'krk', 'koO', 'koO', 'krk', '.k.'] },
 };
 const GEAR_SLOTS = ['head', 'back', 'hand'];
@@ -1527,6 +1533,118 @@ function wearGear(id) {
   prog.gear = eq;
 }
 const JET_FUEL = 60;   // frames of flight per jump
+// Gear powers (owner, Nov 11 2026: "they really like a separate button"): every piece has a power, only one piece is worn
+// at a time, and one gear button (G on a computer) shows the worn piece and does its power. It refills like the vanish
+// button, or at once with a right answer (streakUp). Jetpack: hold to fly (fuel, refills on landing). Fire Cape: Flame
+// Dash now. Samurai Helmet: Ground Pound (in the air; from the ground he hops first). Viking Helmet: Horn Charge.
+// Trident: Water Blast (in the sea with ▼ held: a fountain that shoots him up). Paper Lantern: a flash that lights the
+// whole dark level for a few seconds and dazzles enemies nearby. Not in bosses, rooms, rescues or crossings.
+const GEAR_CHARGE = { cape: 600, helmet: 150, viking: 300, trident: 120, lantern: 600 };
+const FLARE_T = 300;
+function gearPow() {
+  const eq = prog.gear || {};
+  for (const sl of ['back', 'hand', 'head']) if (eq[sl] && GEAR[eq[sl]] && GEAR[eq[sl]].power) return eq[sl];
+  return null;
+}
+const gearBtnOn = () => !!(G && mode === 'play' && gearPow() && !L.boss && !L.room && !G.rescue && !G.groom && !G.cross && !G.swing && !G.bossIn);
+const flareR = r => (G && G.flare > 0 ? r + (1400 - r) * Math.min(1, G.flare / 30, (FLARE_T - G.flare + 1) / 12) : r);
+let gearBtnF = -1, gearBtnId = null;
+function gearBtnSync() {
+  const on = gearBtnOn(), id = gearPow();
+  document.body.classList.toggle('cangear', on);
+  if (!on) return;
+  const b = document.querySelector('.tbtn[data-k="gear"]');
+  if (id !== gearBtnId) { gearBtnId = id; b.querySelector('img').src = gearImg(id, 6).toDataURL(); gearBtnF = -1; }
+  const f = id === 'jetpack' ? Math.round(100 * (G.jetFuel ?? JET_FUEL) / JET_FUEL) : Math.round(100 - (G.gearCool || 0) / GEAR_CHARGE[id] * 100);
+  if (f !== gearBtnF) { gearBtnF = f; b.style.setProperty('--f', f + '%'); b.classList.toggle('ready', f >= 100); }
+}
+function gearPowTick(p) {
+  const id = gearPow(), go = keys.gearPressed && gearBtnOn();
+  keys.gearPressed = false;
+  if (G.gearCool > 0) G.gearCool--;
+  if (G.flare > 0) G.flare--;
+  if (G.pound === 'up' && p.vy >= -1) { G.pound = 'down'; p.vy = 15; tone(900, 0.25, 'square', 0.03, 200); }
+  if (G.pound === 'down') { p.vx = 0; p.vy = Math.max(p.vy, 15); if (tick % 2 === 0) G.parts.push({ k: 'bit', x: p.x + Math.random() * p.w, y: p.y - 6, vx: 0, vy: -2, life: 10, col: '#ffffff', s: 3, up: true }); }
+  if (G.charge > 0) {   // Horn Charge: head down, full speed ahead; bricks smash, enemies go flying
+    G.charge--; p.vx = G.chargeDir * 9; p.face = G.chargeDir;
+    if (tick % 2 === 0) G.parts.push({ k: 'bit', x: p.x + p.w / 2 - p.face * 20, y: p.y + 8 + Math.random() * (p.h - 12), vx: -p.face * 3, vy: 0, life: 12, col: '#ffffff', s: 3, up: true });
+    const fc = Math.floor((p.x + p.w / 2 + p.face * (p.w / 2 + 10)) / T);
+    for (let r = Math.floor(p.y / T); r <= Math.floor((p.y + p.h - 1) / T); r++) if (L.map[r] && L.map[r][fc] === 'B') { L.map[r][fc] = '.'; G.score += 50; sfx.brick(); shake(4, 2); burst(fc * T + T / 2, r * T + T / 2, L.world.brick[0], 10); floatText(fc * T + T / 2, r * T, 'SMASH!', '#ffd23f', 22); }
+    for (const e of L.enemies) if (!e.dead && Math.abs(e.x + e.w / 2 - (p.x + p.w / 2 + p.face * 14)) < 30 && overlap({ x: p.x - 10, y: p.y, w: p.w + 20, h: p.h }, e)) knockOut(e, 'BONK!');
+  }
+  if (!go || !id) return;
+  if (id === 'jetpack') return;   // (held, in the jump code)
+  if (G.gearCool > 0) { tone(160, 0.08, 'square', 0.02); return; }
+  const cx = p.x + p.w / 2;
+  if (id === 'cape') {
+    if (inWater(p)) { floatText(cx, p.y - 30, 'Too wet for fire!', '#9be7ff', 20); return; }
+    G.dash = 240; G.flame = true; G.gearCool = GEAR_CHARGE.cape;
+    floatText(cx, p.y - 50, 'Flame dash!', '#ff8c1a', 30); tone(300, 0.4, 'sawtooth', 0.04, 1200); tone(600, 0.3, 'triangle', 0.04, 1600, 0.1);
+  } else if (id === 'helmet') {
+    if (inWater(p) || G.pound || G.climb) return;
+    G.pound = p.onGround ? 'up' : 'down'; G.gearCool = GEAR_CHARGE.helmet;
+    if (p.onGround) { p.vy = -10; p.onGround = false; sfx.jump(); } else { p.vy = 15; tone(900, 0.25, 'square', 0.03, 200); }
+  } else if (id === 'viking') {
+    G.charge = 45; G.chargeDir = p.face || 1; G.gearCool = GEAR_CHARGE.viking;
+    floatText(cx, p.y - 40, 'Horn charge!', '#ffd23f', 26); tone(220, 0.35, 'sawtooth', 0.05, 330); tone(330, 0.3, 'sawtooth', 0.04, 440, 0.15);   // the horn
+  } else if (id === 'trident') {
+    G.gearCool = GEAR_CHARGE.trident;
+    const down = inWater(p) && keys.down, f = p.face || 1;
+    G.gfx = G.gfx || [];
+    if (down) {   // a fountain under him: Kai shoots up
+      p.vy = -12; G.gfx.push({ k: 'jet', x: cx, y: p.y + p.h, vx: 0, vy: 12, t: 0, life: 22 });
+      floatText(cx, p.y - 30, 'Whoosh!', '#9be7ff', 24);
+    } else { G.gfx.push({ k: 'jet', x: cx + f * 16, y: p.y + 16, vx: f * 13, vy: 0, t: 0, life: 34 }); floatText(cx, p.y - 30, 'Water blast!', '#9be7ff', 24); }
+    tone(700, 0.3, 'sawtooth', 0.025, 200); tone(1400, 0.2, 'triangle', 0.02, 500, 0.05);
+  } else if (id === 'lantern') {
+    G.flare = FLARE_T; G.gearCool = GEAR_CHARGE.lantern; G.flash = 0.45;
+    floatText(cx, p.y - 40, 'Light!', '#ffe9a8', 28); [784, 1047, 1568].forEach((f, i) => tone(f, 0.25, 'triangle', 0.035, null, i * 0.06));
+    for (const e of L.enemies) if (!e.dead && Math.abs(e.x - p.x) < 4 * T && Math.abs(e.y - p.y) < 4 * T) knockOut(e, 'Dazzled!');
+  }
+}
+function knockOut(e, word) { e.dead = 'flip'; e.vy = -8; e.vx = (P.face || 1) * 4; G.score += 200; sfx.stomp(); burst(e.x + e.w / 2, e.y + e.h / 2, '#ffffff', 10, 4); floatText(e.x + e.w / 2, e.y, word, '#ffd23f', 22); }
+function poundLand(p) {   // the Ground Pound hits the ground: shockwave, enemies flip, bricks and ? boxes under him pop
+  G.pound = null; shake(14, 6); tone(70, 0.4, 'square', 0.07, 40); tone(140, 0.2, 'sawtooth', 0.04, 60);
+  const cx = p.x + p.w / 2, fy = p.y + p.h;
+  burst(cx - 20, fy - 4, '#e8e0d0', 10, 4); burst(cx + 20, fy - 4, '#e8e0d0', 10, 4); floatText(cx, p.y - 30, 'POUND!', '#ffd23f', 28);
+  (G.gfx = G.gfx || []).push({ k: 'wave', x: cx, y: fy, t: 0, life: 24 });
+  for (const e of L.enemies) if (!e.dead && Math.abs(e.x + e.w / 2 - cx) < 3.2 * T && Math.abs(e.y + e.h - fy) < 1.5 * T) knockOut(e, 'BOOM!');
+  const r = Math.floor((fy + 2) / T);
+  for (let c = Math.floor((p.x - 6) / T); c <= Math.floor((p.x + p.w + 6) / T); c++) if (L.map[r] && (L.map[r][c] === 'B' || L.map[r][c] === '?')) { bump(c, r); if (L.map[r][c] === 'B') { L.map[r][c] = '.'; sfx.brick(); burst(c * T + T / 2, r * T + T / 2, L.world.brick[0], 10); } }
+}
+function gearFxTick() {   // the trident's water jet flies and hits things
+  if (!G.gfx) return;
+  for (const f of G.gfx) {
+    f.t++;
+    if (f.k !== 'jet' || f.done) continue;
+    f.x += f.vx; f.y += f.vy;
+    for (const e of L.enemies) if (!e.dead && Math.abs(e.x + e.w / 2 - f.x) < e.w / 2 + 10 && Math.abs(e.y + e.h / 2 - f.y) < e.h / 2 + 10) { knockOut(e, 'SPLASH!'); f.done = true; }
+    const c = Math.floor(f.x / T), r = Math.floor(f.y / T);
+    if (!f.done && L.map[r] && L.map[r][c] && L.map[r][c] !== '.' && solid(c, r)) {
+      if (L.map[r][c] === 'B') { L.map[r][c] = '.'; G.score += 50; sfx.brick(); burst(c * T + T / 2, r * T + T / 2, L.world.brick[0], 10); floatText(c * T + T / 2, r * T, 'SPLASH!', '#9be7ff', 22); }
+      else if (L.map[r][c] === '?') bump(c, r);
+      f.done = true; burst(f.x, f.y, '#bfefff', 10, 3);
+    }
+  }
+  G.gfx = G.gfx.filter(f => f.t < f.life && !(f.k === 'jet' && f.done));
+}
+function drawGearFx() {
+  if (!G.gfx) return;
+  for (const f of G.gfx) {
+    if (f.k === 'wave') {   // two rings of pixel blocks running along the ground
+      const d = 10 + f.t * 6, a = 1 - f.t / f.life;
+      ctx.fillStyle = `rgba(255,255,255,${a})`;
+      for (const s of [-1, 1]) for (let i = 0; i < 3; i++) ctx.fillRect(Math.round(f.x + s * (d - i * 10)) - 4, Math.round(f.y - 6 - i * 4), 8, 6 + i * 4);
+    } else if (f.k === 'jet') {   // a stream of water from the trident
+      const n = Math.min(f.t, 8), dx = f.vx ? -Math.sign(f.vx) : 0, dy = f.vy ? -Math.sign(f.vy) : 0;
+      for (let i = 0; i < n; i++) {
+        ctx.fillStyle = i === 0 ? '#ffffff' : i % 2 ? '#7fd8ff' : '#3aa8e8';
+        const sz = 12 - i;
+        ctx.fillRect(Math.round(f.x + dx * i * 12 - sz / 2), Math.round(f.y + dy * i * 12 - sz / 2), sz, sz);
+      }
+    }
+  }
+}
 const gearAt = (w, k) => Object.keys(GEAR).find(id => GEAR[id].w === w && GEAR[id].k === k);
 // Draws one gear item on a sprite drawn at (ox, oy) with px-sized cells, 16 cells wide (flip = facing left).
 // Polish your gear (owner, Nov 11 2026): opening its room again on a later day makes it shinier: plain, silver, gold.
@@ -3034,7 +3152,7 @@ function setStationQ(st, q) {
 }
 // First-try answers build a streak that multiplies the points.
 function streakUp(x, y) {
-  G.vanCool = 0; G.dolCool = 0;   // a right answer refills Ninja vanish and the dolphin
+  G.vanCool = 0; G.dolCool = 0; G.gearCool = 0; G.jetFuel = JET_FUEL;   // a right answer refills Ninja vanish, the dolphin and the gear button
   G.streak++; G.bestStreak = Math.max(G.bestStreak, G.streak);
   stat('right'); if (G.streak > statOf('bestStreak')) prog.stats.bestStreak = G.streak;
   if (statOf('right') % 25 === 0 || G.streak === 10 || G.streak === 25 || G.streak === 50) statBadges();
@@ -3402,7 +3520,7 @@ function openBadges() {
   $('badgeCount').innerHTML = `${got} of ${BADGES.length} badges · ${pixImg('gem', 'pix sm', { c: '#ffd23f', b: '#e8452c', w: '#fff6c8' })} ${nKeys(prog.golden)} of ${GOLD_N} golden gems
     ${titles.length ? `<div class="titlerow">Your title: ${['', ...titles].map(t => `<button type="button" class="tchip${(prog.title || '') === t ? ' on' : ''}" data-title="${t}">${t || 'None'}</button>`).join('')}</div>` : ''}
     <div class="friendrow">${FRIENDS.map(f => (prog.friends || {})[f.id] ? `<span><span class="pair">${kidImg(f.id)}${toolImg(f.way)}</span><small><b>${f.name}</b> ${f.pname} · ${RESCUE_TOOL[f.way].short}</small></span>`
-      : `<span><i class="kidq">?</i><small>Lost in ${WORLDS[f.w].name}</small></span>`).join('')}</div>`;
+      : `<span><i class="kidq">?</i><small>Lost in ${(STAGES.find(x => x.w === f.w && x.k === f.k && !x.boss) || WORLDS[f.w]).name}</small></span>`).join('')}</div>`;
   $('badgeCount').querySelectorAll('[data-title]').forEach(el => { el.onclick = () => { audio(); prog.title = el.dataset.title || null; save(); openBadges(); }; });
   // Times tables clump into one card and each bronze/silver/gold set into one card (owner: the book felt repetitive).
   const card = b => (b.sec === 'tier' ? (b.tier === 1 ? tierCard(b.grp) : '') : b.set ? (BADGES.find(x => x.set === b.set) === b ? setCard(b.set) : '') : badgeCard(b));
@@ -4662,7 +4780,7 @@ function diveTick(p) {
   if (p.x > d.x || d.t > 300) { G.dive = null; p.vx = 2; }
 }
 function hurt() {
-  if (P.inv > 0 || mode !== 'play' || hasPower('star') || G.swing || G.dive || G.groom || vanished() || (G.dol && G.dol.ph === 'ride') || (G.flame && G.dash > 0)) return;   // (vanished: Mei's Ninja vanish)
+  if (P.inv > 0 || mode !== 'play' || hasPower('star') || G.swing || G.dive || G.groom || vanished() || (G.dol && G.dol.ph === 'ride') || (G.flame && G.dash > 0) || G.pound || G.charge > 0) return;   // (vanished: Mei's Ninja vanish; gear powers: Ground Pound, Horn Charge)
   if (prog.safe) {   // "Never get hurt" (Settings, per player): Kai blinks and hops back a little, no heart lost
     P.inv = 70; P.vy = -5; P.vx = -P.face * 3; sfx.bump();
     return;
@@ -5972,10 +6090,11 @@ function updatePlayer() {
     if (!keys.jump && p.vy < -4.5 && !G.climb && !p.bounce) p.vy = -4.5;   // short hop when jump is released early
     p.vy = Math.min(p.vy + 0.55, 12);
     if (G.jetTold > 0) G.jetTold--;
-    if (!keys.jump) G.jetFly = false;
-    if (keys.jump && !p.onGround && (G.jetFly || p.vy > -2) && !G.climb && gearOn('jetpack') && (G.jetFuel ?? JET_FUEL) > 0) {   // the Jetpack: hold jump in the air to fly a little (about a second, ~3 tiles up)
+    if (!keys.gear) G.jetFly = false;
+    if (keys.gear && gearPow() === 'jetpack' && gearBtnOn() && !G.climb && !inWater(p) && (G.jetFuel ?? JET_FUEL) > 0) {   // the Jetpack: hold the gear button (G) to fly a little (about a second, ~3 tiles up), from the ground too
       if (noFlyHere(p)) { if (!G.jetTold) { G.jetTold = 120; floatText(p.x + p.w / 2, p.y - 30, 'No flying here!', '#ffb627', 20); tone(160, 0.15, 'square', 0.03, 90); } }
       else {
+        if (p.onGround) { p.onGround = false; p.y -= 2; }
         G.jetFly = true; p.vy = Math.max(p.vy - 1.1, -1.9); G.jetFuel = (G.jetFuel ?? JET_FUEL) - 1; G.jetOn = 4;
         if (tick % 2 === 0) G.parts.push({ k: 'bit', x: p.x + p.w / 2 - p.face * 8, y: p.y + p.h, vx: (Math.random() - 0.5), vy: 2 + Math.random() * 2, life: 16, col: ['#ffd23f', '#ff8c1a', '#ff3b1f'][R(0, 2)], s: 4 });
         if (tick % 6 === 0) tone(90, 0.06, 'sawtooth', 0.02, 70);
@@ -5999,7 +6118,9 @@ function updatePlayer() {
   } else if (G.flame && !G.dash) G.flame = false;
   const riding = G.dol && G.dol.ph === 'ride';
   if (riding) { p.vx = G.dol.dir * 8; p.vy = 0; p.face = G.dol.dir; }   // holding the dolphin's fin
+  gearPowTick(p);   // the worn gear's power (gear button / G)
   const hitWall = moveX(p);
+  if (G.charge > 0 && hitWall) { G.charge = 0; shake(8, 4); sfx.bump(); burst(p.x + p.w / 2 + p.face * 16, p.y + p.h / 2, '#ffffff', 8, 3); }   // the Horn Charge stops at a wall
   if (riding && hitWall) dolphinLetGo();   // a wall (a gate) ends the ride
   if (L.counts) countsTick(p);   // the sea's counting bubble line
   gearTick(p);   // the Gear Pack chest
@@ -6015,6 +6136,8 @@ function updatePlayer() {
   for (const lp of L.leaps || []) if (!lp.told && Math.abs(p.x + p.w - lp.c * T) < 10 && p.vx === 0 && (keys.right) && ++lp.t > 40) {
     lp.told = true; floatText(p.x + p.w / 2, p.y - 30, 'Jump out of the water! ▲', '#ffd23f', 24);
   }
+  if (G.pound === 'down' && p.onGround) poundLand(p);
+  else if (G.pound === 'down' && inWater(p)) G.pound = null;
   if (wasAir && p.onGround && fallSpeed > 6) { p.squash = 8; burst(p.x + p.w / 2, p.y + p.h, '#e8e0d0', 4, 1.5); }
   if (p.squash > 0) p.squash--; else if (p.squash < 0) p.squash++;
   if (p.flipT > 0) p.flipT--;
@@ -6760,6 +6883,7 @@ function update() {
     else if (mode === 'win') { updateWin(); updateEnemies(); }
     if (mode === 'play' || mode === 'win') { updateBoss(); if (L.boss) { updateArena(); updateOrbs(); updateShotsAndProjectiles(); } }
   }
+  if (mode === 'play' || mode === 'win') gearFxTick();
   updateGates();
   for (const [k, v] of G.bumps) { if (v <= 1) G.bumps.delete(k); else G.bumps.set(k, v - 1); }
   for (const p of G.parts) {
@@ -7483,7 +7607,7 @@ function drawSeaDark() {
   d.fillStyle = g; d.fillRect(0, top, VW, VH - top);
   d.globalCompositeOperation = 'destination-out';
   const hole = (x, y, r) => { const h = d.createRadialGradient(x - cam, y, r * 0.3, x - cam, y, r); h.addColorStop(0, 'rgba(0,0,0,1)'); h.addColorStop(1, 'rgba(0,0,0,0)'); d.fillStyle = h; d.fillRect(x - cam - r, y - r, r * 2, r * 2); };
-  hole(P.x + P.w / 2, P.y + P.h / 2, gearOn('lantern') ? 360 : 150);   // the Paper Lantern lights a big circle
+  hole(P.x + P.w / 2, P.y + P.h / 2, flareR(gearOn('lantern') ? 360 : 150));   // the Paper Lantern lights a big circle
   for (const f of L.lfish || []) hole(f.x || 0, f.y || 0, 120);
   if (L.angler && L.angler.on) hole(L.angler.x + L.angler.face * 30, L.angler.y - 26, anglerR() + L.angler.pulse * 2);
   const cs = currentStation(); if (cs && cs.answers) cs.answers.forEach(o => hole(o.c * T + T, o.r * T + T, 70));
@@ -8042,7 +8166,7 @@ function drawDarkness() {
   d.globalCompositeOperation = 'source-over'; d.clearRect(0, 0, VW, VH); d.fillStyle = 'rgba(6,2,10,.93)'; d.fillRect(0, 0, VW, VH);
   d.globalCompositeOperation = 'destination-out';
   const hole = (x, y, r) => { const g = d.createRadialGradient(x - cam, y, r * 0.3, x - cam, y, r); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); d.fillStyle = g; d.fillRect(x - cam - r, y - r, r * 2, r * 2); };
-  hole(P.x + P.w / 2, P.y + P.h / 2, (gearOn('lantern') ? 360 : 170) + Math.sin(tick * 0.1) * 4);   // the Paper Lantern lights a big circle
+  hole(P.x + P.w / 2, P.y + P.h / 2, flareR(gearOn('lantern') ? 360 : 170) + Math.sin(tick * 0.1) * 4);   // the Paper Lantern lights a big circle
   for (const f of L.fx) if (f.k === 'crystal') hole(f.x, f.y, f.lit ? 190 : 46);
   for (const fd of L.squads || []) if (!fd.done) { fd.foods.forEach(f => hole(f.x, f.y, 44)); hole(fd.ax, GR * T - 40, 70); }   // animals and their food glow in the dark
   if (G.mbox) G.mbox.bubbles.forEach(b => hole(b.x, b.y, 40));
@@ -10636,7 +10760,7 @@ function render() {
   drawPits(c0, c1);   // after enemies, so lava blobs rise out of the lava
   drawBoss();
   if (L.boss) { drawOrbs(); }
-  if (G) { drawDolphin(); drawPet(); drawPlayer(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
+  if (G) { drawDolphin(); drawPet(); drawPlayer(); drawGearFx(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
   if (L.twist && G) drawTwistFront();
   if (L.flavor && G) drawFlavorFront();
   if (L.water && !L.room) drawWaterFront();
@@ -10755,6 +10879,11 @@ function begin() {
   if (G && !G.vanTip && vanishOn() && !G.rescue) {
     G.vanTip = true;
     floatText(cam + VW / 2, P.y - 60, isTouch ? 'Tap the vanish button to hide!' : 'Press V to vanish!', '#e6e2ff', 22);
+  }
+  if (G) keys.gearPressed = false;
+  if (G && !G.gearTip && gearBtnOn() && ((prog.gearTips || {})[gearPow()] || 0) < 3) {   // the first few times with each piece
+    const id = gearPow(); G.gearTip = true; prog.gearTips = { ...(prog.gearTips || {}), [id]: ((prog.gearTips || {})[id] || 0) + 1 }; save();
+    floatText(cam + VW / 2, P.y - 90, `${GEAR[id].power}! ${isTouch ? (id === 'jetpack' ? 'Hold' : 'Tap') + ' the gear button' : (id === 'jetpack' ? 'Hold' : 'Press') + ' G'}`, '#ffd23f', VW < 700 ? 18 : 22);
   }
   if (G && !G.kickTip && kickOn() && (prog.kickTips || 0) < 3) {
     G.kickTip = true; prog.kickTips = (prog.kickTips || 0) + 1; save();
@@ -12134,7 +12263,7 @@ $('packClose').onclick = () => { hide('pack'); buildMenu(); show('menu'); };
 $('badgesClose').onclick = () => { hide('badges'); buildMenu(); show('menu'); };
 
 // ---------------------------------------------------------------- input
-const KMAP = { KeyX: 'move', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'jump', KeyW: 'jump', Space: 'jump', KeyZ: 'jump' };
+const KMAP = { KeyG: 'gear', KeyX: 'move', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'jump', KeyW: 'jump', Space: 'jump', KeyZ: 'jump' };
 window.addEventListener('keydown', e => {
   if (sceneSt && sceneSt[0].cv.isConnected && !$('msg').classList.contains('hidden') && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) { e.preventDefault(); sceneSt[0].go(e.code === 'ArrowLeft' ? -1 : 1); return; }   // story pictures
   if (e.target.tagName === 'TEXTAREA') return;   // pasting a save code
@@ -12176,6 +12305,7 @@ window.addEventListener('keydown', e => {
     e.preventDefault();
     if (k === 'jump' && !keys.jump) keys.jumpPressed = true;
     if (k === 'down' && !keys.down) keys.downPressed = true;
+    if (k === 'gear' && !keys.gear) keys.gearPressed = true;
     keys[k] = true;
   }
   if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
@@ -12223,7 +12353,7 @@ document.querySelectorAll('.tbtn').forEach(el => {
     if (k === 'vanish') { if (G) doVanish(); el.classList.add('on'); return; }
     if (k === 'dolphin') { if (G) doDolphin(); el.classList.add('on'); return; }   // right away: a quick tap ends before the next frame
     if (mode === 'race') raceSteer(k === 'left' ? -1 : k === 'right' ? 1 : 0);
-    if (k === 'jump' && !keys.jump) keys.jumpPressed = true; if (k === 'down' && !keys.down) keys.downPressed = true; keys[k] = true; el.classList.add('on');
+    if (k === 'jump' && !keys.jump) keys.jumpPressed = true; if (k === 'down' && !keys.down) keys.downPressed = true; if (k === 'gear' && !keys.gear) keys.gearPressed = true; keys[k] = true; el.classList.add('on');
   };
   const up = e => { e.preventDefault(); keys[k] = false; el.classList.remove('on'); };
   el.addEventListener('pointerdown', down);
@@ -12241,6 +12371,7 @@ const STEP = 1000 / 60;
 function frame(now) {
   acc += Math.min(100, now - last); last = now;
   document.body.classList.toggle('canleave', canLeaveDrill());   // the lesson's Leave button
+  gearBtnSync();   // the gear button: shown with the worn piece's picture, fills up as it recharges
   document.body.classList.toggle('swim', mode === 'play' && !!(L && L.water));   // the sea: a ▼ button to swim down
   while (acc >= STEP) {
     dojoTick(STEP / 1000);

@@ -90,6 +90,8 @@ Everything is in `index.html`. `CLAUDE.md` maps the code and records the owner's
 - **Bridge falls put carried stones back**; a head bump ends a Jetpack flight (no more beep-beep bonking).
 - **Fact Book opens on a summary**: grade, working on / next, a row per kind of math (gold / silver / practice bar, skill chips to tap into), "Coming later", and "Needs practice" with a Practice these button.
 - **Boss entrances** (replaces the boss card): letterbox bars, the boss drops in with a THUD (golem, bot, snowman), rises from the deep (octopus), leaps in (Shogun) or appears in smoke (Kage); name slams in with a gong, taunt, then FIGHT! Jump / tap skips.
+- **Gear button** (owner: "they really like a separate button"): every Gear Pack piece has a power, Kai wears one piece at a time, and one gear button (G) shows it and uses it; right answers refill it. Jetpack = hold to fly (jump is plain jump again), Fire Cape = Flame Dash, Samurai Helmet = Ground Pound, Viking Helmet = Horn Charge, Trident = Water Blast (in the sea with ▼: a fountain up), Paper Lantern = a flash that lights the whole dark level and dazzles enemies.
+- **Badge Book: lost friends say their level** ("Lost in Sunken Ship"), not the world (owner read "Coral Sea" as Coral Reef).
 - **Victory moves**: at the end of every level (after catching the scroll) and after each boss, Kai does one of his learned dojo moves (or Hana's high kick) with its name, else a victory jump. The deep-sea diver cheers "Hooray!".
 
 ## Open questions for the owner
