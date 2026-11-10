@@ -511,7 +511,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 8, 2026 6:00 PM PT · Practice / Play a times table from the Badge Book</div>
+  <div class="build">Updated Nov 10, 2026 9:00 AM PT · Lost friend in the Sunken Ship: Nami</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1410,6 +1410,7 @@ const FRIENDS = [
   { id: 'tomo', name: 'Tomo', w: 1, k: 0, way: 'vent', dir: -1, power: 'brave', pname: 'Brave heart', ptip: "The next hit won't hurt." },
   { id: 'niko', name: 'Niko', w: 2, k: 1, way: 'crate', dir: 1, power: 'magnet', pname: 'Gem magnet', ptip: 'Gems near you fly to you.' },
   { id: 'yuki', name: 'Yuki', w: 3, k: 1, way: 'falls', dir: 1, power: 'spring', pname: 'Spring feet', ptip: 'You jump a little higher.' },
+  { id: 'nami', name: 'Nami', w: 4, k: 2, way: 'ship', dir: 1, power: 'dolphin', pname: 'Dolphin swim', ptip: 'You swim fast and leap high!' },   // Sunken Ship (owner, Nov 2026)
   { id: 'mei', name: 'Mei', w: 5, k: 1, way: 'ladder', dir: -1, power: 'vanish', pname: 'Ninja vanish', ptip: 'Vanish for 5 seconds. Nothing can hurt you!' },
 ];
 const friendOf = def => (def.boss ? null : FRIENDS.find(f => f.w === def.w && f.k === def.k) || null);
@@ -2747,7 +2748,7 @@ function trackRound(skill, how) {
 }
 // Player pictures are characters from the game (owner, Nov 2026: pixel art instead of emoji): Kai, the five lost
 // friends and the hungry animals. Old saves had emoji; each gets the closest character (ICON_FROM_EMOJI).
-const PLAYER_ICONS = ['kai', 'hana', 'tomo', 'niko', 'yuki', 'mei', 'panda', 'rabbit', 'cat', 'fox', 'penguin', 'seal', 'duck', 'raccoon', 'robocat', 'robodog', 'moonrabbit', 'lizard'];
+const PLAYER_ICONS = ['kai', 'hana', 'tomo', 'niko', 'yuki', 'nami', 'mei', 'panda', 'rabbit', 'cat', 'fox', 'penguin', 'seal', 'duck', 'raccoon', 'robocat', 'robodog', 'moonrabbit', 'lizard'];
 const ICON_FROM_EMOJI = { '🥷': 'kai', '🐯': 'cat', '🐼': 'panda', '🦊': 'fox', '🐸': 'duck', '🐲': 'lizard', '🦄': 'moonrabbit', '🐵': 'raccoon', '🦖': 'salamander' };
 const fixIcon = ic => ICON_FROM_EMOJI[ic] || (PLAYER_ICONS.includes(ic) || ic === 'salamander' ? ic : 'kai');
 let players = { list: [{ id: 'p1', name: 'Player 1', grade: null, icon: 'kai' }], cur: 'p1' };
@@ -3223,7 +3224,7 @@ const BADGES = [
   { id: 'shopper', pix: 'bag', sec: 'adv', name: 'Shopper', text: 'Buy something in the Dojo Shop.' },
   { id: 'gems500', pix: 'gem', sec: 'adv', name: 'Gem Collector', text: 'Collect 500 gems in total.', prog: () => [statOf('gems'), 500] },
   { id: 'black-belt', pix: 'belt', swap: { b: '#26262e' }, sec: 'adv', name: 'Black Belt', text: 'Reach the Black Belt rank.' },
-  { id: 'friends', pix: 'house', sec: 'adv', name: 'Every One Matters', text: 'Find all five lost friends and bring them home.', prog: () => [nKeys(prog.friends), 5] },
+  { id: 'friends', pix: 'house', sec: 'adv', name: 'Every One Matters', text: 'Find all six lost friends and bring them home.', prog: () => [FRIENDS.filter(f => (prog.friends || {})[f.id]).length, FRIENDS.length] },
 ];
 const BADGE = Object.fromEntries(BADGES.map(b => [b.id, b]));
 const BADGE_SECS = [['math', 'Math'], ['tier', 'Keep going'], ['adv', 'Adventures']];
@@ -3827,6 +3828,12 @@ function updateFriend() {
     case 'ladder':
       if (G.climb && Math.floor(cx / T) === fr.c && p.y < 6) startRescue(fr);
       break;
+    case 'ship': {   // a porthole on the old ship glows: swim down and in
+      const dy = p.y + p.h / 2 - fr.py;
+      if (friendNear() && !fr.told && Math.abs(cx - fr.px) < 5 * T && dy < -40) { fr.told = true; floatText(fr.px, fr.py - 70, 'Swim down to the glowing window! ▼', '#9be7ff', 22); }
+      if (Math.abs(cx - fr.px) < 26 && Math.abs(dy) < 30) startRescue(fr);
+      break;
+    }
   }
 }
 function bumpFriendKey(c, r) {
@@ -3839,7 +3846,7 @@ function bumpFriendKey(c, r) {
 const RESCUE_SLIDE = 32, RESCUE_ARRIVE = 70;
 function startRescue(fr) {
   const f = fr.f, p = P, X = (fr.c + 0.5) * T;
-  const backX = { key: X, vent: X - T, crate: X + T, falls: (fr.c + 2.5) * T, ladder: X + T }[f.way];   // back out on the same clear ground
+  const backX = { key: X, vent: X - T, crate: X + T, falls: (fr.c + 2.5) * T, ladder: X + T, ship: fr.px || X }[f.way];   // back out on the same clear ground
   const pool = shuffle(Object.values(prog.facts).filter(x => x.weak || x.practice).map(x => ({ ...x.q })));
   G.rescue = { fr, f, again: !!fr.again, dir: f.dir, phase: 'in', t: 0, step: 0, pool, tricky: pool.length > 0, asked: new Set(), wait: 0, msg: '', msgT: 0, bits: [], words: [], vis: 0, act: null, flash: 0, shk: 0, backX, tiles: null };
   G.mbox = null; keys.left = keys.right = keys.jump = keys.down = false; keys.jumpPressed = false;
@@ -3861,11 +3868,12 @@ const RESCUE_TOOL = {
   crate: { kind: 'laser', name: "Niko's laser", short: 'Laser', word: 'ZAP!' },
   falls: { kind: 'torch', name: 'a fire torch', short: 'Fire torch', word: 'WHOOSH!' },
   ladder: { kind: 'star', name: 'flaming throwing stars', short: 'Throwing stars', word: 'SHING!' },
+  ship: { kind: 'bubble', name: 'a bubble cannon', short: 'Bubble cannon', word: 'BLOOP!' },   // Nami: big bubbles burst the barnacle chains
 };
 const RESCUE_FIND = 56, RESCUE_HIT = 14, RESCUE_ACT = 34;
 // The last hit is a finishing move: a slow wind-up (screen dims, Kai glows), then one huge strike.
 const FIN_HIT = 60, FIN_ACT = 130;
-const FIN_WORD = { kick: 'MEGA KICK!', hammer: 'GROUND POUND!', laser: 'STAR LASER!', torch: 'RING OF FIRE!', star: 'FIREWORKS!' };
+const FIN_WORD = { kick: 'MEGA KICK!', hammer: 'GROUND POUND!', laser: 'STAR LASER!', torch: 'RING OF FIRE!', star: 'FIREWORKS!', bubble: 'TIDAL WAVE!' };
 // Where the hit animation is, on the normal 0..RESCUE_ACT clock (the finishing move holds the wind-up, then stretches the end).
 const actEff = a => (!a.fin ? a.t : a.t < FIN_HIT - RESCUE_HIT ? 0 : a.t < FIN_HIT ? a.t - (FIN_HIT - RESCUE_HIT) : RESCUE_HIT + (a.t - FIN_HIT) * (RESCUE_ACT - RESCUE_HIT) / (FIN_ACT - FIN_HIT));
 // One guard in each rescue room: big and grumpy, but he never hurts Kai. He leaps in after Kai finds the treasure,
@@ -3878,6 +3886,7 @@ const GUARD_STYLE = {
   lava: { kind: 'golem', w: 20, h: 23, enter: 'roll', run: 'roll', say: 'Rumble rumble! Stay out!', miss: 'Hee hee! Rumble!', face: 'Rumble! Get past ME!', bye: 'Roll away!' },
   robot: { kind: 'bot', w: 18, h: 22, enter: 'zoom', run: 'zoom', say: 'BEEP. ACCESS DENIED.', miss: 'BEEP BOOP! Try again!', face: 'FINAL DEFENSE MODE!', bye: 'BEEP BOOP! BYE!' },
   snow: { kind: 'penguin', w: 18, h: 20, enter: 'slide', run: 'slide', say: 'Ahem. Members only.', miss: 'TWEET! Not that one!', face: "You'll have to get past ME!", bye: 'Wheee!' },
+  sea: { kind: 'crab', w: 22, h: 16, enter: 'scuttle', run: 'scuttle', say: 'Snip snip! No entry!', miss: 'Ha! Snip snip!', face: 'Get past my claws, matey!', bye: 'Wheee! Snip snip!' },   // a crab bouncer in a pirate hat
   castle: { kind: 'watch', w: 18, h: 20, enter: 'drop', run: 'poof', say: 'Who goes there?!', miss: 'Nice try, little ninja!', face: "You'll have to get past ME!", bye: 'Poof!' },
 };
 const guardStyle = () => GUARD_STYLE[L.world.key] || GUARD_STYLE.japan;
@@ -3886,6 +3895,7 @@ const GUARD_PAL = {
   golem: { g: '#9a8b80', G: '#7a6c62', q: '#c2b4a8', v: '#5fae4a', V: '#3f8a34', e: '#1a1426', m: '#4a3f3a', p: '#ff8fb8', y: '#ffd23f' },
   bot: { a: '#a9b6c6', A: '#6c7a89', S: '#1b2430', c: '#7df9ff', r: '#ff3355', u: '#3a86ff', y: '#ffd23f', W: '#2b2b38', g: '#3ae374' },
   penguin: { B: '#1f2533', W: '#f4f8ff', o: '#ff9a1a', G: '#2b2b38', w: '#ffffff', r: '#e63946', R: '#a91d2b', y: '#ffd23f' },
+  crab: { c: '#e8452c', C: '#a8321e', w: '#ffffff', e: '#1a1426', k: '#1a1426', y: '#ffd23f', m: '#5a1410' },
   watch: { n: '#2f3566', N: '#4a5296', H: '#d8b25a', h: '#a8833a', s: '#f2c49b', e: '#1a1426', l: '#ffb627', z: '#5a2a1a', y: '#ffd23f', f: '#1a1426', m: '#a8323e' },
 };
 function drawGuardArt(kind, { P, R, E, L }, f) {
@@ -3941,6 +3951,15 @@ function drawGuardArt(kind, { P, R, E, L }, f) {
     R(6, 11, 2, 2, 'r'); R(9, 11, 2, 2, 'r'); P(8, 11, 'R'); P(8, 12, 'R');
     if (f === 2) { R(0, 9, 2, 1, 'y'); } else { L(9, 13, 11, 15, 'G'); R(11, 15, 2, 1, 'y'); }   // whistle: blowing / hanging
     R(4, 19, 4, 1, 'o'); R(10, 19, 4, 1, 'o');
+  } else if (kind === 'crab') {   // a crab bouncer in a pirate captain's hat: eyes on stalks, big claws (f 1 = snapping, 2 = laughing)
+    const up = f === 1 ? -2 : 0;
+    for (let i = 0; i < 3; i++) { P(6 + i * 2, 14 + ((i + f) % 2), 'C'); P(13 + i * 2, 14 + ((i + f + 1) % 2), 'C'); }   // little legs
+    E(11, 10, 7.4, 4.2, 'c'); R(5, 12, 13, 1, 'C');   // the shell
+    R(5, 2, 1, 4, 'C'); R(16, 2, 1, 4, 'C'); R(4, 0, 2, 2, 'w'); P(4, 1, 'e'); R(15, 0, 2, 2, 'w'); P(15, 1, 'e');   // eyes on stalks
+    R(8, 3, 6, 3, 'k'); R(6, 6, 10, 1, 'k'); P(10, 4, 'y'); P(11, 4, 'y'); R(6, 6, 10, 1, 'k');   // the pirate hat
+    if (f === 2) R(9, 10, 4, 2, 'm'); else R(10, 10, 2, 1, 'm');   // a grin, or a big laugh
+    E(2.4, 8 + up, 2.4, 2.2, 'c'); P(0, 7 + up, 'C'); P(1, 8 + up, 'C'); R(3, 10 + up, 2, 2, 'c');   // the front claw (toward Kai)
+    E(19.6, 8 + up, 2.2, 2, 'c'); P(21, 7 + up, 'C'); R(17, 10 + up, 2, 2, 'c');
   } else if (kind === 'watch') {   // the night watchman: big straw hat, a paper lantern
     R(3, 3, 13, 1, 'H'); R(5, 2, 9, 1, 'H'); R(7, 1, 5, 1, 'H'); P(9, 0, 'h'); R(4, 3, 11, 1, 'h');
     R(3, 3, 13, 1, 'H');
@@ -3990,6 +4009,12 @@ function guardTick(r) {
     }
     return;
   }
+  if (g.bub > 0) {   // Nami's rescue: trapped in a big bubble, he floats away up out of sight
+    g.bub++; g.y = -Math.max(0, g.bub - 16) * 3.2; g.x += Math.sin(g.bub * 0.12) * 1.2;
+    if (g.bub === 18) { guardSay(g, st.bye, 90); tone(500, 0.5, 'sine', 0.04, 1300); }
+    if (g.y < -VH) g.gone = true;
+    return;
+  }
   if (g.fall > 0) {   // knocked flat by the finishing move, dizzy, then up and away
     g.fall++;
     if (g.fall < 12) { g.x += g.kicked ? 9 : 4; g.rot = Math.min(1.45, g.rot + 0.13); }
@@ -4022,7 +4047,8 @@ function drawGuard(r) {
   else if (g.laugh > 0) fr = st.kind === 'golem' || st.kind === 'watch' ? (slow ? 'b' : 'a') : 'c';
   else if (running) fr = slow ? 'b' : 'a';
   else if (st.kind === 'bot' && !g.fall) fr = Math.floor(g.t / 15) % 2 ? 'b' : 'a';   // siren and radar
-  const bob = g.laugh > 0 && st.kind === 'sumo' ? -Math.abs(Math.sin(g.laugh * 0.45)) * 5 : running && st.run === 'waddle' ? -Math.abs(Math.sin(g.run * 0.5)) * 4 : 0;
+  else if (st.kind === 'crab' && !g.fall) fr = Math.floor(g.t / 18) % 3 === 0 ? 'b' : 'a';   // snip snip
+  const bob = g.laugh > 0 && st.kind === 'sumo' ? -Math.abs(Math.sin(g.laugh * 0.45)) * 5 : running && (st.run === 'waddle' || st.run === 'scuttle') ? -Math.abs(Math.sin(g.run * 0.5)) * 4 : (st.enter === 'scuttle' && entering) ? -Math.abs(Math.sin(g.enter * 0.6)) * 3 : 0;
   const shiver = g.nerv > 0 ? Math.sin(g.nerv * 1.7) * 2 : 0, jump = g.scare > 0 ? -Math.sin(Math.PI * g.scare / 40) * 34 : 0;
   const lean = g.hurt > 0 && !g.fall ? 0.18 * (g.hurt / 18) : running && st.run === 'waddle' ? Math.sin(g.run * 0.5) * 0.12 : 0;
   const lift = g.fall ? (g.rot / 1.45) * (Wd / 2) : 0;   // lying flat, he rests on the floor, not in it
@@ -4040,6 +4066,7 @@ function drawGuard(r) {
     const a = g.t * 0.15 + i * 2.1, sx = g.x + H * 0.8 + Math.cos(a) * 16, sy = fy - lift - 12 + Math.sin(a) * 5;
     ctx.fillStyle = '#ffd23f'; ctx.fillRect(sx - 4, sy - 1, 8, 2); ctx.fillRect(sx - 1, sy - 4, 2, 8);
   }
+  if (g.bub > 0) { ctx.strokeStyle = 'rgba(230,248,255,.9)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(g.x, fy + g.y - H / 2, Math.max(H, Wd) * 0.62, 0, 7); ctx.stroke(); ctx.fillStyle = 'rgba(200,240,255,.15)'; ctx.fill(); ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(g.x - Wd * 0.3), Math.round(fy + g.y - H * 0.9), 6, 6); }
   if (g.sayT > 0 && g.say) rescueBubble(g.say, g.fall ? g.x + H * 0.5 : g.x, fy - (g.fall ? Wd * 0.6 : H) - 22 + g.y, '#ffffff');
 }
 function rescueBubble(say, px, py, bg = '#ffffff') {
@@ -4107,10 +4134,14 @@ function rescueAim(r, k = r.vis) {
   if (way === 'vent') return [fx - 66 + T / 2, fy - n * T + T / 2];
   if (way === 'crate') return [fx - 30 + k * 30, fy - 40];
   if (way === 'falls') return [fx - 30, fy - 40];
+  if (way === 'ship') return [fx - 4, fy - 80 + k * 26];   // the barnacle chains across the cabin door, top to bottom
   return [kx + 70 + k * ((fx - T - kx - 100) / 2), fy - 5.2 * T + 12];
 }
 function rescueBits(r, n, cols, x, y, spd = 6) {
   for (let i = 0; i < n; i++) r.bits.push({ x, y, vx: (Math.random() - 0.5) * spd, vy: -Math.random() * spd * 0.8 - 1, life: 40, col: cols[i % cols.length], s: 5 + (i % 3) });
+}
+function rescueBubbles(r, n, x, y, spd = 6) {   // round bubbles (drawn as rings) that float up
+  for (let i = 0; i < n; i++) r.bits.push({ x: x + (Math.random() - 0.5) * 20, y: y + (Math.random() - 0.5) * 20, vx: (Math.random() - 0.5) * spd, vy: -Math.random() * spd * 0.6 - 0.5, life: 50, col: 'rgba(225,248,255,.9)', s: 4 + Math.random() * 7, up: true, ring: true });
 }
 function rescueFlame(r) {   // the torch's stream of fire
   const { fy, kx } = rescueSpots(), [tx, ty] = rescueAim(r), x0 = kx + 20, y0 = fy - 30;
@@ -4118,6 +4149,14 @@ function rescueFlame(r) {   // the torch's stream of fire
 }
 function rescueImpact(r, a) {   // the hit lands
   const g = r.g;
+  if (a.kickG && r.f.way === 'ship') {   // Nami's rescue: a giant bubble traps the crab and floats him away
+    const x = g ? g.x : VW * 0.6, { fy } = rescueSpots();
+    r.flash = 0.8; r.shk = 14; r.words.push({ txt: 'BUBBLE TRAP!', x: VW / 2, y: VH * 0.3, t: 0, size: 60 });
+    tone(220, 0.5, 'sine', 0.07, 900); tone(660, 0.3, 'sine', 0.04, 1300, 0.1);
+    rescueBubbles(r, 18, x, fy - 30, 8);
+    if (g && !g.gone) { g.hurt = 0; g.bub = 1; guardSay(g, 'Hey! A bubble?!', 50); }
+    return;
+  }
   if (a.kickG) {   // the flying kick hits the guard: he tumbles, dizzy, then makes his getaway
     const { fy } = rescueSpots(), x = g ? g.x : VW * 0.6;
     r.flash = 1; r.shk = 26; r.words.push({ txt: 'HI-YAH!', x: VW / 2, y: VH * 0.3, t: 0, size: 64 });
@@ -4148,6 +4187,7 @@ function rescueImpact(r, a) {   // the hit lands
   if (way === 'vent') { rescueBits(r, 26 * big, ['#6b625e', '#3a3432', '#8f8580', '#ff8c1a'], x, y, 11); sfx.brick(); tone(70, 0.4, 'square', 0.08, 30); }
   if (way === 'crate') { rescueBits(r, 18 * big, ['#ff4d6d', '#ffd23f', '#ffffff'], x, y, 8); tone(1200, 0.25, 'sawtooth', 0.05, 200); }
   if (way === 'falls') { rescueBits(r, 20 * big, ['#ffffff', '#e8fbff', '#cfd6e4'], x, y - 10, 5); tone(CHIME_TUNE[a.k * 2], 0.9, 'triangle', 0.06); tone(300, 0.3, 'sawtooth', 0.02, 900); }
+  if (way === 'ship') { rescueBubbles(r, (a.fin ? 40 : 14) * big, x, y, a.fin ? 14 : 7); rescueBits(r, 8 * big, ['#7a8090', '#c9c2b2', '#5a6070'], x, y, 6); tone(260, 0.2, 'sine', 0.07, 760); tone(520, 0.12, 'sine', 0.04, 1200, 0.08); }
   if (way === 'ladder') { rescueBits(r, 16 * big, ['#ffd23f', '#ff8c1a', '#fff6c9'], x, y, 7); tone(1800, 0.06, 'square', 0.04); tone([523, 659, 784][a.k - 1], 0.5, 'sine', 0.05, null, 0.05); }
 }
 function rescuePick(r, i) {
@@ -4164,6 +4204,7 @@ function rescuePick(r, i) {
     if (r.f.way === 'key' || r.step >= 4) tone(400, 0.15, 'triangle', 0.04, 900);   // hi-yah
     else if (r.f.way === 'crate') tone(1800, 0.18, 'square', 0.03, 600);   // pew
     else if (r.f.way === 'ladder') tone(900, 0.2, 'triangle', 0.03, 1400);   // the star spins away
+    else if (r.f.way === 'ship') tone(180, 0.18, 'sine', 0.06, 420);   // the cannon goes floomp
     if (r.step < 3) r.wait = RESCUE_ACT + 14;   // (after the 3rd and 4th, the act itself moves things on)
   } else {
     G.mistakes++; G.streak = 0; remember(q); missed(q); sfx.wrong();
@@ -4181,6 +4222,7 @@ function freeFriend(r) {
   const f = r.f;
   prog.friends = prog.friends || {}; prog.friends[f.id] = true; r.fr.done = true;
   if (f.power === 'vanish') prog.vanishNext = G.idx + 1;   // Ninja vanish works in the next level (Shadow Walls) too (owner)
+  if (f.power === 'dolphin') prog.dolphinLeft = Object.fromEntries(STAGES.map((s, i) => [i, s]).filter(([, s]) => s.w === f.w && !s.boss && s.k !== f.k).map(([i]) => [i, true]));   // and the first time back in Coral Reef and Kelp Forest (owner)
   save();
   sfx.win();
   (G.friendPow || (G.friendPow = {}))[f.power] = true; G.braveUsed = false;   // the power, for the rest of this level (a replay gives it again)
@@ -4192,12 +4234,13 @@ function endRescue(r) {
   G.rescue = null;
   P.x = r.backX - P.w / 2; P.y = GR * T - P.h; P.vx = P.vy = 0; P.inv = 60; P.onGround = false;
   floatText(P.x + P.w / 2, P.y - 30, `${r.again ? `${r.f.name} rescued again! +5 gems. ` : ''}${r.f.pname} for this level! ${r.f.ptip}`, '#7df9ff', 22);
+  if (r.f.power === 'dolphin' && !r.again) floatText(P.x + P.w / 2, P.y - 70, 'It works once in Coral Reef and Kelp Forest too!', '#9be7ff', 22);
   if (r.f.power === 'vanish') floatText(P.x + P.w / 2, P.y - 70, isTouch ? 'Tap the vanish button to hide!' : 'Press V to vanish!', '#e6e2ff', 22);
   if (r.f.id === 'hana' && !r.again) floatText(P.x + P.w / 2, P.y - 70, isTouch ? 'High kick! Tap the fist button to kick in Japan.' : 'High kick! Press X to kick in Japan.', '#ffd23f', 22);
   syncAnsBar();
 }
 const rescueTitle = r => (r.phase === 'ask' && r.q ? qShow(r.q) : r.phase === 'guard' ? 'A guard!' : r.phase === 'standoff' ? 'The guard steps out!' : r.phase === 'find' ? (r.f.way === 'key' ? 'Get ready to kick!' : `You found ${RESCUE_TOOL[r.f.way].name}!`) : r.phase === 'in' || r.phase === 'arrive' ? `Find ${r.f.name}!` : `${r.f.name} is free!`);
-const rescueHint = r => (r.phase === 'ask' ? (r.step >= 3 ? 'One more right answer for a flying kick!  (3/4)' : `${r.tricky ? 'Your tricky facts free' : 'Right answers free'} ${r.f.name}!  (${r.step}/4)`) : r.phase === 'guard' ? "Don't worry. Right answers beat him!" : r.phase === 'standoff' ? 'Get ready...' : r.phase === 'find' ? (r.f.way === 'key' ? 'Each right answer is a high kick!' : 'Use it to free your friend!') : r.phase === 'in' || r.phase === 'arrive' ? '' : r.again ? 'Rescued again!' : `New power: ${r.f.pname}`);
+const rescueHint = r => (r.phase === 'ask' ? (r.step >= 3 ? (r.f.way === 'ship' ? 'One more right answer for a bubble trap!  (3/4)' : 'One more right answer for a flying kick!  (3/4)') : `${r.tricky ? 'Your tricky facts free' : 'Right answers free'} ${r.f.name}!  (${r.step}/4)`) : r.phase === 'guard' ? "Don't worry. Right answers beat him!" : r.phase === 'standoff' ? 'Get ready...' : r.phase === 'find' ? (r.f.way === 'key' ? 'Each right answer is a high kick!' : 'Use it to free your friend!') : r.phase === 'in' || r.phase === 'arrive' ? '' : r.again ? 'Rescued again!' : `New power: ${r.f.pname}`);
 
 // ---------------------------------------------------------------- swing crossings
 // One per level: two steps up to a ledge, a wide gap, a perch in the middle, another gap. Each right answer swings
@@ -4379,13 +4422,15 @@ function swimY(p) {
   if (L.abyss && p.jbuf > 0) p.jbuf = 0;   // deep sea: no surface to leap out of (▲ just swims up)
   if (p.jbuf > 0 && depth < 14) {   // leap out of the water (by the rocky island: a big dolphin leap with a flip)
     const lp = (L.leaps || []).find(l => p.x + p.w > (l.c - 4) * T && p.x < (l.c + 3) * T);
-    if (lp) { p.vy = -11.5; p.flipT = 40; if (lp.seal === 'sit') { lp.seal = 'dive'; lp.st = 0; } burst(p.x + p.w / 2, L.water, '#e8f8ff', 14, 4); floatText(p.x + p.w / 2, p.y - 20, 'Splash!', '#9be7ff', 24); }
-    else p.vy = -9.2;
+    const dol = hasFriend('dolphin');
+    if (lp) { p.vy = dol ? -13.2 : -11.5; p.flipT = 40; if (lp.seal === 'sit') { lp.seal = 'dive'; lp.st = 0; } burst(p.x + p.w / 2, L.water, '#e8f8ff', 14, 4); floatText(p.x + p.w / 2, p.y - 20, 'Splash!', '#9be7ff', 24); }
+    else p.vy = dol ? -11.4 : -9.2;   // Dolphin swim: leaps higher
     p.bounce = true; p.jbuf = 0; sfx.jump(); burst(p.x + p.w / 2, L.water, '#e8f8ff', 6, 2); return;   // always a full leap (a quick tap on a phone too)
   }
   if (keys.downPressed) { keys.downPressed = false; p.vy = Math.max(p.vy, 0) + 4.4; }   // a tap of ▼ is a kick down (about a tile and a half)
-  if (keys.down) p.vy = Math.min(p.vy + 0.45, 3.8);
-  else if (keys.jump && depth > 14) p.vy = Math.max(p.vy - 0.45, -4.2);
+  const dv = hasFriend('dolphin') ? 1.35 : 1;   // Dolphin swim: up and down faster too
+  if (keys.down) p.vy = Math.min(p.vy + 0.45 * dv, 3.8 * dv);
+  else if (keys.jump && depth > 14) p.vy = Math.max(p.vy - 0.45 * dv, -4.2 * dv);
   else if (depth > 3) p.vy = Math.max(p.vy - 0.1, -1.4);   // drifts gently back up (slow, so Kai has time to get under things)
   else if (depth < -3) p.vy = Math.min(p.vy + 0.35, 3);
   else p.vy *= 0.8;
@@ -4950,6 +4995,12 @@ const CHIME_TUNE = [293.7, 392, 493.9, 392, 493.9, 440, 392, 329.6, 293.7, 293.7
 function addFriend(L) {
   L.friend = null;
   const f = friendOf(L.def); if (!f) return;   // freed friends stay findable: their rescue can be played again for fun
+  if (f.way === 'ship') {   // Nami: the first porthole of the old ship (drawn in drawSeaScenery), near the floor
+    if (!L.ship) return;
+    const px = L.ship.c * T + 90;
+    L.friend = { f, c: Math.floor(px / T), px, py: GR * T - 103, t: 0, open: 0, again: !!(prog.friends || {})[f.id] };
+    return;
+  }
   const map = L.map, end = L.flagC - 12, W = L.w;
   const clear = (c, h) => c >= 1 && c < W - 1 && map[GR][c] === '#' && map[GR + 1][c] === '#' && map.slice(GR - h, GR).every(row => row[c] === '.');
   const [wide, high] = { key: [4, 6], vent: [3, GR], crate: [3, 3], falls: [4, 5], ladder: [3, GR] }[f.way];
@@ -5432,13 +5483,15 @@ function updatePlayer() {
   }
   const onIce = p.onGround && L.map[Math.floor((p.y + p.h + 2) / T)]?.[Math.floor((p.x + p.w / 2) / T)] === 'I';
   const wet = inWater(p);   // the sea: swimming
-  const acc = wet ? 0.3 : onIce ? 0.18 : p.onGround ? 0.55 : 0.38;
+  const dol = wet && hasFriend('dolphin');   // Nami's Dolphin swim
+  const acc = wet ? (dol ? 0.45 : 0.3) : onIce ? 0.18 : p.onGround ? 0.55 : 0.38;
   if (keys.left && !keys.right) { p.vx -= acc; p.face = -1; }
   else if (keys.right && !keys.left) { p.vx += acc; p.face = 1; }
   else { p.vx *= wet ? 0.9 : onIce ? 0.985 : p.onGround ? 0.78 : 0.95; if (Math.abs(p.vx) < 0.1) p.vx = 0; }
   if (onIce && Math.abs(p.vx) > 2 && tick % 4 === 0) G.parts.push({ k: 'bit', x: p.x + p.w / 2, y: p.y + p.h, vx: -p.vx * 0.2, vy: -1, life: 18, col: '#e8fbff', s: 3 });
   if (G.dash > 0) G.dash--;
-  const vmax = wet ? (G.dash > 0 ? 6 : hasPower('speed') ? 5.2 : 3.9) : G.dash > 0 ? 7.4 : hasPower('speed') ? 6.6 : 4.6;
+  if (dol && Math.abs(p.vx) > 4 && tick % 4 === 0) G.parts.push({ k: 'bit', x: p.x + p.w / 2 - p.face * 14, y: p.y + 10 + Math.random() * (p.h - 16), vx: -p.face, vy: -0.6, up: true, life: 24, col: 'rgba(225,248,255,.85)', s: 4 });
+  const vmax = wet ? (G.dash > 0 ? 6.6 : hasPower('speed') ? 5.6 : dol ? 5.6 : 3.9) : G.dash > 0 ? 7.4 : hasPower('speed') ? 6.6 : 4.6;
   p.vx = clamp(p.vx, -vmax, vmax);
   if (hasPower('speed') && p.onGround && Math.abs(p.vx) > 4 && tick % 3 === 0) burst(p.x + p.w / 2, p.y + p.h, '#ffffff', 2, 1);
   if (G.dash > 0 && Math.abs(p.vx) > 3) G.parts.push({ k: 'bit', x: p.x + p.w / 2 - p.face * 14, y: p.y + 8 + Math.random() * (p.h - 12), vx: -p.face * 3, vy: 0, life: 14, col: G.dash < 60 && tick % 8 < 4 ? '#ffffff' : '#7df9ff', s: 4 });   // wind trail
@@ -6030,6 +6083,7 @@ function finishLevel() {
   const earned = Math.round((G.coins + (st.boss ? 20 : 0)) * TIER_GEMS[sk.tier - 1]);
   prog.bank += earned; prog.stats.gems += earned; save();
   if (G.mistakes === 0) stat('perfect');
+  if (prog.dolphinLeft && prog.dolphinLeft[i]) { delete prog.dolphinLeft[i]; save(); }   // Dolphin swim used up here
   if (st.boss && !G.hit) award('boss-nohit');
   if (WORLDS.every((_, w) => prog.best[bossOf(w)])) award('boss-all');
   if (prog.stats.gems >= 500) award('gems500');
@@ -6854,6 +6908,7 @@ function drawSeaDark() {
   const cs = currentStation(); if (cs && cs.answers) cs.answers.forEach(o => hole(o.c * T + T, o.r * T + T, 70));
   for (const cl of L.clams || []) hole(cl.x, cl.y - 20, 70);
   if (L.ship) for (let k = 0; k < 4; k++) hole(L.ship.c * T + 90 + k * 70, GR * T - 3.6 * T + k * 6, 60);   // the ship's portholes glow
+  if (L.friend && L.friend.px && !L.friend.done) hole(L.friend.px, L.friend.py, 110);   // Nami's porthole, brighter
   if (G.mbox) G.mbox.bubbles.forEach(b => hole(b.x, b.y, 40));
   if (L.abyss) { const sp = scrollSpot(); hole(sp.x, sp.y, 110); hole(L.castleC * T + 2.5 * T, GR * T - 1.6 * T, 140); }   // the scroll and the diving bell's lit windows
   ctx.drawImage(seaDarkCv, 0, 0);
@@ -8651,6 +8706,7 @@ const KID_LOOK = {
   tomo: { h: '#6b4423', o: '#d07a2e', O: '#8e4d17', y: '#ffd23f', Y: '#c99a1a', l: '#fff6c9' },
   niko: { h: '#e8742a', o: '#2aa198', O: '#17675f', K: '#2b2b38', c: '#7df9ff', g: '#9aa7b8' },
   yuki: { h: '#5a3a24', o: '#3a6fd8', O: '#244a99', u: '#f2efe6', U: '#c9c2b2', r: '#e63946' },
+  nami: { h: '#3a2418', o: '#ff8c3a', O: '#c45f1a', g: '#d9a83a', c: '#bfefff' },   // a glass diving helmet
   mei: { h: '#1d1a2a', o: '#b58be0', O: '#7d5aa8', l: '#f7f5ee', L: '#d8d2c0', K: '#3a3040' },
 };
 let KID_SPR = null;
@@ -8675,6 +8731,10 @@ function kidSpr(id) {
     if (id === 'niko') { if (f === 1) { P(14, 6, 'g'); P(13, 6, 'g'); P(14, 5, 'g'); } else { P(13, 10, 'g'); P(13, 11, 'g'); P(14, 9, 'g'); } }   // wrench
     if (id === 'hana' && f === 1) { P(14, 6, 'r'); P(15, 5, 'r'); P(15, 6, 'w'); P(15, 7, 'r'); P(14, 7, 'w'); }   // her fan
     R(5, 13, 2, 1, 'O'); R(9, 13, 2, 1, 'O'); R(4, 14, 3, 1, 'f'); R(9, 14, 3, 1, 'f');   // legs and shoes
+    if (id === 'nami') {   // Nami's glass diving helmet (a ring round her head) and its brass collar
+      for (let y = 0; y < 10; y++) for (let x = 2; x < 16; x++) { const d = Math.hypot((x - 8.5) / 6.3, (y - 5) / 5.4); if (d > 0.86 && d <= 1.02) P(x, y, 'c'); }
+      R(4, 9, 9, 1, 'g'); P(11, 1, 'c'); P(12, 2, 'c');
+    }
   }, 2), ['stand', 'cheer']);
   return KID_SPR[id];
 }
@@ -8735,9 +8795,16 @@ function drawFriendSpot() {
       ctx.globalAlpha = 1;
       if (fr.crack) { ctx.strokeStyle = '#2a5a7a'; ctx.lineWidth = 2; ctx.beginPath(); const n = Math.min(4, 1 + Math.floor(fr.crack / 10)); for (let i = 0; i < n; i++) { ctx.moveTo(x + T + sh, top + 2 * T); ctx.lineTo(x + T + Math.cos(i * 1.7) * 30 + sh, top + 2 * T + Math.sin(i * 1.7) * 50); } ctx.stroke(); }
     }
+    if (way === 'ship') {   // Nami's porthole on the old ship: brighter than the others, a brass rim, bubbles drifting out
+      const pulse = 0.6 + 0.3 * Math.sin(tick * 0.08);
+      glowAt(fr.px, fr.py, 60, `rgba(255,236,150,${0.5 * pulse})`);
+      ctx.fillStyle = '#d9a83a'; ctx.beginPath(); ctx.arc(fr.px, fr.py, 15, 0, 7); ctx.fill();
+      ctx.fillStyle = `rgba(255,236,150,${0.7 + 0.3 * pulse})`; ctx.beginPath(); ctx.arc(fr.px, fr.py, 10, 0, 7); ctx.fill();
+      if (tick % 24 === 0 && G) G.parts.push({ k: 'bit', x: fr.px + (Math.random() - 0.5) * 10, y: fr.py - 8, vx: 0, vy: -0.9, up: true, life: 60, col: 'rgba(225,248,255,.85)', s: 4 });
+    }
     if (friendNear()) {   // "Help!" from where the friend is
-      const up = fr.f.dir < 0, bx = way === 'key' ? (fr.hole + 1) * T : way === 'falls' ? (fr.c + 1) * T : X;
-      const by = (up ? 210 : way === 'falls' ? g - 4 * T - 26 : way === 'crate' ? g - T - 32 : g - 46) + Math.sin(tick * 0.1) * 3;
+      const up = fr.f.dir < 0, bx = way === 'key' ? (fr.hole + 1) * T : way === 'falls' ? (fr.c + 1) * T : way === 'ship' ? fr.px : X;
+      const by = (up ? 210 : way === 'falls' ? g - 4 * T - 26 : way === 'crate' ? g - T - 32 : way === 'ship' ? fr.py - 40 : g - 46) + Math.sin(tick * 0.1) * 3;
       const help = fr.again ? 'Play again!' : 'Help!';
       ctx.font = '16px "Lilita One", "Trebuchet MS", sans-serif'; const w = ctx.measureText(help).width + 18;
       ctx.fillStyle = '#ffffff'; rrect(bx - w / 2, by - 13, w, 26, 10); ctx.fill(); ctx.strokeStyle = '#cfd6e4'; ctx.lineWidth = 2; ctx.stroke();
@@ -8767,6 +8834,11 @@ function drawTool(kind, x, y, ang = 0, s = 1) {
     const fl = Math.sin(tick * 0.5) * 2;
     ctx.fillStyle = '#ff3b1f'; ctx.beginPath(); ctx.arc(0, -27, 7 + fl * 0.5, 0, 7); ctx.fill();
     ctx.fillStyle = '#ff8c1a'; ctx.beginPath(); ctx.arc(0, -28, 5, 0, 7); ctx.fill(); ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(0, -29, 2.5, 0, 7); ctx.fill();
+  } else if (kind === 'bubble') {   // the bubble cannon: a brass tube with a bell mouth, a bubble at the end
+    ctx.fillStyle = '#8a6a2a'; ctx.fillRect(-3, -2, 6, 9);
+    ctx.fillStyle = '#d9a83a'; ctx.fillRect(-6, -9, 22, 8); ctx.fillStyle = '#f2d27a'; ctx.fillRect(-6, -9, 22, 2);
+    ctx.fillStyle = '#d9a83a'; ctx.fillRect(16, -12, 5, 14); ctx.fillStyle = '#2a8a9a'; ctx.fillRect(0, -7, 4, 4);
+    ctx.strokeStyle = 'rgba(230,248,255,.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(27, -5, 5 + Math.sin(tick * 0.2), 0, 7); ctx.stroke();
   } else if (kind === 'star') {   // a throwing star with a flaming edge
     ctx.fillStyle = 'rgba(255,140,30,.45)'; ctx.beginPath(); ctx.arc(0, 0, 13, 0, 7); ctx.fill();
     ctx.fillStyle = '#dfe6ee'; ctx.beginPath();
@@ -8778,8 +8850,8 @@ function drawTool(kind, x, y, ang = 0, s = 1) {
 function toolImg(way, px = 34) {
   const cv = document.createElement('canvas'); cv.width = px; cv.height = px;
   const keep = ctx; ctx = cv.getContext('2d');
-  const kind = RESCUE_TOOL[way].kind, ang = { kick: 0, hammer: 0.5, laser: 0, torch: 0.2, star: 0 }[kind];
-  drawTool(kind, px * (kind === 'laser' ? 0.25 : 0.42), px * (kind === 'star' ? 0.5 : kind === 'laser' ? 0.55 : 0.82), ang, px / 52);
+  const kind = RESCUE_TOOL[way].kind, ang = { kick: 0, hammer: 0.5, laser: 0, torch: 0.2, star: 0, bubble: 0 }[kind];
+  drawTool(kind, px * (kind === 'laser' || kind === 'bubble' ? 0.18 : 0.42), px * (kind === 'star' ? 0.5 : kind === 'laser' || kind === 'bubble' ? 0.6 : 0.82), ang, px / 52);
   ctx = keep;
   return `<img class="toolimg" src="${cv.toDataURL()}" alt="">`;
 }
@@ -8824,6 +8896,13 @@ function drawFinish(r, fin, kind, aimX, aimY, kX, kY) {
       ctx.fillStyle = '#ff8c1a'; ctx.beginPath(); ctx.arc(x, y - 2, fl, 0, 7); ctx.fill(); ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(x, y - 3, fl * 0.45, 0, 7); ctx.fill();
     }
     ctx.globalAlpha = 1;
+  }
+  if (kind === 'bubble' && ft >= 0 && ft < 50) {   // TIDAL WAVE: a big curling wave sweeps across the cabin
+    const f = 1 - ft / 50, wx = -60 + ft * (VW + 120) / 40;
+    ctx.fillStyle = `rgba(90,180,240,${0.55 * f})`; ctx.beginPath(); ctx.moveTo(-20, fy); ctx.lineTo(-20, fy - 120);
+    for (let x = -20; x <= wx; x += 20) ctx.lineTo(x, fy - 120 - Math.sin(x * 0.03 + ft * 0.3) * 14 - (x > wx - 80 ? (x - wx + 80) * 1.2 : 0));
+    ctx.lineTo(wx, fy); ctx.fill();
+    ctx.strokeStyle = `rgba(255,255,255,${0.8 * f})`; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(wx - 30, fy - 190, 40, Math.PI * 0.9, Math.PI * 1.9); ctx.stroke();
   }
   if (kind === 'star' && ft >= 0 && ft < 20) for (const k of [0, 1, 2]) { const [lx, ly] = rescueAim(r, k); glowAt(lx, ly, 70, `rgba(255,200,80,${0.8 * (1 - ft / 20)})`); }
 }
@@ -8881,6 +8960,17 @@ function drawRescueDecor(r, fy) {
     ctx.fillStyle = '#1a1426'; ctx.fillRect(sx - 5, fy - 41, 3, 3); ctx.fillRect(sx + 2, fy - 41, 3, 3);
     ctx.fillStyle = '#ff8a1a'; ctx.fillRect(sx - 10, fy - 37, 8, 3);
     ctx.fillStyle = '#2b2b38'; ctx.fillRect(sx - 9, fy - 52, 18, 4); ctx.fillRect(sx - 6, fy - 62, 12, 10);
+  } else if (key === 'sea') {   // the captain's cabin: a ship's wheel on the wall, barrels, a small chest
+    const wx = X(0.45), wy = fy - 5 * T;
+    ctx.strokeStyle = '#8a6a42'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(wx, wy, 26, 0, 7); ctx.stroke();
+    ctx.lineWidth = 3; for (let i = 0; i < 8; i++) { const an = i * Math.PI / 4; ctx.beginPath(); ctx.moveTo(wx + Math.cos(an) * 6, wy + Math.sin(an) * 6); ctx.lineTo(wx + Math.cos(an) * 36, wy + Math.sin(an) * 36); ctx.stroke(); }
+    ctx.fillStyle = '#5e4228'; ctx.beginPath(); ctx.arc(wx, wy, 7, 0, 7); ctx.fill();
+    for (const [bx, k] of [[X(0.07), 0], [X(0.96), 1]]) {   // barrels
+      ctx.fillStyle = '#7a4a2a'; ctx.fillRect(bx - 18, fy - 46, 36, 46); ctx.fillStyle = '#5a3a1e'; ctx.fillRect(bx - 18, fy - 40, 36, 4); ctx.fillRect(bx - 18, fy - 10, 36, 4);
+      ctx.fillStyle = '#8a5a32'; ctx.fillRect(bx - 12 + k * 4, fy - 46, 4, 46);
+    }
+    const cx = X(0.13);   // a small treasure chest
+    ctx.fillStyle = '#8b5a2b'; ctx.fillRect(cx, fy - 22, 30, 22); ctx.fillStyle = '#ffd23f'; ctx.fillRect(cx, fy - 16, 30, 3); ctx.fillRect(cx + 13, fy - 18, 4, 6);
   } else if (key === 'castle') {   // a torch on a post and a banner on a pole, on the roof
     const tx = X(0.86);
     ctx.fillStyle = '#3a2a20'; ctx.fillRect(tx - 4, fy - 74, 8, 74); ctx.fillStyle = '#5a3a1e'; ctx.fillRect(tx - 8, fy - 80, 16, 8);
@@ -8903,6 +8993,20 @@ function drawRescue() {
     const sky = W.skies[L.def.k], gr = ctx.createLinearGradient(0, 0, 0, VH); gr.addColorStop(0, sky[0]); gr.addColorStop(1, sky[1]); ctx.fillStyle = gr; ctx.fillRect(-20, -20, VW + 40, VH + 40);
     if (way === 'ladder') { ctx.fillStyle = '#fff6d8'; ctx.beginPath(); ctx.arc(VW * 0.82, 110, 46, 0, 7); ctx.fill(); glowAt(VW * 0.82, 110, 110, 'rgba(255,246,216,.25)'); }
     else for (let i = 0; i < 5; i++) { ctx.fillStyle = 'rgba(80,60,55,.55)'; ctx.beginPath(); ctx.arc((i * 230 + tick * 0.3) % (VW + 200) - 100, 120 + (i % 2) * 60, 70, 0, 7); ctx.fill(); }
+  } else if (way === 'ship') {   // Nami: the captain's cabin of the old ship, under the sea
+    ctx.fillStyle = '#3a2816'; ctx.fillRect(-20, -20, VW + 40, fy + 20);
+    ctx.fillStyle = '#2e1f10'; for (let y = 10; y < fy; y += 22) ctx.fillRect(-20, y, VW + 40, 3);   // planks
+    for (const f0 of [0.34, 0.6, 0.86]) {   // portholes on the back wall, sea-blue light
+      const x = VW * f0, y = fy - 4 * T;
+      ctx.fillStyle = '#d9a83a'; ctx.beginPath(); ctx.arc(x, y, 20, 0, 7); ctx.fill(); ctx.fillStyle = '#1e5a7a'; ctx.beginPath(); ctx.arc(x, y, 14, 0, 7); ctx.fill();
+      glowAt(x, y, 44, 'rgba(120,200,255,.25)');
+    }
+    ctx.fillStyle = 'rgba(20,70,120,.22)'; ctx.fillRect(-20, -20, VW + 40, fy + 20);   // everything a little sea-blue
+    for (let x = -T; x < VW + T; x += T) block(x, 0, '#6e5232', '#4a3420', '#8a6a42');   // ceiling beams
+    const ex = 34, ey = fy - 120;   // the porthole Kai swam in through
+    ctx.fillStyle = '#d9a83a'; ctx.beginPath(); ctx.arc(ex, ey, 30, 0, 7); ctx.fill(); ctx.fillStyle = '#0e2a44'; ctx.beginPath(); ctx.arc(ex, ey, 23, 0, 7); ctx.fill();
+    glowAt(ex, ey, 60, 'rgba(120,200,255,.3)'); glowAt(fx, fy - 60, 200, 'rgba(255,230,160,.18)');
+    if (tick % 12 === 0) r.bits.push({ x: Math.random() * VW, y: fy - 4, vx: 0, vy: -0.8 - Math.random(), life: 120, col: 'rgba(225,248,255,.7)', s: 2 + Math.random() * 3, up: true, ring: true });
   } else {   // down: a cave of the world's bricks
     for (let y = 0; y < fy; y += T) for (let x = -T; x < VW + T; x += T) block(x, y, W.brick[0], W.brick[1], W.brick[0]);
     ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(-T, 0, VW + 2 * T, fy);
@@ -8920,7 +9024,8 @@ function drawRescue() {
     }
   }
   const gap = way === 'vent' || way === 'ladder' ? [T, kx - 30] : null;   // up scenes: open air on the left, where Kai came up from (the vent's air, or the ladder)
-  for (let x = -T; x < VW + T; x += T) if (!gap || x + T <= gap[0] || x >= gap[1]) { block(x, fy, W.stair[0], W.stair[1], W.stair[2]); block(x, fy + T, W.stair[0], W.stair[1], W.stair[2]); }
+  const flo = way === 'ship' ? ['#6e5232', '#4a3420', '#8a6a42'] : W.stair;   // the cabin has a wooden floor
+  for (let x = -T; x < VW + T; x += T) if (!gap || x + T <= gap[0] || x >= gap[1]) { block(x, fy, flo[0], flo[1], flo[2]); block(x, fy + T, flo[0], flo[1], flo[2]); }
   if (gap && way === 'ladder') {   // the ladder's top pokes up through the gap
     const lx = (gap[0] + gap[1]) / 2;
     ctx.fillStyle = '#c9a24f'; ctx.fillRect(lx - 13, fy - 30, 4, VH - fy + 40); ctx.fillRect(lx + 9, fy - 30, 4, VH - fy + 40);
@@ -8969,6 +9074,15 @@ function drawRescue() {
     ctx.fillStyle = '#4a5868'; ctx.fillRect(fx - 44, fy - 90, 88, 8);
     for (let i = vis; i < 3; i++) { const bx = fx - 30 + i * 30; ctx.fillStyle = '#4a5868'; ctx.fillRect(bx - 4, fy - 82, 8, 82); ctx.fillStyle = '#7a8898'; ctx.fillRect(bx - 4, fy - 82, 2, 82); }
   }
+  if (way === 'ship') {   // the cabin door, chained shut with barnacle-covered chains
+    ctx.globalAlpha = 1; ctx.fillStyle = '#4a3420'; ctx.fillRect(fx - 52, fy - 106, 8, 106); ctx.fillRect(fx + 44, fy - 106, 8, 106); ctx.fillRect(fx - 56, fy - 112, 112, 8);
+    ctx.globalAlpha = 1 - gone;
+    for (let i = vis; i < 3; i++) {
+      const y = fy - 80 + i * 26;
+      for (let x = fx - 44, j = 0; x < fx + 44; x += 11, j++) { ctx.fillStyle = j % 2 ? '#7a8090' : '#5a6070'; ctx.fillRect(x, y - (j % 2 ? 2 : 4), 11, j % 2 ? 4 : 8); }
+      ctx.fillStyle = '#c9c2b2'; for (const bx of [fx - 32, fx + 4, fx + 26]) { ctx.fillRect(bx, y - 8, 6, 5); ctx.fillStyle = '#a89f8c'; ctx.fillRect(bx + 2, y - 7, 2, 2); ctx.fillStyle = '#c9c2b2'; }
+    }
+  }
   if (way === 'falls') {   // a block of ice, thinner with each fire blast
     ctx.globalAlpha = (1 - gone) * (0.35 + 0.2 * n); ctx.fillStyle = '#bfe9ff'; ctx.fillRect(fx - 30, fy - 76, 60, 76);
     ctx.fillStyle = '#ffffff'; ctx.fillRect(fx - 24, fy - 70, 5, 50); ctx.fillRect(fx + 12, fy - 60, 4, 40);
@@ -8996,12 +9110,15 @@ function drawRescue() {
       kX = lx + (kx - lx) * over; kY = VH + 50 + (fy - 8 - VH - 50) * up - Math.sin(Math.PI * over) * 30 + 8 * over; kAir = over > 0 && over < 1; kWalk = up < 1;
     } else if (way === 'key' || way === 'crate') {   // drops in through the roof
       const u = Math.min(1, g / 0.5); kY = -60 + (fy + 60) * u * u; kAir = u < 1;
+    } else if (way === 'ship') {   // swims in through the porthole on the left and sinks down to the floor (diver's boots)
+      const u = Math.min(1, g / 0.8); kX = 34 + (kx - 34) * u; kY = fy - 98 + 98 * u * u; kAir = u < 1;
+      if (r.t % 8 === 0 && u < 1) r.bits.push({ x: kX, y: kY - 50, vx: 0, vy: -1, life: 40, col: 'rgba(225,248,255,.85)', s: 3, up: true, ring: true });
     } else if (way === 'falls') {   // walks in through the cracked waterfall
       kX = -20 + (kx + 20) * Math.min(1, g / 0.7); kWalk = g < 0.7;
     }
   }
   const [aimX, aimY] = a ? (a.kickG ? [(r.g ? r.g.x : fx) - 16, fy - 36] : rescueAim(r, a.k - 1)) : [0, 0];
-  if (a && (tool.kind === 'kick' || a.kickG)) {   // a flying high kick: up over the guard, the foot lands on the block, and back
+  if (a && (tool.kind === 'kick' || (a.kickG && way !== 'ship'))) {   // a flying high kick (Nami's rescue: a bubble trap instead): up over the guard, the foot lands on the block, and back
     const tx = aimX - 34, ty = Math.min(fy, aimY + 30), hop = fin ? 170 : 90;
     if (at < RESCUE_HIT) { const u = at / RESCUE_HIT; kX = kx + (tx - kx) * u; kY = fy + (ty - fy) * u - Math.sin(Math.PI * u) * hop; kAir = at > 0 || !fin; }
     else { const u = 1 - Math.min(1, (at - RESCUE_HIT) / (RESCUE_ACT - RESCUE_HIT)); kX = kx + (tx - kx) * u; kY = fy + (ty - fy) * u - Math.sin(Math.PI * u) * 50; kAir = u > 0.02; }
@@ -9020,18 +9137,24 @@ function drawRescue() {
     glowAt(kX, kY - 22, 40 + 30 * w + Math.sin(tick * 0.4) * 6, `rgba(255,214,90,${0.7 * w})`);
   }
   const kick = a && !a.kickG && tool.kind === 'laser' && at > 8 && at < RESCUE_HIT + 6 ? -3 : 0;   // the laser kicks back
-  const kickPose = a && (tool.kind === 'kick' || a.kickG) ? (at === 0 && fin ? { r: 10, ...GUARD } : at < RESCUE_HIT * 0.6 ? mixPose(GUARD, KICK_CHAMBER, at / (RESCUE_HIT * 0.6)) : at < RESCUE_HIT + 8 ? HIGH_KICK : at < RESCUE_ACT - 4 ? GUARD : null) : null;
+  const kickPose = a && (tool.kind === 'kick' || (a.kickG && way !== 'ship')) ? (at === 0 && fin ? { r: 10, ...GUARD } : at < RESCUE_HIT * 0.6 ? mixPose(GUARD, KICK_CHAMBER, at / (RESCUE_HIT * 0.6)) : at < RESCUE_HIT + 8 ? HIGH_KICK : at < RESCUE_ACT - 4 ? GUARD : null) : null;
   if (kickPose) drawKaiPose({ x: kX - 12, y: kY - 44, w: 24, h: 44, face: 1 }, kickPose);
-  else drawBaked(SPR, kAir || (freeT > 130 && Math.floor(freeT / 16) % 2) ? 'jump' : kWalk && Math.floor(r.t / 6) % 2 ? 'walkA' : 'stand', false, { x: kX - 12 + kick, y: kY - 44 + (freeT > 130 ? hop : 0), w: 24, h: 44 });
+  else drawBaked(L.abyss ? DIVER || (DIVER = bakeDiver(heroPal())) : SPR, kAir || (freeT > 130 && Math.floor(freeT / 16) % 2) ? 'jump' : kWalk && Math.floor(r.t / 6) % 2 ? 'walkA' : 'stand', false, { x: kX - 12 + kick, y: kY - 44 + (freeT > 130 ? hop : 0), w: 24, h: 44 });
   // the treasure in Kai's hand, and what it does
-  if (tool.kind !== 'kick' && !(a && a.kickG) && have && !(r.phase === 'find' && r.t < 44)) {
+  if (tool.kind !== 'kick' && !(a && a.kickG && way !== 'ship') && have && !(r.phase === 'find' && r.t < 44)) {
     const hx = kX + 12 + kick, hy = kY - 22 + (freeT > 130 ? hop : 0);
-    let ang = { kick: 0, hammer: -0.4, laser: -0.1, torch: 0.5, star: 0 }[tool.kind];
+    let ang = { kick: 0, hammer: -0.4, laser: -0.1, torch: 0.5, star: 0, bubble: -0.1 }[tool.kind];
     if (a && tool.kind === 'hammer') ang = at < RESCUE_HIT ? -2.2 + (at / RESCUE_HIT) * 3.4 : 1.2 - Math.min(1, (at - RESCUE_HIT) / 10) * 1.6;
     if (a && tool.kind === 'torch') ang = 1.3;
-    if (a && tool.kind === 'laser') ang = Math.atan2(aimY - hy, aimX - hx);
+    if (a && (tool.kind === 'laser' || tool.kind === 'bubble')) ang = Math.atan2(aimY - hy, aimX - hx);
     if (!(a && tool.kind === 'star' && at < RESCUE_HIT)) drawTool(tool.kind, hx, hy, ang, 1);
     if (freeT < 0 && r.phase === 'ask' && !a) glowAt(hx, hy - 14, 20, 'rgba(255,240,160,.25)');
+  }
+  if (a && tool.kind === 'bubble' && at <= RESCUE_HIT) {   // a big bubble flies out of the cannon (a giant one for the trap)
+    const u = clamp(at / RESCUE_HIT, 0, 1), hx = kx + 40, hy = fy - 28, rad = (a.kickG ? 34 : fin ? 26 : 14) * (0.4 + 0.6 * u);
+    const bx = hx + (aimX - hx) * u, by = hy + (aimY - hy) * u - Math.sin(Math.PI * u) * 24;
+    ctx.fillStyle = 'rgba(200,240,255,.18)'; ctx.beginPath(); ctx.arc(bx, by, rad, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(235,250,255,.95)'; ctx.lineWidth = 3; ctx.stroke(); ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(bx - rad * 0.5), Math.round(by - rad * 0.5), 4, 4);
   }
   if (a && !a.kickG && at < RESCUE_HIT + 6) {   // the shot on its way
     const u = clamp(at / RESCUE_HIT, 0, 1), hx = kx + 18, hy = fy - 30;
@@ -9046,7 +9169,7 @@ function drawRescue() {
       drawTool('star', hx + (sx2 - hx) * u, hy + (sy2 - hy) * u - Math.sin(Math.PI * u) * (50 + k * 25), at * 0.9, fin ? 1.3 : 1);
     }
   }
-  if (fin) drawFinish(r, fin, fin.kickG ? 'kick' : tool.kind, aimX, aimY, kX, kY);
+  if (fin) drawFinish(r, fin, fin.kickG ? (way === 'ship' ? 'trap' : 'kick') : tool.kind, aimX, aimY, kX, kY);   // (the bubble trap has no kick burst)
   // speech
   const say = r.phase === 'ask' && r.step === 0 && r.t < 150 && !a ? 'Help me, Kai!' : freeT >= 30 && freeT < 130 ? 'Thank you, Kai!' : freeT >= 130 ? 'See you at the dojo!' : '';
   if (say) rescueBubble(say, px, py - 82 + hop);
@@ -9074,7 +9197,11 @@ function drawRescue() {
     });
   }
   if (r.msgT > 0 && !a) hudText(r.msg, VW / 2, Math.round(VH * 0.34) + 92, 26, r.msgCol, 'center');
-  for (const b of r.bits) { ctx.globalAlpha = Math.min(1, b.life / 15); ctx.fillStyle = b.col; ctx.fillRect(b.x, b.y, b.s, b.s); }
+  for (const b of r.bits) {
+    ctx.globalAlpha = Math.min(1, b.life / 15);
+    if (b.ring) { ctx.strokeStyle = b.col; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(b.x, b.y, b.s, 0, 7); ctx.stroke(); }   // bubbles
+    else { ctx.fillStyle = b.col; ctx.fillRect(b.x, b.y, b.s, b.s); }
+  }
   ctx.globalAlpha = 1;
   for (const w of r.words) {   // SLASH! SMASH! ZAP!
     const pop = 1 + 0.5 * Math.max(0, 1 - w.t / 7), sz = Math.round(w.size * pop);
@@ -9928,6 +10055,7 @@ function startStage(i) {
   const bandIt = ITEM[prog.equip.band]; SPR_ANIM = bandIt && bandIt.anim ? bandIt.anim.map(c => bakeNinja({ ...heroPal(), r: c[0], R: c[1] })) : null;
   DIVER = null;
   if (prog.vanishNext === i) G.friendPow = { vanish: true };   // Mei was freed in the level before: Ninja vanish here too (kept on a restart)
+  if (prog.dolphinLeft && prog.dolphinLeft[i]) G.friendPow = { ...(G.friendPow || {}), dolphin: true };   // Nami's Dolphin swim: once in each other sea level (used up when it's finished)
   else if (prog.vanishNext != null) { delete prog.vanishNext; save(); }   // the diving suit picks up the headband again
   cam = 0; ambient.length = 0;
   hide('menu');
@@ -9943,6 +10071,7 @@ function intro(title, body, label) { mode = 'intro'; hide('pauseBtn'); showTouch
 function begin() {
   stopReading(); mode = 'play'; hide('msg'); show('pauseBtn'); showTouch(true);
   if (G && L.abyss && !G.deepTip) { G.deepTip = true; floatText(P.x + 120, GR * T - 4.5 * T, 'The deep sea! Kai has his diving suit on.', '#9be7ff', 22); }
+  if (G && !G.dolTip && hasFriend('dolphin') && !G.rescue) { G.dolTip = true; floatText(cam + VW / 2, P.y - 60, "Nami's Dolphin swim! Swim fast and leap high!", '#9be7ff', 22); }
   if (G && !G.vanTip && vanishOn() && !G.rescue) {
     G.vanTip = true;
     floatText(cam + VW / 2, P.y - 60, isTouch ? 'Tap the vanish button to hide!' : 'Press V to vanish!', '#e6e2ff', 22);

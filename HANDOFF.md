@@ -71,6 +71,9 @@ Everything is in `index.html`. `CLAUDE.md` maps the code and records the owner's
 - **Badge gems are bigger** (bronze 30, silver 75, gold 150 + title, adventures 50) and show as a **treasure chest** on the next end card (shakes, pops open, gems fly, the number counts up). Offered, not built: victory moves for the gold medals, a race ride for Every Road.
 - **Practice 7s / Play 7s** from the Badge Book's times-table tiles (owner: kids don't read the Fact Book). Practice = up to 10 quick questions of that table's not-gold facts (no streak, no gems; "come back tomorrow to make them gold"); Play = the newest level with that table, not-gold facts first. Tiles have a silver + gold bar. Hidden for K and 1st grade players.
 
+## Built Nov 10, 2026
+- **Sea lost friend: Nami** (owner picked everything): a glowing porthole on the Sunken Ship's wreck; Kai swims in to the captain's cabin; **crab bouncer in a pirate hat**; the **bubble cannon** bursts three barnacle chains (BLOOP!), the 3rd is **TIDAL WAVE!**, the 4th traps the crab in a giant bubble that floats him away. Power **Dolphin swim** (faster swimming, higher leaps) for Sunken Ship, then once each in Coral Reef and Kelp Forest. Every One Matters now needs all six friends. The rest of sea step 3 (animal, training room, stones/swing, twist/flavor, moves) is still to do.
+
 ## Open questions for the owner
 0. How do the kids find the Work it out card? Too often, too long (division by counting can be 7 steps)?
 1. Waiting for players' reactions to the guards, the finishing moves, the ski lift and the test-out.
