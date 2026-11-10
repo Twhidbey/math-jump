@@ -515,7 +515,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 10, 2026 11:00 AM PT · Dolphin ride button; bigger shipwreck, Nami behind the hole</div>
+  <div class="build">Updated Nov 10, 2026 1:00 PM PT · Smoke-puff vanish button, polar bear ninjas, fewer snowmen</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1425,7 +1425,7 @@ const TWISTS = ['kite', 'spring', 'koi', 'rocks', 'chase', 'dark', 'gears', 'con
 function newMap() { const m = []; for (let r = 0; r < ROWS; r++) m.push([]); return m; }
 
 function walkerFor(kind, c, speed) {
-  const size = { ninja: [24, 44], shadow: [24, 44], rock: [34, 30], robot: [30, 36], penguin: [28, 32] }[kind];
+  const size = { ninja: [24, 44], shadow: [24, 44], rock: [34, 30], robot: [30, 36], penguin: [28, 32], bear: [32, 34] }[kind];
   return { kind, x: c * T + 4, y: GR * T - size[1], w: size[0], h: size[1], vx: -speed, vy: 0, onGround: false, dead: null, t: R(0, 60) };
 }
 
@@ -1474,7 +1474,8 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
   const goldSpots = [];   // pillar and stair tops: the golden gem floats high above one of them
   const coin = (c, r, v = 1) => L.coins.push({ x: c * T + T / 2, y: r * T + T / 2, v, taken: false });
   const speed = (0.9 + def.si * 0.05) * (easy ? 0.7 : 1);
-  const maybeEnemy = c => { if (rng() < def.enemy * (easy ? 0.4 : 1)) L.enemies.push(walkerFor(W.walker, c, speed)); };
+  const walker = W.key === 'snow' && def.k === 2 ? 'bear' : W.walker;   // Blizzard Peak: polar bear ninjas instead of penguins (owner)
+  const maybeEnemy = c => { if (rng() < def.enemy * (easy ? 0.4 : 1)) L.enemies.push(walkerFor(walker, c, speed)); };
   if (W.key === 'sea') return seaBuild();
 
   // The sea world (owner, Nov 2026): Kai floats at the surface and dives to get past things. Rafts float on the
@@ -5124,7 +5125,7 @@ function addFlavor(L) {
       break;
     case 'boxes': spots(12, 3, 2).forEach(c => add({ k: 'belt', x: c * T - T / 2, w: 4 * T, t: Math.floor(rng() * 300) })); break;
     case 'lab': spots(10, 5, 1).forEach((c, i) => add({ k: ['beaker', 'screen'][i % 2], x: X(c) + T / 2, t: Math.floor(rng() * 100) })); break;
-    case 'snowmen': spots(13, 4).forEach(c => add({ k: 'snowman', x: X(c), hat: null })); break;
+    case 'snowmen': spots(13, 4).filter((c, i) => i % 3 === 0).forEach((c, i) => add({ k: 'snowman', x: X(c), hat: null, sc: i % 4 })); break;   // owner: far fewer, each its own scarf colour
     case 'chimes': spots(7, 3).forEach(c => add({ k: 'chime', x: X(c), cool: 0, flash: 0 })); break;
     case 'wind': break;
     case 'lanterns':
@@ -5335,7 +5336,7 @@ function drawFlavor() {
       ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(f.x, Y - 16, 18, 0, 7); ctx.arc(f.x, Y - 44, 13, 0, 7); ctx.fill();
       ctx.fillStyle = '#dceefa'; ctx.beginPath(); ctx.arc(f.x + 5, Y - 12, 10, 0, 7); ctx.fill();
       ctx.fillStyle = '#111'; ctx.fillRect(f.x - 5, Y - 48, 3, 3); ctx.fillRect(f.x + 3, Y - 48, 3, 3); [-22, -14].forEach(d => ctx.fillRect(f.x - 1, Y + d, 3, 3));
-      poly([[f.x, Y - 44], [f.x + 12, Y - 42], [f.x, Y - 40]], '#ff9a1a'); ctx.fillStyle = '#3a7bd5'; ctx.fillRect(f.x - 13, Y - 34, 26, 5); ctx.fillRect(f.x + 4, Y - 34, 5, 14);
+      poly([[f.x, Y - 44], [f.x + 12, Y - 42], [f.x, Y - 40]], '#ff9a1a'); ctx.fillStyle = ['#3a7bd5', '#e63946', '#3fa35f', '#ffb627'][f.sc || 0]; ctx.fillRect(f.x - 13, Y - 34, 26, 5); ctx.fillRect(f.x + 4, Y - 34, 5, 14);
       line(f.x - 16, Y - 22, f.x - 32, Y - 34, '#6b4226', 3); line(f.x + 16, Y - 22, f.x + 32, Y - 32, '#6b4226', 3);
       const h = f.hat || { x: f.x, y: Y - 56, a: 0 };
       ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(h.a); ctx.fillStyle = '#1f1f26'; ctx.fillRect(-13, -2, 26, 5); ctx.fillRect(-8, -18, 16, 17); ctx.fillStyle = '#e63946'; ctx.fillRect(-8, -6, 16, 3); ctx.restore();
@@ -8652,6 +8653,25 @@ function drawEnemy(e) {
       ctx.beginPath(); ctx.moveTo(x + 7, y + 8); ctx.lineTo(x + 15, y + 11); ctx.moveTo(x + 28, y + 8); ctx.lineTo(x + 20, y + 11); ctx.stroke();
       break;
     }
+    case 'bear': {   // a polar bear ninja with a red headband (Blizzard Peak)
+      const f = e.vx > 0 ? 1 : -1, hx = x + 16 + f * 5;
+      const lx1 = x + 4 + (step ? 2 : 0), lx2 = x + 19 - (step ? 2 : 0);
+      ctx.fillStyle = '#5d7088';   // a grey-blue outline all round first, so the white bear shows on white snow
+      ctx.fillRect(lx1 - 2, y + 25, 13, 11); ctx.fillRect(lx2 - 2, y + 25, 13, 11);
+      ctx.beginPath(); ctx.ellipse(x + 16, y + 20, 17, 13, 0, 0, 7); ctx.arc(hx - 7, y + 2, 6, 0, 7); ctx.arc(hx + 7, y + 2, 6, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(hx, y + 10, 12, 11, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#e8dfcc'; ctx.fillRect(lx1, y + 27, 9, 7); ctx.fillRect(lx2, y + 27, 9, 7);   // legs
+      ctx.fillStyle = '#fbf6ea'; ctx.beginPath(); ctx.ellipse(x + 16, y + 20, 15, 11, 0, 0, 7); ctx.fill();   // body (a creamy white)
+      ctx.fillStyle = '#ece3cf'; ctx.beginPath(); ctx.ellipse(x + 16, y + 25, 11, 5, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#fbf6ea'; ctx.beginPath(); ctx.arc(hx - 7, y + 2, 4, 0, 7); ctx.arc(hx + 7, y + 2, 4, 0, 7); ctx.fill();   // ears
+      ctx.fillStyle = '#ffc9d4'; ctx.fillRect(hx - 8, y + 1, 2, 2); ctx.fillRect(hx + 6, y + 1, 2, 2);
+      ctx.fillStyle = '#fbf6ea'; ctx.beginPath(); ctx.ellipse(hx, y + 10, 10, 9, 0, 0, 7); ctx.fill();   // head
+      ctx.fillStyle = '#e63946'; ctx.fillRect(hx - 10, y + 5, 20, 4); ctx.fillRect(hx - f * 13, y + 6, 5, 3); ctx.fillRect(hx - f * 17, y + 9, 4, 3);   // ninja headband, tails flying
+      ctx.fillStyle = '#111'; ctx.fillRect(hx - 4 + f * 2, y + 10, 2, 3); ctx.fillRect(hx + 3 + f * 2, y + 10, 2, 3);   // eyes
+      ctx.fillStyle = '#ece3cf'; ctx.beginPath(); ctx.ellipse(hx + f * 6, y + 14, 5, 4, 0, 0, 7); ctx.fill();   // muzzle
+      ctx.fillStyle = '#111'; ctx.fillRect(hx + f * 9 - 2, y + 12, 4, 3);   // nose
+      break;
+    }
     case 'penguin': {   // a grumpy penguin in a scarf
       const wob = step ? 2 : -2, f = e.vx > 0 ? 1 : -1;
       ctx.fillStyle = '#ff9a1a'; ctx.fillRect(x + 6, y + 29, 7, 3); ctx.fillRect(x + 15, y + 29, 7, 3);
@@ -10523,7 +10543,7 @@ const PIX = {
   chest: ['', '', '.qqqqqqqqqq', 'qqqqqqqqqqqq', 'yyyyyyyyyyyy', 'qqqqqyyqqqqq', 'qqqqqYYqqqqq', 'qqqqqqqqqqqq', 'yyyyyyyyyyyy', 'qqqqqqqqqqqq', 'qqqqqqqqqqqq'],
   chestopen: ['.qqqqqqqqqq', 'qqqqqqqqqqqq', 'yyyyyyyyyyyy', '', '..cw.yc.wc', '.ccyccwccyc', 'qqqqqqqqqqqq', 'yyyyyyyyyyyy', 'qqqqqyyqqqqq', 'qqqqqYYqqqqq', 'qqqqqqqqqqqq', 'qqqqqqqqqqqq'],
   dolphin: ['', '......b', '.....bb', '..bbbbbbb', '.bbbbbbbbbw.', 'bbbwwwwbbbbb', 'b..wwwwwbb..', 'b.....b.....'],   // the dolphin button
-  vanish: ['...w.w.w....', '..........w.', '.w..........', '..rrrrrrrr.w', 'w.r.w..w.r..', '..........w.', '.w..........', '..........w.', '...w.w.w....'],
+  vanish: ['....gg......', '..ggggg.gg..', '.ggggggggggg', 'gggwwgggwwgg', 'gggwkgggwkgg', 'gggggggggggg', '.gggggggggg.', '..gg.ggg.gg.', '.g.......g..'],   // Ninja vanish button: a puff of smoke, eyes peeking out
   fist: ['', '...ssssssss', '..ssSssSssSs', '..ssSssSssSs', '..ssssssssss', 'sssSSSSsssss', 'sssssssSssss', '.ssssssssss', '..ssssssss', '...rrrrrr', '...rrrrrr'],
   cap: ['', '', '.....dd', '...dddddd', '.dddddddddd', 'dddddddddddd', '.dddddddddyd', '...dddddd.y', '...dddddd.y', '..........y'],
   qmark: ['', '...gggggg', '..gg....gg', '........gg', '.......gg', '......gg', '.....gg', '.....gg', '', '.....gg', '.....gg'],
