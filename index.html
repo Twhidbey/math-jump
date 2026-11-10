@@ -515,7 +515,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 10, 2026 2:00 PM PT · Bigger polar bears, old vanish button back</div>
+  <div class="build">Updated Nov 10, 2026 4:00 PM PT · Sea levels: a hungry animal and a counting bubble line</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1379,13 +1379,15 @@ function drawWalls() {
 // feeding animals per level (world × 3 + level) and their food; stepping-stone spots (used while building levels)
 const ANIMALS = [['rabbit', 'carrot'], ['panda', 'bamboo'], ['duck', 'bread'], ['salamander', 'bug'], ['lizard', 'chili'], ['mole', 'mushroom'],
   ['robodog', 'bolt'], ['robocat', 'battery'], ['drone', 'spark'], ['penguin', 'fish'], ['seal', 'fish'], ['fox', 'berries'],
-  ['cat', 'riceball'], ['moonrabbit', 'dango'], ['raccoon', 'apple']];
+  ['cat', 'riceball'], ['moonrabbit', 'dango'], ['raccoon', 'apple'],
+  ['turtle', 'jelly'], ['otter', 'clam'], ['seahorse', 'shrimp']];   // the sea (slots 15–17): Coral Reef, Kelp Forest, Sunken Ship
 // One short story per level at the hungry animal (shown to readers, 2nd grade and up): same numbers, same answer,
 // so choosing the operation is practised without touching the Fact Book. Think skills and missing numbers stay plain.
-const WORD_ANIMAL = { robodog: 'robot dog', robocat: 'robot cat', moonrabbit: 'moon rabbit' };
+const WORD_ANIMAL = { robodog: 'robot dog', robocat: 'robot cat', moonrabbit: 'moon rabbit', turtle: 'sea turtle', otter: 'sea otter' };
 const WORD_FOOD = { carrot: ['carrot', 'carrots'], bamboo: ['bamboo', 'bamboo'], bread: ['bread', 'bread'], bug: ['bug', 'bugs'], chili: ['chili', 'chilis'],
   mushroom: ['mushroom', 'mushrooms'], bolt: ['bolt', 'bolts'], battery: ['battery', 'batteries'], spark: ['spark', 'sparks'], fish: ['fish', 'fish'],
-  berries: ['berry', 'berries'], riceball: ['rice ball', 'rice balls'], dango: ['dango', 'dango'], apple: ['apple', 'apples'] };
+  berries: ['berry', 'berries'], riceball: ['rice ball', 'rice balls'], dango: ['dango', 'dango'], apple: ['apple', 'apples'],
+  jelly: ['jellyfish', 'jellyfish'], clam: ['clam', 'clams'], shrimp: ['shrimp', 'shrimp'] };
 function wordQ(q, animal, food) {
   if (!q || q.missing || q.step || q.puzzle || !['+', '−', '×', '÷'].includes(q.op)) return q;
   const an = WORD_ANIMAL[animal] || animal, [one, many] = WORD_FOOD[food] || [food, food + 's'], f = n => (n === 1 ? one : many);
@@ -1520,7 +1522,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     function clamChunk() {   // a treasure clam on the sea floor: swim down to it for a question; right = it opens, pearls spill out as gems
       const s = flat(8); L.clams.push({ x: (s + 4) * T + T / 2, y: GR * T, used: false, open: 0, state: 'shut', t: 0 });
     }
-    L.vents = []; L.clams = []; L.leaps = []; L.deep = def.k === 2;   // Sunken Ship: the water gets darker the further you go
+    L.vents = []; L.clams = []; L.leaps = []; L.counts = []; L.deep = def.k === 2;   // Sunken Ship: the water gets darker the further you go
     // Sunken Ship is all deep sea (owner): no surface, no sky, nothing sticking up out of the water. Kai wears the diving
     // suit he found at the end of the Kelp Forest; it keeps him at a steady depth (L.water is that depth, not a surface).
     L.abyss = def.k === 2;
@@ -1551,6 +1553,14 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
           // A pirate chest by the ship (owner picked): a question opens it and "pieces of eight" spill out as gems.
           L.clams.push({ chest: true, x: (s + 3) * T - 30, y: GR * T, used: false, open: 0, state: 'shut', t: 0, k: 0 });
         }
+      }
+      if (i === calm + 1) {   // one hungry animal on the sea floor; its three foods float at swimming depth (picked with the buttons / keys)
+        const s0 = flat(12), [kind, food] = ANIMALS[slotOf(def)] || ANIMALS[0], q = wordQ(L.gen(), kind, food);
+        L.squads.push({ s: s0, q, done: false, kind, food, ax: (s0 + 9) * T + T / 2, foods: choices(q, 3).map((val, j) => ({ x: (s0 + 3 + j * 2) * T + T / 2, y: L.water + 2.2 * T, val })) });
+      }
+      if (i === def.n - 2) {   // a counting bubble line: Kai can't swim past the next bubble until he picks its number
+        const n = easy ? 4 : 5, s0 = flat(6 + n * 3), sq = stepSeq(skill, n);
+        L.counts.push({ ...sq, n, k: 0, xs: range(0, n - 1).map(j => (s0 + 3 + j * 3) * T + T / 2), y: L.water + 2 * T, opts: null, pop: [], done: false });
       }
       // The gate: a reef wall from the sea floor up out of the water, with three doors (one answer each) at different depths.
       const s = flat(11), q = L.gen();   // a short run-up: the question shows close to its wall
@@ -4785,7 +4795,72 @@ function miniTarget() {
       return { kind: 'feed', q: fd.q, vals: fd.foods.map(f => f.val), off: fd.foods.map(() => false), ref: fd };
     }
   }
+  for (const ct of L.counts || []) {
+    if (ct.done || ct.wait > 0 || cx < ct.xs[0] - 4 * T || cx > ct.xs[ct.n - 1] + T) continue;
+    if (!ct.opts) countOpts(ct);
+    return { kind: 'count', q: countQ(ct), vals: ct.opts, off: ct.opts.map(() => false), ref: ct };
+  }
   return null;
+}
+// The sea's counting bubble line (in place of the stepping stones): the first bubble shows a number, the rest "?" (choices under the next one).
+// Kai can't swim past the next one until he picks its number (buttons / keys). Right = it pops (+1 gem) and he swims on;
+// wrong = it shows the right number and the line goes on (no penalty, like the stones' kind falls). Not in the Fact Book.
+const countQ = ct => ({ op: 'room', missing: true, text: `${ct.seq.slice(0, ct.k + 1).join(', ')}, ?`, ans: ct.seq[ct.k + 1] });
+function countOpts(ct) {
+  const ans = ct.seq[ct.k + 1], d = ct.step;
+  const near = [ans + 1, ans - 1, ans + d, ans - d, ans + 2, ans - 2, ans + 2 * d, ans + 5].filter(v => v > 0 && !ct.seq.slice(0, ct.k + 1).includes(v) && v !== ans);
+  ct.opts = shuffle([ans, ...shuffle([...new Set(near)]).slice(0, 2)]); ct.shownAt = G.time;
+}
+function countPick(ct, i) {
+  if (ct.done || !ct.opts || ct.wait > 0) return;
+  const ans = ct.seq[ct.k + 1], right = ct.opts[i] === ans, x = ct.xs[ct.k + 1], y = ct.y;
+  ct.k++; ct.pop[ct.k] = { t: 0, right }; ct.opts = null;
+  if (right) {
+    G.solved++; if (G.time - (ct.shownAt ?? G.time) <= fastFrames(L.skill, countQ(ct))) G.fastN++;
+    sfx.correct(); streakUp(x, y - 40); gotIt(); payGems(x, y, 1);
+    floatText(x, y - 46, `${ct.back ? '−' : '+'}${ct.step}`, '#3ae374', 26);
+    for (let k = 0; k < 10; k++) G.parts.push({ k: 'bit', x: x + (Math.random() - 0.5) * 40, y: y + (Math.random() - 0.5) * 40, vx: (Math.random() - 0.5) * 3, vy: -1 - Math.random() * 2, up: true, life: 30, col: 'rgba(230,250,255,.9)', s: 4 });
+  } else {
+    G.mistakes++; G.streak = 0; sfx.wrong(); ct.wait = 50;
+    floatText(x, y - 46, `Oops! It's ${ans}`, '#ff6b6b', 24);
+  }
+  if (ct.k >= ct.n - 1) { ct.done = true; confetti(x, y - 30); floatText(x, y - 80, 'You counted them all!', '#ffd23f', 26); payGems(x, y, 2); }
+}
+function countsTick(p) {   // the current: Kai can't swim past the next bubble until it's answered
+  for (const ct of L.counts || []) {
+    if (ct.wait > 0) ct.wait--;
+    for (const pp of ct.pop) if (pp && pp.t < 40) pp.t++;
+    if (ct.done || p.x + p.w / 2 < ct.xs[0] - 2 * T) continue;
+    const bx = ct.xs[ct.k + 1] - 30;
+    if (p.x + p.w > bx && p.x < bx + T) { p.x = bx - p.w; if (p.vx > 0) p.vx = 0; dolphinLetGo(); if (!ct.told) { ct.told = true; floatText(p.x + p.w / 2, p.y - 30, 'Pick the next number!', '#ffd23f', 22); } }
+  }
+}
+function drawCounts() {
+  for (const ct of L.counts || []) {
+    if (ct.xs[ct.n - 1] < cam - 80 || ct.xs[0] > cam + VW + 120) continue;
+    hudText(`Count ${ct.back ? 'back' : 'up'} by ${ct.step}s`, ct.xs[0] + 40, ct.y - 40, 18, '#ffffff', 'center');
+    ct.xs.forEach((x, i) => {
+      const y = ct.y + Math.sin(tick * 0.06 + i) * 4, pp = ct.pop[i], next = !ct.done && i === ct.k + 1;
+      if (i === 0 || pp) {   // a counted number: a badge (green right, orange = shown after a miss)
+        const col = i === 0 ? '#7df9ff' : pp.right ? '#3ae374' : '#ff9f43', sc = pp && pp.t < 10 ? 1.4 - pp.t * 0.04 : 1;
+        if (pp && pp.t < 14) { ctx.strokeStyle = `rgba(240,252,255,${1 - pp.t / 14})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, 24 + pp.t * 2, 0, 7); ctx.stroke(); }   // the bubble pops
+        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, 19 * sc, 0, 7); ctx.fill(); ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(x, y, 15 * sc, 0, 7); ctx.fill();
+        ctx.font = `${String(ct.seq[i]).length > 2 ? 15 : 19}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.fillStyle = '#1a1426'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(ct.seq[i], x, y + 1);
+        return;
+      }
+      if (next) glowAt(x, y, 40 + Math.sin(tick * 0.15) * 6, 'rgba(255,240,160,.4)');
+      ctx.fillStyle = 'rgba(200,240,255,.22)'; ctx.beginPath(); ctx.arc(x, y, 24, 0, 7); ctx.fill();
+      ctx.strokeStyle = next ? '#ffffff' : 'rgba(230,248,255,.8)'; ctx.lineWidth = 3; ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(x - 12), Math.round(y - 13), 5, 5);   // the shine
+      hudText('?', x, y + 1, 22, '#ffffff', 'center');
+    });
+    if (!ct.done && ct.opts && !(ct.wait > 0) && Math.abs(P.x - ct.xs[ct.k + 1]) < 7 * T) ct.opts.forEach((v, j) => {   // the three choices over the next bubble (computers press , . /)
+      const tx = ct.xs[ct.k + 1] + (j - 1) * 50, ty = ct.y + 62, [c1] = ansCol(j);   // under the bubble, clear of Kai at the surface
+      ctx.fillStyle = c1; rrect(tx - 21, ty - 17, 42, 34, 9); ctx.fill(); ctx.fillStyle = '#ffffff'; rrect(tx - 18, ty - 14, 36, 28, 7); ctx.fill();
+      ctx.font = '18px "Lilita One", "Trebuchet MS", sans-serif'; ctx.fillStyle = '#1a1426'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(v, tx, ty + 1);
+      if (!isTouch) keyTag(ANS_KEYS(3)[j], tx + 18, ty - 16);
+    });
+  }
 }
 function miniAnswer(m, i) {
   if (m.kind === 'steps') { stepsPick(m.ref, i); return; }
@@ -4794,6 +4869,7 @@ function miniAnswer(m, i) {
   if (m.kind === 'train') { trainAnswer(m.ref, i); return; }
   if (m.kind === 'rescue') { rescuePick(m.ref, i); return; }
   if (m.kind === 'swing') { swingPick(m.ref, i); return; }
+  if (m.kind === 'count') { countPick(m.ref, i); return; }
   P.throwT = 14; sfx.throw(); boxPick(m.ref, i);
 }
 function feedPick(fd, i) {
@@ -4884,7 +4960,7 @@ function updateMini() {
       for (const f of fd.foods) if (f.fly && f.fly.t < 20) { f.fly.t++; const u = f.fly.t / 20; f.x = f.fly.x0 + (fd.ax - 6 - f.fly.x0) * u; f.y = f.fly.y0 + (GR * T - 26 - f.fly.y0) * u - Math.sin(u * Math.PI) * 30; if (f.fly.t === 20) { f.eaten = true; if (fd.mood === 'yum') { tone(500, 0.1, 'square', 0.04, 700); payGems(fd.ax, GR * T - 70, fd.fast ? 3 : 2); } } }
       continue;
     }
-    fd.foods.forEach((f, i) => { if (overlap(p, { x: f.x - 18, y: f.y - 18, w: 36, h: 36 })) feedPick(fd, i); });
+    if (!L.water) fd.foods.forEach((f, i) => { if (overlap(p, { x: f.x - 18, y: f.y - 18, w: 36, h: 36 })) feedPick(fd, i); });   // (in the sea: buttons / keys only)
   }
   const mb = G.mbox;
   if (mb) {
@@ -4896,6 +4972,7 @@ function updateMini() {
   }
 }
 function drawMini() {
+  if (L.counts) drawCounts();   // the sea's counting bubble line
   for (const fd of L.squads || []) {
     if (fd.ax < cam - 6 * T || fd.foods[0].x > cam + VW + 60) continue;
     const g = GR * T, chew = fd.mood === 'yum' && fd.moodT > 20 && fd.moodT < 80 ? Math.abs(Math.sin(fd.moodT * 0.4)) : 0;
@@ -4942,6 +5019,15 @@ function drawMini() {
 // Feeding animals as little pixel sprites (16 wide, chibi: big head, big eyes). Each has its own palette; a dark outline
 // is added around the shape. eyes = top-left of each 2×2 eye, mouth = where it chews, face = colour used to blink.
 const ANIMAL_SPR = {
+  turtle: { pal: { G: '#7bd36a', S: '#3a8a4a', s: '#2a6a3a', e: '#1a1426', w: '#ffffff', p: '#ffb3a0' }, eyes: [[5, 3], [9, 3]], mouth: [7, 6], face: 'G', rows: [
+    '.....GGGGGG.....', '....GGGGGGGG....', '...GGGGGGGGGG...', '...GGeeGGeeGG...', '...GGewGGewGG...', '...GpGGGGGGpG...', '....GGGGGGGG....', '..SSSSSSSSSSSS..',
+    '.SSsSSsSSsSSsSS.', 'GSSSSSSSSSSSSSSG', 'GSsSSsSSsSSsSSSG', '.SSSSSSSSSSSSSS.', '..SSSSSSSSSSSS..', '..GG........GG..'] },
+  otter: { pal: { B: '#8a5a3a', L: '#e8c9a0', n: '#3a2410', e: '#1a1426', w: '#ffffff', p: '#ffb3a0' }, eyes: [[4, 4], [10, 4]], mouth: [7, 7], face: 'L', rows: [
+    '..BB........BB..', '.BBBB......BBBB.', '.BBBBBBBBBBBBBB.', '.BBLLLLLLLLLLBB.', '.BLLeeLLLLeeLLB.', '.BLLewLLLLewLLB.', '.BLpLLLnnLLLpLB.', '..BLLLLLLLLLLB..',
+    '...BBBBBBBBBB...', '..BBBLLLLLLBBB..', '.BBBLLLLLLLLBBB.', '.BB.LLLLLLLL.BB.', '....BBBBBBBB....', '...BB......BB...'] },
+  seahorse: { pal: { O: '#ff9a3a', o: '#d8722a', y: '#ffd27a', e: '#1a1426', w: '#ffffff', p: '#ffb3a0' }, eyes: [[5, 3], [9, 3]], mouth: [7, 6], face: 'O', rows: [
+    '......OOOO......', '.....OOOOOO.....', '....OOOOOOOO....', '....OeeOOeeO....', '....OewOOewO....', '....OpOOOOpOOOO.', '.....OOOOOOO....', '....oOyyyyOo....',
+    '...ooOyyyyOoo...', '....OOyyyyOO....', '.....OOyyOO.....', '......OOOO......', '.......OOO......', '......OO........'] },
   rabbit: { pal: { W: '#f4f4f4', P: '#ffb3c8', e: '#1a1426', w: '#ffffff', p: '#ffb3c8', n: '#ff7aa2' }, eyes: [[4, 6], [10, 6]], mouth: [7, 9], face: 'W', rows: [
     '....WW....WW....', '...WPW....WPW...', '...WPW....WPW...', '...WPW....WPW...', '...WWWWWWWWWW...', '..WWWWWWWWWWWW..', '..WWeeWWWWeeWW..', '..WWewWWWWewWW..',
     '..WpWWWnnWWWpW..', '...WWWWWWWWWW...', '....WWWWWWWW....', '...WWWWWWWWWW...', '...WWWWWWWWWW...', '....WW....WW....'] },
@@ -4990,6 +5076,9 @@ const ANIMAL_SPR = {
 };
 // little pixel foods (10 wide), same outline treatment
 const FOOD_SPR = {
+  jelly: { pal: { p: '#ff9ccf', P: '#c8609a', w: '#ffffff' }, rows: ['...pppp...', '..pwpppp..', '.pppppppp.', '.PPPPPPPP.', '..p.p.p...', '..p..p.p..', '...p...p..'] },
+  clam: { pal: { c: '#c58aff', d: '#8a52c8', w: '#ffffff' }, rows: ['..cccccc..', '.cdcdcdcc.', 'cccccccccc', 'cdcdcdcdcc', '.cccccccc.', '..wwwwww..'] },
+  shrimp: { pal: { o: '#ff8a6a', d: '#d8603a', e: '#1a1426' }, rows: ['.......oo.', '..oooooeo.', '.oodoodooo', 'oooooooo..', '.o.o.o....', 'oo........'] },
   carrot: { pal: { g: '#3ae374', o: '#ff8a1a', d: '#d8661a' }, rows: ['....g.g...', '....ggg...', '...ooooo..', '...oodoo..', '...ooooo..', '....odo...', '....ooo...', '.....o....'] },
   bamboo: { pal: { g: '#7cc142', d: '#3f7a22', l: '#c5e1a5' }, rows: ['.....d.d..', '....gdd...', '....gl....', '....gg....', '...dddd...', '....gl....', '....gg....', '...dddd...'] },
   bread: { pal: { b: '#e0a458', l: '#f3c98b' }, rows: ['..bbbbbb..', '.bllllllb.', 'bllllllllb', 'bllllllllb', 'bllllllllb', '.bbbbbbbb.'] },
@@ -5585,6 +5674,7 @@ function updatePlayer() {
   if (riding) { p.vx = G.dol.dir * 8; p.vy = 0; p.face = G.dol.dir; }   // holding the dolphin's fin
   const hitWall = moveX(p);
   if (riding && hitWall) dolphinLetGo();   // a wall (a gate) ends the ride
+  if (L.counts) countsTick(p);   // the sea's counting bubble line
   if (hitWall && L.water) seaWall(p, wet);
   const wasAir = !p.onGround, fallSpeed = p.vy, feetBefore = p.y + p.h;
   const hit = moveY(p);
@@ -6965,6 +7055,8 @@ function drawSeaDark() {
   if (L.angler && L.angler.on) hole(L.angler.x + L.angler.face * 30, L.angler.y - 26, anglerR() + L.angler.pulse * 2);
   const cs = currentStation(); if (cs && cs.answers) cs.answers.forEach(o => hole(o.c * T + T, o.r * T + T, 70));
   for (const cl of L.clams || []) hole(cl.x, cl.y - 20, 70);
+  for (const fd of L.squads || []) if (!fd.done) { hole(fd.ax, GR * T - 30, 80); for (const f of fd.foods) hole(f.x, f.y, 50); }   // the hungry animal and its food
+  for (const ct of L.counts || []) if (!ct.done) ct.xs.forEach(x => hole(x, ct.y, 50));   // the counting bubbles
   if (L.ship) { const sg = shipGeo(L.ship); for (const [px, py] of sg.ports) hole(px, py, 56); hole(sg.hx, sg.b - 40, L.friend && !L.friend.done ? 110 : 70); hole(sg.x0 + sg.w - 70, sg.top(sg.x0 + sg.w - 70) - 30, 70); }   // portholes, the hole (brighter while Nami waits), the back deck windows
   if (G.mbox) G.mbox.bubbles.forEach(b => hole(b.x, b.y, 40));
   if (L.abyss) { const sp = scrollSpot(); hole(sp.x, sp.y, 110); hole(L.castleC * T + 2.5 * T, GR * T - 1.6 * T, 140); }   // the scroll and the diving bell's lit windows
