@@ -515,7 +515,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 10, 2026 1:00 PM PT · Smoke-puff vanish button, polar bear ninjas, fewer snowmen</div>
+  <div class="build">Updated Nov 10, 2026 2:00 PM PT · Bigger polar bears, old vanish button back</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1425,7 +1425,7 @@ const TWISTS = ['kite', 'spring', 'koi', 'rocks', 'chase', 'dark', 'gears', 'con
 function newMap() { const m = []; for (let r = 0; r < ROWS; r++) m.push([]); return m; }
 
 function walkerFor(kind, c, speed) {
-  const size = { ninja: [24, 44], shadow: [24, 44], rock: [34, 30], robot: [30, 36], penguin: [28, 32], bear: [32, 34] }[kind];
+  const size = { ninja: [24, 44], shadow: [24, 44], rock: [34, 30], robot: [30, 36], penguin: [28, 32], bear: [38, 41] }[kind];
   return { kind, x: c * T + 4, y: GR * T - size[1], w: size[0], h: size[1], vx: -speed, vy: 0, onGround: false, dead: null, t: R(0, 60) };
 }
 
@@ -8653,7 +8653,8 @@ function drawEnemy(e) {
       ctx.beginPath(); ctx.moveTo(x + 7, y + 8); ctx.lineTo(x + 15, y + 11); ctx.moveTo(x + 28, y + 8); ctx.lineTo(x + 20, y + 11); ctx.stroke();
       break;
     }
-    case 'bear': {   // a polar bear ninja with a red headband (Blizzard Peak)
+    case 'bear': {   // a polar bear ninja with a red headband (Blizzard Peak), drawn 1.2× (owner: a bit bigger)
+      ctx.save(); ctx.translate(x + e.w / 2, y + e.h); ctx.scale(1.2, 1.2); ctx.translate(-(x + 16), -(y + 34));
       const f = e.vx > 0 ? 1 : -1, hx = x + 16 + f * 5;
       const lx1 = x + 4 + (step ? 2 : 0), lx2 = x + 19 - (step ? 2 : 0);
       ctx.fillStyle = '#5d7088';   // a grey-blue outline all round first, so the white bear shows on white snow
@@ -8670,6 +8671,7 @@ function drawEnemy(e) {
       ctx.fillStyle = '#111'; ctx.fillRect(hx - 4 + f * 2, y + 10, 2, 3); ctx.fillRect(hx + 3 + f * 2, y + 10, 2, 3);   // eyes
       ctx.fillStyle = '#ece3cf'; ctx.beginPath(); ctx.ellipse(hx + f * 6, y + 14, 5, 4, 0, 0, 7); ctx.fill();   // muzzle
       ctx.fillStyle = '#111'; ctx.fillRect(hx + f * 9 - 2, y + 12, 4, 3);   // nose
+      ctx.restore();
       break;
     }
     case 'penguin': {   // a grumpy penguin in a scarf
@@ -10543,7 +10545,7 @@ const PIX = {
   chest: ['', '', '.qqqqqqqqqq', 'qqqqqqqqqqqq', 'yyyyyyyyyyyy', 'qqqqqyyqqqqq', 'qqqqqYYqqqqq', 'qqqqqqqqqqqq', 'yyyyyyyyyyyy', 'qqqqqqqqqqqq', 'qqqqqqqqqqqq'],
   chestopen: ['.qqqqqqqqqq', 'qqqqqqqqqqqq', 'yyyyyyyyyyyy', '', '..cw.yc.wc', '.ccyccwccyc', 'qqqqqqqqqqqq', 'yyyyyyyyyyyy', 'qqqqqyyqqqqq', 'qqqqqYYqqqqq', 'qqqqqqqqqqqq', 'qqqqqqqqqqqq'],
   dolphin: ['', '......b', '.....bb', '..bbbbbbb', '.bbbbbbbbbw.', 'bbbwwwwbbbbb', 'b..wwwwwbb..', 'b.....b.....'],   // the dolphin button
-  vanish: ['....gg......', '..ggggg.gg..', '.ggggggggggg', 'gggwwgggwwgg', 'gggwkgggwkgg', 'gggggggggggg', '.gggggggggg.', '..gg.ggg.gg.', '.g.......g..'],   // Ninja vanish button: a puff of smoke, eyes peeking out
+  vanish: ['...w.w.w....', '..........w.', '.w..........', '..rrrrrrrr.w', 'w.r.w..w.r..', '..........w.', '.w..........', '..........w.', '...w.w.w....'],   // Ninja vanish button: a dotted ninja head (owner liked this one best)
   fist: ['', '...ssssssss', '..ssSssSssSs', '..ssSssSssSs', '..ssssssssss', 'sssSSSSsssss', 'sssssssSssss', '.ssssssssss', '..ssssssss', '...rrrrrr', '...rrrrrr'],
   cap: ['', '', '.....dd', '...dddddd', '.dddddddddd', 'dddddddddddd', '.dddddddddyd', '...dddddd.y', '...dddddd.y', '..........y'],
   qmark: ['', '...gggggg', '..gg....gg', '........gg', '.......gg', '......gg', '.....gg', '.....gg', '', '.....gg', '.....gg'],
