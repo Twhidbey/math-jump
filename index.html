@@ -404,6 +404,7 @@
   .gearslot img { width: 72px; height: 72px; image-rendering: pixelated; display: block; margin: 0 auto 4px; }
   .gearslot.lost img { filter: brightness(0) opacity(.55); } .gearslot.lost { cursor: default; opacity: .8; }
   .gearslot.on { border-color: #7df9ff; background: rgba(125,249,255,.15); }
+  .gearslot .gshine.s1 { color: #dfe6ee; font-weight: 800; } .gearslot .gshine.s2 { color: #ffd23f; font-weight: 800; } .gearslot .gshine.s0 { opacity: .7; }
   .gearslot small { display: block; font: 12px "Nunito", sans-serif; opacity: .85; } .gearslot .gpow { color: #ffb627; opacity: 1; font-weight: 800; }
   .badge .bt { font-size: 12px; opacity: .85; }
   .badge { display: flex; flex-direction: column; }
@@ -546,7 +547,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 11, 2026 3:00 PM PT · Fact Book opens on a summary: each kind of math, skills to tap, facts to practice</div>
+  <div class="build">Updated Nov 11, 2026 5:00 PM PT · Polish your gear: open its room on another day, silver then gold</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -638,7 +639,7 @@
 <div id="pack" class="overlay hidden">
   <div class="card shopcard">
     <h2>Gear Pack</h2>
-    <div class="shophint">Lost gear is hidden in old chests up on high ledges. Tap a piece to wear it. Only one piece with a power at a time.</div>
+    <div class="shophint">Lost gear is hidden in old chests up on high ledges. Tap a piece to wear it. Only one piece with a power at a time. Open its room again on another day to polish it: silver, then gold.</div>
     <canvas id="packPreview" width="200" height="150"></canvas>
     <div class="packgrid" id="packGrid"></div>
     <div class="row"><button class="btn alt" id="packClose" type="button">Back</button></div>
@@ -1527,9 +1528,14 @@ function wearGear(id) {
 const JET_FUEL = 60;   // frames of flight per jump
 const gearAt = (w, k) => Object.keys(GEAR).find(id => GEAR[id].w === w && GEAR[id].k === k);
 // Draws one gear item on a sprite drawn at (ox, oy) with px-sized cells, 16 cells wide (flip = facing left).
+// Polish your gear (owner, Nov 11 2026): opening its room again on a later day makes it shinier: plain, silver, gold.
+// The shine is the item's outline: dark, silver trim, gold trim (+ sparkles on Kai).
+const shineTrim = sh => (sh === 2 ? '#ffd23f' : sh === 1 ? '#c9d2de' : OUTLINE), SHINE_NAME = ['Plain', 'Silver', 'Gold'];   // (a function: OUTLINE is defined further down)
+const shineOf = id => Math.min(2, (prog.gearShine || {})[id] || 0);
+const polishReady = id => (prog.gearOwned || []).includes(id) && shineOf(id) < 2 && (prog.gearDay || {})[id] !== today();
 function gearPix(c, id, ox, oy, px, flip) {
-  const g = GEAR[id];
-  g.rows.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch === '.') continue; const cx = g.gx + i; c.fillStyle = ch === 'k' ? OUTLINE : g.pal[ch]; c.fillRect(ox + (flip ? 15 - cx : cx) * px, oy + (g.gy + j) * px, px, px); } });
+  const g = GEAR[id], trim = shineTrim(shineOf(id));
+  g.rows.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch === '.') continue; const cx = g.gx + i; c.fillStyle = ch === 'k' ? trim : g.pal[ch]; c.fillRect(ox + (flip ? 15 - cx : cx) * px, oy + (g.gy + j) * px, px, px); } });
 }
 // "Play 7s" from the Badge Book (set by startStage for that one level): questions favour the facts not gold yet.
 var FOCUS = false;
@@ -4974,8 +4980,11 @@ function gearTick(p) {
   if (near && (p.onGround || L.water)) startGroom(gc);
 }
 function startGroom(gc) {
-  const owned = (prog.gearOwned || []).includes(gc.id);
-  G.groom = { gc, x: 1.3 * T, face: 1, k: owned ? 3 : 0, walls: GR_ROOM.walls.map(x => ({ x, open: owned ? 1 : 0, shake: 0 })), done: owned, t: 0, wait: 0, msg: '', msgT: 0, fly: null, bits: [] };
+  const owned = (prog.gearOwned || []).includes(gc.id), polish = polishReady(gc.id), open = owned && !polish;
+  const pool = polish ? shuffle(Object.values(prog.facts).filter(f => f.weak || f.practice).map(f => ({ ...f.q }))) : [];   // a polish visit asks the kid's tricky facts first
+  G.groom = { gc, polish, pool, asked: new Set(), x: 1.3 * T, face: 1, k: open ? 3 : 0, walls: GR_ROOM.walls.map(x => ({ x, open: open ? 1 : 0, shake: 0 })), done: open, t: 0, wait: 0, msg: '', msgT: 0, fly: null, bits: [] };
+  if (polish) { G.groom.msg = `Open the walls again to polish your ${GEAR[gc.id].name}!`; G.groom.msgCol = '#ffffff'; G.groom.msgT = 170; }
+  else if (open) { G.groom.msg = shineOf(gc.id) >= 2 ? `Your ${GEAR[gc.id].name} is gold!` : 'Come back tomorrow to polish it!'; G.groom.msgCol = '#ffd23f'; G.groom.msgT = 200; }
   G.mbox = null; P.vx = P.vy = 0; sfx.gate(); tone(220, 0.3, 'triangle', 0.04, 440);
 }
 function endGroom() { const gr = G.groom; G.groom = null; gr.gc.rearm = true; P.inv = 40; P.vx = P.vy = 0; syncAnsBar(); }
@@ -4991,11 +5000,15 @@ function groomTick() {
   const next = gr.walls[gr.k], max = next ? next.x - 0.75 * T : GR_ROOM.chest - 0.7 * T;
   gr.x = clamp(gr.x + dir * 2.8, 0.4 * T, max); gr.walk = dir ? gr.walk + 1 : 0;
   if (gr.x <= 0.4 * T && dir < 0) { endGroom(); return; }   // back out through the way in
-  if (!gr.done && !next && gr.x >= GR_ROOM.chest - 0.8 * T) { gr.done = true; gr.fly = 0; gearFound(gr.gc); }
+  if (!gr.done && !next && gr.x >= GR_ROOM.chest - 0.8 * T) { gr.done = true; gr.fly = 0; if (gr.polish) gearPolished(gr.gc); else gearFound(gr.gc); }
 }
 function groomTarget() {
   const gr = G.groom, w = gr && gr.walls[gr.k]; if (!w || gr.wait > 0 || gr.x < w.x - 1.4 * T) return null;
-  if (!gr.q) { gr.q = L.gen(); gr.opts = choices(gr.q, 3); gr.shownAt = G.time; }
+  if (!gr.q) {
+    let q = gr.pool.find(x => !gr.asked.has(factKey(x)));
+    if (!q) { q = L.gen(); for (let i = 0; i < 20 && gr.asked.has(factKey(q)); i++) q = L.gen(); }
+    gr.asked.add(factKey(q)); gr.q = q; gr.opts = choices(q, 3); gr.shownAt = G.time;
+  }
   return { kind: 'gear', q: gr.q, vals: gr.opts, off: gr.opts.map(() => false), ref: gr };
 }
 function gearTarget() { return G.groom ? groomTarget() : null; }
@@ -5018,13 +5031,21 @@ function gearFound(gc) {
   sfx.win();
   prog.gearOwned = [...new Set([...(prog.gearOwned || []), gc.id])];
   if (!gearOn(gc.id)) wearGear(gc.id);   // put it on right away (one power piece at a time)
+  prog.gearDay = { ...(prog.gearDay || {}), [gc.id]: today() };   // polishing starts tomorrow
   prog.newPack = true; save();
   if (G.groom) { G.groom.msg = `You found the ${g.name}!`; G.groom.msgCol = '#ffd23f'; G.groom.msgT = 200; }
+}
+function gearPolished(gc) {
+  const g = GEAR[gc.id], sh = Math.min(2, shineOf(gc.id) + 1);
+  prog.gearShine = { ...(prog.gearShine || {}), [gc.id]: sh }; prog.gearDay = { ...(prog.gearDay || {}), [gc.id]: today() };
+  prog.newPack = true; save(); sfx.win();
+  [784, 988, 1175, 1568].forEach((f, i) => tone(f, 0.18, 'triangle', 0.05, null, 0.2 + i * 0.09));   // sparkle
+  if (G.groom) { G.groom.msg = sh >= 2 ? `Your ${g.name} is GOLD now!` : `Your ${g.name} is silver now! Polish it again another day.`; G.groom.msgCol = sh >= 2 ? '#ffd23f' : '#dfe6ee'; G.groom.msgT = 240; }
 }
 // The way in, on the ledge: a block of the world's stone with a glowing crack, or a little cave mouth.
 function drawGearChest() {
   const gc = L.gearChest; if (!gc || gc.x < cam - 80 || gc.x > cam + VW + 80) return;
-  const W = L.world, owned = (prog.gearOwned || []).includes(gc.id), x = gc.x, b = gc.y, pulse = 0.5 + 0.3 * Math.sin(tick * 0.08);
+  const W = L.world, owned = (prog.gearOwned || []).includes(gc.id) && !polishReady(gc.id), x = gc.x, b = gc.y, pulse = 0.5 + 0.3 * Math.sin(tick * 0.08);   // (owned = nothing to do here today)
   if (gearCave()) {   // a cave mouth: a rough rock arch with a dark opening
     ctx.fillStyle = W.stair[1]; ctx.beginPath(); ctx.moveTo(x - 30, b); ctx.lineTo(x - 26, b - 46); ctx.lineTo(x - 10, b - 64); ctx.lineTo(x + 12, b - 62); ctx.lineTo(x + 28, b - 44); ctx.lineTo(x + 32, b); ctx.fill();
     ctx.fillStyle = W.stair[0]; ctx.fillRect(x - 24, b - 50, 8, 6); ctx.fillRect(x + 12, b - 56, 10, 5);
@@ -5060,7 +5081,7 @@ function drawGroom() {
   for (const b of gr.bits) { ctx.globalAlpha = Math.min(1, b.life / 12); ctx.fillStyle = b.col; ctx.fillRect(rx + b.x, fy + b.y, 5, 5); } ctx.globalAlpha = 1;
   // the chest
   const cx = rx + GR_ROOM.chest;
-  if (!gr.done) glowAt(cx, fy - 20, 40 + Math.sin(tick * 0.1) * 5, 'rgba(255,220,120,.35)');
+  if (!gr.done) glowAt(cx, fy - 20, 40 + Math.sin(tick * 0.1) * 5, gr.polish ? 'rgba(220,235,255,.4)' : 'rgba(255,220,120,.35)');
   drawPix(gr.done ? 'chestopen' : 'chest', cx - 18, fy - 36, 3);
   if (gr.fly != null && gr.fly < 70) {   // the gear rises out of the chest
     const u = gr.fly / 70, cv = gearImg(gr.gc.id, 4), y = fy - 40 - Math.sin(Math.min(1, u * 1.5) * Math.PI / 2) * 70;
@@ -5087,9 +5108,9 @@ function drawGroom() {
 // A gear item on its own (Gear Pack page, the chest): its rows at a cell size, cached.
 const gearImgs = {};
 function gearImg(id, px) {
-  const key = id + px; if (gearImgs[key]) return gearImgs[key];
-  const g = GEAR[id], w = Math.max(...g.rows.map(r => r.length)), c = document.createElement('canvas'); c.width = w * px; c.height = g.rows.length * px;
-  const x = c.getContext('2d'); g.rows.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch === '.') continue; x.fillStyle = ch === 'k' ? OUTLINE : g.pal[ch]; x.fillRect(i * px, j * px, px, px); } });
+  const key = id + px + '_' + shineOf(id); if (gearImgs[key]) return gearImgs[key];
+  const g = GEAR[id], w = Math.max(...g.rows.map(r => r.length)), c = document.createElement('canvas'); c.width = w * px; c.height = g.rows.length * px; const trim = shineTrim(shineOf(id));
+  const x = c.getContext('2d'); g.rows.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch === '.') continue; x.fillStyle = ch === 'k' ? trim : g.pal[ch]; x.fillRect(i * px, j * px, px, px); } });
   return (gearImgs[key] = c);
 }
 function openPack() {
@@ -5104,7 +5125,7 @@ function openPack() {
   $('packGrid').innerHTML = Object.keys(GEAR).map(id => {
     const g = GEAR[id], got = owned.includes(id), on = eq[g.slot] === id, st = STAGES.find(x => x.w === g.w && x.k === g.k);
     return `<button type="button" class="gearslot${got ? '' : ' lost'}${on ? ' on' : ''}" data-gear="${id}"><img src="${gearImg(id, 6).toDataURL()}" alt="">${got ? g.name : '???'}
-      <small>${got ? (on ? 'Wearing' : 'Tap to wear') : `Lost in ${st ? st.name : WORLDS[g.w].name}`}</small>${g.power ? `<small class="gpow">Power: ${g.power}</small>` : ''}</button>`;
+      <small>${got ? (on ? 'Wearing' : 'Tap to wear') : `Lost in ${st ? st.name : WORLDS[g.w].name}`}</small>${got ? `<small class="gshine s${shineOf(id)}">${SHINE_NAME[shineOf(id)]}${shineOf(id) < 2 ? (polishReady(id) ? ' · polish it today!' : ' · polish tomorrow') : ' ★'}</small>` : ''}${g.power ? `<small class="gpow">Power: ${g.power}</small>` : ''}</button>`;
   }).join('');
   $('packGrid').querySelectorAll('[data-gear]').forEach(el => { el.onclick = () => {
     const id = el.dataset.gear, g = GEAR[id]; if (!owned.includes(id)) return;
@@ -9849,6 +9870,7 @@ function noFlyHere(p) {
 }
 function drawGearOn(p, frame, layer, diver) {
   const eq = prog.gear || {}; if (!eq.head && !eq.back && !eq.hand) return;
+  if (layer === 'front' && G && tick % 14 === 0 && GEAR_SLOTS.some(sl => eq[sl] && shineOf(eq[sl]) >= 2)) G.parts.push({ k: 'bit', x: p.x + Math.random() * p.w, y: p.y + Math.random() * p.h * 0.7, vx: 0, vy: -0.4, up: true, life: 18, col: tick % 28 ? '#fff6c8' : '#ffd23f', s: 3 });   // gold gear sparkles
   const flip = p.face < 0, set = SPR, ox = Math.round(p.x + p.w / 2 - (flip ? set.cxFlip : set.cx)), oy = Math.round(p.y + p.h - set.bottom) + (frame === 'walkA' ? 0 : 0);
   if (layer === 'back' && eq.back) {
     gearPix(ctx, eq.back, ox, oy, PX, flip);
@@ -10408,7 +10430,7 @@ function drawHUD() {
   const br = activeBridge();
   let txt;
   if (G.rescue) txt = rescueTitle(G.rescue);
-  else if (G.groom) txt = miniTarget() ? qShow(miniTarget().q) : G.groom.done ? 'You found it!' : 'A secret room!';
+  else if (G.groom) txt = miniTarget() ? qShow(miniTarget().q) : G.groom.done ? (G.groom.polish ? 'Shiny!' : 'You found it!') : G.groom.polish ? 'Polish your gear!' : 'A secret room!';
   else if (L.room && L.room.kind === 'train') txt = L.room.open || L.room.show ? L.room.move.name : L.room.intro > 0 ? (L.room.intro > 150 ? L.room.move.name : L.room.intro > 90 ? 'Bow to Sensei' : L.room.intro > 40 ? 'Ready...' : 'Begin!') : qShow(L.room.q);
   else if (L.room) txt = L.room.open ? 'Treasure!' : { scale: 'Balance the scale!', square: 'Magic square!', machine: 'Number machine!' }[L.room.kind];
   else if (br) txt = `Make ${br.target}!`;
