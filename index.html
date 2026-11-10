@@ -275,10 +275,15 @@
   .pix { image-rendering: pixelated; width: 36px; height: 36px; display: block; }
   .pix.big { width: 64px; height: 64px; display: inline-block; margin: 0 2px; }
   .scenebox { width: min(100%, 520px); margin: 0 auto 12px; }
-  canvas.scene { display: block; margin: 0 auto; width: 100%; image-rendering: pixelated; border: 3px solid #c9a24f; border-radius: 8px; background: #000; cursor: pointer; }
+  canvas.scene { display: block; margin: 0 auto; width: 100%; image-rendering: pixelated; border: 3px solid #c9a24f; border-radius: 4px; background: #000; cursor: pointer; touch-action: pan-y; }
+  .scenepic { position: relative; width: fit-content; max-width: 100%; margin: 0 auto; box-sizing: border-box; padding: 10px 8px; background: #e9d3a0; border-radius: 6px; box-shadow: inset 0 0 0 2px #c9a24f, 0 4px 12px rgba(0,0,0,.35); }   /* a storybook scroll */
+  .scenepic::before, .scenepic::after { content: ''; position: absolute; left: -8px; right: -8px; height: 8px; background: #6b4423; border-radius: 4px; box-shadow: inset 0 2px 0 #8a5a2b; }
+  .scenepic::before { top: -4px; } .scenepic::after { bottom: -4px; }
+  .scarrow { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%; border: 2px solid #c9a24f; background: rgba(30,20,10,.65); color: #ffe9a8; font-size: 18px; cursor: pointer; z-index: 2; padding: 0; }
+  .scarrow.prev { left: -6px; } .scarrow.next { right: -6px; }
   .scenecap { min-height: 2.6em; margin: 8px 4px 4px; font-size: 19px; line-height: 1.3; color: #ffe9a8; }
   .scenedots { display: flex; justify-content: center; gap: 6px; }
-  .scenedots i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.25); }
+  .scenedots i { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,.25); cursor: pointer; }
   .scenedots i.on { background: #ffd23f; }
   .bigicon .bossimg { width: 104px; height: 104px; display: inline-block; }
   .pix.sm { width: 22px; height: 22px; display: inline-block; vertical-align: -4px; }
@@ -517,7 +522,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 10, 2026 5:00 PM PT · Adding & Taking Away prizes in the Badge Book</div>
+  <div class="build">Updated Nov 10, 2026 6:00 PM PT · Story pictures: faster, flip with arrows, storybook frame</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -10706,29 +10711,66 @@ function bossImg(kind) { if (!bossURL[kind]) bossURL[kind] = BOSS_SPR[kind].a[0]
 // there is no zooming, and scenery is whole pixels with flat colours (no smooth gradients).
 // Rules that keep it looking right: eyes are 1 × 2 pixels on everyone; mountains and hills always
 // reach down to the ground (fill to the bottom); draw back to front.
-const SW = 192, SH = 108, SLIDE_LEN = 5.5;
+const SW = 192, SH = 108, SLIDE_LEN = 4;   // seconds per picture (owner: a bit faster)
 let sceneRAF = 0;
-const sceneHTML = name => `<div class="scenebox"><canvas class="scene" data-scene="${name}"></canvas><div class="scenecap"></div><div class="scenedots"></div></div>`;
+const sceneHTML = name => `<div class="scenebox"><div class="scenepic"><canvas class="scene" data-scene="${name}"></canvas></div><div class="scenecap"></div><div class="scenedots"></div></div>`;
+// Story pictures (owner, Nov 2026: faster, flip back and forth, a bit more storybook): each slide shows for SLIDE_LEN
+// seconds; ◀ ▶ arrows, the arrow keys, a swipe or a dot flip slides, and after a flip by hand it stops moving on by itself.
+// Slides change with a pixel dissolve on the art canvas (one pixel grid, never zoomed), and each page gets a light
+// drifting layer (petals, embers, snow, bubbles, stars) and a soft tint (SCENE_MOOD).
+let sceneSt = null;
+const SCENE_MOOD = {
+  opening: [null, null], japan: ['petal', null], kage: ['ember', 'rgba(60,0,40,.10)'], lava: ['ember', 'rgba(255,90,0,.08)'], golem: ['ember', 'rgba(255,120,40,.06)'],
+  robot: ['spark', null], bot: ['spark', 'rgba(0,80,160,.08)'], snow: ['snow', null], yeti: ['snow', 'rgba(120,180,255,.08)'], sea: ['bubble', null], octo: ['bubble', 'rgba(0,60,120,.08)'],
+  castle: ['star', 'rgba(20,0,60,.10)'], falls: ['star', 'rgba(20,0,60,.12)'], morning: ['mote', 'rgba(255,200,100,.10)'], home: ['mote', 'rgba(255,190,90,.10)'],
+};
+function sceneLife(a, name, t) {   // a few single pixels drifting over the picture (deterministic, so it never flickers)
+  const [kind, tint] = SCENE_MOOD[name] || [];
+  if (tint) { a.fillStyle = tint; a.fillRect(0, 0, SW, SH); }
+  if (!kind) return;
+  const n = kind === 'star' ? 14 : 9, col = { petal: '#ffb3d1', ember: '#ff9a3a', spark: '#7df9ff', snow: '#ffffff', bubble: '#dff6ff', star: '#fff6c8', mote: '#fff2b0' }[kind];
+  for (let i = 0; i < n; i++) {
+    const h = (i * 97 + 13) % 191, v = (i * 53 + 7) % 107, sp = 6 + (i % 4) * 3;
+    let x, y;
+    if (kind === 'star') { x = h; y = v % 40; if (Math.sin(t * 3 + i * 1.7) < 0.3) continue; }   // twinkling, high up
+    else if (kind === 'ember' || kind === 'bubble' || kind === 'spark' || kind === 'mote') { x = (h + Math.sin(t + i) * 4 + 192) % 192; y = (v - t * sp + 1080) % 108; }   // rising
+    else { x = (h + t * sp * 0.6 + 192) % 192; y = (v + t * sp + 1080) % 108; }   // falling and drifting (petals, snow)
+    a.fillStyle = col; a.fillRect(Math.round(x), Math.round(y), 1, 1);
+    if (kind === 'petal' || kind === 'bubble') a.fillRect(Math.round(x) + 1, Math.round(y), 1, 1);
+  }
+}
+const DISSOLVE = (() => { const n = SW * SH, r = new Float32Array(n); let s0 = 7; for (let i = 0; i < n; i++) { s0 = (s0 * 16807) % 2147483647; r[i] = s0 / 2147483647; } return r; })();
 function runScenes() {
   cancelAnimationFrame(sceneRAF);
   const boxes = [...document.querySelectorAll('#msgBody .scenebox')];
+  sceneSt = null;
   if (!boxes.length) return;
   const st = boxes.map(box => {
     const cv = box.querySelector('canvas'), slides = SCENES[cv.dataset.scene];
     // whole-number blow-up that fits the box, in real screen pixels
-    const dpr = window.devicePixelRatio || 1, k = Math.max(1, Math.floor((box.clientWidth || 360) * dpr / SW));
+    const dpr = window.devicePixelRatio || 1, inner = (box.clientWidth || 376) - 22, k = Math.max(1, Math.floor(inner * dpr / SW));   // inside the scroll frame
     cv.width = SW * k; cv.height = SH * k; cv.style.width = `${SW * k / dpr}px`; cv.style.height = `${SH * k / dpr}px`;
     const art = document.createElement('canvas'); art.width = SW; art.height = SH;
-    const s = { box, cv, k, art, slides, idx: 0, t0: performance.now(), shown: -1 };
-    cv.onclick = () => { s.idx = (s.idx + 1) % slides.length; s.t0 = performance.now(); };
-    box.querySelector('.scenedots').innerHTML = slides.map(() => '<i></i>').join('');
+    const old = document.createElement('canvas'); old.width = SW; old.height = SH;
+    const s = { box, cv, k, art, old, slides, name: cv.dataset.scene, idx: 0, t0: performance.now(), shown: -1, hold: false, fromT: -1 };
+    const go = (d, byHand = true) => { s.old.getContext('2d').drawImage(s.art, 0, 0); s.fromT = performance.now(); s.idx = (s.idx + d + s.slides.length) % s.slides.length; s.t0 = performance.now(); if (byHand) s.hold = true; };
+    s.go = go;
+    cv.onclick = () => go(1);
+    let sx = null; cv.onpointerdown = e => { sx = e.clientX; }; cv.onpointerup = e => { if (sx != null && Math.abs(e.clientX - sx) > 30) { go(e.clientX < sx ? 1 : -1); cv.onclick = null; setTimeout(() => { cv.onclick = () => go(1); }, 0); } sx = null; };   // a swipe
+    const dots = box.querySelector('.scenedots');
+    dots.innerHTML = slides.map((_, i) => `<i data-i="${i}"></i>`).join('');
+    dots.querySelectorAll('i').forEach(d => { d.onclick = () => { audio(); go(Number(d.dataset.i) - s.idx); }; });
+    if (slides.length > 1 && !box.querySelector('.scarrow')) {
+      for (const [cls, d, txt] of [['prev', -1, '◀'], ['next', 1, '▶']]) { const b = document.createElement('button'); b.type = 'button'; b.className = `scarrow ${cls}`; b.textContent = txt; b.onclick = e => { e.stopPropagation(); audio(); go(d); }; box.querySelector('.scenepic').appendChild(b); }
+    }
     return s;
   });
+  sceneSt = st;
   const step = now => {
-    if (!st[0].cv.isConnected) return;
+    if (!st[0].cv.isConnected) { sceneSt = null; return; }
     for (const s of st) {
       let lt = Math.max(0, (now - s.t0) / 1000);
-      if (lt >= SLIDE_LEN) { s.idx = (s.idx + 1) % s.slides.length; s.t0 = now; lt = 0; }
+      if (lt >= SLIDE_LEN && !s.hold) { s.go(1, false); lt = 0; }
       const sl = s.slides[s.idx];
       if (s.shown !== s.idx) {
         s.shown = s.idx;
@@ -10737,10 +10779,15 @@ function runScenes() {
       }
       const a = s.art.getContext('2d');
       a.imageSmoothingEnabled = false; a.save(); a.clearRect(0, 0, SW, SH);
-      sl.draw(a, Math.floor(lt * 12) / 12, lt / SLIDE_LEN);
+      sl.draw(a, Math.floor(Math.min(lt, SLIDE_LEN) * 12) / 12, Math.min(1, lt / SLIDE_LEN));
       a.restore();
-      const edge = Math.min(lt, SLIDE_LEN - lt);   // fade through black, in 4 steps
-      if (edge < 0.4) { a.fillStyle = `rgba(0,0,0,${Math.ceil((1 - edge / 0.4) * 4) / 4})`; a.fillRect(0, 0, SW, SH); }
+      sceneLife(a, s.name, now / 1000);
+      const u = s.fromT < 0 ? 1 : (now - s.fromT) / 450;   // the pixel dissolve from the last slide
+      if (u < 1) {
+        const nw = a.getImageData(0, 0, SW, SH), od = s.old.getContext('2d').getImageData(0, 0, SW, SH).data, d = nw.data;
+        for (let i = 0; i < SW * SH; i++) if (DISSOLVE[i] > u) { const j = i * 4; d[j] = od[j]; d[j + 1] = od[j + 1]; d[j + 2] = od[j + 2]; d[j + 3] = od[j + 3]; }
+        a.putImageData(nw, 0, 0);
+      } else if (s.fromT < 0 && lt < 0.3) { a.fillStyle = `rgba(0,0,0,${Math.ceil((1 - lt / 0.3) * 3) / 3})`; a.fillRect(0, 0, SW, SH); }   // the very first picture fades in
       const c = s.cv.getContext('2d'); c.imageSmoothingEnabled = false;
       c.drawImage(s.art, 0, 0, SW * s.k, SH * s.k);
     }
@@ -11586,6 +11633,7 @@ $('badgesClose').onclick = () => { hide('badges'); buildMenu(); show('menu'); };
 // ---------------------------------------------------------------- input
 const KMAP = { KeyX: 'move', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'jump', KeyW: 'jump', Space: 'jump', KeyZ: 'jump' };
 window.addEventListener('keydown', e => {
+  if (sceneSt && sceneSt[0].cv.isConnected && !$('msg').classList.contains('hidden') && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) { e.preventDefault(); sceneSt[0].go(e.code === 'ArrowLeft' ? -1 : 1); return; }   // story pictures
   if (e.target.tagName === 'TEXTAREA') return;   // pasting a save code
   if (e.target.tagName === 'INPUT') { if (e.key === 'Enter') $('pSave').click(); return; }   // typing a name
   audio();
