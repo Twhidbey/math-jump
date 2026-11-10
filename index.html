@@ -528,7 +528,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 11, 2026 11:00 AM PT · Gear rooms: a crack or cave leads to a tiny room with 3 walls</div>
+  <div class="build">Updated Nov 11, 2026 2:00 PM PT · Falling at a bridge puts carried stones back; Jetpack stops when Kai bumps his head</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -2932,7 +2932,11 @@ function moveY(b) {
     if (hit === null && b === P && r >= 0 && !L.water) {   // forgiving edges: a head that just grazes the side of an answer block counts (not in the sea: Kai floats up along the wall)
       for (const c of [Math.floor((b.x - 6) / T), Math.floor((b.x + b.w + 6) / T)]) if (c >= 0 && c < L.w && (L.map[r][c] === 'A' || L.map[r][c] === 'Z')) { hit = c; break; }
     }
-    if (hit !== null) { b.y = (r + 1) * T; b.vy = 0; return { c: hit, r }; }
+    if (hit !== null) {
+      b.y = (r + 1) * T; b.vy = 0;
+      if (b === P && G) { G.jetFly = false; G.jetFuel = 0; }   // a head bump ends a Jetpack flight (it would keep bonking the block, beep-beep-beep); it refills on landing
+      return { c: hit, r };
+    }
   }
   return null;
 }
@@ -4642,7 +4646,7 @@ function fell() {
   if (b) b.fell = true;
   if (prog.easy || prog.safe || first) sfx.bump();
   else { G.hearts--; G.hit = true; sfx.hurt(); if (G.hearts <= 0) { gameOver(); return; } }
-  // Keep any stones Kai is carrying, so a missed jump doesn't undo the work.
+  dropCarry();   // stones he was carrying go back to their spots (owner asked)
   P.x = G.checkpoint; P.y = GR * T - P.h; P.vx = P.vy = 0; P.inv = 100;
   if (first) floatText(P.x + P.w / 2, P.y - 30, `Too far to jump! Build a bridge: ${b.target}`, '#ffd23f', 24);
 }
