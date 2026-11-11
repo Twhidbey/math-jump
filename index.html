@@ -552,7 +552,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 11, 2026 9:00 PM PT · Updates load after each level (no need to go home)</div>
+  <div class="build">Updated Nov 11, 2026 10:00 PM PT · Easier math button (Pause menu)</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -729,7 +729,7 @@ cv.addEventListener('pointerdown', e => {   // click / tap the big answer tiles 
   const tb = G && G.tip && G.tip.box;
   if (tb && x >= tb.x && x <= tb.x + tb.w && y >= tb.y && y <= tb.y + tb.h) {   // tap Sensei's tip to close it, or its "Show me" to work it out
     const sb = G.tip.show;
-    if (sb && x >= sb.x && x <= sb.x + sb.w && y >= sb.y - 6 && y <= sb.y + sb.h + 6) { audio(); openWork(G.tip.q, !!G.tip.example); return; }
+    if (sb && x >= sb.x && x <= sb.x + sb.w && y >= sb.y - 6 && y <= sb.y + sb.h + 6) { audio(); if (G.tip.easy) { G.tip = null; makeEasier(); } else openWork(G.tip.q, !!G.tip.example); return; }
     G.tip.t = Math.min(G.tip.t, 14); return;
   }
   if (G && G.rescue && !tr) return;
@@ -2891,6 +2891,17 @@ function trackPlan() {
   }
 }
 const trackMem = () => prog.gtrack || (prog.gtrack = { last: null, adj: {}, seen: {} });
+// Easier math (owner, Nov 11 2026: a 1st grader got discouraged): each kind's skills easy to hard across all grades,
+// so a step back can drop below the kid's grade (Add to 10 after 1st grade's first Add). tm.down[track] = steps back
+// the kid asked for; a great round on that kind takes one back off (trackRound).
+function easierSkill(id, n) {
+  const cat = SKILL[id].cat, lad = [];
+  GRADES.forEach((g, gi) => gradeTracks(gi).forEach(t => t.ids.forEach(s => { if (SKILL[s].cat === cat && !lad.includes(s)) lad.push(s); })));
+  let i = lad.indexOf(id);
+  if (i < 0) { const pi = PATH.indexOf(id); return pi < 0 ? id : PATH[Math.max(0, pi - n)]; }
+  return lad[Math.max(0, i - n)];
+}
+const downOf = (tm, track) => (tm.down && tm.down[track]) || 0;
 // Each world favours one kind of math: level 1 is only that kind (at the kid's spot in it, a step up after a great
 // level, a step back after a hard one), levels 2 and 3 and the boss mix: 40% the world's kind (at least 10 points over an
 // even share, so 60/40 with two kinds), the rest shared by the
@@ -2913,14 +2924,16 @@ function planStage(i, commit) {
   const home = plan.sts.find(x => trackCat(x) === cat), homeOk = home && !home.done && !home.locked;
   const note = homeOk || !KIND_NAME[cat] ? '' : !home ? '' : home.done ? `You passed all your ${KIND_NAME[cat]}! Mixed math here.`
     : `${KIND_NAME[cat]} opens after ${SKILL[TRACK_REQ[home.t.ids[home.f]]].name}.`;
-  const spot = x => ({ track: x.t.name, ...(x.done ? { ids: x.t.ids } : { skill: x.t.ids[x.f] }) });
+  const at = x => { const d = downOf(tm, x.t.name); return d ? easierSkill(x.t.ids[x.f], d) : x.t.ids[x.f]; };   // the kid's spot, minus any easier steps
+  const spot = x => ({ track: x.t.name, ...(x.done ? { ids: x.t.ids } : { skill: at(x) }) });
   let out;
   if (!st.boss && st.k === 0) {   // level 1: the world's kind only
     const x = homeOk ? home : behind(plan.sts, tm); if (!x) return null;
-    const adj = tm.adj[x.t.name] || 0;
+    const adj = tm.adj[x.t.name] || 0, dn = downOf(tm, x.t.name);
     let k = Math.max(0, Math.min(x.t.ids.length - 1, x.f + adj));
     if (k > x.f && !reqMet(x.t.ids[k], plan.gi)) k = x.f;
-    out = { focus: true, track: x.t.name, skill: x.t.ids[k], mode: k > x.f ? 'challenge' : k < x.f ? 'back' : '', mix: [{ track: x.t.name, skill: x.t.ids[k], p: 1 }] };
+    const sk = dn ? easierSkill(x.t.ids[Math.min(x.f, x.t.ids.length - 1)], dn) : x.t.ids[k];   // asked for easier math: that wins
+    out = { focus: true, track: x.t.name, skill: sk, mode: dn ? 'back' : k > x.f ? 'challenge' : k < x.f ? 'back' : '', mix: [{ track: x.t.name, skill: sk, p: 1 }] };
     if (commit) { tm.adj[x.t.name] = 0; tm.last = x.t.name; }
   } else {   // levels 2, 3 and the boss: a mix leaning 40% to the world's kind
     const others = plan.sts.filter(x => x !== home && !x.locked && (st.boss || !x.done));
@@ -2929,7 +2942,7 @@ function planStage(i, commit) {
     const hp = !withHome ? 0 : others.length ? Math.max(0.4, 1 / (others.length + 1) + 0.1) : 1;   // the world's kind always leads
     const mix = [...(withHome ? [{ ...spot(withHome), p: hp }] : []), ...others.map(x => ({ ...spot(x), p: (1 - hp) / others.length }))];
     const main = withHome && !withHome.done ? withHome : behind(others, tm) || withHome || others[0];
-    out = { focus: false, track: main.t.name, skill: main.done ? main.t.ids[main.t.ids.length - 1] : main.t.ids[main.f], mode: '', mix };
+    out = { focus: false, track: main.t.name, skill: main.done ? main.t.ids[main.t.ids.length - 1] : at(main), mode: others.concat(withHome || []).some(x => !x.done && downOf(tm, x.t.name)) ? 'back' : '', mix };
   }
   out.note = note; out.fresh = !tm.seen[out.skill]; out.grade = gname; out.home = homeOk ? KIND_NAME[cat] : null;
   if (commit) {
@@ -2967,7 +2980,11 @@ function trackRound(skill, how) {
   for (const [track, b] of Object.entries(by)) {
     const n = b.right + b.wrong; if (n < 4) continue;
     const rate = b.right / n, quick = b.right ? b.fast / b.right : 0, x = plan && plan.sts.find(y => y.t.name === track);
-    if (rate >= 0.9 && quick >= 0.7) {
+    if (rate >= 0.9 && quick >= 0.7 && downOf(tm, track)) {   // easier math went great: one step back up
+      tm.down[track]--;
+      const id = x && !x.done ? (tm.down[track] ? easierSkill(x.t.ids[x.f], tm.down[track]) : x.t.ids[x.f]) : null;
+      if (id) lines.push(`${pixImg('star', 'pix sm')} Great job! Next time: <b>${SKILL[id].name}</b>`);
+    } else if (rate >= 0.9 && quick >= 0.7) {
       tm.adj[track] = 1;
       const up = x && !x.done && x.t.ids[Math.min(x.t.ids.length - 1, x.f + 1)];
       if (up && up !== x.t.ids[x.f]) lines.push(`${pixImg('star', 'pix sm')} Challenge next time: <b>${SKILL[up].name}</b>`);
@@ -3794,6 +3811,11 @@ function missed(q) {
     const d = today(), mt = prog.missToday && prog.missToday.d === d ? prog.missToday : (prog.missToday = { d, n: {} }), k = factKey(q);
     mt.n[k] = (mt.n[k] || 0) + 1; save();
     if (mt.n[k] >= 2 && workSteps(q)) { mt.n[k] = 0; G.wrongRun = 0; openWork(q); return; }
+  }
+  G.missN = (G.missN || 0) + 1;
+  if (!G.easyAsked && G.missN >= 4 && G.missN > G.solved / 2 && !G.rescue && !G.groom && !L.vault) {   // a rough patch: Sensei offers easier math once a level
+    G.easyAsked = true; G.wrongRun = 0;
+    senseiTip('This math is tricky. Want to warm up with easier math?', null, 'Too tricky?', 9 * 60); G.tip.easy = true; return;
   }
   if (++G.wrongRun >= (G.tipSoon ? 1 : 2)) { senseiTip(tipFor(q), q); G.wrongRun = 0; }   // a step-back level: help after one miss
 }
@@ -10494,7 +10516,7 @@ function wrapLines(txt, maxW) {
 }
 function drawTip() {
   // a small card in the top-left corner, under the hearts; slides in from the left
-  const t = G.tip, max = t.max || TIP_T, w = Math.min(330, VW - 24), h = (t.pic ? 114 : 70) + (t.q ? 34 : 0), slide = Math.min(1, (max - t.t) / 14, t.t / 14);
+  const t = G.tip, max = t.max || TIP_T, w = Math.min(330, VW - 24), h = (t.pic ? 114 : 70) + (t.q || t.easy ? 34 : 0), slide = Math.min(1, (max - t.t) / 14, t.t / 14);
   const x = 10 - (1 - slide) * (w + 20), y = VW < 700 ? 200 : 84;
   t.box = { x, y, w, h };
   ctx.globalAlpha = 0.95; ctx.fillStyle = 'rgba(20,20,50,.92)'; rrect(x, y, w, h, 12); ctx.fill(); ctx.globalAlpha = 1;
@@ -10507,6 +10529,13 @@ function drawTip() {
   wrapLines(t.txt, w - 58).slice(0, 3).forEach((ln, i) => ctx.fillText(ln, x + 48, y + 23 + i * 15));
   if (t.pic) drawTipPic(t.pic, x + 8, y + 66, w - 16, 44, 12);
   t.show = null;
+  if (t.easy) {   // Sensei's offer: a button for easier math
+    const bw = 140, bh = 26, bx = x + w - bw - 8, by = y + h - bh - 6;
+    t.show = { x: bx, y: by, w: bw, h: bh };
+    ctx.fillStyle = '#2ecc71'; rrect(bx, by, bw, bh, 8); ctx.fill();
+    ctx.fillStyle = '#ffffff'; ctx.font = '15px "Lilita One", "Trebuchet MS", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(isTouch ? 'Easier ▶' : 'Easier ▶ (E)', bx + bw / 2, by + bh / 2 + 1);
+  }
   if (t.q) {   // a button to work the trick out step by step
     const bw = 130, bh = 26, bx = x + w - bw - 8, by = y + h - bh - 6;
     t.show = { x: bx, y: by, w: bw, h: bh };
@@ -11145,11 +11174,38 @@ function showStory(then) {
 }
 
 let pausedMode = 'play';
+// "Easier math" (Pause menu, or Sensei's offer after a rough patch): restart this level one step easier on each kind
+// it asks. Nothing easier left: offer Easy mode instead.
+function makeEasier() {
+  if (mode === 'play') { pausedMode = mode; mode = 'pause'; showTouch(false); }
+  const now = prog.trackNow, tm = trackMem(), i = G.idx;
+  let moved = false;
+  if (now && now.stage === i && prog.auto) {
+    tm.down = tm.down || {};
+    for (const m of now.mix) if (m.skill && easierSkill(m.skill, 1) !== m.skill) { tm.down[m.track] = downOf(tm, m.track) + 1; moved = true; }
+  } else {
+    const e = easierSkill(prog.skill, 1);
+    if (e !== prog.skill) { prog.skill = e; prog.pickOnce = !!prog.auto; moved = true; }
+  }
+  save();
+  if (moved) {
+    const pl = planStage(i, false), names = pl ? [...new Set(pl.mix.filter(m => m.skill).map(m => SKILL[m.skill].name))] : [SKILL[prog.skill].name];
+    sfx.win();
+    showMsg('Warm-up time!', `<p>Easier math: <b>${names.join(', ')}</b></p><p><small>Do great and it goes back up!</small></p>`,
+      [{ label: "Let's go! ▶", fn: () => startStage(i), primary: true }]);
+  } else {
+    showMsg('Easiest math already!', `<p>You can do it, ninja!</p>${prog.easy ? '' : '<p><small>Easy mode gives more hearts and more time.</small></p>'}`, [
+      ...(prog.easy ? [] : [{ label: 'Easy mode ▶', fn: () => { setEasy(true); startStage(i); }, primary: true }]),
+      { label: 'Resume', fn: togglePause, primary: !!prog.easy, alt: !prog.easy },
+    ]);
+  }
+}
 function togglePause() {
   if (mode === 'play' || mode === 'race') {
     pausedMode = mode; mode = 'pause'; showTouch(false);
     showMsg('Paused', '<p>Take a breath, ninja!</p>', [
       { label: 'Resume', fn: togglePause, primary: true },
+      ...(pausedMode === 'race' ? [] : [{ label: 'Easier math', fn: makeEasier, alt: true }]),
       { label: 'Restart', fn: () => (pausedMode === 'race' ? (RC && RC.travel !== null ? travelRace(STAGES[RC.travel].w) : startRace()) : startStage(G.idx)), alt: true },
       { label: pausedMode === 'race' ? 'Menu' : 'Levels', fn: toMenu, alt: true },
     ]);
@@ -12314,6 +12370,7 @@ window.addEventListener('keydown', e => {
   if (mode === 'play' && e.code === 'KeyV' && !e.repeat && G) doVanish();   // Mei's Ninja vanish
   if (mode === 'play' && e.code === 'KeyF' && !e.repeat && G) doDolphin();   // Nami's dolphin
   if (mode === 'play' && e.code === 'KeyH' && G && G.tip && G.tip.q) openWork(G.tip.q, !!G.tip.example);
+  if (mode === 'play' && e.code === 'KeyE' && G && G.tip && G.tip.easy) { G.tip = null; makeEasier(); }
   if (mode === 'play' && /^Digit[1-5]$/.test(e.code)) tapAnswer(Number(e.code[5]) - 1);
   if (mode === 'play' && ['KeyN', 'KeyM', 'Comma', 'Period', 'Slash'].includes(e.code)) {   // the row just above the arrow keys
     const t = answerTarget();

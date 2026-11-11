@@ -113,3 +113,6 @@ Each gets a secret room in a level that has none yet (3 math walls + chest) and 
 - **Something fights back** (gentle): a grumpy guard or a crumbling ceiling that the hits push back, no timer.
 - **Each rescue a bit bigger than the last**: rescue 1 has 3 hits, later ones add a fourth, and the last rescue lets Kai use every treasure he has collected, one per hit.
 - **A secret extra** in each room (a gem chest behind the wall Kai breaks).
+
+## Built Nov 11, 2026 (late)
+- **Easier math** (owner: a 1st grader got discouraged): a Pause-menu button, and Sensei offers it once a level after a rough patch ("Too tricky?" card, Easier ▶). It restarts the level one step easier on each kind of math (can drop below the grade, e.g. Add within 10 → Add within 5); a great round on that kind steps it back up. Nothing easier left: offers Easy mode.
