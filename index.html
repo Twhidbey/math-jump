@@ -553,7 +553,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 14, 2026 2:00 PM PT · Shadow Walls: 4-5 ninjas when spotted</div>
+  <div class="build">Updated Nov 14, 2026 2:30 PM PT · Shadow Walls: 5 ninjas when spotted, every level of math</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -6270,11 +6270,13 @@ function updateTwist() {
       G.hidden = hidden;
       if (!f.seen && !hidden && dx > 0 && dx < 4.5 * T && dy < dx * 0.45 + 24) {
         f.seen = true; G.alarm = 120; sfx.wrong(); floatText(f.x, GR * T - 80, '❗ Spotted!', '#ff4d4d', 26);
-        // 4 or 5 shadow ninjas appear in puffs of smoke, ahead of Kai and behind him (owner, Nov 14 2026: also for
+        // Five shadow ninjas appear in puffs of smoke, ahead of Kai and behind him (owner, Nov 14 2026: also for
         // kindergarten; there they are a little slower in Easy mode).
-        const spots = [6, 8, 10, -7, -9].slice(0, Math.random() < 0.5 ? 4 : 5), d = p.face || 1;
-        for (const k of spots) {
-          const c = clamp(Math.floor(p.x / T) + k * d, 1, L.w - 2); if (solid(c, GR - 1) || !solid(c, GR)) continue;   // only on open ground
+        const spots = [6, 8, 10, -7, -9], d = p.face || 1, used = new Set(), open = c => c > 0 && c < L.w - 1 && !used.has(c) && !solid(c, GR - 1) && !solid(c, GR - 2) && solid(c, GR);
+        for (const k of spots) {   // always five (owner): a blocked spot moves to the nearest open ground
+          const c0 = clamp(Math.floor(p.x / T) + k * d, 1, L.w - 2); let c = -1;
+          for (let o = 0; o < 8 && c < 0; o++) for (const cc of [c0 + o * Math.sign(k * d), c0 - o * Math.sign(k * d)]) if (c < 0 && open(cc) && Math.abs(cc * T - p.x) > 3 * T) c = cc;
+          if (c < 0) continue; used.add(c);
           const e = walkerFor('shadow', c, kEasy() ? 1 : 1.4); if (e.x < p.x) e.vx = -e.vx; L.enemies.push(e);   // they all come toward Kai
           for (let i = 0; i < 10; i++) G.parts.push({ k: 'bit', x: e.x + e.w / 2 + (Math.random() - 0.5) * 30, y: e.y + e.h / 2 + (Math.random() - 0.5) * 36, vx: (Math.random() - 0.5) * 2.4, vy: -0.6 - Math.random(), life: 34, col: Math.random() < 0.5 ? '#d9dcea' : '#a9a3c9', s: 6 });
         }

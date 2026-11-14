@@ -128,3 +128,4 @@ Each gets a secret room in a level that has none yet (3 math walls + chest) and 
 - **Go there ▶** button on each Gear Pack slot (owner): goes straight into that level (unlocked levels only); tapping the rest of the slot still wears the piece.
 - **Jetpack flies longer** (owner): fuel 60 → 100 frames (about 1.7 s per flight instead of 1 s).
 - **Shadow Walls: a sentry that spots Kai brings 4–5 shadow ninjas** in puffs of smoke, ahead and behind (owner; was 2, and none for kindergarten in Easy mode). Kindergarten Easy now gets them too, a little slower.
+- Sentries now always bring **five** ninjas (owner asked again for K: a blocked spot moves to the nearest open ground).
