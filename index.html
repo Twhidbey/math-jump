@@ -552,7 +552,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 14, 2026 9:00 AM PT · New gear: Golden Boomerang, Spring Boots, Magnet Gloves</div>
+  <div class="build">Updated Nov 14, 2026 9:45 AM PT · Sea Dojo: 3 new moves (Palm Strike, Crescent Kick, Back Kick)</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1792,6 +1792,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
       if (i === 1) caveChunk();
       if (i === calm && !L.abyss) leapChunk();
       if (i === 2 || i === def.n - 3) clamChunk();
+      if (i === 2 && !def.boss && MOVES[slotOf(def)]) { const s0 = flat(9); L.doors.push({ c: s0 + 4, r: GR, style: ENTRANCES[slotOf(def)] || 'clam', used: false, hidden: false }); }   // the Sea Dojo's way in, on the sea floor
       if (i === calm && !L.abyss) seaChunk('vent');   // every level has at least one vent (not the deep sea: they shoot Kai out of the water)
       if (i === calm) {   // breathing room: an easy swim with gems (in the Sunken Ship it's where the old ship lies)
         const s = flat(def.k === 2 ? 22 : ri(rng, 14, 18)); for (let k = 2; k < 12; k += 2) coin(s + k, WS + 1 + (k % 4 ? 0 : 2));
@@ -2153,7 +2154,7 @@ function balanceQ(tier, times) {
 // Sensei teaches one move per level, easy to hard. Each right answer is one step of the move (Kai holds that pose),
 // and after the last step Kai does the whole move at full speed. Poses: r = lean (deg), y = lift (px),
 // arm / arm2 / leg = [angle, length] (0 = straight ahead, -90 = up, 90 = down), flip = facing away.
-const ENTRANCES = ['door', 'bamboo', 'torii', 'cave', 'ledge', 'crack', 'hatch', 'crate', 'vent', 'igloo', 'drift', 'ledge', 'roof', 'banner', 'brick'];
+const ENTRANCES = ['door', 'bamboo', 'torii', 'cave', 'ledge', 'crack', 'hatch', 'crate', 'vent', 'igloo', 'drift', 'ledge', 'roof', 'banner', 'brick', 'clam', 'seaarch', 'shiphatch'];   // (the sea's three are on the sea floor)
 const TRAIN_SIGN = { japan: 'Dojo', lava: 'Training Cave', robot: 'Training Lab', snow: 'Ice Temple', sea: 'Sea Dojo', castle: 'Tower Hall' };
 const TRAIN_ROOM = { japan: 'the Dojo', lava: 'the Training Cave', robot: 'the Training Lab', snow: 'the Ice Temple', sea: 'the Sea Dojo', castle: 'the Tower Hall' };
 const GUARD = { arm: [-5, 15], arm2: [25, 15] };
@@ -2188,7 +2189,17 @@ const MOVES = [
     { say: 'Crouch low.', pose: { r: 12, ...GUARD } }, { say: 'Jump and spin!', pose: { y: 30, flip: true, ...GUARD, leg: [-20, 10] } }, { say: 'Kick!', pose: { y: 34, r: -25, ...GUARD, leg: [-25, 32] } }] },
   { name: "The Master's Move", fx: 'master', intro: 'The last lesson. Everything together.', lesson: 'The strongest move is to protect others.', steps: [
     { say: 'Block, to protect.', pose: { arm: [-70, 22], arm2: [60, 7] } }, { say: 'Punch, with a calm heart.', pose: { r: 8, arm: [0, 26], arm2: [60, 7] } }, { say: 'Fly!', pose: { y: 34, r: -35, ...GUARD, leg: [-5, 34] } }] },
+  // The Sea Dojo (slots 15-17: the sea world comes before the castle, so these are lessons 13-15 in play order).
+  { name: 'Palm Strike', fx: 'wind', intro: 'Today: the palm strike!', lesson: 'Soft hand, strong push. Like a wave.', steps: [
+    { say: 'Guard up.', pose: GUARD }, { say: 'Open hand, pull it back.', pose: { r: -6, arm: [40, 8], arm2: [60, 7] } }, { say: 'Push like a wave!', pose: { r: 10, arm: [-5, 25], arm2: [60, 7] } }] },
+  { name: 'Crescent Kick', fx: 'board', intro: 'Today: the crescent kick!', lesson: 'A kick shaped like the moon. Lovely!', steps: [
+    { say: 'Guard up.', pose: GUARD }, { say: 'Swing the leg up and out...', pose: { r: -10, ...GUARD, leg: [-70, 26] } }, { say: 'Sweep it across!', pose: { r: -20, ...GUARD, leg: [-35, 30] } }] },
+  { name: 'Back Kick', fx: 'board', spin: true, intro: 'Today: the back kick!', lesson: 'Look first, then kick. Strong like a dolphin tail!', steps: [
+    { say: 'Turn and look back.', pose: { flip: true, ...GUARD } }, { say: 'Knee up close.', pose: { flip: true, r: 15, ...GUARD, leg: [-40, 12] } }, { say: 'Kick back!', pose: { flip: true, r: 30, ...GUARD, leg: [-10, 32] } }] },
 ];
+// The moves in the order a kid meets them (the sea's three come before the castle's), for "Lesson n of 18" and the rack.
+let movesPlayCache = null;
+const movesInPlay = () => movesPlayCache || (movesPlayCache = STAGES.filter(d => !d.boss).map(d => MOVES[slotOf(d)]).filter(Boolean));
 const moveOf = def => MOVES[slotOf(def)];
 function buildVault(src) {
   const cols = Math.ceil(VW / T), map = newMap();
@@ -3522,7 +3533,7 @@ const BADGES = [
   { id: 'fed15', pix: 'fish', sec: 'adv', name: 'Animal Friend', text: 'Feed all 15 hungry animals.', prog: () => [nKeys(prog.stats.fed), 15], gems: 50 },
   { id: 'dojo7', pix: 'calendar', sec: 'adv', name: 'Dedicated', text: 'Do the Daily Dojo 7 days in a row.', prog: () => [Math.max(prog.daily.best || 0, prog.daily.streak || 0), 7] },
   { id: 'vault', pix: 'gi', sec: 'adv', name: 'Sensei\'s Student', text: 'Learn a move in a training room.' },
-  { id: 'moves-all', pix: 'dragon', sec: 'adv', name: 'Master\'s Student', text: 'Learn all 15 moves from Sensei.', prog: () => [nKeys(prog.moves), 15] },
+  { id: 'moves-all', pix: 'dragon', sec: 'adv', name: 'Master\'s Student', text: `Learn all ${MOVES.length} moves from Sensei.`, prog: () => [nKeys(prog.moves), MOVES.length] },
   { id: 'golden', pix: 'gem', swap: { c: '#ffd23f', b: '#e8452c', w: '#fff6c8' }, sec: 'adv', name: 'Golden Gem', text: 'Grab a flaming golden gem.' },
   { id: 'golden-all', pix: 'crown', sec: 'adv', name: 'Golden Hunter', text: `Grab all ${GOLD_N} golden gems.`, prog: () => [nKeys(prog.golden), GOLD_N], prize: 'suit-gold' },
   { id: 'boss-nohit', pix: 'shield', sec: 'adv', name: 'Untouchable', text: 'Beat a boss without getting hit.' },
@@ -6244,7 +6255,7 @@ function updatePlayer() {
   for (const d of L.doors || []) {
     const on = overlap(p, doorBox(d.c, d.r));
     if (d.rearm) { if (!on) d.rearm = false; continue; }   // after leaving a lesson early: step away first, then it opens again
-    if (!d.used && !d.hidden && p.onGround && on) { openDoor(d); return; }
+    if (!d.used && !d.hidden && (p.onGround || L.water) && on) { openDoor(d); return; }   // (in the sea: swim down into it)
   }
   if (L.vault && overlap(p, doorBox(L.exitC))) { leaveVault(); return; }
 
@@ -7680,6 +7691,7 @@ function drawSeaDark() {
   if (L.angler && L.angler.on) hole(L.angler.x + L.angler.face * 30, L.angler.y - 26, anglerR() + L.angler.pulse * 2);
   const cs = currentStation(); if (cs && cs.answers) cs.answers.forEach(o => hole(o.c * T + T, o.r * T + T, 70));
   for (const cl of L.clams || []) hole(cl.x, cl.y - 20, 70);
+  for (const d of L.doors || []) if (d.style) hole(d.c * T + 0.7 * T, d.r * T - T, 80);   // the Sea Dojo's door
   for (const fd of L.squads || []) if (!fd.done) { hole(fd.ax, GR * T - 30, 80); for (const f of fd.foods) hole(f.x, f.y, 50); }   // the hungry animal and its food
   for (const ct of L.counts || []) if (!ct.done) ct.xs.forEach(x => hole(x, ct.y, 50));   // the counting bubbles
   if (L.ship) { const sg = shipGeo(L.ship); for (const [px, py] of sg.ports) hole(px, py, 56); hole(sg.hx, sg.b - 40, L.friend && !L.friend.done ? 110 : 70); hole(sg.x0 + sg.w - 70, sg.top(sg.x0 + sg.w - 70) - 30, 70); }   // portholes, the hole (brighter while Nami waits), the back deck windows
@@ -8323,6 +8335,23 @@ function drawRoomBg() {
     for (let x = 10; x < W; x += 34) { const h = 18 + hash(x) * 40; poly([[x - 9, 20], [x + 9, 20], [x, 20 + h]], '#d8f2ff'); }
     ctx.fillStyle = '#e8fbff'; ctx.fillRect(0, 0, W, 22);
     for (const fx of [90, W - 90]) { glowAt(fx, floorY - 40, 70, 'rgba(255,170,60,.4)'); ctx.fillStyle = '#5a3d2b'; ctx.fillRect(fx - 16, floorY - 14, 32, 8); ctx.fillStyle = '#ff8c1a'; ctx.beginPath(); ctx.ellipse(fx, floorY - 30, 9, 16 + Math.sin(tick * 0.3) * 3, 0, 0, 7); ctx.fill(); ctx.fillStyle = '#ffe066'; ctx.beginPath(); ctx.ellipse(fx, floorY - 24, 4, 8, 0, 0, 7); ctx.fill(); }
+  } else if (k === 'sea') {   // the Sea Dojo: a dry cave under the sea, with big round windows looking out at the water
+    ctx.fillStyle = '#20434e'; ctx.fillRect(0, 0, W, floorY);
+    for (let y = 0; y < floorY; y += 30) for (let x = (y / 30) % 2 ? -36 : 0; x < W; x += 72) { ctx.fillStyle = '#2a5260'; ctx.fillRect(x + 3, y + 3, 66, 24); }   // rock blocks
+    for (const wx of [W * 0.3, W * 0.7]) {   // a round window: water, fish swimming past, bubbles
+      ctx.fillStyle = '#c99a3a'; ctx.beginPath(); ctx.arc(wx, 140, 66, 0, 7); ctx.fill();
+      ctx.save(); ctx.beginPath(); ctx.arc(wx, 140, 56, 0, 7); ctx.clip();
+      const g = ctx.createLinearGradient(0, 84, 0, 196); g.addColorStop(0, '#2fa8d8'); g.addColorStop(1, '#0d4a7a'); ctx.fillStyle = g; ctx.fillRect(wx - 60, 80, 120, 120);
+      for (let i = 0; i < 3; i++) { const fx = wx - 70 + ((tick * (0.6 + i * 0.2) + i * 50 + wx) % 140), fy = 110 + i * 22; ctx.fillStyle = ['#ff9f43', '#ffd23f', '#ff6b9a'][i]; ctx.fillRect(Math.round(fx), fy, 12, 6); ctx.fillRect(Math.round(fx) - 5, fy - 2, 5, 10); }
+      ctx.fillStyle = 'rgba(255,255,255,.6)'; for (let i = 0; i < 4; i++) ctx.fillRect(Math.round(wx - 30 + i * 18), Math.round(196 - ((tick * 0.8 + i * 30) % 112)), 4, 4);
+      ctx.restore();
+      ctx.fillStyle = '#8a6420'; for (let a = 0; a < 8; a++) ctx.fillRect(Math.round(wx + Math.cos(a * Math.PI / 4) * 61) - 3, Math.round(140 + Math.sin(a * Math.PI / 4) * 61) - 3, 6, 6);   // bolts
+    }
+    for (const bx of [70, W - 70]) {   // coral in the corners and a shell lamp
+      ctx.fillStyle = '#ff7a8a'; ctx.fillRect(bx - 4, floorY - 60, 8, 60); ctx.fillRect(bx - 18, floorY - 44, 8, 30); ctx.fillRect(bx + 10, floorY - 50, 8, 34); ctx.fillRect(bx - 18, floorY - 20, 36, 8);
+      glowAt(bx, 70, 40, 'rgba(255,230,160,.35)'); ctx.fillStyle = '#fff0d8'; ctx.beginPath(); ctx.arc(bx, 70, 12, Math.PI, 0); ctx.fill();
+    }
+    ctx.fillStyle = '#163038'; ctx.fillRect(0, 0, W, 26);
   } else {
     ctx.fillStyle = '#232846'; ctx.fillRect(0, 0, W, floorY);
     for (let y = 0; y < floorY; y += 26) for (let x = (y / 26) % 2 ? -30 : 0; x < W; x += 60) {
@@ -8365,6 +8394,9 @@ function drawRoomFloor(x, y, c, r, top) {
   } else if (k === 'snow') {   // packed snow
     ctx.fillStyle = '#e4f1fa'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#cfe2ef'; ctx.fillRect(x + ((c * 7) % 20), y + 12, 10, 4); ctx.fillRect(x + ((c * 13) % 22), y + 26, 8, 3);
     if (top) { ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y, T, 5); }
+  } else if (k === 'sea') {   // sand
+    ctx.fillStyle = '#e8d3a0'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#d4bc84'; ctx.fillRect(x + ((c * 7) % 22), y + 12, 8, 4); ctx.fillRect(x + ((c * 11) % 24), y + 26, 6, 3);
+    if (top) { ctx.fillStyle = '#f4e4b8'; ctx.fillRect(x, y, T, 4); }
   } else {   // wooden planks
     ctx.fillStyle = '#6b4a2e'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#5a3d25'; ctx.fillRect(x, y + T / 2, T, 2);
     ctx.fillRect(x + ((c + r) % 2 ? 10 : 26), y, 2, T / 2); ctx.fillRect(x + ((c + r) % 2 ? 22 : 4), y + T / 2, 2, T / 2);
@@ -8954,6 +8986,29 @@ function drawEntrance(d) {
     ctx.fillStyle = '#8b1a2b'; ctx.beginPath(); ctx.moveTo(x - 6, y - 6); ctx.lineTo(x + w + 6, y - 6); ctx.lineTo(x + w + 6, base - lift); ctx.lineTo(cx, base - 16 - lift); ctx.lineTo(x - 6, base - lift); ctx.fill();
     if (h - lift > 40) { ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(cx, y + (h - lift) / 2, 12, 0, 7); ctx.fill(); }
     label = lift > h * 0.6;
+  } else if (st === 'clam') {   // Coral Reef: a giant clam on the sea floor, open a crack, warm light inside
+    const op = d.used ? 4 : 14 + Math.sin(tick * 0.05) * 3;
+    glowAt(cx, base - 26, 46, 'rgba(255,230,160,.35)');
+    ctx.fillStyle = '#7a4a8a'; ctx.beginPath(); ctx.ellipse(cx, base - 4, w + 12, 24, 0, 0, Math.PI); ctx.fill();   // bottom shell
+    ctx.fillStyle = '#1a0d22'; ctx.beginPath(); ctx.ellipse(cx, base - 8, w + 4, op + 6, 0, Math.PI, 0); ctx.fill();   // the dark inside
+    ctx.fillStyle = '#fff6d8'; ctx.beginPath(); ctx.arc(cx, base - 12, 7, 0, 7); ctx.fill();   // a pearl
+    ctx.save(); ctx.translate(cx, base - 8 - op); ctx.fillStyle = '#b07ac0'; ctx.beginPath(); ctx.ellipse(0, 0, w + 12, h * 0.55, 0, Math.PI, 0); ctx.fill();   // the top shell, lifted
+    ctx.fillStyle = '#8a5a9a'; for (let k = -3; k <= 3; k++) { ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(k * (w + 8) / 3.4, -h * 0.5 + Math.abs(k) * 6); ctx.lineTo(k * (w + 8) / 3.4 + 4, -h * 0.5 + Math.abs(k) * 6); ctx.fill(); }
+    ctx.restore();
+  } else if (st === 'seaarch') {   // Kelp Forest: a rock arch with a round wooden door
+    ctx.fillStyle = '#4a5a52'; ctx.beginPath(); ctx.ellipse(cx, base, w + 22, h + 16, 0, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = '#5e6e64'; ctx.fillRect(x - 14, y - 4, 16, 10); ctx.fillRect(x + w - 4, y + 10, 18, 8);
+    ctx.fillStyle = '#2f8a4a'; for (let k = 0; k < 3; k++) ctx.fillRect(x - 20 + k * 6, base - 30 - k * 10 + Math.sin(tick * 0.05 + k) * 3, 4, 30 + k * 10);   // kelp at the side
+    arch(d.used ? '#5a5a6e' : '#8b5a2b'); ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(cx - 1, y + 4, 2, h - 4);
+    ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(cx + 10, y + h * 0.6, 4, 0, 7); ctx.fill();
+  } else if (st === 'shiphatch') {   // Sunken Ship: an old ship's hatch in a heap of planks, light shining out
+    glowAt(cx, y + h / 2, 52, 'rgba(255,220,140,.35)');
+    ctx.fillStyle = '#3a2a1a'; ctx.fillRect(x - 10, y - 8, w + 20, h + 8);
+    ctx.fillStyle = d.used ? '#5a5a6e' : '#7a5530'; ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = '#5a3d22'; for (let k = 8; k < h; k += 12) ctx.fillRect(x, y + k, w, 3);
+    ctx.fillStyle = '#c99a3a'; ctx.fillRect(x - 10, y - 8, w + 20, 4); ctx.fillRect(x + w - 10, y + h / 2 - 4, 6, 8);   // brass rim and handle
+    ctx.fillStyle = '#ffe9a8'; ctx.fillRect(x + 4, y + h - 3, w - 8, 3);   // light under the door
+    ctx.fillStyle = '#6a8a9a'; ctx.fillRect(x - 8, y + 4, 5, 5); ctx.fillRect(x + w + 4, y + 20, 4, 4);   // barnacles
   } else if (st === 'brick') {
     if (d.hidden) {   // looks like part of the wall until the cracked brick is bonked
       ctx.fillStyle = '#3a3f5c'; ctx.fillRect(x - 6, y - 6, w + 12, h + 6);
@@ -8962,7 +9017,7 @@ function drawEntrance(d) {
     }
     panel('#6b2fa3', 'rgba(255,255,255,.18)');
   }
-  if (st !== 'torii' && st !== 'igloo' && st !== 'cave' && st !== 'crack' && st !== 'vent' && !(st === 'ledge' && W.key === 'lava')) {
+  if (st !== 'torii' && st !== 'igloo' && st !== 'cave' && st !== 'crack' && st !== 'vent' && st !== 'clam' && !(st === 'ledge' && W.key === 'lava')) {
     ctx.fillStyle = '#ffd23f'; ctx.font = '22px "Lilita One", "Trebuchet MS", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     if (d.used) ctx.fillText(d.solved ? '✔' : '', cx, y + h / 2);
   }
@@ -10453,7 +10508,7 @@ function drawTrainIntro(rm) {
     ctx.fillStyle = '#e4cf9c'; ctx.fillRect(cx - sw / 2, cy - sh / 2 + 8, sw, 4); ctx.fillRect(cx - sw / 2, cy + sh / 2 - 12, sw, 4);
     for (const ex of [cx - sw / 2, cx + sw / 2]) { ctx.fillStyle = '#5e3a1c'; rrect(ex - 12, cy - sh / 2 - 14, 24, sh + 28, 8); ctx.fill(); ctx.fillStyle = '#ffd23f'; ctx.fillRect(ex - 12, cy - sh / 2 - 14, 24, 6); ctx.fillRect(ex - 12, cy + sh / 2 + 8, 24, 6); }
     if (un >= 1) {
-      const idx = MOVES.indexOf(rm.move) + 1, fin = rm.move.steps[2].pose;
+      const idx = movesInPlay().indexOf(rm.move) + 1, fin = rm.move.steps[2].pose;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = '16px "Lilita One", "Trebuchet MS", sans-serif'; ctx.fillStyle = '#8b5a2b'; ctx.fillText(`Lesson ${idx} of ${MOVES.length}`, cx, cy - sh / 2 + 30);
       ctx.font = `${narrow ? 32 : 40}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.fillStyle = '#8b1a1a'; ctx.fillText(rm.move.name.toUpperCase(), cx, cy - sh / 2 + 66);
@@ -10478,8 +10533,9 @@ function drawTrain(room) {
   const rx = cam + 18, ry = VW < 700 ? GR * T - 200 : GR * T - 150, cw = VW < 700 ? 30 : 22;
   ctx.fillStyle = '#5e3a1c'; ctx.fillRect(rx - 6, ry + 34, cw * MOVES.length + 8, 6);
   if (VW < 700) ctx.fillRect(rx - 6, ry + 74, cw * 8 + 8, 6);
-  MOVES.forEach((m, i) => {
-    const row = VW < 700 && i >= 8 ? 1 : 0, x = rx + (row ? i - 8 : i) * cw, y = ry + row * 40, got = prog.moves[m.name], now = m === room.move;
+  if (VW < 700) ctx.fillRect(rx - 6, ry + 114, cw * 2 + 8, 6);
+  movesInPlay().forEach((m, i) => {
+    const row = VW < 700 ? Math.floor(i / 8) : 0, x = rx + (i - row * 8) * cw, y = ry + row * 40, got = prog.moves[m.name], now = m === room.move;
     if (now && !got) glowAt(x + 8, y + 18, 18 + Math.sin(tick * 0.15) * 3, 'rgba(255,220,100,.6)');
     ctx.fillStyle = got ? '#ffd23f' : 'rgba(255,255,255,.25)'; ctx.fillRect(x + 2, y + 4, 12, 28);
     ctx.fillStyle = got ? '#a8600a' : 'rgba(0,0,0,.3)'; ctx.fillRect(x, y + 2, 16, 4); ctx.fillRect(x, y + 30, 16, 4);
