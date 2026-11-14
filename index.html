@@ -552,7 +552,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 11, 2026 10:00 PM PT · Easier math button (Pause menu)</div>
+  <div class="build">Updated Nov 14, 2026 9:00 AM PT · New gear: Golden Boomerang, Spring Boots, Magnet Gloves</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1520,8 +1520,15 @@ const GEAR = {
     rows: ['y.y.y', 'y.y.y', 'yyyyy', '.kYk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '..k..'] },
   lantern: { name: 'Paper Lantern', slot: 'hand', power: 'Light flash', w: 5, k: 0, gx: 12, gy: 8, pal: { o: '#ffb627', O: '#ff8c1a', r: '#a8323e' },
     rows: ['.k.', '.k.', 'krk', 'koO', 'koO', 'krk', '.k.'] },
+  // More gear (owner, Nov 2026: about one new item a week). Second rooms in Japan, the volcano and the factory.
+  boomerang: { name: 'Golden Boomerang', slot: 'hand', power: 'Boomerang', w: 0, k: 2, gx: 12, gy: 7, pal: { y: '#ffd23f', Y: '#c99a1a', r: '#e63946' },
+    rows: ['kk...', 'kyk..', '.kyk.', '.kyrk', '.kYk.', 'kYk..', 'kk...'] },
+  boots: { name: 'Spring Boots', slot: 'feet', power: 'Super Bounce', w: 1, k: 0, gx: 0, gy: 0, pal: { g: '#3ae374', G: '#1f9e4f', y: '#ffd23f' },
+    rows: ['kkk..', 'kgk..', 'kgGgk', 'kGGGk', 'kkkkk', '.y.y.', 'y.y..', '.y.y.'] },
+  gloves: { name: 'Magnet Gloves', slot: 'hand', power: 'Gem Magnet', w: 2, k: 0, gx: 11, gy: 9, pal: { r: '#e63946', R: '#a91d2b', s: '#c9d2de' },
+    rows: ['kkk.', 'krRk', 'krsk', '.kkk'] },
 };
-const GEAR_SLOTS = ['head', 'back', 'hand'];
+const GEAR_SLOTS = ['head', 'back', 'hand', 'feet'];
 // Three pieces have a power (owner, Nov 2026), only one of them worn at a time; none needs a button: the Jetpack flies
 // while jump is held in the air (a fuel bar, refilled on landing; off over crossings), the Lantern makes a big circle of
 // light in the dark levels, and the Fire Cape turns the Math Dash (3 right in a row) into a Flame Dash (a ball of fire).
@@ -1539,11 +1546,11 @@ const JET_FUEL = 60;   // frames of flight per jump
 // Dash now. Samurai Helmet: Ground Pound (in the air; from the ground he hops first). Viking Helmet: Horn Charge.
 // Trident: Water Blast (in the sea with ▼ held: a fountain that shoots him up). Paper Lantern: a flash that lights the
 // whole dark level for a few seconds and dazzles enemies nearby. Not in bosses, rooms, rescues or crossings.
-const GEAR_CHARGE = { cape: 600, helmet: 150, viking: 300, trident: 120, lantern: 600 };
+const GEAR_CHARGE = { cape: 600, helmet: 150, viking: 300, trident: 120, lantern: 600, boomerang: 150, boots: 90, gloves: 600 };
 const FLARE_T = 300;
 function gearPow() {
   const eq = prog.gear || {};
-  for (const sl of ['back', 'hand', 'head']) if (eq[sl] && GEAR[eq[sl]] && GEAR[eq[sl]].power) return eq[sl];
+  for (const sl of ['back', 'hand', 'head', 'feet']) if (eq[sl] && GEAR[eq[sl]] && GEAR[eq[sl]].power) return eq[sl];
   return null;
 }
 const gearBtnOn = () => !!(G && mode === 'play' && gearPow() && !L.boss && !L.room && !G.rescue && !G.groom && !G.cross && !G.swing && !G.bossIn);
@@ -1563,6 +1570,7 @@ function gearPowTick(p) {
   keys.gearPressed = false;
   if (G.gearCool > 0) G.gearCool--;
   if (G.flare > 0) G.flare--;
+  if (G.boing > 0) G.boing--;
   if (G.pound === 'up' && p.vy >= -1) { G.pound = 'down'; p.vy = 15; tone(900, 0.25, 'square', 0.03, 200); }
   if (G.pound === 'down') { p.vx = 0; p.vy = Math.max(p.vy, 15); if (tick % 2 === 0) G.parts.push({ k: 'bit', x: p.x + Math.random() * p.w, y: p.y - 6, vx: 0, vy: -2, life: 10, col: '#ffffff', s: 3, up: true }); }
   if (G.charge > 0) {   // Horn Charge: head down, full speed ahead; bricks smash, enemies go flying
@@ -1596,6 +1604,25 @@ function gearPowTick(p) {
       floatText(cx, p.y - 30, 'Whoosh!', '#9be7ff', 24);
     } else { G.gfx.push({ k: 'jet', x: cx + f * 16, y: p.y + 16, vx: f * 13, vy: 0, t: 0, life: 34 }); floatText(cx, p.y - 30, 'Water blast!', '#9be7ff', 24); }
     tone(700, 0.3, 'sawtooth', 0.025, 200); tone(1400, 0.2, 'triangle', 0.02, 500, 0.05);
+  } else if (id === 'boomerang') {   // thrown ahead in a curve, it comes back to Kai, picking up gems and bonking enemies
+    if ((G.gfx || []).some(f => f.k === 'boom')) return;
+    G.gearCool = GEAR_CHARGE.boomerang; const f = p.face || 1;
+    (G.gfx = G.gfx || []).push({ k: 'boom', x: cx + f * 14, y: p.y + 14, vx: f * 11, vy: -2.2, t: 0, life: 200, back: false });
+    floatText(cx, p.y - 30, 'Boomerang!', '#ffd23f', 24); tone(500, 0.3, 'triangle', 0.03, 900);
+  } else if (id === 'boots') {   // a super bounce: twice as high as a jump
+    if (inWater(p)) { floatText(cx, p.y - 30, 'Too wet to bounce!', '#9be7ff', 20); return; }
+    if (noFlyHere(p)) { floatText(cx, p.y - 30, 'No bouncing here!', '#ffb627', 20); return; }
+    if (!(p.onGround || p.coyote > 0) || G.climb) { floatText(cx, p.y - 30, 'Stand on the ground!', '#ffffff', 18); return; }
+    G.gearCool = GEAR_CHARGE.boots; p.vy = -18.6; p.bounce = true; p.onGround = false; p.coyote = 0; p.squash = -8; G.boing = 30;
+    burst(cx, p.y + p.h, '#ffffff', 10, 3); floatText(cx, p.y - 30, 'BOING!', '#3ae374', 26);
+    tone(180, 0.35, 'sine', 0.06, 900); tone(360, 0.25, 'triangle', 0.03, 1400, 0.05);
+  } else if (id === 'gloves') {   // every gem on screen zooms to Kai, and ? boxes nearby pop
+    G.gearCool = GEAR_CHARGE.gloves; G.magT = 150;
+    let n = 0; for (let c = Math.floor((p.x - 3 * T) / T); c <= Math.floor((p.x + 3 * T) / T); c++) for (let r = 0; r < GR; r++) {
+      if (!L.map[r] || L.map[r][c] !== '?' || (L.mboxes && L.mboxes.has(c + ',' + r)) || Math.abs(r * T - p.y) > 4 * T) continue;
+      bump(c, r); n++;
+    }
+    floatText(cx, p.y - 40, 'Magnet!', '#ff6b6b', 28); tone(120, 0.5, 'sawtooth', 0.03, 600); [523, 659, 784].forEach((f, i) => tone(f, 0.15, 'triangle', 0.03, null, 0.1 + i * 0.06));
   } else if (id === 'lantern') {
     G.flare = FLARE_T; G.gearCool = GEAR_CHARGE.lantern; G.flash = 0.45;
     floatText(cx, p.y - 40, 'Light!', '#ffe9a8', 28); [784, 1047, 1568].forEach((f, i) => tone(f, 0.25, 'triangle', 0.035, null, i * 0.06));
@@ -1612,10 +1639,19 @@ function poundLand(p) {   // the Ground Pound hits the ground: shockwave, enemie
   const r = Math.floor((fy + 2) / T);
   for (let c = Math.floor((p.x - 6) / T); c <= Math.floor((p.x + p.w + 6) / T); c++) if (L.map[r] && (L.map[r][c] === 'B' || L.map[r][c] === '?')) { bump(c, r); if (L.map[r][c] === 'B') { L.map[r][c] = '.'; sfx.brick(); burst(c * T + T / 2, r * T + T / 2, L.world.brick[0], 10); } }
 }
+function boomTick(f) {   // the Golden Boomerang: out in a curve, then home to Kai's hand
+  const hx = P.x + P.w / 2, hy = P.y + 16;
+  if (!f.back) { f.vx *= 0.955; f.vy += 0.07; f.x += f.vx; f.y += f.vy; if (Math.abs(f.vx) < 1.4 || f.t > 50) f.back = true; }
+  else { const dx = hx - f.x, dy = hy - f.y, d = Math.hypot(dx, dy) || 1, v = Math.min(12, 4 + f.t * 0.08); f.x += dx / d * Math.min(v, d); f.y += dy / d * Math.min(v, d); if (d < 20) { f.done = true; tone(900, 0.08, 'triangle', 0.03); } }
+  if (f.t % 9 === 0) tone(380 + (f.t % 18) * 20, 0.05, 'triangle', 0.015);
+  for (const c of L.coins) if (!c.taken && !c.gold && Math.abs(c.x - f.x) < 26 && Math.abs(c.y - f.y) < 26) { c.taken = true; G.coins += c.v; G.score += 100 * c.v; gemSound(); flyGem(c.x, c.y, c.v); }
+  for (const e of L.enemies) if (!e.dead && Math.abs(e.x + e.w / 2 - f.x) < e.w / 2 + 12 && Math.abs(e.y + e.h / 2 - f.y) < e.h / 2 + 12) knockOut(e, 'BONK!');
+}
 function gearFxTick() {   // the trident's water jet flies and hits things
   if (!G.gfx) return;
   for (const f of G.gfx) {
     f.t++;
+    if (f.k === 'boom' && !f.done) { boomTick(f); continue; }
     if (f.k !== 'jet' || f.done) continue;
     f.x += f.vx; f.y += f.vy;
     for (const e of L.enemies) if (!e.dead && Math.abs(e.x + e.w / 2 - f.x) < e.w / 2 + 10 && Math.abs(e.y + e.h / 2 - f.y) < e.h / 2 + 10) { knockOut(e, 'SPLASH!'); f.done = true; }
@@ -1626,15 +1662,23 @@ function gearFxTick() {   // the trident's water jet flies and hits things
       f.done = true; burst(f.x, f.y, '#bfefff', 10, 3);
     }
   }
-  G.gfx = G.gfx.filter(f => f.t < f.life && !(f.k === 'jet' && f.done));
+  G.gfx = G.gfx.filter(f => f.t < f.life && !((f.k === 'jet' || f.k === 'boom') && f.done));
 }
 function drawGearFx() {
+  if (G.magT > 0) {   // the Magnet Gloves: red and silver rings pulling in
+    const cx = P.x + P.w / 2, cy = P.y + P.h / 2;
+    for (let i = 0; i < 3; i++) { const r = 98 - ((tick * 3 + i * 30) % 90); ctx.fillStyle = i % 2 ? 'rgba(230,57,70,.7)' : 'rgba(230,238,245,.7)'; for (let j = 0; j < 16; j++) { const a = j * Math.PI / 8 + i * 0.2; ctx.fillRect(Math.round(cx + Math.cos(a) * r) - 3, Math.round(cy + Math.sin(a) * r) - 3, 6, 6); } }
+  }
   if (!G.gfx) return;
   for (const f of G.gfx) {
     if (f.k === 'wave') {   // two rings of pixel blocks running along the ground
       const d = 10 + f.t * 6, a = 1 - f.t / f.life;
       ctx.fillStyle = `rgba(255,255,255,${a})`;
       for (const s of [-1, 1]) for (let i = 0; i < 3; i++) ctx.fillRect(Math.round(f.x + s * (d - i * 10)) - 4, Math.round(f.y - 6 - i * 4), 8, 6 + i * 4);
+    } else if (f.k === 'boom') {   // the boomerang spins (pixel art turned in quarter steps) with a few gold sparkles
+      const cv = gearImg('boomerang', 4), q = Math.floor(f.t / 3) % 4;
+      ctx.save(); ctx.translate(Math.round(f.x), Math.round(f.y)); ctx.rotate(q * Math.PI / 2); ctx.drawImage(cv, -Math.round(cv.width / 2), -Math.round(cv.height / 2)); ctx.restore();
+      if (f.t % 3 === 0 && G) G.parts.push({ k: 'bit', x: f.x, y: f.y, vx: 0, vy: 0, life: 12, col: '#ffd23f', s: 3 });
     } else if (f.k === 'jet') {   // a stream of water from the trident
       const n = Math.min(f.t, 8), dx = f.vx ? -Math.sign(f.vx) : 0, dy = f.vy ? -Math.sign(f.vy) : 0;
       for (let i = 0; i < n; i++) {
@@ -5263,6 +5307,7 @@ function openPack() {
   if (eq.back) { const tmp = document.createElement('canvas'); tmp.width = cv.width; tmp.height = cv.height; gearPix(tmp.getContext('2d'), eq.back, ox, oy, 5, false); c.globalCompositeOperation = 'destination-over'; c.drawImage(tmp, 0, 0); c.globalCompositeOperation = 'source-over'; }
   if (eq.head) gearPix(c, eq.head, ox, oy, 5, false);
   if (eq.hand) gearPix(c, eq.hand, ox, oy, 5, false);
+  if (eq.feet === 'boots') bootsPix(c, ox, oy, 5, false, 'stand', false);
   $('packGrid').innerHTML = Object.keys(GEAR).map(id => {
     const g = GEAR[id], got = owned.includes(id), on = eq[g.slot] === id, st = STAGES.find(x => x.w === g.w && x.k === g.k);
     return `<button type="button" class="gearslot${got ? '' : ' lost'}${on ? ' on' : ''}" data-gear="${id}"><img src="${gearImg(id, 6).toDataURL()}" alt="">${got ? g.name : '???'}
@@ -6091,8 +6136,9 @@ function updatePlayer() {
   if (hasPower('speed') && p.onGround && Math.abs(p.vx) > 4 && tick % 3 === 0) burst(p.x + p.w / 2, p.y + p.h, '#ffffff', 2, 1);
   if (G.dash > 0 && Math.abs(p.vx) > 3) G.parts.push({ k: 'bit', x: p.x + p.w / 2 - p.face * 14, y: p.y + 8 + Math.random() * (p.h - 12), vx: -p.face * 3, vy: 0, life: 14, col: G.dash < 60 && tick % 8 < 4 ? '#ffffff' : '#7df9ff', s: 4 });   // wind trail
   if (hasPower('star') && tick % 3 === 0) G.parts.push({ k: 'bit', x: p.x + Math.random() * p.w, y: p.y + Math.random() * p.h, vx: 0, vy: -1, life: 20, col: ['#ff5a8a', '#ffd23f', '#7df9ff', '#3ae374'][R(0, 3)], s: 4 });
-  const mag = hasPower('magnet') ? 200 : hasFriend('magnet') ? 110 : 0;   // Niko's magnet pulls from closer
-  if (mag) for (const c of L.coins) if (!c.taken && !c.gold) { const dx = p.x + p.w / 2 - c.x, dy = p.y + p.h / 2 - c.y, d = Math.hypot(dx, dy); if (d < mag) { c.x += dx / d * 6; c.y += dy / d * 6; } }
+  const mag = G.magT > 0 ? VW : hasPower('magnet') ? 200 : hasFriend('magnet') ? 110 : 0;   // Niko's magnet pulls from closer; the Magnet Gloves pull the whole screen
+  if (G.magT > 0) G.magT--;
+  if (mag) for (const c of L.coins) if (!c.taken && !c.gold) { const dx = p.x + p.w / 2 - c.x, dy = p.y + p.h / 2 - c.y, d = Math.hypot(dx, dy); if (d < mag && (G.magT <= 0 || Math.abs(c.x - p.x) < VW * 0.75)) { const v = G.magT > 0 ? Math.max(6, d / 12) : 6; c.x += dx / d * Math.min(v, d); c.y += dy / d * Math.min(v, d); } }
 
   if (keys.jumpPressed) { p.jbuf = 8; keys.jumpPressed = false; }
   if (p.jbuf > 0) p.jbuf--;
@@ -10120,8 +10166,19 @@ function noFlyHere(p) {
   const c = (p.x + p.w / 2) / T;
   return (L.steps || []).some(z => c > z.c0 - 3 && c < z.c0 + z.w + 3) || (L.bridges || []).some(b => c > b.c0 - 3 && c < b.c0 + b.w + 3) || (L.swings || []).some(w => c > w.s - 1 && c < w.e + 1);
 }
+// Spring Boots on Kai: drawn over his feet, which sit in different places when he walks; a coil under them after a bounce.
+function bootsPix(c, ox, oy, px, flip, frame, coil) {
+  const g = GEAR.boots, trim = shineTrim(shineOf('boots')), feet = frame === 'stand' ? [[5, 4], [9, 9]] : [[4, 3], [10, 10]];
+  const put = (x, y, col) => { c.fillStyle = col; c.fillRect(ox + (flip ? 15 - x : x) * px, oy + y * px, px, px); };
+  for (const [leg, foot] of feet) {
+    put(leg, 13, g.pal.g); put(leg + 1, 13, g.pal.g);
+    for (let i = 0; i < 3; i++) put(foot + i, 14, g.pal.G);
+    put(foot, 14, trim); put(foot + 2, 14, g.pal.y);
+    if (coil) { put(foot + 1, 15, g.pal.y); put(foot, 16, g.pal.y); put(foot + 2, 16, g.pal.y); }
+  }
+}
 function drawGearOn(p, frame, layer, diver) {
-  const eq = prog.gear || {}; if (!eq.head && !eq.back && !eq.hand) return;
+  const eq = prog.gear || {}; if (!eq.head && !eq.back && !eq.hand && !eq.feet) return;
   if (layer === 'front' && G && tick % 14 === 0 && GEAR_SLOTS.some(sl => eq[sl] && shineOf(eq[sl]) >= 2)) G.parts.push({ k: 'bit', x: p.x + Math.random() * p.w, y: p.y + Math.random() * p.h * 0.7, vx: 0, vy: -0.4, up: true, life: 18, col: tick % 28 ? '#fff6c8' : '#ffd23f', s: 3 });   // gold gear sparkles
   const flip = p.face < 0, set = SPR, ox = Math.round(p.x + p.w / 2 - (flip ? set.cxFlip : set.cx)), oy = Math.round(p.y + p.h - set.bottom) + (frame === 'walkA' ? 0 : 0);
   if (layer === 'back' && eq.back) {
@@ -10130,7 +10187,8 @@ function drawGearOn(p, frame, layer, diver) {
   }
   if (layer === 'front') {
     if (eq.head && !diver) gearPix(ctx, eq.head, ox, oy, PX, flip);   // (the diving helmet covers his head in the deep sea)
-    if (eq.hand) { gearPix(ctx, eq.hand, ox, oy, PX, flip); if (eq.hand === 'lantern') glowAt(ox + (flip ? 15 - 13 : 13) * PX + PX / 2, oy + 12 * PX, 70, 'rgba(255,200,100,.28)'); }
+    if (eq.feet === 'boots' && !diver) bootsPix(ctx, ox, oy, PX, flip, frame, !p.onGround && G && G.boing > 0);
+    if (eq.hand && !(eq.hand === 'boomerang' && G && (G.gfx || []).some(f => f.k === 'boom'))) { gearPix(ctx, eq.hand, ox, oy, PX, flip); if (eq.hand === 'lantern') glowAt(ox + (flip ? 15 - 13 : 13) * PX + PX / 2, oy + 12 * PX, 70, 'rgba(255,200,100,.28)'); }
   }
 }
 function drawPlayer() {

@@ -116,3 +116,6 @@ Each gets a secret room in a level that has none yet (3 math walls + chest) and 
 
 ## Built Nov 11, 2026 (late)
 - **Easier math** (owner: a 1st grader got discouraged): a Pause-menu button, and Sensei offers it once a level after a rough patch ("Too tricky?" card, Easier ▶). It restarts the level one step easier on each kind of math (can drop below the grade, e.g. Add within 10 → Add within 5); a great round on that kind steps it back up. Nothing easier left: offers Easy mode.
+
+## Built Nov 14, 2026
+- **Three new gear items** (owner picked from the "more gear" list), each with its own secret room: **Golden Boomerang** (Koi Pond: thrown, curves back, grabs gems and bonks enemies), **Spring Boots** (Ash Trail: Super Bounce, twice as high), **Magnet Gloves** (Gear Works: every gem on screen zooms to Kai, nearby ? boxes pop). The Gear Pack has 9 slots now.
