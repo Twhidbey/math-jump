@@ -125,3 +125,4 @@ Each gets a secret room in a level that has none yet (3 math walls + chest) and 
 - Still on the list: replace the anglerfish with a helmet headlight (not done this time); more gear (Umbrella, Dragon Mask, Bubble Helmet, Snowboard).
 - Owner asked whether polar bear guards are set up: Blizzard Peak's enemies are polar bear ninjas; Yuki's rescue guard is still the penguin bouncer (offered to swap).
 - **Gear Pack shows where each piece is** (owner): every slot, found or not, says its level ("Found in Koi Pond (1-3)") and the spot (glowing crack / cave on the high ledge, cave on the sea floor), so kids can go back and polish.
+- **Go there ▶** button on each Gear Pack slot (owner): opens that level's start card (unlocked levels only); tapping the rest of the slot still wears the piece.

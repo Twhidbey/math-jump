@@ -411,6 +411,7 @@
   .gearslot.on { border-color: #7df9ff; background: rgba(125,249,255,.15); }
   .gearslot .gshine.s1 { color: #dfe6ee; font-weight: 800; } .gearslot .gshine.s2 { color: #ffd23f; font-weight: 800; } .gearslot .gshine.s0 { opacity: .7; }
   .gearslot small { display: block; font: 12px "Nunito", sans-serif; opacity: .85; } .gearslot .gpow { color: #ffb627; opacity: 1; font-weight: 800; } .gearslot .gwhere { color: #9be7ff; opacity: 1; margin-top: 2px; }
+  .gearslot .ggo { display: block; margin: 6px auto 0; padding: 5px 10px; border: 0; border-radius: 9px; background: #3ae374; color: #10301c; font: 13px "Lilita One", "Trebuchet MS", sans-serif; cursor: pointer; }
   .badge .bt { font-size: 12px; opacity: .85; }
   .badge { display: flex; flex-direction: column; }
   .badge .bfoot { margin-top: auto; padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
@@ -552,7 +553,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 14, 2026 12:15 PM PT · Gear Pack shows where each piece is</div>
+  <div class="build">Updated Nov 14, 2026 12:40 PM PT · Gear Pack: Go there button</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -5347,14 +5348,15 @@ function openPack() {
   if (eq.hand) gearPix(c, eq.hand, ox, oy, 5, false);
   if (eq.feet === 'boots') bootsPix(c, ox, oy, 5, false, 'stand', false);
   $('packGrid').innerHTML = Object.keys(GEAR).map(id => {
-    const g = GEAR[id], got = owned.includes(id), on = eq[g.slot] === id, st = STAGES.find(x => x.w === g.w && x.k === g.k);
-    return `<button type="button" class="gearslot${got ? '' : ' lost'}${on ? ' on' : ''}" data-gear="${id}"><img src="${gearImg(id, 6).toDataURL()}" alt="">${got ? g.name : '???'}
-      <small>${got ? (on ? 'Wearing' : 'Tap to wear') : 'Not found yet'}</small><small class="gwhere">${got ? 'Found in' : 'Lost in'} ${st ? `${st.name} (${g.w + 1}-${g.k + 1})` : WORLDS[g.w].name}<br>${gearWhere(g)}</small>${got ? `<small class="gshine s${shineOf(id)}">${SHINE_NAME[shineOf(id)]}${shineOf(id) < 2 ? (polishReady(id) ? ' · polish it today!' : ' · polish tomorrow') : ' ★'}</small>` : ''}${g.power ? `<small class="gpow">Power: ${g.power}</small>` : ''}</button>`;
+    const g = GEAR[id], got = owned.includes(id), on = eq[g.slot] === id, st = STAGES.find(x => x.w === g.w && x.k === g.k && !x.boss), si = STAGES.indexOf(st);
+    return `<div role="button" tabindex="0" class="gearslot${got ? '' : ' lost'}${on ? ' on' : ''}" data-gear="${id}"><img src="${gearImg(id, 6).toDataURL()}" alt="">${got ? g.name : '???'}
+      <small>${got ? (on ? 'Wearing' : 'Tap to wear') : 'Not found yet'}</small><small class="gwhere">${got ? 'Found in' : 'Lost in'} ${st ? `${st.name} (${g.w + 1}-${g.k + 1})` : WORLDS[g.w].name}<br>${gearWhere(g)}</small>${got ? `<small class="gshine s${shineOf(id)}">${SHINE_NAME[shineOf(id)]}${shineOf(id) < 2 ? (polishReady(id) ? ' · polish it today!' : ' · polish tomorrow') : ' ★'}</small>` : ''}${g.power ? `<small class="gpow">Power: ${g.power}</small>` : ''}${si >= 0 && si < unlockedCount() ? `<button type="button" class="ggo" data-go="${si}">Go there ▶</button>` : ''}</div>`;
   }).join('');
   $('packGrid').querySelectorAll('[data-gear]').forEach(el => { el.onclick = () => {
     const id = el.dataset.gear, g = GEAR[id]; if (!owned.includes(id)) return;
     audio(); wearGear(id); save(); openPack();
   }; });
+  $('packGrid').querySelectorAll('[data-go]').forEach(el => { el.onclick = e => { e.stopPropagation(); audio(); hide('pack'); confirmStage(+el.dataset.go); }; });   // straight to that level (owner: so kids can find the room again)
   show('pack');
 }
 function countsTick(p) {   // the current: Kai can't swim past the next bubble until it's answered
