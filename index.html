@@ -553,7 +553,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 14, 2026 1:00 PM PT · Gear Pack: Go there starts the level</div>
+  <div class="build">Updated Nov 14, 2026 1:30 PM PT · Jetpack flies longer</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1540,7 +1540,7 @@ function wearGear(id) {
   else { if (g.power) for (const sl of GEAR_SLOTS) if (eq[sl] && GEAR[eq[sl]].power) eq[sl] = null; eq[g.slot] = id; }   // one power piece at a time
   prog.gear = eq;
 }
-const JET_FUEL = 60;   // frames of flight per jump
+const JET_FUEL = 100;   // frames of flight per jump (owner, Nov 14 2026: was 60, a little longer)
 // Gear powers (owner, Nov 11 2026: "they really like a separate button"): every piece has a power, only one piece is worn
 // at a time, and one gear button (G on a computer) shows the worn piece and does its power. It refills like the vanish
 // button, or at once with a right answer (streakUp). Jetpack: hold to fly (fuel, refills on landing). Fire Cape: Flame

@@ -126,3 +126,4 @@ Each gets a secret room in a level that has none yet (3 math walls + chest) and 
 - Owner asked whether polar bear guards are set up: Blizzard Peak's enemies are polar bear ninjas; Yuki's rescue guard is still the penguin bouncer (offered to swap).
 - **Gear Pack shows where each piece is** (owner): every slot, found or not, says its level ("Found in Koi Pond (1-3)") so kids can go back and polish (owner: just the level, not the spot).
 - **Go there ▶** button on each Gear Pack slot (owner): goes straight into that level (unlocked levels only); tapping the rest of the slot still wears the piece.
+- **Jetpack flies longer** (owner): fuel 60 → 100 frames (about 1.7 s per flight instead of 1 s).
