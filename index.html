@@ -492,6 +492,9 @@
   .tmhint { font-size: 14px; opacity: .85; margin: 4px 0 10px; } .tmlabel { font-size: 15px; margin-top: 12px; }
   .tmbtns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
   .tmcode { display: block; margin: 6px auto 8px; font: 800 44px "Lilita One", "Trebuchet MS", monospace; letter-spacing: 8px; color: #ffd23f; background: rgba(0,0,0,.3); border: 2px solid rgba(255,255,255,.25); border-radius: 12px; padding: 4px 10px; width: 220px; text-align: center; text-transform: uppercase; }
+  .tmrun { margin-top: 10px; align-items: center; } #tmLvl { font: 800 15px "Nunito", sans-serif; padding: 9px 6px; border-radius: 10px; border: none; max-width: 190px; }
+  .tmrunbox { margin: 8px 0 2px; padding: 8px 10px; border-radius: 12px; background: rgba(125,249,255,.12); border: 2px solid rgba(125,249,255,.35); font-size: 15px; } .tmrunbox .picon { width: 28px; height: 28px; } .tmrunbox b { color: #ffd23f; }
+  .tmrunbox button { margin-top: 6px; }
   .tmstage { height: 120px; display: flex; align-items: flex-end; justify-content: center; }
   .tmboss .bossimg { width: 112px; height: 112px; image-rendering: pixelated; }
   .tmboss.hit { animation: tmhit .3s; } @keyframes tmhit { 0% { transform: translateX(0); filter: brightness(3); } 30% { transform: translateX(-8px); } 60% { transform: translateX(8px); } 100% { transform: translateX(0); filter: none; } }
@@ -567,7 +570,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 14, 2026 4:00 PM PT · NEW: Team button - beat a boss together on two screens</div>
+  <div class="build">Updated Nov 14, 2026 5:15 PM PT · Team: run a level together (or fight a boss)</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -702,8 +705,11 @@
   <div class="card padcard teamcard">
     <div id="tmLobby">
       <h2>Play together</h2>
-      <p class="tmhint">Two ninjas, two screens, one boss! Each of you gets your own math.</p>
+      <p class="tmhint">Two ninjas, two screens! Fight a boss or run a level together. Each of you gets your own math.</p>
       <div class="tmbtns"><button type="button" class="btn" id="tmHost">Start a game</button><button type="button" class="btn alt" id="tmJoinBtn">Join a game</button></div>
+      <div id="tmModeBox" class="hidden"><div class="tmlabel">What do you want to play?</div>
+        <div class="tmbtns"><button type="button" class="btn" id="tmBossGo">Fight a boss</button></div>
+        <div class="tmbtns tmrun"><select id="tmLvl"></select><button type="button" class="btn" id="tmRunGo">Run this level</button></div></div>
       <div id="tmCodeBox" class="hidden"><div class="tmlabel">Tell your partner this code:</div><div class="tmcode" id="tmCode"></div><div class="tmhint">On their screen: Team, Join a game.</div></div>
       <div id="tmJoinBox" class="hidden"><div class="tmlabel">Type your partner's code:</div><input id="tmIn" class="tmcode" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="text"><button type="button" class="btn" id="tmGo">Join ▶</button></div>
       <div class="padmsg" id="tmStatus"></div>
@@ -7160,7 +7166,9 @@ function finishLevel() {
   btns.push({ label: 'Replay', fn: () => startStage(i), alt: true });
   btns.push({ label: 'Levels', fn: toMenu, alt: true });
   if (wolfOffer) btns.push({ label: '🐺 Adopt the wolf', fn: () => { hide('msg'); openShop(); } });
+  if (team && team.run && team.room && i === team.lvl) { tmRunDone(); body += `<div class="tmrunbox" id="tmRunBox">${tmRunBoxHTML()}</div>`; }   // team run: the partner / the team chest
   showMsg(title, body, btns);
+  tmRunBox();
 }
 
 // The win card after each boss (the Shogun's is the ending).
@@ -7242,6 +7250,7 @@ function update() {
   if (G.shake > 0) G.shake--;
   if (G.tip && --G.tip.t <= 0) G.tip = null;
   previewTrick();
+  if (team && team.run && tick % 60 === 0) tmRunTick();   // team run: send our spot to the partner
   if (G.flash > 0) G.flash = Math.max(0, G.flash - 0.04);
   for (const f of G.flyers) { f.t += 1 / 28; if (f.t >= 1) G.pulse = 8; }
   G.flyers = G.flyers.filter(f => f.t < 1);
@@ -11064,6 +11073,7 @@ function drawHUD() {
   for (let i = 0; i < G.maxHearts; i++) heart(30 + i * 36, 16, 13, i < G.hearts ? '#ff4d6d' : 'rgba(0,0,0,.35)');
   drawGem(34, 64, 1, tick * 0.06);
   hudText('× ' + G.coins, 54, 65, 22 + G.pulse);
+  if (team && team.run) tmRunHud();   // team run: where the partner is
   if (G.streak >= 2) { drawPix('flame', 16, 88, 1.6); hudText(`${G.streak} in a row`, 42, 100, 18, '#ffb627'); }
   if (G.power) { const pw = POWERS[G.power.kind]; drawPix(pw.pix, 18, 112, 2); hudText(`${G.power.name || pw.name} ${Math.ceil(G.power.t / 60)}s`, 50, 126, 17, '#7df9ff'); }
   const label = st.boss ? `World ${st.w + 1}: Boss` : `Level ${st.label}: ${st.name}`;
@@ -11259,7 +11269,8 @@ function showMsg(title, body, btns) {
 }
 
 function startStage(i) {
-  if (updateBeforeLeaving(i)) return;   // a new version came out during the last level: load it, then this level
+  if (team && team.run && i !== team.lvl) tmClose(true);   // went to another level: the team run is over
+  if (!(team && team.run) && updateBeforeLeaving(i)) return;   // a new version came out during the last level: load it, then this level
   puff();
   const st = STAGES[i], W = WORLDS[st.w];
   RC = null; document.body.classList.remove('racing');
@@ -11546,6 +11557,7 @@ function askChange(it) {
 }
 
 function toMenu() {
+  if (team && team.run) tmClose(true);   // left the team run
   if (updateBeforeLeaving(null)) return;
   puff();
   mode = 'menu'; G = null; P = null; RC = null; document.body.classList.remove('racing'); playMusic('menu');
@@ -12562,8 +12574,10 @@ const tmSend = (path, body, method = 'PATCH') => fetch(tmUrl(path), { method, bo
 const tmSay = t => { $('tmStatus').textContent = t; };
 const tmIcon = id => playerIcon(fixIcon(String(id || 'kai').replace(/[^a-z0-9-]/gi, '')));
 function openTeam() {
-  hide('menu'); tmClose(); show('team'); show('tmLobby'); hide('tmPlay'); hide('tmCodeBox'); hide('tmJoinBox'); $('tmHost').disabled = false; $('tmJoinBtn').disabled = false;
+  hide('menu'); tmClose(); show('team'); show('tmLobby'); hide('tmPlay'); hide('tmCodeBox'); hide('tmJoinBox'); hide('tmModeBox'); $('tmHost').disabled = false; $('tmJoinBtn').disabled = false;
   tmSay(navigator.onLine === false ? 'You need the internet to play together.' : '');
+  const open = Math.min(unlockedCount(), STAGES.length), lv = STAGES.map((st, i) => [st, i]).filter(([st, i]) => !st.boss && i < open);   // the levels this player has opened
+  $('tmLvl').innerHTML = lv.map(([st, i]) => `<option value="${i}">${st.label} ${st.name}</option>`).join(''); if (lv.length) $('tmLvl').value = lv[lv.length - 1][1];
 }
 function tmClose(del) {   // stop listening; del = also remove the room (so the other screen knows we left)
   if (!team) return;
@@ -12589,14 +12603,14 @@ function tmListen() {
   es.addEventListener('put', on('put')); es.addEventListener('patch', on('patch'));
   es.onerror = () => { if (team === mine && mine.playing) $('tmMsg').textContent = 'Finding your partner again...'; };
 }
-async function tmHost() {
-  audio(); $('tmHost').disabled = true; $('tmJoinBtn').disabled = true; hide('tmJoinBox'); tmSay('Making a game...');
+async function tmHost(run) {   // run = a level run (the level picked in #tmLvl), else a boss fight
+  audio(); $('tmHost').disabled = true; $('tmJoinBtn').disabled = true; hide('tmJoinBox'); hide('tmModeBox'); tmSay('Making a game...');
   try {
     const old = await fetch(`${TEAM_DB}/rooms.json`).then(r => r.json()).catch(() => null) || {};   // tidy up: rooms older than 3 hours
     for (const [c, rm] of Object.entries(old)) if (!rm || !rm.t || Date.now() - rm.t > 108e5) fetch(`${TEAM_DB}/rooms/${c}.json`, { method: 'DELETE' }).catch(() => {});
     let code = ''; do { code = range(0, 3).map(() => TEAM_ABC[R(0, TEAM_ABC.length - 1)]).join(''); } while (old[code]);
     team = { code, me: 'h', hits: 0, r: 1 };
-    await tmSend('', { t: { '.sv': 'timestamp' }, boss: R(0, WORLDS.length - 1), max: TEAM_HP, r: 1, p: { h: { i: curPlayer().icon, hits: 0 } } }, 'PUT');
+    await tmSend('', { t: { '.sv': 'timestamp' }, mode: run ? 'run' : 'boss', lvl: run ? +$('tmLvl').value : 0, boss: R(0, WORLDS.length - 1), max: TEAM_HP, r: 1, p: { h: { i: curPlayer().icon, hits: 0 } } }, 'PUT');
     $('tmCode').textContent = code; show('tmCodeBox'); tmSay('Waiting for your partner...'); tmListen();
   } catch (err) { tmClose(); tmSay('Could not start. Check the internet and try again.'); $('tmHost').disabled = false; $('tmJoinBtn').disabled = false; }
 }
@@ -12618,13 +12632,80 @@ async function tmJoin() {
 function tmSync() {
   const rm = team.room;
   if (!rm) {   // the room is gone: the partner left
-    const was = team.playing || team.won; tmClose();
+    const was = team.playing || team.won, run = team.run; tmClose();
+    if (run) { toastMsg('Your partner left the team run.'); return; }   // keep playing the level alone
     if (was) { hide('msg'); show('team'); show('tmLobby'); hide('tmPlay'); hide('tmCodeBox'); hide('tmJoinBox'); $('tmHost').disabled = false; $('tmJoinBtn').disabled = false; tmSay('Your partner left the game.'); }
     return;
   }
   if (!rm.p || !rm.p.h || !rm.p.j) return;   // still waiting for the second ninja
-  if (!team.playing || rm.r !== team.r) tmStart();
-  tmDraw();
+  if (!team.playing || rm.r !== team.r) { if (rm.mode === 'run') tmRunStart(); else tmStart(); }
+  if (rm.mode === 'run') tmRunSync(); else tmDraw();
+}
+// ---- Team run (owner, Nov 14 2026): both play the SAME level, each on their own screen with their own math. A small
+// tracker on the HUD shows where the partner is (rooms/<CODE>/p/<who>: x = percent of the level, g = gates opened,
+// done), pop-ups cheer their gates, and when both are home a team chest pays a gem per gate the two opened together.
+// The levels are laid out per kid (stones vs bridges, pattern walls), so the partner is shown on a track, not in the level.
+function tmRunStart() {
+  const rm = team.room, i = clamp(rm.lvl | 0, 0, STAGES.length - 1);
+  team.r = rm.r; team.run = true; team.playing = true; team.won = false; team.paid = false; team.sent = ''; team.pg = 0; team.pdone = false; team.lvl = STAGES[i].boss ? 0 : i;
+  hide('msg'); hide('team'); hide('menu');
+  startStage(team.lvl);
+  toastMsg(`Team run: ${STAGES[team.lvl].name}! Your partner is on the track at the top.`, 4200);
+}
+const tmYou = () => (team.me === 'h' ? 'j' : 'h');
+function tmRunTick() {   // once a second while playing: tell the partner where we are
+  if (!team || !team.run || !team.room || !G || mode !== 'play' || G.idx !== team.lvl) return;
+  const ML = G.saved ? G.saved.L : L, x = Math.round(clamp((G.saved ? G.saved.x : P.x) / (ML.flagC * T), 0, 1) * 100), g = ML.stations.filter(st => st.solved).length, key = x + ',' + g;
+  if (key === team.sent) return; team.sent = key;
+  tmSend(`/p/${team.me}`, { x, g }).catch(() => {});
+}
+function tmRunSync() {   // the partner's news
+  const rm = team.room, you = rm.p[tmYou()] || {}, g = you.g || 0;
+  if (g > team.pg && mode === 'play') { toastMsg(`${tmIcon(you.i)} Your partner opened a gate!`, 2200); tone(880, 0.1, 'triangle', 0.03); tone(1175, 0.12, 'triangle', 0.03, null, 0.09); }
+  if (you.done && !team.pdone && mode === 'play') toastMsg(`${tmIcon(you.i)} Your partner is home! Go, go, go!`, 3200);
+  team.pg = g; team.pdone = !!you.done;
+  tmRunBox();
+}
+let tmIconIm = {};
+function tmRunHud() {   // the tracker: a line from start to home with both ninjas' pictures on it
+  if (!team || !team.run || !team.room || !team.room.p || G.idx !== team.lvl || L.vault && !G.saved) return;
+  const rm = team.room, narrow = VW < 700, w = narrow ? 150 : 190, x0 = VW - 72 - w, y = narrow ? 120 : 106;
+  const ML = G.saved ? G.saved.L : L, mineX = clamp((G.saved ? G.saved.x : P.x) / (ML.flagC * T), 0, 1);
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x0 - 4, y - 3, w + 8, 6); ctx.fillStyle = '#ffffff'; ctx.fillRect(x0, y - 1, w, 2);
+  ctx.fillStyle = '#ffd23f'; ctx.fillRect(x0 + w - 2, y - 8, 4, 16);   // home
+  const put = (id, f, dy) => {
+    const k = fixIcon(String(id || 'kai')); if (!tmIconIm[k]) { playerIcon(k); tmIconIm[k] = new Image(); tmIconIm[k].src = playerIconURL[k]; }
+    if (tmIconIm[k].complete && tmIconIm[k].naturalWidth) ctx.drawImage(tmIconIm[k], Math.round(x0 + f * w - 12), y + dy, 24, 24);
+  };
+  const you = rm.p[tmYou()] || {};
+  ctx.imageSmoothingEnabled = false;
+  put(you.i, you.done ? 1 : clamp((you.x || 0) / 100, 0, 1), 4);   // the partner under the line
+  put(rm.p[team.me].i, mineX, -28);   // me above it
+  hudText(`Partner: ${you.done ? 'home!' : (you.g || 0) + ' gates'}`, x0 + w, y + 40, 13, '#7df9ff', 'right');
+}
+// The team's box on the end-of-level card: waiting for the partner, then the team chest.
+function tmRunBoxHTML() {
+  const rm = team.room, me = rm.p[team.me] || {}, you = rm.p[tmYou()] || {};
+  if (!you.done) return `${tmIcon(you.i)} Your partner is still running: <b>${you.g || 0} gates</b> so far.<br>Stay here to get the team chest!`;
+  const gems = (me.g || 0) + (you.g || 0);
+  if (!team.paid) { team.paid = true; prog.bank += gems; prog.stats.gems += gems; save(); sfx.win(); }
+  return `${tmIcon(me.i)} ${tmIcon(you.i)} <b>You both made it home!</b><br>Team chest: ${me.g || 0} + ${you.g || 0} gates = ${pixImg('gem', 'pix sm')} <b>+${gems}</b><br><button type="button" class="btn" id="tmNextBtn">Next level together ▶</button>`;
+}
+function tmRunBox() {
+  const el = document.getElementById('tmRunBox'); if (!el || !team || !team.run || !team.room) return;
+  el.innerHTML = tmRunBoxHTML();
+  const b = document.getElementById('tmNextBtn');
+  if (b) b.onclick = () => {   // either ninja: the next level for both
+    const rm = team.room; if (!rm || rm.r !== team.r) return;
+    let n = team.lvl + 1; while (n < STAGES.length && STAGES[n].boss) n++; if (n >= STAGES.length) n = team.lvl;
+    b.disabled = true; tmSend('', { r: rm.r + 1, lvl: n, p: { h: { i: rm.p.h.i, hits: 0 }, j: { i: rm.p.j.i, hits: 0 } } }).catch(() => { b.disabled = false; });
+  };
+}
+function tmRunDone() {   // from finishLevel: tell the partner we are home (with our final gate count)
+  if (!team || !team.run || !team.room || G.idx !== team.lvl) return;
+  const g = L.stations.filter(st => st.solved).length;
+  (team.room.p[team.me] = team.room.p[team.me] || {}).done = true; team.room.p[team.me].g = g;
+  tmSend(`/p/${team.me}`, { x: 100, g, done: true }).catch(() => {});
 }
 function tmStart() {   // a new round (also "Play again" from either screen)
   const rm = team.room; team.r = rm.r; team.hits = 0; team.playing = true; team.won = false; team.seen = 0; team.right = 0; team.asked = 0;
@@ -12701,8 +12782,10 @@ function teamKey(e) {
   if (i != null) { e.preventDefault(); tmPick(i); }
 }
 $('teamBtn').onclick = () => { audio(); openTeam(); };
-$('tmHost').onclick = tmHost;
-$('tmJoinBtn').onclick = () => { audio(); hide('tmCodeBox'); show('tmJoinBox'); tmSay(''); $('tmIn').value = ''; $('tmIn').focus(); };
+$('tmHost').onclick = () => { audio(); hide('tmJoinBox'); hide('tmCodeBox'); show('tmModeBox'); tmSay(''); };
+$('tmBossGo').onclick = () => tmHost(false);
+$('tmRunGo').onclick = () => tmHost(true);
+$('tmJoinBtn').onclick = () => { audio(); hide('tmCodeBox'); hide('tmModeBox'); show('tmJoinBox'); tmSay(''); $('tmIn').value = ''; $('tmIn').focus(); };
 $('tmGo').onclick = tmJoin;
 $('tmIn').addEventListener('keydown', e => { if (e.key === 'Enter') tmJoin(); e.stopPropagation(); });
 $('tmBack').onclick = () => { tmClose(true); hide('team'); buildMenu(); show('menu'); };
