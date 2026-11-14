@@ -552,7 +552,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 14, 2026 9:45 AM PT · Sea Dojo: 3 new moves (Palm Strike, Crescent Kick, Back Kick)</div>
+  <div class="build">Updated Nov 14, 2026 10:30 AM PT · Sea: current tunnel crossing</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1553,7 +1553,7 @@ function gearPow() {
   for (const sl of ['back', 'hand', 'head', 'feet']) if (eq[sl] && GEAR[eq[sl]] && GEAR[eq[sl]].power) return eq[sl];
   return null;
 }
-const gearBtnOn = () => !!(G && mode === 'play' && gearPow() && !L.boss && !L.room && !G.rescue && !G.groom && !G.cross && !G.swing && !G.bossIn);
+const gearBtnOn = () => !!(G && mode === 'play' && gearPow() && !L.boss && !L.room && !G.rescue && !G.groom && !G.cross && !G.swing && !G.ride && !G.bossIn);
 const flareR = r => (G && G.flare > 0 ? r + (1400 - r) * Math.min(1, G.flare / 30, (FLARE_T - G.flare + 1) / 12) : r);
 let gearBtnF = -1, gearBtnId = null;
 function gearBtnSync() {
@@ -1769,7 +1769,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     function clamChunk() {   // a treasure clam on the sea floor: swim down to it for a question; right = it opens, pearls spill out as gems
       const s = flat(8); L.clams.push({ x: (s + 4) * T + T / 2, y: GR * T, used: false, open: 0, state: 'shut', t: 0 });
     }
-    L.vents = []; L.clams = []; L.leaps = []; L.counts = []; L.deep = def.k === 2;   // Sunken Ship: the water gets darker the further you go
+    L.vents = []; L.clams = []; L.leaps = []; L.counts = []; L.currents = []; L.deep = def.k === 2;   // Sunken Ship: the water gets darker the further you go
     // Sunken Ship is all deep sea (owner): no surface, no sky, nothing sticking up out of the water. Kai wears the diving
     // suit he found at the end of the Kelp Forest; it keeps him at a steady depth (L.water is that depth, not a surface).
     L.abyss = def.k === 2;
@@ -1792,6 +1792,14 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
       if (i === 1) caveChunk();
       if (i === calm && !L.abyss) leapChunk();
       if (i === 2 || i === def.n - 3) clamChunk();
+      if (i === def.n - 3) {   // the current tunnel (the sea's crossing): two stretches of strong current; a right answer turns each one Kai's way
+        const s0 = flat(21), c0 = s0 + 3;
+        for (let c = c0; c < c0 + 15; c++) {
+          if (L.abyss) for (let r = 0; r <= WS - 2; r++) map[r][c] = 'S';   // the deep sea: a rock roof (nothing floats in the air above the water elsewhere)
+          for (let r = WS + 3; r < GR; r++) map[r][c] = 'S';   // the floor of the tunnel
+        }
+        L.currents.push({ c0, k: 0, q: null, opts: null, wait: 0, told: false, done: false, y: L.water + 0.5 * T, msg: '', msgT: 0 });
+      }
       if (i === 2 && !def.boss && MOVES[slotOf(def)]) { const s0 = flat(9); L.doors.push({ c: s0 + 4, r: GR, style: ENTRANCES[slotOf(def)] || 'clam', used: false, hidden: false }); }   // the Sea Dojo's way in, on the sea floor
       if (i === calm && !L.abyss) seaChunk('vent');   // every level has at least one vent (not the deep sea: they shoot Kai out of the water)
       if (i === calm) {   // breathing room: an easy swim with gems (in the Sunken Ship it's where the old ship lies)
@@ -4857,7 +4865,7 @@ function diveTick(p) {
   if (p.x > d.x || d.t > 300) { G.dive = null; p.vx = 2; }
 }
 function hurt() {
-  if (P.inv > 0 || mode !== 'play' || hasPower('star') || G.swing || G.dive || G.groom || vanished() || (G.dol && G.dol.ph === 'ride') || (G.flame && G.dash > 0) || G.pound || G.charge > 0) return;   // (vanished: Mei's Ninja vanish; gear powers: Ground Pound, Horn Charge)
+  if (P.inv > 0 || mode !== 'play' || hasPower('star') || G.swing || G.dive || G.ride || G.groom || vanished() || (G.dol && G.dol.ph === 'ride') || (G.flame && G.dash > 0) || G.pound || G.charge > 0) return;   // (vanished: Mei's Ninja vanish; gear powers: Ground Pound, Horn Charge)
   if (prog.safe) {   // "Never get hurt" (Settings, per player): Kai blinks and hops back a little, no heart lost
     P.inv = 70; P.vy = -5; P.vx = -P.face * 3; sfx.bump();
     return;
@@ -5130,6 +5138,7 @@ function miniTarget() {
       return { kind: 'feed', q: fd.q, vals: fd.foods.map(f => f.val), off: fd.foods.map(() => false), ref: fd };
     }
   }
+  const cut = currentTarget(); if (cut) return cut;
   for (const ct of L.counts || []) {
     if (ct.done || ct.wait > 0 || cx < ct.xs[0] - 4 * T || cx > ct.xs[ct.n - 1] + T) continue;
     if (!ct.opts) countOpts(ct);
@@ -5339,6 +5348,85 @@ function countsTick(p) {   // the current: Kai can't swim past the next bubble u
     if (p.x + p.w > bx && p.x < bx + T) { p.x = bx - p.w; if (p.vx > 0) p.vx = 0; dolphinLetGo(); if (!ct.told) { ct.told = true; floatText(p.x + p.w / 2, p.y - 30, 'Pick the next number!', '#ffd23f', 22); } }
   }
 }
+// The current tunnel (the sea's crossing, in place of the swing): a rock tunnel at swimming depth in two stretches of
+// 6 tiles with a calm pocket between. The current in a stretch pushes against Kai (he can't swim in) until he answers;
+// a right answer turns that current his way and it carries him through. A miss: "Oops!", a little push back, a new
+// question soon, no penalty. Once both are done the water is calm both ways.
+const CUR_RIDE = 66;
+const curStart = (cu, k) => (cu.c0 + k * 9) * T, curEnd = (cu, k) => (cu.c0 + k * 9 + 6) * T;
+function currentsTick(p) {
+  for (const cu of L.currents || []) {
+    if (cu.wait > 0 && --cu.wait === 0) cu.q = null;
+    if (cu.msgT > 0) cu.msgT--;
+    if (cu.done) continue;
+    const bx = curStart(cu, cu.k);
+    if (p.x + p.w > bx && p.x < bx + T) {
+      p.x = bx - p.w; if (p.vx > 0) p.vx = 0; dolphinLetGo();
+    }
+  }
+}
+function currentTarget() {
+  const cx = P.x + P.w / 2;
+  for (const cu of L.currents || []) {
+    if (cu.done || cu.wait > 0 || G.ride) continue;
+    const bx = curStart(cu, cu.k); if (cx < bx - 5 * T || cx > bx + T) continue;
+    if (!cu.q) { cu.q = L.gen(); cu.opts = choices(cu.q, 3); cu.shownAt = G.time; }
+    return { kind: 'current', q: cu.q, vals: cu.opts, off: cu.opts.map(() => false), ref: cu };
+  }
+  return null;
+}
+function currentPick(cu, i) {
+  if (!cu.q || cu.wait > 0 || G.ride) return;
+  const q = cu.q, right = cu.opts[i] === q.ans, fast = G.time - (cu.shownAt ?? G.time) <= fastFrames(L.skill, q), x = curStart(cu, cu.k);
+  noteFact(q, right, right && fast, L.skill);
+  if (right) {
+    G.solved++; if (fast) G.fastN++; sfx.correct(); streakUp(x, cu.y - 50); gotIt(); payGems(x, cu.y, 1);
+    cu.msg = `${qSolved(q)}!`; cu.msgCol = '#3ae374'; cu.msgT = 70; cu.q = null;
+    G.ride = { cu, k: cu.k, x0: P.x, y0: P.y, x1: curEnd(cu, cu.k) + (cu.k ? 1.5 * T : 1.2 * T), y1: cu.y - P.h / 2, t: 0 };
+    tone(300, 0.5, 'sine', 0.04, 900); P.vx = P.vy = 0; P.face = 1;
+  } else {
+    G.mistakes++; G.streak = 0; remember(q); missed(q); sfx.wrong();
+    cu.wait = 90; cu.msg = `Oops! ${qSolved(q)}`; cu.msgCol = '#ff6b6b'; cu.msgT = 100;
+    P.vx = -4; floatText(P.x + P.w / 2, P.y - 20, 'Whoosh!', '#9be7ff', 20);
+  }
+}
+function rideTick(p) {   // the current carries Kai through one stretch
+  const r = G.ride; r.t++;
+  const u = Math.min(1, r.t / CUR_RIDE), e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+  p.x = r.x0 + (r.x1 - r.x0) * e; p.y = r.y0 + (r.y1 - r.y0) * Math.min(1, u * 3); p.vx = 0; p.vy = 0; p.face = 1; p.anim += 0.3;
+  if (tick % 2 === 0) G.parts.push({ k: 'bit', x: p.x - 6, y: p.y + 6 + Math.random() * (p.h - 12), vx: -3, vy: 0, life: 14, col: 'rgba(225,245,255,.9)', s: 4 });
+  if (r.t >= CUR_RIDE) {
+    G.ride = null; r.cu.k++;
+    if (r.cu.k >= 2) { r.cu.done = true; confetti(p.x, p.y - 20); floatText(p.x + p.w / 2, p.y - 50, 'Through the current!', '#ffd23f', 26); payGems(p.x, p.y, 2); }
+  }
+}
+function drawCurrents() {
+  for (const cu of L.currents) {
+    const x0 = cu.c0 * T, x1 = (cu.c0 + 15) * T; if (x1 < cam - 40 || x0 > cam + VW + 40) continue;
+    const top = cu.y - 2 * T + 6, h = 4 * T - 12;
+    for (let k = 0; k < 2; k++) {   // streaks of water: against Kai (left) until answered, then his way (right); fast while he rides
+      const a = curStart(cu, k), b = curEnd(cu, k), riding = G.ride && G.ride.cu === cu && G.ride.k === k, solved = cu.done || k < cu.k;
+      const v = riding ? 9 : solved ? 1.2 : -3.2;
+      ctx.fillStyle = solved || riding ? 'rgba(220,250,255,.55)' : 'rgba(255,255,255,.7)';
+      for (let i = 0; i < 9; i++) {
+        const len = 14 + (i % 3) * 8, sx = a + ((tick * v + i * 61) % (b - a) + (b - a)) % (b - a), sy = top + 10 + ((i * 37) % (h - 20));
+        ctx.fillRect(Math.round(Math.min(sx, b - len)), Math.round(sy), len, 3);
+      }
+      if (!solved && !riding) { ctx.fillStyle = 'rgba(255,255,255,.85)'; const ax = a + (b - a) / 2, ay = top - 2 + h / 2; poly([[ax - 14, ay], [ax + 4, ay - 12], [ax + 4, ay + 12]], 'rgba(255,255,255,.35)'); }   // a big arrow: the current pushes back
+    }
+    if (!cu.done) {   // the choices, in the tunnel mouth just past the current's edge
+      const t = currentTarget(), bx = curStart(cu, cu.k);
+      if (t && t.ref === cu) t.vals.forEach((v, j) => {
+        const tx = bx + 0.9 * T + j * 1.35 * T, ty = cu.y + Math.sin(tick * 0.07 + j) * 3, [c1] = ansCol(j);
+        ctx.fillStyle = c1; rrect(tx - 21, ty - 17, 42, 34, 9); ctx.fill(); ctx.fillStyle = '#ffffff'; rrect(tx - 18, ty - 14, 36, 28, 7); ctx.fill();
+        ctx.font = `${String(v).length > 3 ? 14 : 18}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.fillStyle = '#1a1426'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(v, tx, ty + 1);
+        if (!isTouch) keyTag(ANS_KEYS(3)[j], tx + 18, ty - 16);
+      });
+      if (Math.abs(P.x - bx) < 7 * T && !cu.msgT) hudText(cu.k ? 'One more current!' : 'Answer to turn the current!', bx + 2.2 * T, cu.y + 44, 17, '#ffffff', 'center');
+    }
+    if (cu.msgT > 0) hudText(cu.msg, curStart(cu, Math.min(cu.k, 1)) + 2.2 * T, cu.y + 44, 20, cu.msgCol, 'center');
+  }
+}
 function drawCounts() {
   for (const ct of L.counts || []) {
     if (ct.xs[ct.n - 1] < cam - 80 || ct.xs[0] > cam + VW + 120) continue;
@@ -5374,6 +5462,7 @@ function miniAnswer(m, i) {
   if (m.kind === 'rescue') { rescuePick(m.ref, i); return; }
   if (m.kind === 'swing') { swingPick(m.ref, i); return; }
   if (m.kind === 'count') { countPick(m.ref, i); return; }
+  if (m.kind === 'current') { currentPick(m.ref, i); return; }
   if (m.kind === 'gear') { gearPick(m.ref, i); return; }
   P.throwT = 14; sfx.throw(); boxPick(m.ref, i);
 }
@@ -5479,6 +5568,7 @@ function updateMini() {
 function drawMini() {
   drawGearChest();   // the Gear Pack chest
   if (L.counts) drawCounts();   // the sea's counting bubble line
+  if (L.currents) drawCurrents();   // the sea's current tunnel
   for (const fd of L.squads || []) {
     if (fd.ax < cam - 6 * T || fd.foods[0].x > cam + VW + 60) continue;
     const g = GR * T, chew = fd.mood === 'yum' && fd.moodT > 20 && fd.moodT < 80 ? Math.abs(Math.sin(fd.moodT * 0.4)) : 0;
@@ -6113,7 +6203,8 @@ function updatePlayer() {
   if (G.rescue) { rescueTick(); petTick(); return; }   // in a lost friend's scene
   if (G.groom) { groomTick(); petTick(); return; }   // in the Gear Pack's secret room
   if (G.swing) { swingTick(); petTick(); return; }   // on a swing crossing
-  if (G.dive) { diveTick(p); petTick(); return; }   // the sea: swimming through the door that just opened
+  if (G.dive) { diveTick(p); petTick(); return; }
+  if (G.ride) { rideTick(p); petTick(); return; }   // the sea: carried through a current tunnel   // the sea: swimming through the door that just opened
   updateTwist();
   updateFlavor();
   updateFriend();
@@ -6202,6 +6293,7 @@ function updatePlayer() {
   if (G.charge > 0 && hitWall) { G.charge = 0; shake(8, 4); sfx.bump(); burst(p.x + p.w / 2 + p.face * 16, p.y + p.h / 2, '#ffffff', 8, 3); }   // the Horn Charge stops at a wall
   if (riding && hitWall) dolphinLetGo();   // a wall (a gate) ends the ride
   if (L.counts) countsTick(p);   // the sea's counting bubble line
+  if (L.currents) currentsTick(p);   // the current tunnel
   gearTick(p);   // the Gear Pack chest
   if (hitWall && L.water) seaWall(p, wet);
   const wasAir = !p.onGround, fallSpeed = p.vy, feetBefore = p.y + p.h;
@@ -7694,6 +7786,7 @@ function drawSeaDark() {
   for (const d of L.doors || []) if (d.style) hole(d.c * T + 0.7 * T, d.r * T - T, 80);   // the Sea Dojo's door
   for (const fd of L.squads || []) if (!fd.done) { hole(fd.ax, GR * T - 30, 80); for (const f of fd.foods) hole(f.x, f.y, 50); }   // the hungry animal and its food
   for (const ct of L.counts || []) if (!ct.done) ct.xs.forEach(x => hole(x, ct.y, 50));   // the counting bubbles
+  for (const cu of L.currents || []) if (!cu.done) hole(curStart(cu, cu.k) + 2 * T, cu.y, 110);   // the current tunnel's mouth
   if (L.ship) { const sg = shipGeo(L.ship); for (const [px, py] of sg.ports) hole(px, py, 56); hole(sg.hx, sg.b - 40, L.friend && !L.friend.done ? 110 : 70); hole(sg.x0 + sg.w - 70, sg.top(sg.x0 + sg.w - 70) - 30, 70); }   // portholes, the hole (brighter while Nami waits), the back deck windows
   if (G.mbox) G.mbox.bubbles.forEach(b => hole(b.x, b.y, 40));
   if (L.abyss) { const sp = scrollSpot(); hole(sp.x, sp.y, 110); hole(L.castleC * T + 2.5 * T, GR * T - 1.6 * T, 140); }   // the scroll and the diving bell's lit windows
