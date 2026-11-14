@@ -336,7 +336,7 @@
   .playbtn { width: 100%; font-family: "Lilita One", Nunito, sans-serif; font-size: 26px; letter-spacing: 1px; color: #3a2200; background: #ffd23f; border: none; cursor: pointer;
     padding: 10px 14px; margin-bottom: 8px; box-shadow: inset 0 -5px 0 #c9961a, inset 0 3px 0 #ffe98a; transition: transform .1s; }
   .playbtn small { font-family: Nunito, sans-serif; font-weight: 900; font-size: 16px; color: #6a4400; }
-  @media (max-width: 500px) { .hudpanel .ibtn { font-size: 10.5px; letter-spacing: 0; padding: 6px 1px; } .hudpanel .iconrow { gap: 5px; } .hudpanel { padding: 8px; } }
+  @media (max-width: 500px) { .hudpanel .ibtn { font-size: 10.5px; letter-spacing: 0; padding: 6px 1px; } .hudpanel .iconrow { gap: 4px; } .hudpanel { padding: 8px; } }
   .playbtn:active { transform: scale(.97); } .playbtn:hover { filter: brightness(1.06); }
   .zone { background-size: cover; background-position: center bottom; border-radius: 0; }
   .zone .wname { text-shadow: 0 2px 0 rgba(0,0,0,.6); color: #fff; }
@@ -362,7 +362,7 @@
     border-radius: 999px; padding: 8px 18px; cursor: pointer; }
   .mathchip .tier, .mathline .tier { color: #d35400; letter-spacing: 1px; }
   .mathline .tier { color: #ffd23f; }
-  .iconrow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; width: min(720px, 100%); margin: 6px 0 4px; }
+  .iconrow { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; width: min(720px, 100%); margin: 6px 0 4px; }
   .ibtn { font: inherit; font-weight: 800; font-size: 13px; color: #fff; background: rgba(255,255,255,.1); border: none; border-radius: 14px;
     padding: 8px 2px; cursor: pointer; display: grid; justify-items: center; gap: 2px; }
   .ibtn span { font-size: 26px; line-height: 1; }
@@ -488,6 +488,19 @@
   .buybox .row button { font: inherit; font-weight: 800; font-size: 20px; min-width: 70px; border: none; border-radius: 10px; padding: 8px 12px; cursor: pointer; background: #5b6bd6; color: #fff; }
   .buybox .row button.no { background: #8a8aa0; font-size: 14px; }
   .padcard { width: min(440px, 100%); padding: 16px 18px 18px; }
+  .teamcard { text-align: center; position: relative; overflow: hidden; }
+  .tmhint { font-size: 14px; opacity: .85; margin: 4px 0 10px; } .tmlabel { font-size: 15px; margin-top: 12px; }
+  .tmbtns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .tmcode { display: block; margin: 6px auto 8px; font: 800 44px "Lilita One", "Trebuchet MS", monospace; letter-spacing: 8px; color: #ffd23f; background: rgba(0,0,0,.3); border: 2px solid rgba(255,255,255,.25); border-radius: 12px; padding: 4px 10px; width: 220px; text-align: center; text-transform: uppercase; }
+  .tmstage { height: 120px; display: flex; align-items: flex-end; justify-content: center; }
+  .tmboss .bossimg { width: 112px; height: 112px; image-rendering: pixelated; }
+  .tmboss.hit { animation: tmhit .3s; } @keyframes tmhit { 0% { transform: translateX(0); filter: brightness(3); } 30% { transform: translateX(-8px); } 60% { transform: translateX(8px); } 100% { transform: translateX(0); filter: none; } }
+  .tmboss.down { transition: transform .8s, opacity .8s; transform: translateY(30px) rotate(20deg); opacity: 0; }
+  .tmhp { position: relative; height: 22px; background: rgba(0,0,0,.4); border: 2px solid rgba(255,255,255,.3); border-radius: 8px; overflow: hidden; margin: 6px 0; }
+  .tmhp i { display: block; height: 100%; width: 100%; background: #e63946; transition: width .25s; } .tmhp span { position: absolute; inset: 0; font-size: 13px; font-weight: 800; line-height: 18px; }
+  .tmteam { display: flex; justify-content: space-between; font-size: 15px; font-weight: 800; margin-bottom: 2px; } .tmteam .picon { width: 32px; height: 32px; } .tmteam span.pop { animation: tmpop .3s; } @keyframes tmpop { 50% { transform: scale(1.25); } }
+  .tmkeys { grid-template-columns: repeat(3, minmax(0, 1fr)); } .tmkeys button.right { background: #3ae374; } .tmkeys button.wrong { background: #ff6b6b; }
+  .tmstar { position: absolute; width: 28px; height: 28px; image-rendering: pixelated; pointer-events: none; z-index: 3; }
   .padq { font-size: clamp(30px, 8vw, 44px); font-weight: 800; margin: 2px 0 4px; }
   .padq .padin { display: inline-block; min-width: 2.2ch; border-bottom: 4px solid #ffd23f; color: #ffd23f; }
   .padmsg { font-size: 15px; opacity: .85; min-height: 1.5em; margin-bottom: 10px; }
@@ -548,12 +561,13 @@
     <button class="ibtn" id="shopBtn" type="button"><span data-pix="pagoda"></span>Shop <b id="bankMenu">0</b><span data-pixsm="gem"></span></button>
     <button class="ibtn" id="badgeBtn" type="button"><span data-pix="medal"></span>Badges <b id="badgeMenu"></b></button>
     <button class="ibtn" id="packBtn" type="button"><span data-pix="chest"></span>Gear <b id="packMenu"></b></button>
+    <button class="ibtn" id="teamBtn" type="button"><span data-pix="shuriken"></span>Team</button>
     <button class="ibtn" id="settingsBtn" type="button"><span data-pix="gear"></span>Settings</button>
   </div>
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 14, 2026 2:30 PM PT · Shadow Walls: 5 ninjas when spotted, every level of math</div>
+  <div class="build">Updated Nov 14, 2026 4:00 PM PT · NEW: Team button - beat a boss together on two screens</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -681,6 +695,29 @@
     <div class="padq" id="djQ"></div>
     <div class="padkeys" id="djKeys"></div>
     <div class="padmsg" id="djMsg"></div>
+  </div>
+</div>
+
+<div id="team" class="overlay hidden">
+  <div class="card padcard teamcard">
+    <div id="tmLobby">
+      <h2>Play together</h2>
+      <p class="tmhint">Two ninjas, two screens, one boss! Each of you gets your own math.</p>
+      <div class="tmbtns"><button type="button" class="btn" id="tmHost">Start a game</button><button type="button" class="btn alt" id="tmJoinBtn">Join a game</button></div>
+      <div id="tmCodeBox" class="hidden"><div class="tmlabel">Tell your partner this code:</div><div class="tmcode" id="tmCode"></div><div class="tmhint">On their screen: Team, Join a game.</div></div>
+      <div id="tmJoinBox" class="hidden"><div class="tmlabel">Type your partner's code:</div><input id="tmIn" class="tmcode" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="text"><button type="button" class="btn" id="tmGo">Join ▶</button></div>
+      <div class="padmsg" id="tmStatus"></div>
+      <button type="button" class="btn alt" id="tmBack">Back</button>
+    </div>
+    <div id="tmPlay" class="hidden">
+      <div class="dojotop"><b id="tmBossName"></b><button type="button" class="wkx" id="tmLeave" aria-label="Leave">✕</button></div>
+      <div class="tmstage"><div class="tmboss" id="tmBoss"></div></div>
+      <div class="tmhp"><i id="tmHp"></i><span id="tmHpTxt"></span></div>
+      <div class="tmteam"><span id="tmMe"></span><span id="tmYou"></span></div>
+      <div class="padq" id="tmQ"></div>
+      <div class="padkeys tmkeys" id="tmKeys"></div>
+      <div class="padmsg" id="tmMsg"></div>
+    </div>
   </div>
 </div>
 
@@ -12511,6 +12548,166 @@ function finishDojo() {
 }
 $('dojoBtn').onclick = () => { audio(); startDojo(); };
 
+// ---------------------------------------------------------------- Play together (owner, Nov 14 2026): Team Boss on two devices
+// Two kids, two devices, one boss with a shared health bar. One taps "Start a game" and gets a 4-letter code; the other
+// joins with it. Each kid answers questions from their OWN math (curSkill on their device); every right answer throws a
+// shuriken. The devices meet in a small Firebase Realtime Database the owner made, used with plain fetch + EventSource
+// (no library). A room is rooms/<CODE>: { t, boss (world), max, r (round), p: { h: { i, hits }, j: { i, hits } } }. Each
+// device only ever writes its own hit count, so there is nothing to collide; boss health = max - both counts. Only
+// game data is sent: the player's picture id (a game character), never a name. Leaving deletes the room.
+const TEAM_DB = 'https://math-ninja-team-default-rtdb.firebaseio.com', TEAM_HP = 20, TEAM_ABC = 'BCDFGHJKLMNPRSTVWXZ2345679';
+let team = null;
+const tmUrl = (path = '') => `${TEAM_DB}/rooms/${team.code}${path}.json`;
+const tmSend = (path, body, method = 'PATCH') => fetch(tmUrl(path), { method, body: body === undefined ? undefined : JSON.stringify(body) }).then(r => { if (!r.ok) throw new Error('net'); return r.json(); });
+const tmSay = t => { $('tmStatus').textContent = t; };
+const tmIcon = id => playerIcon(fixIcon(String(id || 'kai').replace(/[^a-z0-9-]/gi, '')));
+function openTeam() {
+  hide('menu'); tmClose(); show('team'); show('tmLobby'); hide('tmPlay'); hide('tmCodeBox'); hide('tmJoinBox'); $('tmHost').disabled = false; $('tmJoinBtn').disabled = false;
+  tmSay(navigator.onLine === false ? 'You need the internet to play together.' : '');
+}
+function tmClose(del) {   // stop listening; del = also remove the room (so the other screen knows we left)
+  if (!team) return;
+  if (team.es) team.es.close();
+  if (del) fetch(tmUrl(), { method: 'DELETE', keepalive: true }).catch(() => {});
+  team = null;
+}
+function tmListen() {
+  const es = team.es = new EventSource(tmUrl()), mine = team;
+  const on = kind => e => {
+    if (team !== mine) return;
+    let m; try { m = JSON.parse(e.data); } catch (err) { return; }
+    const parts = m.path.split('/').filter(Boolean);
+    if (!parts.length) mine.room = kind === 'put' ? m.data : { ...(mine.room || {}), ...m.data };
+    else {
+      let o = mine.room = mine.room || {};
+      for (const k of parts.slice(0, -1)) o = o[k] = o[k] && typeof o[k] === 'object' ? o[k] : {};
+      const last = parts[parts.length - 1];
+      if (kind === 'put') { if (m.data === null) delete o[last]; else o[last] = m.data; } else o[last] = { ...(o[last] || {}), ...m.data };
+    }
+    mine.live = true; tmSync();
+  };
+  es.addEventListener('put', on('put')); es.addEventListener('patch', on('patch'));
+  es.onerror = () => { if (team === mine && mine.playing) $('tmMsg').textContent = 'Finding your partner again...'; };
+}
+async function tmHost() {
+  audio(); $('tmHost').disabled = true; $('tmJoinBtn').disabled = true; hide('tmJoinBox'); tmSay('Making a game...');
+  try {
+    const old = await fetch(`${TEAM_DB}/rooms.json`).then(r => r.json()).catch(() => null) || {};   // tidy up: rooms older than 3 hours
+    for (const [c, rm] of Object.entries(old)) if (!rm || !rm.t || Date.now() - rm.t > 108e5) fetch(`${TEAM_DB}/rooms/${c}.json`, { method: 'DELETE' }).catch(() => {});
+    let code = ''; do { code = range(0, 3).map(() => TEAM_ABC[R(0, TEAM_ABC.length - 1)]).join(''); } while (old[code]);
+    team = { code, me: 'h', hits: 0, r: 1 };
+    await tmSend('', { t: { '.sv': 'timestamp' }, boss: R(0, WORLDS.length - 1), max: TEAM_HP, r: 1, p: { h: { i: curPlayer().icon, hits: 0 } } }, 'PUT');
+    $('tmCode').textContent = code; show('tmCodeBox'); tmSay('Waiting for your partner...'); tmListen();
+  } catch (err) { tmClose(); tmSay('Could not start. Check the internet and try again.'); $('tmHost').disabled = false; $('tmJoinBtn').disabled = false; }
+}
+async function tmJoin() {
+  audio();
+  const code = $('tmIn').value.toUpperCase().replace(/[^A-Z0-9]/g, ''); if (code.length !== 4) { tmSay('The code has 4 letters.'); return; }
+  tmSay('Looking for the game...');
+  try {
+    team = { code, me: 'j', hits: 0, r: 0 };
+    const rm = await fetch(tmUrl()).then(r => r.json());
+    if (!rm || !rm.p || !rm.p.h) { tmClose(); tmSay('No game with that code. Check it with your partner.'); return; }
+    if (rm.p.j) { tmClose(); tmSay('That game already has two ninjas.'); return; }
+    team.r = rm.r || 1;
+    await tmSend('/p/j', { i: curPlayer().icon, hits: 0 }, 'PUT');
+    tmListen();
+  } catch (err) { tmClose(); tmSay('Could not join. Check the internet and try again.'); }
+}
+// Called on every update from the database.
+function tmSync() {
+  const rm = team.room;
+  if (!rm) {   // the room is gone: the partner left
+    const was = team.playing || team.won; tmClose();
+    if (was) { hide('msg'); show('team'); show('tmLobby'); hide('tmPlay'); hide('tmCodeBox'); hide('tmJoinBox'); $('tmHost').disabled = false; $('tmJoinBtn').disabled = false; tmSay('Your partner left the game.'); }
+    return;
+  }
+  if (!rm.p || !rm.p.h || !rm.p.j) return;   // still waiting for the second ninja
+  if (!team.playing || rm.r !== team.r) tmStart();
+  tmDraw();
+}
+function tmStart() {   // a new round (also "Play again" from either screen)
+  const rm = team.room; team.r = rm.r; team.hits = 0; team.playing = true; team.won = false; team.seen = 0; team.right = 0; team.asked = 0;
+  hide('msg'); hide('menu'); show('team'); hide('tmLobby'); show('tmPlay');
+  const boss = WORLDS[rm.boss % WORLDS.length].boss;
+  $('tmBossName').textContent = boss.name; $('tmBoss').className = 'tmboss'; $('tmBoss').innerHTML = bossImg(boss.kind);
+  $('tmMsg').textContent = 'Answer to throw a shuriken!'; sfx.gate();
+  team.gen = genFor(curSkill()); tmNext();
+}
+function tmNext() {
+  if (!team || !team.playing) return;
+  const q = team.q = team.gen(); team.opts = choices(q, 3); team.lock = false; team.shown = performance.now();
+  $('tmQ').innerHTML = q.missing ? q.text : `${q.text} = ?`;
+  const box = $('tmKeys'); box.innerHTML = '';
+  team.opts.forEach((v, i) => { const b = document.createElement('button'); b.type = 'button'; b.innerHTML = valHTML(v); b.onclick = () => tmPick(i); box.appendChild(b); });
+}
+function tmPick(i) {
+  if (!team || !team.playing || team.lock || i < 0 || i >= team.opts.length) return;
+  audio(); team.lock = true;
+  const q = team.q, ok = team.opts[i] === q.ans, btns = [...$('tmKeys').children], sk = curSkill();
+  noteFact(q, ok, ok && (performance.now() - team.shown) / 1000 * 60 <= fastFrames(sk, q, false), sk);
+  team.asked++;
+  if (ok) {
+    team.right++; team.hits++; stat('right'); sfx.correct(); btns[i].classList.add('right'); $('tmMsg').textContent = '';
+    tmSend(`/p/${team.me}`, { hits: team.hits }).catch(() => { if (team) $('tmMsg').textContent = 'No internet... your hit will count when it is back.'; });
+    tmDraw();
+  } else {
+    sfx.wrong(); btns[i].classList.add('wrong'); const j = team.opts.indexOf(q.ans); if (j >= 0) btns[j].classList.add('right');
+    $('tmMsg').textContent = `Oops! ${qSolved(q)}`;
+  }
+  setTimeout(tmNext, ok ? 420 : 1700);
+}
+function tmStar(fromLeft) {   // a shuriken flies from that ninja's corner to the boss
+  const card = $('tmPlay'), el = document.createElement('img'); el.className = 'tmstar pix'; el.src = pixURL('shuriken');
+  const cr = card.getBoundingClientRect(), br = $('tmBoss').getBoundingClientRect(), tr = $(fromLeft ? 'tmMe' : 'tmYou').getBoundingClientRect();
+  const x0 = (fromLeft ? tr.left : tr.right - 28) - cr.left, y0 = tr.top - cr.top, x1 = br.left + br.width / 2 - 14 - cr.left, y1 = br.top + br.height / 2 - 14 - cr.top;
+  el.style.left = x0 + 'px'; el.style.top = y0 + 'px'; card.style.position = 'relative'; card.appendChild(el);
+  const a = el.animate([{ transform: 'translate(0,0) rotate(0deg)' }, { transform: `translate(${x1 - x0}px,${y1 - y0}px) rotate(720deg)` }], { duration: 260, easing: 'linear' });
+  a.onfinish = () => { el.remove(); const b = $('tmBoss'); b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit'); sfx.stomp(); };
+}
+function tmDraw() {
+  const rm = team.room, you = team.me === 'h' ? 'j' : 'h', mine = Math.max(team.hits, (rm.p[team.me] || {}).hits || 0), theirs = (rm.p[you] || {}).hits || 0;
+  const done = mine + theirs, hp = Math.max(0, rm.max - done);
+  if (done > team.seen) {   // new hits since the last look: a shuriken for each side that scored
+    if (mine > (team.seenMine || 0)) tmStar(true);
+    if (theirs > (team.seenTheirs || 0)) { tmStar(false); $('tmYou').classList.remove('pop'); void $('tmYou').offsetWidth; $('tmYou').classList.add('pop'); }
+  }
+  team.seen = done; team.seenMine = mine; team.seenTheirs = theirs;
+  $('tmHp').style.width = (100 * hp / rm.max) + '%'; $('tmHpTxt').textContent = `${hp} / ${rm.max}`;
+  $('tmMe').innerHTML = `${tmIcon(rm.p[team.me].i)} You ${mine}`; $('tmYou').innerHTML = `Partner ${theirs} ${tmIcon(rm.p[you].i)}`;
+  if (hp <= 0 && !team.won) tmWin(mine, theirs);
+}
+function tmWin(mine, theirs) {
+  team.won = true; team.playing = false; team.lock = true;
+  const rm = team.room, boss = WORLDS[rm.boss % WORLDS.length].boss, gems = 10 + mine;
+  prog.bank += gems; prog.stats.gems += gems; save(); statBadges();
+  setTimeout(() => { if (team && team.won) { $('tmBoss').classList.add('down'); sfx.win(); } }, 350);
+  setTimeout(() => {
+    if (!team || !team.won) return;
+    hide('team');
+    showMsg('You won together!', `<div class="bigicon">${bossImg(boss.kind)}</div><p>You and your partner beat the ${boss.name}!</p><div class="statrow"><span>You: ${mine} hits</span><span>Partner: ${theirs} hits</span><span>${pixImg('gem', 'pix sm')} +${gems}</span></div>` + chestHTML() + gearHTML(),
+      [{ label: 'Play again ▶', fn: tmAgain, primary: true }, { label: 'Done', fn: () => { tmClose(true); toMenu(); }, alt: true }]);
+  }, 1500);
+}
+function tmAgain() {   // either ninja can ask for another round: a new boss, both hit counts back to 0
+  if (!team || !team.room) { openTeam(); return; }
+  const rm = team.room;
+  if (rm.r !== team.r) return;   // the partner already started it
+  tmSend('', { r: rm.r + 1, boss: (rm.boss + 1 + R(0, WORLDS.length - 2)) % WORLDS.length, p: { h: { i: rm.p.h.i, hits: 0 }, j: { i: rm.p.j.i, hits: 0 } } }).catch(() => { showMsg('Oops', '<p>No internet. Try again.</p>', [{ label: 'OK', fn: () => { tmClose(true); toMenu(); }, primary: true }]); });
+}
+function teamKey(e) {
+  if (!team || !team.playing) return;
+  const i = { '1': 0, '2': 1, '3': 2, ',': 0, '.': 1, '/': 2 }[e.key];
+  if (i != null) { e.preventDefault(); tmPick(i); }
+}
+$('teamBtn').onclick = () => { audio(); openTeam(); };
+$('tmHost').onclick = tmHost;
+$('tmJoinBtn').onclick = () => { audio(); hide('tmCodeBox'); show('tmJoinBox'); tmSay(''); $('tmIn').value = ''; $('tmIn').focus(); };
+$('tmGo').onclick = tmJoin;
+$('tmIn').addEventListener('keydown', e => { if (e.key === 'Enter') tmJoin(); e.stopPropagation(); });
+$('tmBack').onclick = () => { tmClose(true); hide('team'); buildMenu(); show('menu'); };
+$('tmLeave').onclick = () => { tmClose(true); hide('team'); toMenu(); };
+
 // ---------------------------------------------------------------- players
 let editing = null, pickGrade = null, pickIcon = null;
 function showPlayers() {
@@ -12677,6 +12874,7 @@ window.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') { if (e.key === 'Enter') $('pSave').click(); return; }   // typing a name
   audio();
   if (!$('dojo').classList.contains('hidden')) { dojoKey(e); return; }
+  if (!$('team').classList.contains('hidden')) { teamKey(e); return; }
   if (mode === 'work') {   // Work it out with Sensei: 1-3 or , . / pick, Enter goes on at the end, Escape closes
     e.preventDefault();
     if (e.repeat) return;
