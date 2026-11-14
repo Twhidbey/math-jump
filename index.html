@@ -570,7 +570,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 14, 2026 5:30 PM PT · Team: run a level together (or fight a boss)</div>
+  <div class="build">Updated Nov 14, 2026 6:15 PM PT · Team run: see your partner in the level</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -7250,7 +7250,7 @@ function update() {
   if (G.shake > 0) G.shake--;
   if (G.tip && --G.tip.t <= 0) G.tip = null;
   previewTrick();
-  if (team && team.run && tick % 60 === 0) tmRunTick();   // team run: send our spot to the partner
+  if (team && team.run && tick % 15 === 0) tmRunTick();   // team run: send our spot to the partner
   if (G.flash > 0) G.flash = Math.max(0, G.flash - 0.04);
   for (const f of G.flyers) { f.t += 1 / 28; if (f.t >= 1) G.pulse = 8; }
   G.flyers = G.flyers.filter(f => f.t < 1);
@@ -11185,7 +11185,7 @@ function render() {
   drawPits(c0, c1);   // after enemies, so lava blobs rise out of the lava
   drawBoss();
   if (L.boss) { drawOrbs(); }
-  if (G) { drawDolphin(); drawPet(); drawPlayer(); drawGearFx(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
+  if (G) { drawTeamGhost(); drawDolphin(); drawPet(); drawPlayer(); drawGearFx(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
   if (L.twist && G) drawTwistFront();
   if (L.flavor && G) drawFlavorFront();
   if (L.water && !L.room) drawWaterFront();
@@ -12653,11 +12653,43 @@ function tmRunStart() {
   toastMsg(`Team run: ${STAGES[team.lvl].name}! Your partner is on the track at the top.`, 4200);
 }
 const tmYou = () => (team.me === 'h' ? 'j' : 'h');
-function tmRunTick() {   // once a second while playing: tell the partner where we are
-  if (!team || !team.run || !team.room || !G || mode !== 'play' || G.idx !== team.lvl) return;
-  const ML = G.saved ? G.saved.L : L, x = Math.round(clamp((G.saved ? G.saved.x : P.x) / (ML.flagC * T), 0, 1) * 100), g = ML.stations.filter(st => st.solved).length, key = x + ',' + g;
-  if (key === team.sent) return; team.sent = key;
-  tmSend(`/p/${team.me}`, { x, g }).catch(() => {});
+// A level's shape in a few numbers: two devices with the same signature built the same layout (same level, same kind
+// of math and Easy setting), so the partner's ninja can be drawn exactly where they are.
+const tmSig = ML => [ML.w, ML.stations.length, (ML.steps || []).length, ML.bridges.length, (ML.walls || []).length, (ML.swings || []).length].join('.');
+function tmRunTick() {   // four times a second while playing: tell the partner where we are (only when it changed, one request at a time)
+  if (!team || !team.run || !team.room || !G || mode !== 'play' || G.idx !== team.lvl || team.busy) return;
+  const ML = G.saved ? G.saved.L : L, wx = G.saved ? G.saved.x : P.x, wy = G.saved ? G.saved.y : P.y;
+  const x = Math.round(clamp(wx / (ML.flagC * T), 0, 1) * 1000) / 10, g = ML.stations.filter(st => st.solved).length;
+  const body = { x, g, px: Math.round(wx), py: Math.round(wy), f: P.face < 0 ? -1 : 1, a: G.saved || P.onGround ? 0 : 1, sig: tmSig(ML), su: prog.equip.suit, ba: prog.equip.band }, key = JSON.stringify(body);
+  if (key === team.sent) return; team.sent = key; team.busy = true;
+  const mine = team; tmSend(`/p/${team.me}`, body).catch(() => {}).then(() => { mine.busy = false; });
+}
+// The partner's ninja in my level (owner, Nov 14 2026: "can you see each other?"): a see-through ninja in their own suit
+// and headband colours with their picture over its head. Same layout = exactly where they are; a different layout
+// (other math, other Easy setting) = as far along the level as they are, standing on my ground (in the sea: at
+// swimming depth). It touches nothing: no enemies, gems or gates.
+const tmGhostSpr = {};
+function drawTeamGhost() {
+  if (!team || !team.run || !team.room || !team.room.p || !G || G.idx !== team.lvl || L.vault || L.boss) return;
+  const you = team.room.p[tmYou()] || {}; if (you.px == null || you.done) { team.gh = null; return; }
+  let tx, ty; const h = 44;
+  if (you.sig === tmSig(L)) { tx = you.px; ty = you.py; }
+  else {
+    tx = clamp((you.x || 0) / 100, 0, 1) * L.flagC * T;
+    const c = Math.floor((tx + 12) / T); let top = null;
+    for (let r = GR; r >= 3 && top == null; r--) if (solid(c, r) && !solid(c, r - 1) && !solid(c, r - 2)) top = r * T;   // the ground there (the highest floor from the ground row up)
+    ty = L.water ? L.water - h / 2 : (top == null ? GR * T : top) - h;
+  }
+  const gh = team.gh = team.gh || { x: tx, y: ty, walk: 0 };
+  if (Math.abs(tx - gh.x) > 12 * T) { gh.x = tx; gh.y = ty; }   // far away (a restart, a dolphin ride): just appear there
+  const dx = (tx - gh.x) * 0.18; gh.x += dx; gh.y += (ty - gh.y) * 0.25; gh.walk = Math.abs(dx) > 0.3 ? gh.walk + 1 : 0;
+  if (gh.x < cam - 80 || gh.x > cam + VW + 80) return;
+  const key = (ITEM[you.su] && ITEM[you.su].col ? you.su : 'suit-navy') + '|' + (ITEM[you.ba] && ITEM[you.ba].col ? you.ba : 'band-red') + (L.abyss ? '|d' : '');
+  if (!tmGhostSpr[key]) { const [su, ba] = key.split('|'), pal = { r: ITEM[ba].col[0], R: ITEM[ba].col[1], n: ITEM[su].col[0], N: ITEM[su].col[1] }; tmGhostSpr[key] = L.abyss ? bakeDiver(pal) : bakeNinja(pal); }
+  const frame = you.a && !L.water ? 'jump' : gh.walk && Math.floor(gh.walk / 6) % 2 ? 'walkA' : 'stand', box = { x: Math.round(gh.x), y: Math.round(gh.y), w: 24, h };
+  ctx.globalAlpha = 0.6; drawBaked(tmGhostSpr[key], frame, you.f < 0, box); ctx.globalAlpha = 1;
+  const k = fixIcon(String(you.i || 'kai')); if (!tmIconIm[k]) { playerIcon(k); tmIconIm[k] = new Image(); tmIconIm[k].src = playerIconURL[k]; }   // their picture over the ninja's head
+  if (tmIconIm[k].complete && tmIconIm[k].naturalWidth) { ctx.imageSmoothingEnabled = false; ctx.globalAlpha = 0.9; ctx.drawImage(tmIconIm[k], box.x + 2, box.y - 26 + Math.round(Math.sin(tick * 0.08) * 2), 20, 20); ctx.globalAlpha = 1; }
 }
 function tmRunSync() {   // the partner's news
   const rm = team.room, you = rm.p[tmYou()] || {}, g = you.g || 0;
