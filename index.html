@@ -570,7 +570,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 14, 2026 5:15 PM PT · Team: run a level together (or fight a boss)</div>
+  <div class="build">Updated Nov 14, 2026 5:30 PM PT · Team: run a level together (or fight a boss)</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -12766,7 +12766,7 @@ function tmWin(mine, theirs) {
   setTimeout(() => {
     if (!team || !team.won) return;
     hide('team');
-    showMsg('You won together!', `<div class="bigicon">${bossImg(boss.kind)}</div><p>You and your partner beat the ${boss.name}!</p><div class="statrow"><span>You: ${mine} hits</span><span>Partner: ${theirs} hits</span><span>${pixImg('gem', 'pix sm')} +${gems}</span></div>` + chestHTML() + gearHTML(),
+    showMsg('You won together!', `<div class="bigicon">${bossImg(boss.kind)}</div><p>You and your partner beat ${/^the /i.test(boss.name) ? boss.name : 'the ' + boss.name}!</p><div class="statrow"><span>You: ${mine} hits</span><span>Partner: ${theirs} hits</span><span>${pixImg('gem', 'pix sm')} +${gems}</span></div>` + chestHTML() + gearHTML(),
       [{ label: 'Play again ▶', fn: tmAgain, primary: true }, { label: 'Done', fn: () => { tmClose(true); toMenu(); }, alt: true }]);
   }, 1500);
 }
