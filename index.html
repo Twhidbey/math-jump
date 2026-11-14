@@ -552,7 +552,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 14, 2026 10:30 AM PT · Sea: current tunnel crossing</div>
+  <div class="build">Updated Nov 14, 2026 11:30 AM PT · Sea: currents, kelp, sinking barrels, clownfish, otters, glow jellies</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1471,8 +1471,8 @@ const FRIENDS = [
   { id: 'mei', name: 'Mei', w: 5, k: 1, way: 'ladder', dir: -1, power: 'vanish', pname: 'Ninja vanish', ptip: 'Vanish for 5 seconds. Nothing can hurt you!' },
 ];
 const friendOf = def => (def.boss ? null : FRIENDS.find(f => f.w === def.w && f.k === def.k) || null);
-const FLAVORS = ['sakura', 'grove', 'frogs', 'vents', 'bubbles', 'shrooms', 'steam', 'boxes', 'lab', 'snowmen', 'chimes', 'wind', 'lanterns', 'owls', 'bats'];   // addFlavor
-const TWISTS = ['kite', 'spring', 'koi', 'rocks', 'chase', 'dark', 'gears', 'conveyor', 'lasers', 'ice', 'icicles', 'avalanche', 'walljump', 'ladders', 'sneak'];
+const FLAVORS = ['sakura', 'grove', 'frogs', 'vents', 'bubbles', 'shrooms', 'steam', 'boxes', 'lab', 'snowmen', 'chimes', 'wind', 'lanterns', 'owls', 'bats', 'anemones', 'otters', 'glowjelly'];   // addFlavor (the last three: the sea)
+const TWISTS = ['kite', 'spring', 'koi', 'rocks', 'chase', 'dark', 'gears', 'conveyor', 'lasers', 'ice', 'icicles', 'avalanche', 'walljump', 'ladders', 'sneak', 'drift', 'kelp', 'barrels'];
 // ---------------------------------------------------------------- level builders
 function newMap() { const m = []; for (let r = 0; r < ROWS; r++) m.push([]); return m; }
 
@@ -1766,6 +1766,21 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
       L.leaps.push({ c, told: false, t: 0, seal: 'sit', st: 0 });
       [[-1, WS - 2], [0, WS - 3], [1, WS - 4], [2, WS - 3], [3, WS - 2]].forEach(([dc, r], i) => coin(c + dc, r, i === 2 ? 5 : 1));
     }
+    // The sea's twists (one per level, a few times each): Coral Reef = currents that pull Kai down and lift him up, with
+    // gems on the sea floor between them; Kelp Forest = thick kelp curtains that part as he swims through, gems hidden
+    // inside; Sunken Ship = old barrels sinking from the wreck above (dive on top to crack one for a gem).
+    function seaTwistChunk() {
+      if (L.twist === 'drift') {
+        const s = flat(10);
+        L.fx.push({ k: 'drift', x: (s + 2) * T, w: 1.5 * T, dir: 1 }, { k: 'drift', x: (s + 7) * T, w: 1.5 * T, dir: -1 });
+        for (let c = s + 3; c <= s + 6; c++) coin(c, GR - 1, c === s + 5 ? 5 : 1);
+      } else if (L.twist === 'kelp') {
+        const s = flat(9); L.fx.push({ k: 'curtain', x: (s + 3) * T, w: 3 * T, seed: s });
+        coin(s + 4, WS + 2); coin(s + 5, WS + 4, 5); coin(s + 4, WS + 6);
+      } else if (L.twist === 'barrels') {
+        const s = flat(12); L.fx.push({ k: 'bzone', x: (s + 6) * T, t: 40 });
+      }
+    }
     function clamChunk() {   // a treasure clam on the sea floor: swim down to it for a question; right = it opens, pearls spill out as gems
       const s = flat(8); L.clams.push({ x: (s + 4) * T + T / 2, y: GR * T, used: false, open: 0, state: 'shut', t: 0 });
     }
@@ -1822,6 +1837,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
         const n = easy ? 4 : 5, s0 = flat(6 + n * 3), sq = stepSeq(skill, n);
         L.counts.push({ ...sq, n, k: 0, xs: range(0, n - 1).map(j => (s0 + 3 + j * 3) * T + T / 2), y: L.water + 2 * T, opts: null, pop: [], done: false });
       }
+      if (L.twist && i % 2 === 1 && i !== calm && i !== def.n - 3) seaTwistChunk();
       // The gate: a reef wall from the sea floor up out of the water, with three doors (one answer each) at different depths.
       const s = flat(11), q = L.gen();   // a short run-up: the question shows close to its wall
       for (let r = L.abyss ? 0 : 2; r < GR; r++) { map[r][s + 8] = 'G'; map[r][s + 9] = 'G'; }   // deep sea: up to the top, no way over
@@ -5784,7 +5800,9 @@ function addFlavor(L) {
   L.flavor = L.def.boss ? null : FLAVORS[slotOf(L.def)]; L.fl = []; L.chimeN = 0; L.windT = 0;
   if (!L.flavor) return;
   const rng = mulberry32(777 + L.def.si * 131), map = L.map, end = L.flagC - 14, Y = GR * T;
-  const busy = c => (L.swings || []).some(w => c >= w.s - 2 && c <= w.e + 2) || (L.steps || []).some(z => c >= z.c0 - 6 && c <= z.c0 + z.w + 2) || (L.squads || []).some(q => c >= q.s && c <= q.s + 10) || L.stations.some(st => c >= st.s - 1 && c <= st.gate[1] + 1) || (L.walls || []).some(w => c >= w.s - 1 && c <= w.gate[1] + 1) || L.bridges.some(b => c >= b.signC - 1 && c <= b.c0 + b.w + 1) || L.doors.some(d => Math.abs(c - d.c) <= 2);
+  const busy = c => (L.swings || []).some(w => c >= w.s - 2 && c <= w.e + 2) || (L.steps || []).some(z => c >= z.c0 - 6 && c <= z.c0 + z.w + 2) || (L.squads || []).some(q => c >= q.s && c <= q.s + 10) || L.stations.some(st => c >= st.s - 1 && c <= st.gate[1] + 1) || (L.walls || []).some(w => c >= w.s - 1 && c <= w.gate[1] + 1) || L.bridges.some(b => c >= b.signC - 1 && c <= b.c0 + b.w + 1) || L.doors.some(d => Math.abs(c - d.c) <= 2)
+    || L.water && ((L.currents || []).some(cu => c >= cu.c0 - 2 && c <= cu.c0 + 16) || (L.counts || []).some(ct => c * T >= ct.xs[0] - 3 * T && c * T <= ct.xs[ct.n - 1] + T) || (L.clams || []).some(cl => Math.abs(c * T - cl.x) < 2 * T)
+    || (L.gearChest && Math.abs(c * T - L.gearChest.x) < 3 * T) || (L.ship && c >= L.ship.c - 2 && c <= L.ship.c + L.ship.w + 1) || (L.leaps || []).some(l => c >= l.c - 3 && c <= l.c + 5) || (L.vents || []).some(v => Math.abs(c * T - v.x) < 2 * T) || L.fx.some(f => c * T >= f.x - T && c * T <= f.x + (f.w || T) + T));   // (the sea only: land levels unchanged)
   const clear = (c, h) => { if (c < 1 || c >= L.w - 1 || map[GR][c] !== '#') return false; for (let r = GR - h; r < GR; r++) if (map[r][c] !== '.') return false; return true; };
   const spots = (gap, h, wide = 0) => {
     const out = []; let last = -99;
@@ -5828,6 +5846,12 @@ function addFlavor(L) {
       }
       break;
     }
+    // The sea (one small thing per level): clownfish in anemones on the sea floor (swim down to one: it pops out with
+    // gems), sea otters floating on their backs at the surface (swim up to one: it hands Kai a gem from its shell), and
+    // little glow jellies in the deep that light up when Kai passes and stay lit.
+    case 'anemones': spots(11, 2).filter((c, i) => i % 3 === 0).forEach((c, i) => add({ k: 'anem', x: X(c), col: i % 3, out: 0, done: false })); break;
+    case 'otters': spots(17, 2).filter((c, i) => i % 3 === 1).forEach(c => { if (map[SEA_TOP - 1][c] === '.' && map[SEA_TOP][c] === '.') add({ k: 'otter', x: X(c), t: rng() * 100, done: false, give: 0 }); }); break;
+    case 'glowjelly': spots(7, 2).forEach(c => add({ k: 'gjelly', x: X(c), y: (SEA_TOP + 2 + rng() * 5) * T, ph: rng() * 6, lit: false })); break;
     case 'bats':
       spots(9, 4).forEach(c => add({ k: 'torch', x: X(c) }));
       spots(14, 7).forEach(c => [-14, 0, 14].forEach((d, i) => add({ k: 'bat', x: X(c) + d, y: Y - 5.2 * T + (i % 2) * 8, fly: false, vx: 0, vy: 0, t: i * 20 })));
@@ -5838,6 +5862,15 @@ function updateFlavor() {
   if (!L.flavor || !L.fl) return;
   const p = P, cx = p.x + p.w / 2, feet = p.y + p.h, Y = GR * T, near = (x, d) => Math.abs(cx - x) < d && Math.abs(x - cam - VW / 2) < VW;
   for (const f of L.fl) {
+    if (f.k === 'anem') {
+      if (f.out > 0 && f.out < 90) f.out++;
+      if (!f.done && Math.abs(cx - f.x) < 34 && feet > Y - 1.6 * T) { f.done = true; f.out = 1; payGems(f.x, Y - 50, 2); floatText(f.x, Y - 70, 'Hi!', '#ff9f43', 22); [784, 988].forEach((h, i) => tone(h, 0.12, 'triangle', 0.03, null, i * 0.08)); }
+    }
+    if (f.k === 'otter') {
+      f.t++; if (f.give > 0) f.give--;
+      if (!f.done && Math.abs(cx - f.x) < 40 && Math.abs(p.y + p.h / 2 - L.water) < 50) { f.done = true; f.give = 70; payGems(f.x, L.water - 20, 3); floatText(f.x, L.water - 50, 'Here you go!', '#ffd23f', 22); tone(520, 0.08, 'square', 0.03); tone(520, 0.08, 'square', 0.03, null, 0.12); }
+    }
+    if (f.k === 'gjelly' && !f.lit && Math.abs(cx - f.x) < 70 && Math.abs(p.y + p.h / 2 - f.y) < 90) { f.lit = true; tone(1200 + Math.random() * 400, 0.25, 'sine', 0.025, 1800); }
     if (f.k === 'tree' && !f.shook && Math.abs(cx - f.x) < 22 && feet > Y - 4 * T) {   // run into the trunk: a shower of petals and a few gems
       f.shook = true; tone(660, 0.2, 'triangle', 0.04, 990);
       for (let i = 0; i < 24; i++) G.parts.push({ k: 'bit', x: f.x + (Math.random() - 0.5) * 110, y: Y - 3.6 * T + Math.random() * 40, vx: (Math.random() - 0.5) * 2, vy: -1 - Math.random() * 2, life: 60, col: ['#ffc1dc', '#ff9cc4', '#fff'][R(0, 2)], s: 5 });
@@ -5989,10 +6022,37 @@ function drawStalk(f, col, dark) {
   }
 }
 // World space, after the tiles, behind Kai.
+function drawSeaFlavor(f, Y) {
+  const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), w, h); };
+  if (f.k === 'anem') {   // waving anemone tentacles (pixel blocks) and a clownfish
+    const cols = [['#ff7ab0', '#c94a86'], ['#b98aff', '#7a54c9'], ['#7fe0c0', '#3aa88a']][f.col];
+    px(f.x - 18, Y - 8, 36, 8, cols[1]);
+    for (let j = 0; j < 7; j++) { const bx = f.x - 18 + j * 6, sw = Math.sin(tick * 0.06 + j) * 3; for (let k = 1; k <= 4; k++) px(bx + sw * k / 4, Y - 8 - k * 6, 5, 6, k === 4 ? cols[0] : j % 2 ? cols[0] : cols[1]); }
+    const u = f.out, fx = u ? f.x + Math.cos(u * 0.12) * 26 * Math.min(1, u / 20) : f.x + Math.sin(tick * 0.05) * 6, fy = u ? Y - 40 - Math.sin(u * 0.12) * 14 * Math.min(1, u / 20) : Y - 22;
+    if (u || Math.sin(tick * 0.03 + f.x) > 0.3) {   // peeks out now and then; swims a happy circle once found
+      const d = u ? (Math.sin(u * 0.12) > 0 ? -1 : 1) : 1;
+      px(fx - 9, fy - 5, 18, 10, '#ff8c1a'); px(fx - 3, fy - 5, 4, 10, '#ffffff'); px(fx + d * 5 - 2, fy - 5, 3, 10, '#ffffff'); px(fx - d * 12 - 2, fy - 4, 5, 8, '#ff8c1a'); px(fx + d * 6 - 1, fy - 2, 2, 3, '#1a1426');
+    }
+  } else if (f.k === 'otter') {   // floating on its back, a shell on its tummy, paws tapping
+    const y = L.water - 4 + Math.sin(f.t * 0.05) * 2, x = f.x;
+    px(x - 22, y - 6, 44, 12, '#7a4a2a'); px(x - 20, y - 8, 36, 4, '#8b5a3a');   // body
+    px(x + 16, y - 12, 14, 12, '#7a4a2a'); px(x + 18, y - 10, 10, 8, '#e8d0b0'); px(x + 22, y - 9, 2, 2, '#1a1426'); px(x + 26, y - 7, 3, 2, '#1a1426');   // head, face, eye, nose
+    px(x - 30, y - 4, 10, 5, '#5a3a20');   // tail
+    const tap = f.give > 0 ? 0 : Math.floor(f.t / 12) % 2 * 3;
+    px(x - 4, y - 14, 10, 6, f.done && f.give === 0 ? '#e8d0b0' : '#f4e4b8'); px(x - 2, y - 16 - tap, 4, 4, '#5a3a20'); px(x + 4, y - 16 - (3 - tap), 4, 4, '#5a3a20');   // shell and paws
+    if (f.give > 0) { const k = 1 - f.give / 70; px(x - 4 + k * 10, y - 20 - k * 20, 6, 6, '#7df9ff'); }
+  } else if (f.k === 'gjelly') {   // a little glowing jellyfish
+    const y = f.y + Math.sin(tick * 0.03 + f.ph) * 8, x = f.x, c = f.lit ? '#ffe08a' : '#7a8ab8';
+    if (f.lit) glowAt(x, y, 34, 'rgba(255,230,140,.35)');
+    px(x - 10, y - 8, 20, 4, c); px(x - 12, y - 4, 24, 6, c); px(x - 8, y - 11, 16, 3, c);
+    for (let j = 0; j < 4; j++) px(x - 9 + j * 6, y + 2 + (Math.floor(tick / 10 + j) % 2) * 2, 2, 10, c);
+  }
+}
 function drawFlavor() {
   const Y = GR * T, vis = x => x > cam - 80 && x < cam + VW + 80;
   for (const f of L.fl) {
     if (!vis(f.x)) continue;
+    if (f.k === 'anem' || f.k === 'otter' || f.k === 'gjelly') { drawSeaFlavor(f, Y); continue; }
     if (f.k === 'frog') {
       const sq = f.air ? -3 : Math.max(0, Math.sin(tick * 0.08 + f.x)) * 2;
       ctx.fillStyle = '#3fae49'; ctx.beginPath(); ctx.ellipse(f.x, f.y - 9 + sq / 2, 13, 9 - sq / 2, 0, 0, 7); ctx.fill();
@@ -6066,18 +6126,84 @@ const TWIST_HINT = {
   gears: 'Ride the spinning gears', conveyor: 'Conveyor belts and crushers!', lasers: 'Lasers blink on and off. Time your run!',
   ice: 'Slippery ice! Slide carefully', icicles: 'Icicles fall when you run under them!', avalanche: 'Giant snowballs! Jump over them',
   walljump: 'Wall jump: jump again while touching a wall', ladders: 'Hold jump to climb ladders', sneak: 'Sneak past the guards. Hide in barrels!',
+  drift: 'Currents pull you down and lift you up. Ride them to gems!', kelp: 'Swim through the thick kelp. Gems hide inside!', barrels: 'Barrels sink from the ship! Dive on top to crack them',
 };
 // the pixel icon in front of each hint (pix name, optional recolour)
 const TWIST_PIX = {
   kite: ['kite'], spring: ['bamboo'], koi: ['fish'], rocks: ['rock'], chase: ['volcano'], dark: ['gem', { c: '#c9a8ff', b: '#6a3fb5' }],
   gears: ['gear'], conveyor: ['crate'], lasers: ['bolt'], ice: ['flake'], icicles: ['icicle'], avalanche: ['snowball'],
-  walljump: ['bricks'], ladders: ['ladder'], sneak: ['barrel'],
+  walljump: ['bricks'], ladders: ['ladder'], sneak: ['barrel'], drift: ['fish'], kelp: ['bamboo'], barrels: ['barrel'],
 };
 // no rolling snowballs while the ninja is working out a gate
 function currentStationNear() { const cs = currentStation(); return cs && cs.s && Math.abs(P.x - (cs.s + 6) * T) < 9 * T; }
 function groundTop(c) { for (let r = 0; r < ROWS; r++) if (solid(c, r)) return r * T; return null; }
+const SEA_TWISTS = ['drift', 'kelp', 'barrels'];
+function seaTwistTick(p) {
+  const cx = p.x + p.w / 2;
+  for (const f of L.fx) {
+    if (f.k === 'drift' && cx > f.x - 6 && cx < f.x + f.w + 6 && p.y + p.h > L.water - 10) {   // the current pulls down (dir 1) or lifts up (dir -1)
+      p.vy = clamp(p.vy + f.dir * 0.55, -4.6, 4.2);
+      if (!f.told && f.dir > 0) { f.told = true; tone(260, 0.3, 'sine', 0.03, 130); }
+    }
+    if (f.k === 'curtain') { const inside = cx > f.x - 10 && cx < f.x + f.w + 10; f.part = clamp((f.part || 0) + (inside ? 0.08 : -0.03), 0, 1); f.kx = cx; f.ky = p.y + p.h / 2; }
+    if (f.k === 'bzone') {   // barrels sink from the wreck above while Kai is near
+      if (Math.abs(cx - f.x) < 7 * T && --f.t <= 0) {
+        f.t = 120; L.fx.push({ k: 'sinker', x: f.x + (Math.random() - 0.5) * 3 * T, y: -40, vy: 1.4, rest: 0, ph: Math.random() * 6 });
+        tone(110, 0.3, 'triangle', 0.02, 80);
+      }
+    }
+    if (f.k === 'sinker' && !f.gone) {
+      const bx = f.x + Math.sin(tick * 0.04 + f.ph) * 6;
+      if (f.rest > 0) { if (++f.rest > 140) f.gone = true; }
+      else { f.y += f.vy; const r = Math.floor((f.y + 34) / T); if (solid(Math.floor(bx / T), r)) { f.y = r * T - 34; f.rest = 1; burst(bx, f.y + 34, '#9a8f7a', 6, 2); } }
+      if (overlap(p, { x: bx - 15, y: f.y, w: 30, h: 34 })) {
+        if (p.vy > 0.3 && p.y + p.h < f.y + 16) {   // dived on top: it cracks open
+          f.gone = true; p.vy = -3; sfx.brick(); burst(bx, f.y + 17, '#8b5a2b', 12, 4); floatText(bx, f.y - 10, 'Crack!', '#ffd23f', 22); payGems(bx, f.y, 1);
+        } else hurt();
+      }
+    }
+  }
+  L.fx = L.fx.filter(f => !(f.k === 'sinker' && f.gone));
+}
+function drawSeaTwist(front) {
+  for (const f of L.fx) {
+    if (f.x < cam - 3 * T || f.x > cam + VW + 3 * T) continue;
+    if (f.k === 'drift' && !front) {   // a column of bubbles and chevrons
+      const top = L.water + 4, bot = GR * T;
+      ctx.fillStyle = 'rgba(220,250,255,.10)'; ctx.fillRect(Math.round(f.x), top, f.w, bot - top);
+      for (let i = 0; i < 7; i++) {
+        const y = top + (((tick * 1.6 * f.dir + i * 52) % (bot - top)) + (bot - top)) % (bot - top), x = Math.round(f.x + f.w / 2);
+        ctx.fillStyle = 'rgba(240,252,255,.7)';
+        if (f.dir > 0) { ctx.fillRect(x - 10, y, 6, 6); ctx.fillRect(x - 4, y + 6, 8, 6); ctx.fillRect(x + 4, y, 6, 6); }   // ▼
+        else { ctx.fillRect(x - 10, y + 6, 6, 6); ctx.fillRect(x - 4, y, 8, 6); ctx.fillRect(x + 4, y + 6, 6, 6); }   // ▲
+      }
+    }
+    if (f.k === 'curtain' && front) {   // thick kelp in front of Kai; the strands near him bend aside
+      const top = L.water + 6, bot = GR * T;
+      for (let j = 0; j < 9; j++) {
+        const bx = f.x + j * f.w / 8, dx = bx - (f.kx ?? -999), push = (f.part || 0) * Math.sign(dx || 1) * Math.max(0, 40 - Math.abs(dx)) * 0.9;
+        for (let y = top; y < bot; y += 12) {
+          const near = Math.max(0, 1 - Math.abs(y - (f.ky ?? 0)) / 90), sx = Math.round(bx + Math.sin(tick * 0.04 + y * 0.03 + j) * 4 + push * near);
+          ctx.fillStyle = j % 2 ? '#2f8a3a' : '#3fae49'; ctx.fillRect(sx, y, 8, 12);
+          if ((y / 12 + j) % 3 === 0) { ctx.fillStyle = '#5fc85a'; ctx.fillRect(sx + 8, y + 2, 6, 5); }
+        }
+      }
+    }
+    if (f.k === 'sinker' && front) {   // an old barrel (pixel blocks)
+      const bx = Math.round(f.x + Math.sin(tick * 0.04 + f.ph) * 6 - 15), by = Math.round(f.y), a = f.rest > 100 ? (140 - f.rest) / 40 : 1;
+      ctx.globalAlpha = a;
+      ctx.fillStyle = '#1a1210'; ctx.fillRect(bx + 2, by, 26, 34); ctx.fillRect(bx, by + 3, 30, 28);
+      ctx.fillStyle = '#8b5a2b'; ctx.fillRect(bx + 4, by + 2, 22, 30); ctx.fillRect(bx + 2, by + 5, 26, 24);
+      ctx.fillStyle = '#a8743f'; ctx.fillRect(bx + 8, by + 4, 4, 26);
+      ctx.fillStyle = '#4a4a52'; ctx.fillRect(bx + 2, by + 8, 26, 3); ctx.fillRect(bx + 2, by + 23, 26, 3);
+      ctx.globalAlpha = 1;
+      if (f.rest === 0 && tick % 20 === 0) G.parts.push({ k: 'bit', x: bx + 15, y: by - 4, vx: 0, vy: -1.2, up: true, life: 30, col: 'rgba(225,245,255,.8)', s: 3 });
+    }
+  }
+}
 function updateTwist() {
   const p = P, tw = L.twist; if (!tw) return;
+  if (SEA_TWISTS.includes(tw)) { seaTwistTick(p); return; }
   if (G.glide > 0) G.glide--;
   // moving platforms
   for (const pl of L.plats) {
@@ -7787,6 +7913,8 @@ function drawSeaDark() {
   for (const fd of L.squads || []) if (!fd.done) { hole(fd.ax, GR * T - 30, 80); for (const f of fd.foods) hole(f.x, f.y, 50); }   // the hungry animal and its food
   for (const ct of L.counts || []) if (!ct.done) ct.xs.forEach(x => hole(x, ct.y, 50));   // the counting bubbles
   for (const cu of L.currents || []) if (!cu.done) hole(curStart(cu, cu.k) + 2 * T, cu.y, 110);   // the current tunnel's mouth
+  for (const f of L.fx || []) if (f.k === 'sinker') hole(f.x, f.y + 17, 60);   // sinking barrels (so Kai can see them coming)
+  for (const f of L.fl || []) if (f.k === 'gjelly') hole(f.x, f.y, f.lit ? 90 : 40);   // glow jellies (stay lit once Kai has passed)
   if (L.ship) { const sg = shipGeo(L.ship); for (const [px, py] of sg.ports) hole(px, py, 56); hole(sg.hx, sg.b - 40, L.friend && !L.friend.done ? 110 : 70); hole(sg.x0 + sg.w - 70, sg.top(sg.x0 + sg.w - 70) - 30, 70); }   // portholes, the hole (brighter while Nami waits), the back deck windows
   if (G.mbox) G.mbox.bubbles.forEach(b => hole(b.x, b.y, 40));
   if (L.abyss) { const sp = scrollSpot(); hole(sp.x, sp.y, 110); hole(L.castleC * T + 2.5 * T, GR * T - 1.6 * T, 140); }   // the scroll and the diving bell's lit windows
@@ -8230,6 +8358,7 @@ function block(x, y, fill, dark, light) {
 
 // ---------------------------------------------------------------- level twist art
 function drawTwist() {
+  if (SEA_TWISTS.includes(L.twist)) { drawSeaTwist(false); return; }
   for (const pl of L.plats) {
     if (pl.y > VH + 50) continue;
     if (pl.k === 'lily') {
@@ -8317,6 +8446,7 @@ function drawTwist() {
   }
 }
 function drawTwistFront() {
+  if (SEA_TWISTS.includes(L.twist)) { drawSeaTwist(true); return; }
   for (const f of L.fx) if (f.k === 'barrel') {
     const x = f.x - 18, y = GR * T - 44;
     ctx.fillStyle = '#6b4a2e'; rrect(x, y, 36, 44, 8); ctx.fill(); ctx.fillStyle = '#3a2614'; ctx.fillRect(x, y + 10, 36, 4); ctx.fillRect(x, y + 30, 36, 4);
