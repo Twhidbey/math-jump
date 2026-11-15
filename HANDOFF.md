@@ -55,3 +55,15 @@ Each gets a secret room in a level that has none yet (3 math walls + chest) and 
 - **Legend suit power** (owner): wearing the 15,000-gem Legend suit, Kai can jump once more in the air (double jump), with a gold burst. The shop shows "Power: Double jump". Other shop items are still looks only.
 - **Team: Share items** (owner): Team → Start a game → Share items. Each kid sees what they bought in the shop and can give a piece to their partner (tap Give, then tap again to be sure). It leaves the giver's shop and appears in the partner's. Badge prizes and Gear Pack pieces can't be given. Tested both ways with two browser windows.
 - **Legend suit button** (owner: make it super obvious): a gold button with Kai in the suit sits just above the jump button (L on a keyboard) whenever the Legend suit is worn. It glows when a jump is ready; tap it in the air for the Legend jump. Jumping twice still works too.
+
+## Built Nov 15 (late): Red Rock Desert, NOT LIVE YET
+
+**The owner wants to try it before it is published** ("let's not push it till i have a chance to check it out myself"). It is committed on the session branch only; `main` (the live game) does not have it. Do not push it to `main` until the owner says so.
+
+- **World 6: Red Rock Desert** (before the Night Castle, which is now world 7): Arch Canyon, Hoodoo Trail, Slot Canyon, boss The Red Scorpion. Details in `docs/levels.md` and `docs/bosses.md`.
+- Twists: crumbling ledges, a dust devil that lifts Kai, quicksand (slow, never hurts). Small extras: arches to run under, cactus flowers, sunbeams.
+- Boss story (my draft, owner has not reviewed the words): "The Scorpion stings everyone. Forgive him anyway." Ending: Kai "I forgive you." Scroll name "Scroll of Remembering" (the desert has no math kind of its own: it practises whatever is furthest behind).
+- Gear: the Lasso, on Hoodoo Trail. Three new dojo moves: Elbow Strike, Axe Kick, Tornado Kick.
+- Old saves move over by themselves (castle progress shifts up one world).
+- **Not built: a lost friend for the desert** (who, what power, how hidden: ask the owner).
+- Open for the owner: boss name and story words, scroll name, level names.

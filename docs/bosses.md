@@ -6,6 +6,10 @@ Part of the code notes; `CLAUDE.md` has the index. Search `index.html` for the n
 
 `buildArena`, `BOSS_SPR`, `BOSS_SPECS`, `bossAttack`, `updateArena`, `spawnOrbs`, `runOutro`. **Entrance** (owner approved, Nov 11 2026; replaced the boss card): `startBossIn` (from `startStage`) → `G.bossIn`, `bossInTick` (in `update`, nothing else moves), `bossInPlace` per `BOSS_ENTRY` (drop with a THUD: golem/bot/yeti; rise: octo; leap: shogun; smoke: kage), `drawBossIn` (from `drawHUD`, which skips its banner meanwhile): letterbox, name slam + gong at `BOSS_SLAM`, taunt, FIGHT! + "Dodge! Then grab the right answer." at `BOSS_FIGHT`; Kai in guard (`kaiPose`); jump / a tap skips
 
+## The Red Scorpion (desert boss, Nov 15 2026)
+
+`BOSS_SPECS.scorpion` (attack `sand`: a lobbed sand ball `sand`, then a rolling tumbleweed `weed` to jump), sprite in `BOSS_SPR`, entrance `dig` (comes up out of the sand), pause line "Tail in a knot!". Ending in `runOutro`: forgiveness (Kai "I forgive you." / "But... I stung you!" / "Then I will put my stinger down." ♥); he takes the held-out hand. Story pictures `SCENES.desert` / `SCENES.scorpion` (`desertScene`), card in `BOSS_CARD`.
+
 ## Victory moves (owner approved, Nov 11 2026)
 
 `startVictory` from `updateWin` (level: after the scroll is caught, winT 40; boss: winT 30) → `G.victory`, `victoryTick`, `victoryPose` (`VIC_SEGS`, strike at `VIC_STRIKE` with burst + move name): a random learned dojo move (not Bow) or Hana's high kick, else `VICTORY_JUMP` (fist in the air); the diver just says Hooray. Kai walks home after `VIC_LEN`

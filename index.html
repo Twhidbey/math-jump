@@ -591,7 +591,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 15, 2026 8:40 PM PT · Legend suit: its own gold button</div>
+  <div class="build">Updated Nov 15, 2026 10:45 PM PT · New world: Red Rock Desert</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1513,8 +1513,8 @@ function drawWalls() {
 const ANIMALS = [['rabbit', 'carrot'], ['panda', 'bamboo'], ['duck', 'bread'], ['salamander', 'bug'], ['lizard', 'chili'], ['mole', 'mushroom'],
   ['robodog', 'bolt'], ['robocat', 'battery'], ['drone', 'spark'], ['penguin', 'fish'], ['seal', 'fish'], ['fox', 'berries'],
   ['cat', 'riceball'], ['moonrabbit', 'dango'], ['raccoon', 'apple'],
-  ['turtle', 'jelly'], ['otter', 'clam'], ['seahorse', 'shrimp'],
-  ['roadrunner', 'bug'], ['tortoise', 'pear'], ['coyote', 'bone']];   // the desert (slots 18–20): Arch Canyon, Hoodoo Trail, Slot Canyon  //   // the sea (slots 15–17): Coral Reef, Kelp Forest, Sunken Ship
+  ['turtle', 'jelly'], ['otter', 'clam'], ['seahorse', 'shrimp'],   // the sea (slots 15–17): Coral Reef, Kelp Forest, Sunken Ship
+  ['roadrunner', 'bug'], ['tortoise', 'pear'], ['coyote', 'bone']];   // the desert (slots 18–20): Arch Canyon, Hoodoo Trail, Slot Canyon
 // One short story per level at the hungry animal (shown to readers, 2nd grade and up): same numbers, same answer,
 // so choosing the operation is practised without touching the Fact Book. Think skills and missing numbers stay plain.
 const WORD_ANIMAL = { coyote: 'coyote pup', robodog: 'robot dog', robocat: 'robot cat', moonrabbit: 'moon rabbit', turtle: 'sea turtle', otter: 'sea otter' };
@@ -1617,6 +1617,9 @@ const GEAR = {
     rows: ['kkk..', 'kgk..', 'kgGgk', 'kGGGk', 'kkkkk', '.y.y.', 'y.y..', '.y.y.'] },
   gloves: { name: 'Magnet Gloves', slot: 'hand', power: 'Gem Magnet', w: 2, k: 0, gx: 11, gy: 9, pal: { r: '#e63946', R: '#a91d2b', s: '#c9d2de' },
     rows: ['kkk.', 'krRk', 'krsk', '.kkk'] },
+  // The desert's piece (Hoodoo Trail): a rope that reaches far ahead.
+  lasso: { name: 'Lasso', slot: 'hand', power: 'Lasso', w: 5, k: 1, gx: 11, gy: 8, pal: { q: '#c9a063', Q: '#8a6a3a' },
+    rows: ['.kkk.', 'kqqqk', 'kq.Qk', 'kqQQk', '.kkk.'] },
 };
 const GEAR_SLOTS = ['head', 'back', 'hand', 'feet'];
 // Three pieces have a power (owner, Nov 2026), only one of them worn at a time; none needs a button: the Jetpack flies
@@ -1636,7 +1639,7 @@ const JET_FUEL = 100;   // frames of flight per jump (owner, Nov 14 2026: was 60
 // Dash now. Samurai Helmet: Ground Pound (in the air; from the ground he hops first). Viking Helmet: Horn Charge.
 // Trident: Water Blast (in the sea with ▼ held: a fountain that shoots him up). Paper Lantern: a flash that lights the
 // whole dark level for a few seconds and dazzles enemies nearby. Not in bosses, rooms, rescues or crossings.
-const GEAR_CHARGE = { cape: 600, helmet: 150, viking: 300, trident: 120, lantern: 600, boomerang: 150, boots: 90, gloves: 600 };
+const GEAR_CHARGE = { cape: 600, helmet: 150, viking: 300, trident: 120, lantern: 600, boomerang: 150, boots: 90, gloves: 600, lasso: 150 };
 const FLARE_T = 300;
 function gearPow() {
   const eq = prog.gear || {};
@@ -1711,6 +1714,11 @@ function gearPowTick(p) {
     G.gearCool = GEAR_CHARGE.boomerang; const f = p.face || 1;
     (G.gfx = G.gfx || []).push({ k: 'boom', x: cx + f * 14, y: p.y + 14, vx: f * 11, vy: -2.2, t: 0, life: 200, back: false });
     floatText(cx, p.y - 30, 'Boomerang!', '#ffd23f', 24); tone(500, 0.3, 'triangle', 0.03, 900);
+  } else if (id === 'lasso') {   // a rope loop flies far ahead: it brings gems back, pops ? boxes and ties up enemies
+    if ((G.gfx || []).some(f => f.k === 'lasso')) return;
+    G.gearCool = GEAR_CHARGE.lasso; const f = p.face || 1;
+    (G.gfx = G.gfx || []).push({ k: 'lasso', x: cx + f * 14, y: p.y + 10, vx: f * 13, vy: -1.6, t: 0, life: 220, back: false, hit: {} });
+    floatText(cx, p.y - 30, 'Yee-haw!', '#ffd23f', 24); tone(300, 0.3, 'triangle', 0.03, 800);
   } else if (id === 'boots') {   // a super bounce: twice as high as a jump
     if (inWater(p)) { floatText(cx, p.y - 30, 'Too wet to bounce!', '#9be7ff', 20); return; }
     if (noFlyHere(p)) { floatText(cx, p.y - 30, 'No bouncing here!', '#ffb627', 20); return; }
@@ -1749,11 +1757,22 @@ function boomTick(f) {   // the Golden Boomerang: out in a curve, then home to K
   for (const c of L.coins) if (!c.taken && !c.gold && Math.abs(c.x - f.x) < 26 && Math.abs(c.y - f.y) < 26) { c.taken = true; G.coins += c.v; G.score += 100 * c.v; gemSound(); flyGem(c.x, c.y, c.v); }
   for (const e of L.enemies) if (!e.dead && Math.abs(e.x + e.w / 2 - f.x) < e.w / 2 + 12 && Math.abs(e.y + e.h / 2 - f.y) < e.h / 2 + 12) knockOut(e, 'BONK!');
 }
+function lassoTick(f) {   // the Lasso: far out (about 9 tiles), then the rope pulls the loop home
+  const hx = P.x + P.w / 2, hy = P.y + 16;
+  if (!f.back) { f.vx *= 0.97; f.vy += 0.04; f.x += f.vx; f.y += f.vy; if (f.t > 34) f.back = true; }
+  else { const dx = hx - f.x, dy = hy - f.y, d = Math.hypot(dx, dy) || 1, v = Math.min(14, 5 + f.t * 0.08); f.x += dx / d * Math.min(v, d); f.y += dy / d * Math.min(v, d); if (d < 20) { f.done = true; tone(700, 0.08, 'triangle', 0.03); } }
+  for (const c of L.coins) if (!c.taken && !c.gold && Math.abs(c.x - f.x) < 40 && Math.abs(c.y - f.y) < 44) { c.taken = true; G.coins += c.v; G.score += 100 * c.v; gemSound(); flyGem(c.x, c.y, c.v); }
+  for (const e of L.enemies) if (!e.dead && Math.abs(e.x + e.w / 2 - f.x) < e.w / 2 + 16 && Math.abs(e.y + e.h / 2 - f.y) < e.h / 2 + 16) knockOut(e, 'Got you!');
+  const c = Math.floor(f.x / T), r = Math.floor(f.y / T), key = c + ',' + r;
+  if (L.map[r] && L.map[r][c] === '?' && !f.hit[key] && !(L.mboxes && L.mboxes.has(key))) { f.hit[key] = 1; bump(c, r); }
+  if (!f.back && L.map[r] && L.map[r][c] && L.map[r][c] !== '.' && solid(c, r)) f.back = true;   // it can't go through walls
+}
 function gearFxTick() {   // the trident's water jet flies and hits things
   if (!G.gfx) return;
   for (const f of G.gfx) {
     f.t++;
     if (f.k === 'boom' && !f.done) { boomTick(f); continue; }
+    if (f.k === 'lasso' && !f.done) { lassoTick(f); continue; }
     if (f.k !== 'jet' || f.done) continue;
     f.x += f.vx; f.y += f.vy;
     for (const e of L.enemies) if (!e.dead && Math.abs(e.x + e.w / 2 - f.x) < e.w / 2 + 10 && Math.abs(e.y + e.h / 2 - f.y) < e.h / 2 + 10) { knockOut(e, 'SPLASH!'); f.done = true; }
@@ -1764,7 +1783,7 @@ function gearFxTick() {   // the trident's water jet flies and hits things
       f.done = true; burst(f.x, f.y, '#bfefff', 10, 3);
     }
   }
-  G.gfx = G.gfx.filter(f => f.t < f.life && !((f.k === 'jet' || f.k === 'boom') && f.done));
+  G.gfx = G.gfx.filter(f => f.t < f.life && !((f.k === 'jet' || f.k === 'boom' || f.k === 'lasso') && f.done));
 }
 function drawGearFx() {
   if (G.magT > 0) {   // the Magnet Gloves: red and silver rings pulling in
@@ -1781,6 +1800,13 @@ function drawGearFx() {
       const cv = gearImg('boomerang', 4), q = Math.floor(f.t / 3) % 4;
       ctx.save(); ctx.translate(Math.round(f.x), Math.round(f.y)); ctx.rotate(q * Math.PI / 2); ctx.drawImage(cv, -Math.round(cv.width / 2), -Math.round(cv.height / 2)); ctx.restore();
       if (f.t % 3 === 0 && G) G.parts.push({ k: 'bit', x: f.x, y: f.y, vx: 0, vy: 0, life: 12, col: '#ffd23f', s: 3 });
+    } else if (f.k === 'lasso') {   // the rope from Kai's hand to a spinning loop
+      const hx = P.x + P.w / 2 + (P.face || 1) * 10, hy = P.y + 18;
+      ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(hx, hy); ctx.quadraticCurveTo((hx + f.x) / 2, Math.max(hy, f.y) + 14, f.x, f.y); ctx.stroke();
+      ctx.strokeStyle = '#c9a063'; ctx.lineWidth = 2; ctx.stroke();
+      const sq = 0.45 + 0.4 * Math.abs(Math.sin(f.t * 0.3));
+      ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 6; ctx.beginPath(); ctx.ellipse(f.x, f.y, 20, 20 * sq, 0, 0, 7); ctx.stroke();
+      ctx.strokeStyle = '#e8c88a'; ctx.lineWidth = 3; ctx.stroke();
     } else if (f.k === 'jet') {   // a stream of water from the trident
       const n = Math.min(f.t, 8), dx = f.vx ? -Math.sign(f.vx) : 0, dy = f.vy ? -Math.sign(f.vy) : 0;
       for (let i = 0; i < n; i++) {
@@ -3749,7 +3775,7 @@ const BADGES = [
   { id: 'boss-all', pix: 'scroll', sec: 'adv', name: 'Scroll Keeper', text: 'Win back all seven scrolls.' },
   { id: 'race-win', pix: 'trophy', sec: 'adv', name: 'Champion Rider', text: 'Win a race.' },
   { id: 'race-perfect', pix: 'horse', sec: 'adv', name: 'Perfect Ride', text: 'Get every gate right in a race.' },
-  { id: 'roads', pix: 'race', sec: 'adv', name: 'Every Road', text: 'Win a race on every track.', prog: () => [nKeys(prog.stats.roads), 5], gems: 50 },
+  { id: 'roads', pix: 'race', sec: 'adv', name: 'Every Road', text: 'Win a race on every track.', prog: () => [nKeys(prog.stats.roads), 6], gems: 50 },
   { id: 'shopper', pix: 'bag', sec: 'adv', name: 'Shopper', text: 'Buy something in the Dojo Shop.' },
   { id: 'gems500', pix: 'gem', sec: 'adv', name: 'Gem Collector', text: 'Collect 500 gems in total.', prog: () => [statOf('gems'), 500] },
   { id: 'black-belt', pix: 'belt', swap: { b: '#26262e' }, sec: 'adv', name: 'Black Belt', text: 'Reach the Black Belt rank.' },
@@ -7800,6 +7826,14 @@ function raceScenery(r, W, hz) {
     ctx.fillStyle = 'rgba(255,255,255,.7)'; for (let k = 0; k < 24; k++) ctx.fillRect((hash(k) * W * 1.4 - off(30) * 0.3 + W * 2) % W, hz - 22 + hash(k + 4) * 18, 10, 2);
     blob(W * 0.25, hz * 0.32, 30, '#fff6c8');
     for (let k = -1; k <= 1; k++) { const x = W * 0.7 + k * W * 1.5 - off(200); poly([[x - 120, hz - 22], [x - 40, hz - 70], [x + 30, hz - 80], [x + 120, hz - 22]], '#5a9a7a'); }
+  } else if (r.track === 'desert') {   // flat-topped buttes on the horizon, a low sun
+    blob(W * 0.25, hz * 0.34, 30, '#fff6c8');
+    for (let k = -1; k <= 1; k++) {
+      const x = W * 0.55 + k * W * 1.5 - off(300);
+      ctx.fillStyle = '#d9a08a'; ctx.fillRect(x - 330, hz - 120, 200, 120); ctx.fillStyle = '#e6b49a'; ctx.fillRect(x - 330, hz - 120, 200, 8);
+      poly([[x - 150, hz], [x - 90, hz - 70], [x + 90, hz - 70], [x + 150, hz]], '#c2562c');
+      ctx.fillStyle = '#c2562c'; ctx.fillRect(x - 80, hz - 160, 160, 92); ctx.fillStyle = '#e0844a'; ctx.fillRect(x - 80, hz - 160, 160, 10); ctx.fillStyle = '#f2c48a'; ctx.fillRect(x - 80, hz - 124, 160, 8);
+    }
   } else if (r.track === 'snow') {
     for (let k = -1; k <= 1; k++) {
       const x = W * 0.5 + k * W * 1.5 - off(300);
@@ -7865,6 +7899,19 @@ function roadside(p, sxOf, side, tree, track, i) {
       ctx.fillRect(x - side * 160 * u - (side > 0 ? 0 : 0), y - 900 * u, side * 160 * u, 24 * u);
       glowAt(x - side * 150 * u, y - 860 * u, 300 * u, 'rgba(255,220,120,.6)');
       blob(x - side * 150 * u, y - 870 * u, 30 * u, '#fff3c4');
+    }
+    return;
+  }
+  if (track === 'desert') {
+    const x = sxOf(p, side * ROAD_W * 1.7);
+    if (tree) {   // a tall cactus
+      ctx.fillStyle = '#5f9a4a'; ctx.fillRect(x - 50 * u, y - 620 * u, 100 * u, 620 * u);
+      ctx.fillRect(x - 190 * u, y - 380 * u, 150 * u, 60 * u); ctx.fillRect(x - 190 * u, y - 520 * u, 60 * u, 200 * u);
+      ctx.fillRect(x + 40 * u, y - 300 * u, 150 * u, 60 * u); ctx.fillRect(x + 130 * u, y - 470 * u, 60 * u, 230 * u);
+      ctx.fillStyle = '#ff8ab0'; ctx.fillRect(x - 30 * u, y - 660 * u, 60 * u, 44 * u);
+    } else {      // a red rock
+      poly([[x - 260 * u, y], [x - 170 * u, y - 210 * u], [x + 30 * u, y - 290 * u], [x + 220 * u, y - 140 * u], [x + 280 * u, y]], '#b5512a');
+      poly([[x - 170 * u, y - 210 * u], [x + 30 * u, y - 290 * u], [x + 70 * u, y - 170 * u], [x - 120 * u, y - 120 * u]], '#e0844a');
     }
     return;
   }
@@ -10958,7 +11005,7 @@ function drawGearOn(p, frame, layer, diver) {
   if (layer === 'front') {
     if (eq.head && !diver) gearPix(ctx, eq.head, ox, oy, PX, flip);   // (the diving helmet covers his head in the deep sea)
     if (eq.feet === 'boots' && !diver) bootsPix(ctx, ox, oy, PX, flip, frame, !p.onGround && G && G.boing > 0);
-    if (eq.hand && !(eq.hand === 'boomerang' && G && (G.gfx || []).some(f => f.k === 'boom'))) { gearPix(ctx, eq.hand, ox, oy, PX, flip); if (eq.hand === 'lantern') glowAt(ox + (flip ? 15 - 13 : 13) * PX + PX / 2, oy + 12 * PX, 70, 'rgba(255,200,100,.28)'); }
+    if (eq.hand && !(eq.hand === 'boomerang' && G && (G.gfx || []).some(f => f.k === 'boom')) && !(eq.hand === 'lasso' && G && (G.gfx || []).some(f => f.k === 'lasso'))) { gearPix(ctx, eq.hand, ox, oy, PX, flip); if (eq.hand === 'lantern') glowAt(ox + (flip ? 15 - 13 : 13) * PX + PX / 2, oy + 12 * PX, 70, 'rgba(255,200,100,.28)'); }
   }
 }
 function drawPlayer() {

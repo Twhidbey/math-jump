@@ -2,11 +2,15 @@
 
 Part of the code notes; `CLAUDE.md` has the index. Search `index.html` for the names in backticks (line numbers drift).
 
-## Worlds (6: japan, lava, robot, snow, sea, castle)
+## Worlds (7: japan, lava, robot, snow, sea, desert, castle)
 
 `const WORLDS` (skies, colours, intro text, boss, `slot`). **The sea world was put in before the castle (Nov 2026)**, so world 4 = sea, 5 = castle. Per-level lists (`TWISTS`, `ENTRANCES`, `ANIMALS`, `MOVES`, `FLAVORS`, wall kinds, bridge parity) are indexed by `slotOf(def)` = `WORLDS[w].slot + k`: the old 15 levels keep 0–14 (castle 12–14), the sea is 15–17 (filled since Nov 14 2026: animals, entrances, moves, twists, flavours). Stages have `si` (their original number: castle 16–19, sea 20–23) used for level seeds and speed, so castle layouts didn't change. Never index a list by `w * 3 + k` or a 5-long array by world
 
-## Stages (24 = 6 worlds × 3 levels + boss)
+## Red Rock Desert (world 5, added Nov 15 2026; **built as a preview, the owner checks it before it goes live**)
+
+Owner asked for "a new world - maybe desert with utah national park kinda look to one of the levels". Key `desert`, slot 18–20, stages `si` 24–27, before the castle (castle is now world 6, stage numbers 24–27; `loadProg` layout 7 moves old saves: `best` / `golden` 20–23 → 24–27, `seenWorld[5]` → 6; `FRIENDS` Mei and the Paper Lantern moved to `w: 6`). Levels: **Arch Canyon** (stone arches), **Hoodoo Trail** (thin spires, sunset sky), **Slot Canyon** (tall striped walls, a strip of sky). One background, `bgDesert` (far mesas, banded buttes `butte`, low dunes; per level `rockArch`, `hoodoo`, the wavy slot walls); boss uses the base. Red rock look: `rockBands` / `rockBandsClip` (bands depend only on height, so tiles line up), used by pillars, gates (stacked slabs that tumble in red dust, `g.k === 'desert'`), the crumbling ledges and the scroll rock. Pit kind `canyon` (dark crack, `drawPits`). Enemies: `scorpion` ninja walkers, `snake` (rattlesnake) in Slot Canyon. Animals: roadrunner + bug, tortoise + cactus pear, coyote pup + bone. Twists: `crumble` (three `crumb` plats like steps, shake then drop after ~50 frames on them, grow back), `devil` (a dust devil wanders, lifts Kai to gems), `quicksand` (`sand` fx: `G.sandIn`, walking half speed, hop to go faster; no harm). Flavours: `arches` (run-under arch + a blue gem), `cactus` (flower pops off with a gem), `sunbeams`. Dojo: Canyon Dojo, entrances cave / crack / cave, moves Elbow Strike, Axe Kick, Tornado Kick. No home math kind (`WORLD_HOME` has no desert: level 1 takes the kind furthest behind), scroll "Scroll of Remembering". Level end: balanced rock / tall cactus (`HOLDERS`), an adobe house (`HOMES`). Music `SONGS.desert`; race track `desert` (Red Rock Road, also the ride in). Menu: `.z-desert`, pix `cactus`, `arch`. **Not built yet: a lost friend for this world** (needs the owner's choices). `TEAM_V` 9 (stage numbers changed).
+
+## Stages (28 = 7 worlds × 3 levels + boss)
 
 `const STAGES`, `PER_WORLD`, `bossOf`; level index within world is `L.def.k` (0–2, boss 3)
 

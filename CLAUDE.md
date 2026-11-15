@@ -17,7 +17,7 @@ The detail lives in `docs/`, one file per area. **Open the file for the area you
 | Notes file | What it covers | Names to start from |
 |---|---|---|
 | `docs/story.md` | Story text and pages (`STORY.md` is the source: keep in sync), animated story pictures, Read to me, the scroll row | `STORY`, `ENDING`, `SCENES`, `runScenes`, `readAloud`, `storyBook` |
-| `docs/levels.md` | The 6 worlds and 24 stages, `slotOf` indexing, the level builder, twists, flavours, backgrounds, ? boxes, physics, draw order, HUD text, home screen | `WORLDS`, `STAGES`, `slotOf`, `buildLevel`, `TWISTS`, `FLAVORS`, `updatePlayer`, `render`, `buildMenu` |
+| `docs/levels.md` | The 7 worlds and 28 stages, `slotOf` indexing, the level builder, twists, flavours, backgrounds, ? boxes, physics, draw order, HUD text, home screen | `WORLDS`, `STAGES`, `slotOf`, `buildLevel`, `TWISTS`, `FLAVORS`, `updatePlayer`, `render`, `buildMenu` |
 | `docs/sea.md` | The Coral Sea (swimming, depth gates, clams, deep sea, octopus boss, current tunnel, sea twists) and fractions | `seaBuild`, `swimY`, `seaDoors`, `drawSeaDark`, `isFrac` |
 | `docs/math.md` | Skills, grade tracks, Easier math, test-out, fact tracking / Fact Book / Daily Dojo, kindergarten help, Never get hurt, Sensei's tricks and Work it out | `SKILLS`, `GRADE_TRACKS`, `planStage`, `noteFact`, `makeEasier`, `trickInfo`, `kidPic` |
 | `docs/crossings.md` | Gates, the hungry animal and math ? boxes, stepping stones, pattern walls, swings, bridges, ski lift | `gateNear`, `resolveAnswer`, `miniTarget`, `stepsPick`, `wallPuzzle`, `swingTick`, `liftChunk` |
@@ -38,7 +38,7 @@ Tile letters: `X` pattern-wall block, `Z` pattern-wall choice block, `#` ground,
 1. Syntax: `node -e "const s=require('fs').readFileSync('index.html','utf8');new Function(s.match(/<script>([\s\S]*)<\/script>/)[1]);console.log('ok')"` (this does NOT catch load-order errors; step 2 does).
 2. Browser: Playwright + Chromium are preinstalled (`require('playwright')`). To reach internals, copy `index.html` to a scratch file and insert before the final `requestAnimationFrame(frame);\n})();` a hook like
    `window.__t = { get L(){return L}, get G(){return G}, get P(){return P}, get mode(){return mode}, get prog(){return prog}, keys, startStage, begin, tapAnswer, answerTarget, openGate, bump };`
-   Then `startStage(i); begin();` and move `P.x/P.y` to the spot under test (e.g. `L.squads[0].foods[0].x`, `L.steps[0].c0`). Answer with `const m = answerTarget(); tapAnswer(m.vals.indexOf(m.q.ans))`. Set `localStorage` `mathninja-v2` to `{"seenIntro":true,"layout":5,"allOpen":true}` to skip the story. If `window.__t` is undefined, the game crashed on load: print `pageerror`s.
+   Then `startStage(i); begin();` and move `P.x/P.y` to the spot under test (e.g. `L.squads[0].foods[0].x`, `L.steps[0].c0`). Answer with `const m = answerTarget(); tapAnswer(m.vals.indexOf(m.q.ans))`. Set `localStorage` `mathninja-v2` to `{"seenIntro":true,"layout":7,"allOpen":true}` to skip the story. If `window.__t` is undefined, the game crashed on load: print `pageerror`s.
 3. Only take screenshots for visual changes (a grid of small shots per world works well); check page errors (`page.on('pageerror')`) every time.
 
 ## Design decisions so far (don't undo without asking)
