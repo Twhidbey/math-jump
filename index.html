@@ -570,7 +570,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 15, 2026 11:45 AM PT · Team run: gates open together</div>
+  <div class="build">Updated Nov 15, 2026 1:30 PM PT · Team run: Shadow Twins raid, then a SHOWDOWN battle at the last gate</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -3349,14 +3349,14 @@ const ANS_COLS = {
 };
 const ansCol = i => (ANS_COLS[L.world.key] || ANS_COLS.japan)[i % 5];
 function gateAnswer(st, i) {
-  const a = st.answers[i]; if (!a || st.solved || st.swap || st.star || a.state !== 'idle') return;
+  const a = st.answers[i]; if (!a || st.solved || st.swap || st.star || st.sdLock || a.state !== 'idle') return;
   st.shotT = G.time; st.quick = !st.blocked;
   st.star = { x: P.x + P.w / 2, y: P.y + 10, a };
   P.throwT = 14; sfx.throw();
 }
 function answer(c, r) {   // a head bump on an answer block
   const f = findAnswer(c, r);
-  if (!f || f.st !== currentStation() || f.st.solved || f.st.swap || f.st.star || f.a.state !== 'idle') { sfx.bump(); return; }   // any part of Kai's head counts, even an edge
+  if (!f || f.st !== currentStation() || f.st.solved || f.st.swap || f.st.star || f.st.sdLock || f.a.state !== 'idle') { sfx.bump(); return; }   // any part of Kai's head counts, even an edge
   f.st.shotT = G.time; f.st.quick = !f.st.blocked;
   resolveAnswer(f.st, f.a);
 }
@@ -3407,7 +3407,7 @@ function barTarget() { return isTouch ? answerTarget() : null; }
 const ANS_KEYS = n => (n > 3 ? ['N', 'M', ',', '.', '/'] : [',', '.', '/']);
 // Kai is at this gate's own stretch (where its answer buttons show). Its question (banner, sign, New trick card) only
 // shows from here (owner: a question hanging around far ahead of its gate, past other puzzles, was confusing).
-const gateNear = st => !!st && st !== L.arena && !!P && P.x >= (st.s - 3) * T && P.x <= st.gate[1] * T + T;
+const gateNear = st => !!st && st !== L.arena && !st.sdLock && !!P && P.x >= (st.s - 3) * T && P.x <= st.gate[1] * T + T;   // (sdLock: team run, the Shadow Twins block the last gate until they are beaten)
 function answerTarget() {
   if (mode !== 'play') return null;
   if (G && (G.rescue || G.swing)) return miniTarget();
@@ -5185,6 +5185,7 @@ function miniTarget() {
     return rm.open || rm.show || rm.intro > 0 ? null : { kind: 'train', q: rm.q, vals: rm.opts, off: rm.opts.map(() => false), ref: rm };
   }
   if (!G || L.vault || L.boss) return null;
+  const sdt = tmSdTarget(); if (sdt) return sdt;   // team run: the showdown's questions
   const stp = stepsTarget(); if (stp) return stp;
   const gt = gearTarget(); if (gt) return gt;
   if (G.cross) return null;
@@ -5525,6 +5526,7 @@ function miniAnswer(m, i) {
   if (m.kind === 'swing') { swingPick(m.ref, i); return; }
   if (m.kind === 'count') { countPick(m.ref, i); return; }
   if (m.kind === 'current') { currentPick(m.ref, i); return; }
+  if (m.kind === 'showdown') { tmSdPick(m.ref, i); return; }
   if (m.kind === 'gear') { gearPick(m.ref, i); return; }
   P.throwT = 14; sfx.throw(); boxPick(m.ref, i);
 }
@@ -6611,7 +6613,8 @@ function updateEnemies() {
         G.score += 200; sfx.stomp(); floatText(e.x + e.w / 2, e.y, '+200');
         if (e.kind === 'robot') burst(e.x + 15, e.y + 10, '#c8d3de', 8);
         if (e.kind === 'rock') burst(e.x + 17, e.y + 10, '#7d706a', 8);
-      } else hurt();
+      } else if (e.twin) { if (P.inv <= 0) { P.vx = (P.x < e.x ? -1 : 1) * 6; P.vy = Math.min(P.vy, -4); P.inv = 30; sfx.bump(); } }   // the showdown twin only pushes Kai back (the battle is for fun)
+      else hurt();
     }
   }
 }
@@ -9697,7 +9700,7 @@ function drawEnemy(e) {
       break;
     }
     case 'ninja': case 'shadow': {
-      drawBaked(ENEMY_SPR[e.kind], !e.onGround && !e.dead ? 'jump' : step ? 'walkA' : 'stand', e.vx < 0, e);
+      drawBaked(e.twin && team ? tmTwinSpr() : ENEMY_SPR[e.kind], !e.onGround && !e.dead ? 'jump' : step ? 'walkA' : 'stand', e.vx < 0, e);
       break;
     }
     case 'rock': {
@@ -12572,7 +12575,7 @@ $('dojoBtn').onclick = () => { audio(); startDojo(); };
 // (no library). A room is rooms/<CODE>: { t, boss (world), max, r (round), p: { h: { i, hits }, j: { i, hits } } }. Each
 // device only ever writes its own hit count, so there is nothing to collide; boss health = max - both counts. Only
 // game data is sent: the player's picture id (a game character), never a name. Leaving deletes the room.
-const TEAM_V = 4;   // bump when the team messages change: a partner on an older version gets a "please update" note
+const TEAM_V = 5;   // bump when the team messages change: a partner on an older version gets a "please update" note
 const TEAM_DB = 'https://math-ninja-team-default-rtdb.firebaseio.com', TEAM_HP = 20, TEAM_ABC = 'BCDFGHJKLMNPRSTVWXZ2345679';
 let team = null;
 const tmUrl = (path = '') => `${TEAM_DB}/rooms/${team.code}${path}.json`;
@@ -12656,7 +12659,7 @@ function tmSync() {
 function tmRunStart() {
   const rm = team.room, i = clamp(rm.lvl | 0, 0, STAGES.length - 1);
   team.r = rm.r; team.run = true; team.playing = true; team.won = false; team.paid = false; team.sent = ''; team.pg = 0; team.pdone = false;
-  team.twDmg = 0; team.rc = 0; team.prc = 0; team.twin = null; team.twBeat = false; team.lastSolved = 0; team.myRightAt = -1e9; team.pRightAt = -1e9; team.lvl = STAGES[i].boss ? 0 : i;
+  team.twDmg = 0; team.rc = 0; team.prc = 0; team.twin = null; team.twBeat = false; team.raidN = 0; team.sd = null; team.sdN = 0; team.bs = 0; team.wonSd = 0; team.tickG = null; team.lastSolved = 0; team.myRightAt = -1e9; team.pRightAt = -1e9; team.lvl = STAGES[i].boss ? 0 : i;
   hide('msg'); hide('team'); hide('menu');
   startStage(team.lvl);
   toastMsg(`Team run: ${STAGES[team.lvl].name}!`, 3200);
@@ -12672,6 +12675,10 @@ const tmGateFree = st => { const you = (team && team.run && team.room && team.ro
 function tmGateHold(st) { return !!(team && team.run && team.room && G && G.idx === team.lvl && !L.vault && !tmGateFree(st)); }
 function tmGateTick() {   // every frame: open the gates that were waiting for the partner
   if (!G || L.vault || L.boss || !L.stations) return;
+  if (!(team && team.run)) {   // the team is gone: the showdown is off, nothing stays locked
+    for (const st of L.stations) st.sdLock = false;
+    if (L.enemies.some(e => e.twin)) L.enemies = L.enemies.filter(e => !e.twin);
+  }
   for (const st of L.stations) {
     if (!st.tmHold || !tmGateFree(st)) continue;
     st.tmHold = false;
@@ -12688,7 +12695,7 @@ function tmRunTick() {   // four times a second while playing: tell the partner 
   if (!team || !team.run || !team.room || !G || mode !== 'play' || G.idx !== team.lvl || team.busy) return;
   const ML = G.saved ? G.saved.L : L, wx = G.saved ? G.saved.x : P.x, wy = G.saved ? G.saved.y : P.y;
   const x = Math.round(clamp(wx / (ML.flagC * T), 0, 1) * 1000) / 10, g = ML.stations.filter(st => st.solved).length;
-  const body = { x, g, px: Math.round(wx), py: Math.round(wy), f: P.face < 0 ? -1 : 1, a: G.saved || P.onGround ? 0 : 1, sig: tmSig(ML), su: prog.equip.suit, ba: prog.equip.band, tw: team.twDmg || 0, rc: team.rc || 0, n: ML.stations.length }, key = JSON.stringify(body);
+  const body = { x, g, px: Math.round(wx), py: Math.round(wy), f: P.face < 0 ? -1 : 1, a: G.saved || P.onGround ? 0 : 1, sig: tmSig(ML), su: prog.equip.suit, ba: prog.equip.band, tw: team.twDmg || 0, rc: team.rc || 0, n: ML.stations.length, sd: team.sdN || 0, bs: team.bs || 0, won: team.wonSd || 0 }, key = JSON.stringify(body);
   if (key === team.sent) return; team.sent = key; team.busy = true;
   const mine = team; tmSend(`/p/${team.me}`, body).catch(() => {}).then(() => { mine.busy = false; });
 }
@@ -12696,22 +12703,34 @@ function tmRunTick() {   // four times a second while playing: tell the partner 
 // and headband colours with their picture over its head. Same layout = exactly where they are; a different layout
 // (other math, other Easy setting) = as far along the level as they are, standing on my ground (in the sea: at
 // swimming depth). It touches nothing: no enemies, gems or gates.
-// ---- The Shadow Twins (owner, Nov 15 2026: "team villains"): two villain ninjas that only exist in a team run, one in
-// each kid's level (the host's is red, the joiner's blue), with ONE health bar (TW_HP) shared through the room: every
-// right answer in the level (anything that raises G.solved) knocks my twin back and takes 1 off the bar; each device
-// only writes its own damage `tw`, the bar = TW_HP - both. TEAM COMBO: both kids right within TW_COMBO ms of each
-// other = both screens flash and get a Math Dash, and the second answer counts double. The twin follows a few tiles
-// behind Kai and lobs a slow smoke ball now and then (jump it; a hit is a normal hurt(), so "Never get hurt" works).
-// It never blocks the way. Bar empty: both twins bow ("You two are a real team!"), a gem shower each, +10 in the chest.
-const TW_HP = 20, TW_COMBO = 5000, TW_BACK = 3.2;   // (TW_BACK: tiles behind Kai; 4.6 put it at the very edge of a phone screen)
+// ---- The Shadow Twins (owner, Nov 15 2026: "team villains"; then: "they hop in and harass several times in the level
+// and then a big battle at the end ... math for a couple of questions and then a Mario-style battle with just
+// attacking (for fun)"). Only in team runs. One villain ninja per device (the host's red, the joiner's blue).
+// RAIDS: at TW_RAIDS (fractions of the level) my twin drops in behind Kai, follows him and lobs slow smoke balls (jump
+// them; a hit is a normal hurt()). Any right answer chases it off ("POW! We'll be back!"), else it leaves after
+// TW_RAID_T frames. Each chase-off (`tw`, sent with the tick) makes the final battle one hit shorter.
+// TEAM COMBO: both kids right within TW_COMBO ms = flash + Math Dash on both screens.
+// SHOWDOWN at the last gate (`team.sd`): the twin blocks the gate (`st.sdLock`: the gate can't be answered yet).
+//   math: SD_MATH (3) questions of my own math through miniTarget (kind 'showdown'); each right = Kai strikes (`sd`).
+//   wait: until the partner has done theirs too.
+//   fight: the twin is a real enemy in L.enemies (`e.twin`): stomp it (in the sea: dive onto it), or hit it with any
+//          gear power / kick / fire: every hit counts (`bs`), it poofs away and drops back in. It can't hurt Kai (a side
+//          bump only pushes him back). One shared bar: tmSdHp = max(6, 12 - chase-offs) - both kids' hits.
+//   won:   both twins bow ("You two are a real team!"), 10 gems each, `won` → +10 in the team chest; the gate unlocks.
+const TW_COMBO = 5000, TW_BACK = 3.2, TW_RAIDS = [0.16, 0.4, 0.64], TW_RAID_T = 900, SD_MATH = 3;
 const TW_PAL = { h: { n: '#8b1a2b', N: '#d6455a', r: '#16121f', R: '#000000' }, j: { n: '#1f4e8a', N: '#4f8fe0', r: '#16121f', R: '#000000' } };
 let twinSpr = {};
-const tmTwLeft = () => { const p = (team.room && team.room.p) || {}, you = p[tmYou()] || {}; return Math.max(0, TW_HP - Math.max(team.twDmg || 0, (p[team.me] || {}).tw || 0) - (you.tw || 0)); };
+const tmTwinSpr = () => twinSpr[team.me] || (twinSpr[team.me] = bakeNinja(TW_PAL[team.me]));
+const tmSdHp = () => {
+  const p = (team.room && team.room.p) || {}, me = p[team.me] || {}, you = p[tmYou()] || {};
+  const max = Math.max(6, 12 - Math.max(team.twDmg || 0, me.tw || 0) - (you.tw || 0));
+  return { max, left: Math.max(0, max - Math.max(team.bs || 0, me.bs || 0) - (you.bs || 0)) };
+};
 function tmCombo() {
   if (!G || performance.now() - (team.comboAt || -1e9) < 1500) return; team.comboAt = performance.now();
   G.flash = 0.35; shake(8, 4); floatText(P.x + P.w / 2, P.y - 90, 'TEAM COMBO!', '#ffd23f', 36);
   [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.14, 'square', 0.04, null, i * 0.07));
-  if (!L.boss && !L.vault) startDash(P.x + P.w / 2, P.y);
+  if (!L.boss && !L.vault && !(team.sd && team.sd.ph !== 'done')) startDash(P.x + P.w / 2, P.y);
 }
 function tmTwinFloor(x) {   // where a twin stands at x: the highest floor from the ground row up (in the sea: Kai's depth)
   if (L.water) return P.y;
@@ -12719,48 +12738,50 @@ function tmTwinFloor(x) {   // where a twin stands at x: the highest floor from 
   for (let r = GR; r >= 3; r--) if (solid(c, r) && !solid(c, r - 1) && !solid(c, r - 2)) return r * T - 44;
   return GR * T - 44;
 }
+function tmPuff(x, y) { for (let i = 0; i < 14; i++) G.parts.push({ k: 'bit', x: x + (Math.random() - 0.5) * 30, y: y + (Math.random() - 0.5) * 36, vx: (Math.random() - 0.5) * 2.4, vy: -0.6 - Math.random(), life: 34, col: Math.random() < 0.5 ? '#d9dcea' : '#a9a3c9', s: 6 }); }
 function tmTwinTick() {   // every frame of a team run
   if (!team || !team.run || !team.room || !team.room.p || !G || G.idx !== team.lvl || mode !== 'play') return;
-  // my right answers since the last look: damage for the twins (the second of a combo counts double)
-  if (G.solved < team.lastSolved) team.lastSolved = G.solved;   // the level was restarted
-  const tw = team.twin && team.twin.G === G ? team.twin : null, alive = tmTwLeft() > 0;
-  while (G.solved > team.lastSolved) {
+  if (team.tickG !== G) { team.tickG = G; team.raidN = 0; team.twin = null; team.sd = null; team.lastSolved = 0; }   // a new try at the level
+  if (G.solved < team.lastSolved) team.lastSolved = G.solved;
+  const tw = team.twin;
+  while (G.solved > team.lastSolved) {   // my right answers: a combo? and a raiding twin is chased off
     team.lastSolved++; team.rc = (team.rc || 0) + 1;
     const now = performance.now(), combo = now - team.pRightAt < TW_COMBO; team.myRightAt = now;
     if (combo) tmCombo();
-    if (alive && tw && tw.st !== 'bow' && !L.vault) {   // (dojo drills don't count: too many quick answers)
-      team.twDmg = (team.twDmg || 0) + (combo ? 2 : 1);
-      tw.hurt = 24; tw.x -= 46; sfx.stomp(); burst(tw.x + 12, tw.y + 20, '#ffffff', 10, 4); floatText(tw.x + 12, tw.y - 16, combo ? 'DOUBLE POW!' : 'POW!', '#ffd23f', 24);
+    if (tw && (tw.st === 'raid' || tw.st === 'in') && !L.vault) {
+      team.twDmg = (team.twDmg || 0) + 1; tw.st = 'leave'; tw.t = 0; tw.balls = []; tw.hurt = 30; tw.x -= 40;
+      sfx.stomp(); burst(tw.x + 12, tw.y + 20, '#ffffff', 10, 4); floatText(tw.x + 12, tw.y - 16, "POW! We'll be back!", '#ffd23f', 22);
     }
   }
-  const busy = L.vault || G.rescue || G.groom || G.swing || G.cross || G.dive || G.ride || G.victory;
-  if (!tw) {   // the twin drops in a few seconds into the level
-    if (!alive || busy || G.time < 200 || team.twBeat) return;
-    const x = Math.max(cam + 20, P.x - 3 * T);   // on screen, just behind Kai
-    team.twin = { G, x, y: tmTwinFloor(x) - 200, st: 'in', t: 0, hurt: 0, cool: 260, balls: [], walk: 0, face: 1 };
-    floatText(P.x + P.w / 2, P.y - 80, 'The Shadow Twins!', '#ff6b6b', 30); toastMsg('The Shadow Twins! Right answers knock them back.', 4200);
+  const busy = !!(L.vault || G.rescue || G.groom || G.swing || G.cross || G.dive || G.ride || G.victory);
+  tmShowdownTick(busy);
+  if (team.sd) { if (team.twin) { tmPuff(team.twin.x + 12, team.twin.y + 22); team.twin = null; } return; }
+  const quiet = busy || L.twist === 'dark' || L.deep || currentStationNear() || miniTarget() || P.inv > 0 || tmHeldGate();
+  if (!tw) {   // the next raid: the twin hops in behind Kai
+    const k = team.raidN || 0;
+    if (team.twBeat || k >= TW_RAIDS.length || quiet || G.time < 200 || P.x / (L.flagC * T) < TW_RAIDS[k]) return;
+    team.raidN = k + 1;
+    const x = Math.max(cam + 20, P.x - 3 * T);
+    team.twin = { x, y: tmTwinFloor(x) - 200, st: 'in', t: 0, hurt: 0, cool: 150, raidT: 0, balls: [], walk: 0, face: 1 };
+    floatText(P.x + P.w / 2, P.y - 80, k ? "We're back!" : 'The Shadow Twins!', '#ff6b6b', 30);
+    if (!k) toastMsg('The Shadow Twins! A right answer chases them off.', 4200);
     tone(196, 0.3, 'sawtooth', 0.04, 98); tone(147, 0.4, 'sawtooth', 0.04, 73, 0.2);
     return;
   }
   tw.t++; if (tw.hurt > 0) tw.hurt--;
-  if (!alive && tw.st !== 'bow' && tw.st !== 'gone') {   // the bar is empty: they give up
-    tw.st = 'bow'; tw.t = 0; tw.balls = []; team.twBeat = true;
-    sfx.win(); confetti(P.x + P.w / 2, P.y - 20); payGems(P.x + P.w / 2, P.y, 10);
-    toastMsg('You beat the Shadow Twins together!', 3600);
-  }
-  if (tw.st === 'gone') return;
-  if (tw.st === 'bow') { if (tw.t > 150) { tw.st = 'gone'; for (let i = 0; i < 14; i++) G.parts.push({ k: 'bit', x: tw.x + 12 + (Math.random() - 0.5) * 30, y: tw.y + 22 + (Math.random() - 0.5) * 36, vx: (Math.random() - 0.5) * 2.4, vy: -0.6 - Math.random(), life: 34, col: Math.random() < 0.5 ? '#d9dcea' : '#a9a3c9', s: 6 }); } return; }
-  // follow a few tiles behind Kai (it steps through things like smoke; it never blocks him)
-  const tx = Math.max(cam + 16, P.x - TW_BACK * T), dx = clamp((tx - tw.x) * 0.06, -5, 5);   // never off the left edge of the screen
+  if (tw.st === 'leave') { if (tw.t > 34) { tmPuff(tw.x + 12, tw.y + 22); team.twin = null; } return; }
+  const tx = Math.max(cam + 16, P.x - TW_BACK * T), dx = clamp((tx - tw.x) * 0.06, -5, 5);   // follows just behind Kai, never off the screen
   if (Math.abs(tx - tw.x) > 14 * T) tw.x = tx; else tw.x += dx;
   tw.walk = Math.abs(dx) > 0.4 ? tw.walk + 1 : 0; tw.face = P.x >= tw.x ? 1 : -1;
   tw.y += (tmTwinFloor(tw.x) - tw.y) * (tw.st === 'in' ? 0.12 : 0.2);
-  if (tw.st === 'in' && tw.t > 40) tw.st = 'follow';
-  // a slow smoke ball along the ground now and then (not in the dark, not while Kai is busy with a question)
-  const quiet = busy || L.twist === 'dark' || L.deep || currentStationNear() || miniTarget() || P.inv > 0 || tmHeldGate();
-  if (tw.st === 'follow' && !quiet && --tw.cool <= 0 && Math.abs(P.y - tw.y) < 2 * T) {
-    tw.cool = prog.easy ? 520 : 380; tw.throwT = 16;
-    tw.balls.push({ x: tw.x + 12, y: tw.y + 26, vx: prog.easy ? 4.4 : 5.2, t: 0 }); tone(240, 0.12, 'triangle', 0.03, 480);
+  if (tw.st === 'in' && tw.t > 40) tw.st = 'raid';
+  if (tw.st === 'raid') {
+    if (!busy) tw.raidT++;
+    if (tw.raidT > TW_RAID_T) { tw.st = 'leave'; tw.t = 0; tw.balls = []; floatText(tw.x + 12, tw.y - 16, 'See you at the last gate!', '#ff9aa5', 20); return; }
+    if (!quiet && --tw.cool <= 0 && Math.abs(P.y - tw.y) < 2 * T) {   // a slow smoke ball along the ground
+      tw.cool = prog.easy ? 320 : 220; tw.throwT = 16;
+      tw.balls.push({ x: tw.x + 12, y: tw.y + 26, vx: prog.easy ? 4.4 : 5.2, t: 0 }); tone(240, 0.12, 'triangle', 0.03, 480);
+    }
   }
   if (tw.throwT > 0) tw.throwT--;
   for (const b of tw.balls) {
@@ -12770,31 +12791,118 @@ function tmTwinTick() {   // every frame of a team run
   }
   tw.balls = tw.balls.filter(b => b.t < 130);
 }
-function drawTeamTwin() {
-  const tw = team && team.run && team.twin; if (!tw || !G || tw.G !== G || tw.st === 'gone' || L.vault) return;
-  if (!twinSpr[team.me]) twinSpr[team.me] = bakeNinja(TW_PAL[team.me]);
-  for (const b of tw.balls) {   // smoke balls: a few grey pixel blocks
-    const bx = Math.round(b.x), by = Math.round(b.y), w = Math.floor(b.t / 4) % 2;
-    ctx.fillStyle = '#6c6880'; ctx.fillRect(bx - 9, by - 6, 18, 12); ctx.fillRect(bx - 6, by - 9, 12, 18);
-    ctx.fillStyle = '#a9a3c9'; ctx.fillRect(bx - 6 + w * 2, by - 6, 8, 6); ctx.fillStyle = '#d9dcea'; ctx.fillRect(bx - 3, by - 3 + w * 2, 4, 4);
-  }
-  if (tw.x < cam - 80 || tw.x > cam + VW + 80) return;
-  if (tw.hurt > 0 && Math.floor(tw.hurt / 3) % 2) return;   // blinks when hit
-  const frame = tw.st === 'in' || tw.throwT > 0 ? 'jump' : tw.walk && Math.floor(tw.walk / 6) % 2 ? 'walkA' : 'stand', box = { x: Math.round(tw.x), y: Math.round(tw.y) + (tw.st === 'bow' ? 4 : 0), w: 24, h: 44 };
-  drawBaked(twinSpr[team.me], frame, tw.face < 0, box);
-  if (tw.st === 'bow') hudText('You two are a real team!', box.x + 12, box.y - 14, 15, '#ffffff', 'center');
+// The showdown at the last gate.
+function tmSdArena(last) { return [(last.s - 6) * T, (last.gate[0] - 1.6) * T]; }
+function tmSdSpawn(sd) {   // the battle twin: a real enemy, dropping in away from Kai
+  const [a0, a1] = tmSdArena(sd.last); let x = a0 + Math.random() * (a1 - a0);
+  if (Math.abs(x - P.x) < 4 * T) x = P.x > (a0 + a1) / 2 ? a0 + T : a1 - T;
+  const hp = tmSdHp(), e = walkerFor('shadow', Math.floor(x / T), (prog.easy ? 1.6 : 2.1) + (1 - hp.left / hp.max) * 1.2);
+  e.twin = true; e.y -= 220; if (P.x > e.x) e.vx = -e.vx;
+  L.enemies.push(e); sd.e = e; tmPuff(e.x + 12, e.y + 22);
 }
-function tmTwinHud(x0, y, w) {   // the twins' shared health bar, under the partner track
-  if (!team.room || team.twBeat && !(team.twin && team.twin.st === 'bow')) { if (team.twBeat) hudText('Shadow Twins: beaten!', x0 + w, y + 6, 12, '#3ae374', 'right'); return; }
-  if (!team.twin) return;
-  const left = tmTwLeft();
-  ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(x0 - 2, y - 2, w + 4, 12); ctx.fillStyle = '#e63946'; ctx.fillRect(x0, y, Math.round(w * left / TW_HP), 8);
-  hudText(`Shadow Twins ${left}`, x0 + w, y + 22, 12, '#ff9aa5', 'right');
+function tmShowdownTick(busy) {
+  const last = L.stations[L.stations.length - 1]; if (!last || L.vault) return;
+  const you = team.room.p[tmYou()] || {};
+  let sd = team.sd;
+  if (!sd) {
+    if (team.twBeat || last.solved || you.done || busy || P.x < (last.s - 5) * T) return;
+    sd = team.sd = { ph: 'in', t: 0, last, q: null, opts: null, wait: 0, x: (last.gate[0] - 3) * T, y: 0, hurt: 0, e: null, re: 0, laugh: 0 };
+    sd.y = tmTwinFloor(sd.x) - 220; last.sdLock = true;
+    G.flash = 0.4; shake(10, 5); floatText(Math.max(P.x + P.w / 2, cam + VW / 2), P.y - 100, 'SHOWDOWN!', '#ff6b6b', 40);
+    tone(110, 0.5, 'sawtooth', 0.06, 55); tone(220, 0.4, 'square', 0.04, 110, 0.15); toastMsg('The Shadow Twins block the last gate!', 3600);
+  }
+  if (sd.ph === 'done') return;
+  sd.t++; if (sd.hurt > 0) sd.hurt--; if (sd.laugh > 0) sd.laugh--;
+  if (sd.wait > 0 && --sd.wait === 0) sd.q = null;
+  if (sd.ph === 'in' || sd.ph === 'math' || sd.ph === 'wait') sd.y += (tmTwinFloor(sd.x) - sd.y) * 0.14;
+  if (sd.ph === 'in' && sd.t > 50) sd.ph = (team.sdN || 0) >= SD_MATH ? 'wait' : 'math';
+  if (sd.ph === 'wait' && (you.sd || 0) >= SD_MATH) {   // both are ready: the battle
+    sd.ph = 'fight'; sd.t = 0; sd.re = 30; tmPuff(sd.x + 12, sd.y + 22);
+    G.flash = 0.35; shake(8, 4); floatText(Math.max(P.x + P.w / 2, cam + VW / 2), P.y - 100, 'FIGHT!', '#ffd23f', 44); sfx.gate(); tone(330, 0.3, 'square', 0.05, 660);
+  }
+  if (sd.ph === 'fight') {
+    const hp = tmSdHp(), e = sd.e;
+    if (e && e.dead) {   // a hit: stomped, kicked, burnt, blasted...
+      team.bs = (team.bs || 0) + 1; sd.e = null; sd.re = 46; L.enemies = L.enemies.filter(x => x !== e);
+      tmPuff(e.x + 12, Math.min(e.y, GR * T - 44) + 22); shake(6, 3); payGems(e.x + 12, Math.min(e.y, GR * T - 60), 1);
+      floatText(e.x + 12, Math.min(e.y, GR * T - 60) - 10, ['BONK!', 'POW!', 'WHAM!', 'BOOM!'][R(0, 3)], '#ffd23f', 28);
+    } else if (e) {   // it keeps to the arena in front of the gate
+      const [a0, a1] = tmSdArena(last);
+      if (e.x < a0) e.vx = Math.abs(e.vx); if (e.x > a1) e.vx = -Math.abs(e.vx);
+      if (e.y > VH + 60) { L.enemies = L.enemies.filter(x => x !== e); sd.e = null; sd.re = 20; }   // fell somewhere: drop back in
+    }
+    if (tmSdHp().left <= 0) {   // beaten (the last hit may be the partner's)
+      if (sd.e) { sd.x = sd.e.x; L.enemies = L.enemies.filter(x => x !== sd.e); sd.e = null; } else sd.x = clamp(P.x + 3 * T, ...tmSdArena(last));
+      sd.y = tmTwinFloor(sd.x); sd.ph = 'won'; sd.t = 0; team.twBeat = true; team.wonSd = 1;
+      sfx.win(); confetti(P.x + P.w / 2, P.y - 20); payGems(P.x + P.w / 2, P.y, 10); toastMsg('You beat the Shadow Twins together!', 3600);
+    } else if (!sd.e && --sd.re <= 0) tmSdSpawn(sd);
+  }
+  if (sd.ph === 'won' && sd.t > 150) { tmPuff(sd.x + 12, sd.y + 22); sd.ph = 'done'; last.sdLock = false; }
+}
+function tmSdTarget() {   // the showdown's math questions (buttons / keys, like every other question)
+  const sd = team && team.run && team.sd; if (!sd || sd.ph !== 'math' || sd.wait > 0 || !G || G.idx !== team.lvl) return null;
+  if (!sd.q) { sd.q = L.gen(); sd.opts = choices(sd.q, 3); sd.shownAt = G.time; }
+  return { kind: 'showdown', q: sd.q, vals: sd.opts, off: sd.opts.map(() => false), ref: sd };
+}
+function tmSdPick(sd, i) {
+  if (!sd.q || sd.wait > 0 || sd.ph !== 'math') return;
+  const q = sd.q, right = sd.opts[i] === q.ans, fast = G.time - (sd.shownAt ?? G.time) <= fastFrames(L.skill, q);
+  noteFact(q, right, right && fast, L.skill);
+  if (right) {
+    G.solved++; if (fast) G.fastN++; sfx.correct(); streakUp(sd.x + 12, sd.y - 30); gotIt();
+    team.sdN = (team.sdN || 0) + 1; sd.q = null; sd.hurt = 26; sd.x = Math.min(sd.x + 14, (sd.last.gate[0] - 1.4) * T);
+    const ls = MOVES.filter(m => prog.moves[m.name] && m.name !== 'Bow');   // Kai strikes with a move he knows
+    G.flourish = { pose: ls.length ? ls[R(0, ls.length - 1)].steps[2].pose : HIGH_KICK, t: 34 }; P.face = sd.x >= P.x ? 1 : -1;
+    sfx.stomp(); burst(sd.x + 12, sd.y + 20, '#ffffff', 12, 4); floatText(sd.x + 12, sd.y - 16, ['POW!', 'HI-YAH!', 'WHAM!'][R(0, 2)], '#ffd23f', 28); shake(5, 3);
+    if (team.sdN >= SD_MATH) { sd.ph = 'wait'; floatText(sd.x + 12, sd.y - 46, 'Grr! Now fight me!', '#ff9aa5', 22); }
+  } else {
+    G.mistakes++; G.streak = 0; remember(q); missed(q); sfx.wrong();
+    sd.wait = 80; sd.laugh = 60; floatText(P.x + P.w / 2, P.y - 40, `Oops! ${qSolved(q)}`, '#ff6b6b', 26); floatText(sd.x + 12, sd.y - 16, 'Ha ha!', '#ff9aa5', 22);
+  }
+}
+function drawTeamTwin() {
+  if (!team || !team.run || !G || G.idx !== team.lvl || L.vault) return;
+  const spr = tmTwinSpr(), tw = team.twin, sd = team.sd;
+  if (tw) {   // a raiding twin and its smoke balls
+    for (const b of tw.balls) {
+      const bx = Math.round(b.x), by = Math.round(b.y), w = Math.floor(b.t / 4) % 2;
+      ctx.fillStyle = '#6c6880'; ctx.fillRect(bx - 9, by - 6, 18, 12); ctx.fillRect(bx - 6, by - 9, 12, 18);
+      ctx.fillStyle = '#a9a3c9'; ctx.fillRect(bx - 6 + w * 2, by - 6, 8, 6); ctx.fillStyle = '#d9dcea'; ctx.fillRect(bx - 3, by - 3 + w * 2, 4, 4);
+    }
+    if (tw.x > cam - 80 && tw.x < cam + VW + 80 && !(tw.hurt > 0 && Math.floor(tw.hurt / 3) % 2)) {
+      const frame = tw.st === 'in' || tw.throwT > 0 ? 'jump' : tw.walk && Math.floor(tw.walk / 6) % 2 ? 'walkA' : 'stand';
+      drawBaked(spr, frame, tw.face < 0, { x: Math.round(tw.x), y: Math.round(tw.y), w: 24, h: 44 });
+    }
+  }
+  if (sd && sd.ph !== 'done' && sd.ph !== 'fight') {   // the twin in front of the last gate: in, math, wait, won (bowing)
+    const box = { x: Math.round(sd.x), y: Math.round(sd.y) + (sd.ph === 'won' ? 4 : sd.laugh > 0 ? Math.round(Math.sin(sd.laugh * 0.8) * 3) : 0), w: 24, h: 44 };
+    if (!(sd.hurt > 0 && Math.floor(sd.hurt / 3) % 2)) drawBaked(spr, sd.ph === 'in' ? 'jump' : 'stand', sd.ph === 'won' ? P.x < sd.x : true, box);
+    if (sd.ph === 'won') hudText('You two are a real team!', box.x + 12, box.y - 14, 15, '#ffffff', 'center');
+    const t = sd.ph === 'math' ? tmSdTarget() : null;
+    if (t) t.vals.forEach((v, j) => {   // the choices over the twin's head (computers: , . / keys)
+      const tx = box.x + 12 + (j - 1) * 50, ty = box.y - 44 + Math.sin(tick * 0.07 + j) * 3, [c1] = ansCol(j);
+      ctx.fillStyle = c1; rrect(tx - 21, ty - 17, 42, 34, 9); ctx.fill(); ctx.fillStyle = '#ffffff'; rrect(tx - 18, ty - 14, 36, 28, 7); ctx.fill();
+      ctx.font = `${String(v).length > 3 ? 14 : 18}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.fillStyle = '#1a1426'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(v, tx, ty + 1);
+      if (!isTouch) keyTag(ANS_KEYS(3)[j], tx + 18, ty - 16);
+    });
+  }
+}
+function tmTwinHud(x0, y, w) {   // under the partner track: what the twins are up to
+  const sd = team.sd, narrow = VW < 700, cy = narrow ? 215 : 170;
+  if (!sd || sd.ph === 'done') { if (team.twBeat) hudText('Shadow Twins: beaten!', x0 + w, y + 6, 12, '#3ae374', 'right'); return; }
+  if (sd.ph === 'math') hudText(`Showdown! ${team.sdN || 0} / ${SD_MATH}`, VW / 2, cy, narrow ? 18 : 22, '#ff9aa5', 'center');
+  if (sd.ph === 'wait') hudText('Waiting for your partner...', VW / 2, cy, narrow ? 17 : 22, Math.floor(tick / 30) % 2 ? '#7df9ff' : '#ffffff', 'center');
+  if (sd.ph === 'fight') {
+    const hp = tmSdHp(), bw = narrow ? 200 : 280, bx = Math.round(VW / 2 - bw / 2);
+    ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(bx - 3, cy - 3, bw + 6, 18); ctx.fillStyle = '#e63946'; ctx.fillRect(bx, cy, Math.round(bw * hp.left / hp.max), 12);
+    hudText(L.water ? `Dive onto the twin! ${hp.left} to go` : `Jump on the twin! ${hp.left} to go`, VW / 2, cy + 32, narrow ? 15 : 18, '#ffffff', 'center');
+  }
 }
 function tmLights(hole) {
   if (!team || !team.run || !G || G.idx !== team.lvl) return;
   if (team.gh && team.ghOn) hole(team.gh.x + 12, team.gh.y + 22, 70);
-  const tw = team.twin; if (tw && tw.G === G && tw.st !== 'gone') { hole(tw.x + 12, tw.y + 22, 70); for (const b of tw.balls) hole(b.x, b.y, 40); }
+  const tw = team.twin; if (tw) { hole(tw.x + 12, tw.y + 22, 70); for (const b of tw.balls) hole(b.x, b.y, 40); }
+  const sd = team.sd; if (sd && sd.ph !== 'done') { hole(sd.x + 12, sd.y + 22, 110); if (sd.e) hole(sd.e.x + 12, sd.e.y + 22, 90); }
 }
 // When the partner is not on my screen: their picture at the screen's edge with an arrow, so kids know which way they are.
 function tmGhostEdge(gx, id) {
@@ -12866,7 +12974,7 @@ function tmRunHud() {   // the tracker: a line from start to home with both ninj
 function tmRunBoxHTML() {
   const rm = team.room, me = rm.p[team.me] || {}, you = rm.p[tmYou()] || {};
   if (!you.done) return `${tmIcon(you.i)} Your partner is still running: <b>${you.g || 0} gates</b> so far.<br>Stay here to get the team chest!`;
-  const beat = (me.tw || 0) + (you.tw || 0) >= TW_HP, gems = (me.g || 0) + (you.g || 0) + (beat ? 10 : 0);
+  const beat = !!(me.won || you.won || team.wonSd), gems = (me.g || 0) + (you.g || 0) + (beat ? 10 : 0);
   if (!team.paid) { team.paid = true; prog.bank += gems; prog.stats.gems += gems; save(); sfx.win(); }
   return `${tmIcon(me.i)} ${tmIcon(you.i)} <b>You both made it home!</b><br>Team chest: ${me.g || 0} + ${you.g || 0} gates${beat ? ' + 10 for the Shadow Twins' : ''} = ${pixImg('gem', 'pix sm')} <b>+${gems}</b><br><button type="button" class="btn" id="tmNextBtn">Next level together ▶</button>`;
 }
