@@ -570,7 +570,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 15, 2026 10:30 AM PT · Team run: ninjas easier to see (dark levels, phones, far-away partner)</div>
+  <div class="build">Updated Nov 15, 2026 11:45 AM PT · Team run: gates open together</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -3374,7 +3374,8 @@ function resolveAnswer(st, a) {
   const fast = (st.shotT ?? G.time) - (st.shownAt ?? G.time) <= fastFrames(L.skill, st.q);
   noteFact(st.q, true, fast, L.skill); G.solved++; if (fast) G.fastN++;
   // the right block shatters into gems (a sea door opens)
-  for (const [c, r] of a.cells || [[a.c, a.r]]) L.map[r][c] = '.';
+  const seaHold = st.sea && st.need - st.got <= 1 && tmGateHold(st);   // team run in the sea: the door itself stays shut until the partner has answered too
+  if (seaHold) st.tmDoor = a; else for (const [c, r] of a.cells || [[a.c, a.r]]) L.map[r][c] = '.';
   a.state = 'right';
   payGems(cx, cy + T / 2, fast ? 2 : 1);   // the gems inside fly to the counter: 1, or 2 when fast
   burst(cx, cy + T / 2, ansCol(st.answers.indexOf(a))[0], 14, 5);
@@ -3386,9 +3387,9 @@ function resolveAnswer(st, a) {
   }
   st.answers.forEach(o => { if (o !== a) o.state = 'done'; });
   award('first-gate');
-  st.solved = true; openGate(st); shake(6, 2);
-  G.checkpoint = (st.gate[1] + 1) * T;
-  setTimeout(sfx.gate, 350);
+  st.solved = true;
+  if (tmGateHold(st)) { st.tmHold = true; floatText(cx, cy - 56, 'Wait for your partner!', '#7df9ff', 24); }   // team run: gates open together
+  else { openGate(st); shake(6, 2); G.checkpoint = (st.gate[1] + 1) * T; setTimeout(sfx.gate, 350); }
   if (st.quick) {
     G.lightN++; stat('light'); G.score += 300; sfx.streak(); payGems(cx, cy + T / 2, 3, 3);
     floatText(cx, cy - 20, 'Lightning! +3', '#7df9ff', 32);
@@ -6343,6 +6344,7 @@ function updateTwist() {
   if (tw === 'chase' && p.x > 10 * T) {   // the lava wall waits behind each unopened gate
     const cur = currentStation(); let stop = cur ? cur.s * T - 6 * T : 1e9;
     for (const z of L.steps || []) if (!z.done && z.c0 * T > p.x - 4 * T) stop = Math.min(stop, (z.c0 - 10) * T);
+    for (const st of L.stations) if (st.tmHold) stop = Math.min(stop, st.s * T - 6 * T);   // team run: and behind a gate that waits for the partner
     for (const w of L.swings || []) if (!w.done && w.e * T > p.x - 4 * T) stop = Math.min(stop, (w.s - 8) * T);   // and behind a swing until Kai is across
     if (p.x < L.chaseX - 60) L.chaseX = p.x - 7 * T;   // came back after a fall
     L.chaseX = Math.min(L.chaseX + (prog.easy ? 1.0 : 1.45), stop);
@@ -7250,6 +7252,7 @@ function update() {
   if (G.shake > 0) G.shake--;
   if (G.tip && --G.tip.t <= 0) G.tip = null;
   previewTrick();
+  tmGateTick();   // team run: gates that wait for the partner (also frees them if the partner left)
   if (team && team.run) { tmTwinTick(); if (tick % 15 === 0) tmRunTick(); }   // team run: the Shadow Twins; send our spot to the partner
   if (G.flash > 0) G.flash = Math.max(0, G.flash - 0.04);
   for (const f of G.flyers) { f.t += 1 / 28; if (f.t >= 1) G.pulse = 8; }
@@ -12569,7 +12572,7 @@ $('dojoBtn').onclick = () => { audio(); startDojo(); };
 // (no library). A room is rooms/<CODE>: { t, boss (world), max, r (round), p: { h: { i, hits }, j: { i, hits } } }. Each
 // device only ever writes its own hit count, so there is nothing to collide; boss health = max - both counts. Only
 // game data is sent: the player's picture id (a game character), never a name. Leaving deletes the room.
-const TEAM_V = 3;   // bump when the team messages change: a partner on an older version gets a "please update" note
+const TEAM_V = 4;   // bump when the team messages change: a partner on an older version gets a "please update" note
 const TEAM_DB = 'https://math-ninja-team-default-rtdb.firebaseio.com', TEAM_HP = 20, TEAM_ABC = 'BCDFGHJKLMNPRSTVWXZ2345679';
 let team = null;
 const tmUrl = (path = '') => `${TEAM_DB}/rooms/${team.code}${path}.json`;
@@ -12659,6 +12662,25 @@ function tmRunStart() {
   toastMsg(`Team run: ${STAGES[team.lvl].name}!`, 3200);
 }
 const tmYou = () => (team.me === 'h' ? 'j' : 'h');
+// ---- Gates together (owner, Nov 15 2026: "they have to do gates together"): in a team run my gate number k opens only
+// when BOTH kids have answered their own gate k (each on their own screen, their own math). The first one to answer
+// waits at the gate ("Waiting for your partner"); the second answer opens both. Counted through `g` (gates answered),
+// which each device already sends. No deadlocks: the need is capped at the partner's own number of gates `n` (a kid
+// with a pattern wall has one gate fewer), and a partner who is home, or gone, holds nothing.
+const tmGateNeed = st => Math.min(L.stations.indexOf(st) + 1, ((team.room.p[tmYou()] || {}).n) || 99);
+const tmGateFree = st => { const you = (team && team.run && team.room && team.room.p && team.room.p[tmYou()]) || null; return !you || you.done || (you.g || 0) >= tmGateNeed(st); };
+function tmGateHold(st) { return !!(team && team.run && team.room && G && G.idx === team.lvl && !L.vault && !tmGateFree(st)); }
+function tmGateTick() {   // every frame: open the gates that were waiting for the partner
+  if (!G || L.vault || L.boss || !L.stations) return;
+  for (const st of L.stations) {
+    if (!st.tmHold || !tmGateFree(st)) continue;
+    st.tmHold = false;
+    if (st.tmDoor) { for (const [c, r] of st.tmDoor.cells || []) L.map[r][c] = '.'; st.tmDoor = null; }   // the sea door opens now
+    openGate(st); shake(6, 2); G.checkpoint = Math.max(G.checkpoint || 0, (st.gate[1] + 1) * T); sfx.gate();
+    floatText(P.x + P.w / 2, P.y - 70, team && team.run ? 'Together!' : 'Gate open!', '#ffd23f', 30); confetti(P.x + P.w / 2, P.y - 30);
+  }
+}
+const tmHeldGate = () => (G && L.stations ? L.stations.find(st => st.tmHold) : null);
 // A level's shape in a few numbers: two devices with the same signature built the same layout (same level, same kind
 // of math and Easy setting), so the partner's ninja can be drawn exactly where they are.
 const tmSig = ML => [ML.w, ML.stations.length, (ML.steps || []).length, ML.bridges.length, (ML.walls || []).length, (ML.swings || []).length].join('.');
@@ -12666,7 +12688,7 @@ function tmRunTick() {   // four times a second while playing: tell the partner 
   if (!team || !team.run || !team.room || !G || mode !== 'play' || G.idx !== team.lvl || team.busy) return;
   const ML = G.saved ? G.saved.L : L, wx = G.saved ? G.saved.x : P.x, wy = G.saved ? G.saved.y : P.y;
   const x = Math.round(clamp(wx / (ML.flagC * T), 0, 1) * 1000) / 10, g = ML.stations.filter(st => st.solved).length;
-  const body = { x, g, px: Math.round(wx), py: Math.round(wy), f: P.face < 0 ? -1 : 1, a: G.saved || P.onGround ? 0 : 1, sig: tmSig(ML), su: prog.equip.suit, ba: prog.equip.band, tw: team.twDmg || 0, rc: team.rc || 0 }, key = JSON.stringify(body);
+  const body = { x, g, px: Math.round(wx), py: Math.round(wy), f: P.face < 0 ? -1 : 1, a: G.saved || P.onGround ? 0 : 1, sig: tmSig(ML), su: prog.equip.suit, ba: prog.equip.band, tw: team.twDmg || 0, rc: team.rc || 0, n: ML.stations.length }, key = JSON.stringify(body);
   if (key === team.sent) return; team.sent = key; team.busy = true;
   const mine = team; tmSend(`/p/${team.me}`, body).catch(() => {}).then(() => { mine.busy = false; });
 }
@@ -12735,7 +12757,7 @@ function tmTwinTick() {   // every frame of a team run
   tw.y += (tmTwinFloor(tw.x) - tw.y) * (tw.st === 'in' ? 0.12 : 0.2);
   if (tw.st === 'in' && tw.t > 40) tw.st = 'follow';
   // a slow smoke ball along the ground now and then (not in the dark, not while Kai is busy with a question)
-  const quiet = busy || L.twist === 'dark' || L.deep || currentStationNear() || miniTarget() || P.inv > 0;
+  const quiet = busy || L.twist === 'dark' || L.deep || currentStationNear() || miniTarget() || P.inv > 0 || tmHeldGate();
   if (tw.st === 'follow' && !quiet && --tw.cool <= 0 && Math.abs(P.y - tw.y) < 2 * T) {
     tw.cool = prog.easy ? 520 : 380; tw.throwT = 16;
     tw.balls.push({ x: tw.x + 12, y: tw.y + 26, vx: prog.easy ? 4.4 : 5.2, t: 0 }); tone(240, 0.12, 'triangle', 0.03, 480);
@@ -12811,7 +12833,7 @@ function drawTeamGhost() {
 }
 function tmRunSync() {   // the partner's news
   const rm = team.room, you = rm.p[tmYou()] || {}, g = you.g || 0;
-  if (g > team.pg && mode === 'play') { toastMsg(`${tmIcon(you.i)} Your partner opened a gate!`, 2200); tone(880, 0.1, 'triangle', 0.03); tone(1175, 0.12, 'triangle', 0.03, null, 0.09); }
+  if (g > team.pg && mode === 'play') { const mineG = L.stations ? L.stations.filter(st => st.solved).length : 0; toastMsg(g > mineG ? `${tmIcon(you.i)} Your partner is waiting at gate ${g}!` : `${tmIcon(you.i)} Your partner answered gate ${g}!`, 2600); tone(880, 0.1, 'triangle', 0.03); tone(1175, 0.12, 'triangle', 0.03, null, 0.09); }
   if (you.done && !team.pdone && mode === 'play') toastMsg(`${tmIcon(you.i)} Your partner is home! Go, go, go!`, 3200);
   team.pg = g; team.pdone = !!you.done;
   if ((you.rc || 0) > (team.prc || 0)) {   // the partner just got one right: within a few seconds of mine = a team combo
@@ -12837,6 +12859,8 @@ function tmRunHud() {   // the tracker: a line from start to home with both ninj
   put(rm.p[team.me].i, mineX, -28);   // me above it
   hudText(`Partner: ${you.done ? 'home!' : (you.g || 0) + ' gates'}`, x0 + w, y + 40, 13, '#7df9ff', 'right');
   tmTwinHud(x0, y + 50, w);
+  const held = tmHeldGate();
+  if (held) { const txt = `Gate ${L.stations.indexOf(held) + 1}: waiting for your partner...`; hudText(txt, VW / 2, narrow ? 215 : 170, narrow ? 17 : 22, Math.floor(tick / 30) % 2 ? '#7df9ff' : '#ffffff', 'center'); }
 }
 // The team's box on the end-of-level card: waiting for the partner, then the team chest.
 function tmRunBoxHTML() {
