@@ -570,7 +570,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 15, 2026 2:15 PM PT · Team run: out of hearts = back to the last gate</div>
+  <div class="build">Updated Nov 15, 2026 3:00 PM PT · Team run: beat a raiding Shadow Twin with your gear</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -6570,6 +6570,7 @@ function updatePlayer() {
 
 function updateEnemies() {
   for (const e of L.enemies) {
+    if (e.twinRaid) continue;   // team run: a raiding Shadow Twin's stand-in (so gear powers can hit it); tmTwinTick moves it
     if (e.dead === 'squash') { e.t++; continue; }
     if (e.dead === 'flip') { e.vy += 0.5; e.y += e.vy; e.x += (e.vx || 0) * 0.5; continue; }
     if (e.dead) continue;
@@ -9666,7 +9667,7 @@ function drawCarriedScroll() {
 
 // ---------------------------------------------------------------- drawing: characters
 function drawEnemy(e) {
-  if (e.dead === 'gone' || (e.dead === 'squash' && e.t > 40)) return;
+  if (e.twinRaid || e.dead === 'gone' || (e.dead === 'squash' && e.t > 40)) return;
   const x = e.x, y = e.y;
   if (x > cam + VW + 40 || x < cam - 60) return;
   const step = Math.floor(e.t / 9) % 2;
@@ -12682,7 +12683,7 @@ function tmGateTick() {   // every frame: open the gates that were waiting for t
   if (!G || L.vault || L.boss || !L.stations) return;
   if (!(team && team.run)) {   // the team is gone: the showdown is off, nothing stays locked
     for (const st of L.stations) st.sdLock = false;
-    if (L.enemies.some(e => e.twin)) L.enemies = L.enemies.filter(e => !e.twin);
+    if (L.enemies.some(e => e.twin || e.twinRaid)) L.enemies = L.enemies.filter(e => !e.twin && !e.twinRaid);
   }
   for (const st of L.stations) {
     if (!st.tmHold || !tmGateFree(st)) continue;
@@ -12744,6 +12745,18 @@ function tmTwinFloor(x) {   // where a twin stands at x: the highest floor from 
   return GR * T - 44;
 }
 function tmPuff(x, y) { for (let i = 0; i < 14; i++) G.parts.push({ k: 'bit', x: x + (Math.random() - 0.5) * 30, y: y + (Math.random() - 0.5) * 36, vx: (Math.random() - 0.5) * 2.4, vy: -0.6 - Math.random(), life: 34, col: Math.random() < 0.5 ? '#d9dcea' : '#a9a3c9', s: 6 }); }
+// A raiding twin can be beaten with whatever gear Kai wears (owner, Nov 15 2026), with a learned move / kick, or by
+// jumping on its head. It has a stand-in in L.enemies (`twinRaid`: not moved, drawn or touched by the enemy code), so
+// every power that knocks enemies out (boomerang, ground pound, horn charge, water blast, flame dash, light flash,
+// kicks) hits it with no extra hooks; the Magnet Gloves and a stomp are checked here. A gear hit sends it away and
+// pays a gem; only right answers shorten the final battle.
+function tmTwinGone() { if (L.enemies && L.enemies.some(e => e.twinRaid)) L.enemies = L.enemies.filter(e => !e.twinRaid); team.twin = null; }
+function tmTwinGearHit(tw, word) {
+  tw.st = 'leave'; tw.t = 0; tw.balls = []; tw.hurt = 30; tw.x -= 30;
+  if (tw.e) { L.enemies = L.enemies.filter(e => e !== tw.e); tw.e = null; }
+  sfx.stomp(); shake(5, 3); burst(tw.x + 12, tw.y + 20, '#ffffff', 12, 4); payGems(tw.x + 12, tw.y, 1);
+  floatText(tw.x + 12, tw.y - 16, `${word} We'll be back!`, '#ffd23f', 22);
+}
 function tmTwinTick() {   // every frame of a team run
   if (!team || !team.run || !team.room || !team.room.p || !G || G.idx !== team.lvl || mode !== 'play') return;
   if (team.tickG !== G) { team.tickG = G; team.raidN = 0; team.twin = null; team.sd = null; team.lastSolved = 0; }   // a new try at the level
@@ -12760,25 +12773,32 @@ function tmTwinTick() {   // every frame of a team run
   }
   const busy = !!(L.vault || G.rescue || G.groom || G.swing || G.cross || G.dive || G.ride || G.victory);
   tmShowdownTick(busy);
-  if (team.sd) { if (team.twin) { tmPuff(team.twin.x + 12, team.twin.y + 22); team.twin = null; } return; }
+  if (team.sd) { if (team.twin) { tmPuff(team.twin.x + 12, team.twin.y + 22); tmTwinGone(); } return; }
   const quiet = busy || L.twist === 'dark' || L.deep || currentStationNear() || miniTarget() || P.inv > 0 || tmHeldGate();
   if (!tw) {   // the next raid: the twin hops in behind Kai
     const k = team.raidN || 0;
     if (team.twBeat || k >= TW_RAIDS.length || quiet || G.time < 200 || P.x / (L.flagC * T) < TW_RAIDS[k]) return;
     team.raidN = k + 1;
     const x = Math.max(cam + 20, P.x - 3 * T);
-    team.twin = { x, y: tmTwinFloor(x) - 200, st: 'in', t: 0, hurt: 0, cool: 150, raidT: 0, balls: [], walk: 0, face: 1 };
+    team.twin = { x, y: tmTwinFloor(x) - 200, st: 'in', t: 0, hurt: 0, cool: 150, raidT: 0, balls: [], walk: 0, face: 1, e: { kind: 'shadow', twinRaid: true, x, y: 0, w: 24, h: 44, vx: 0, vy: 0, dead: null, t: 0, onGround: true } };
+    L.enemies.push(team.twin.e);
     floatText(P.x + P.w / 2, P.y - 80, k ? "We're back!" : 'The Shadow Twins!', '#ff6b6b', 30);
-    if (!k) toastMsg('The Shadow Twins! A right answer chases them off.', 4200);
+    if (!k) toastMsg('The Shadow Twins! Answer right, or use your gear!', 4200);
     tone(196, 0.3, 'sawtooth', 0.04, 98); tone(147, 0.4, 'sawtooth', 0.04, 73, 0.2);
     return;
   }
   tw.t++; if (tw.hurt > 0) tw.hurt--;
-  if (tw.st === 'leave') { if (tw.t > 34) { tmPuff(tw.x + 12, tw.y + 22); team.twin = null; } return; }
+  if (tw.st === 'leave') { if (tw.e) { L.enemies = L.enemies.filter(e => e !== tw.e); tw.e = null; } if (tw.t > 34) { tmPuff(tw.x + 12, tw.y + 22); tmTwinGone(); } return; }
+  if (tw.e && !busy) {   // beaten with gear, a kick, or a jump on its head
+    if (tw.e.dead) { tmTwinGearHit(tw, 'BONK!'); return; }
+    if (G.magT > 145 && Math.abs(P.x - tw.x) < 5 * T) { tmTwinGearHit(tw, 'ZAP!'); return; }   // the Magnet Gloves
+    if (tw.st === 'raid' && P.vy > 0 && overlap(P, { x: tw.x, y: tw.y, w: 24, h: 44 }) && P.y + P.h - tw.y < 20) { P.vy = keys.jump ? -11 : -8; tmTwinGearHit(tw, 'STOMP!'); return; }
+  }
   const tx = Math.max(cam + 16, P.x - TW_BACK * T), dx = clamp((tx - tw.x) * 0.06, -5, 5);   // follows just behind Kai, never off the screen
   if (Math.abs(tx - tw.x) > 14 * T) tw.x = tx; else tw.x += dx;
   tw.walk = Math.abs(dx) > 0.4 ? tw.walk + 1 : 0; tw.face = P.x >= tw.x ? 1 : -1;
   tw.y += (tmTwinFloor(tw.x) - tw.y) * (tw.st === 'in' ? 0.12 : 0.2);
+  if (tw.e) { tw.e.x = tw.x; tw.e.y = tw.y; }
   if (tw.st === 'in' && tw.t > 40) tw.st = 'raid';
   if (tw.st === 'raid') {
     if (!busy) tw.raidT++;
