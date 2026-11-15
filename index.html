@@ -495,7 +495,11 @@
   .buybox .row button { font: inherit; font-weight: 800; font-size: 20px; min-width: 70px; border: none; border-radius: 10px; padding: 8px 12px; cursor: pointer; background: #5b6bd6; color: #fff; }
   .buybox .row button.no { background: #8a8aa0; font-size: 14px; }
   .padcard { width: min(440px, 100%); padding: 16px 18px 18px; }
+  .item .ipow { color: #ffb627; font-size: 12px; font-weight: 800; }
   .teamcard { text-align: center; position: relative; overflow: hidden; }
+  #tmShareGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; max-height: 46vh; overflow-y: auto; margin: 8px 0; }
+  .tmgift { background: rgba(255,255,255,.07); border-radius: 12px; padding: 6px 4px 8px; font-size: 13px; } .tmgift canvas { display: block; margin: 0 auto; image-rendering: pixelated; }
+  .tmgift button { margin-top: 4px; padding: 6px 10px; border: 0; border-radius: 9px; background: #3ae374; color: #10301c; font: 13px "Lilita One", "Trebuchet MS", sans-serif; cursor: pointer; } .tmgift button:disabled { background: #5a5a6e; color: #ddd; } .tmgift button.sure { background: #ffd23f; }
   .tmhint { font-size: 14px; opacity: .85; margin: 4px 0 10px; } .tmlabel { font-size: 15px; margin-top: 12px; }
   .tmbtns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
   .tmcode { display: block; margin: 6px auto 8px; font: 800 44px "Lilita One", "Trebuchet MS", monospace; letter-spacing: 8px; color: #ffd23f; background: rgba(0,0,0,.3); border: 2px solid rgba(255,255,255,.25); border-radius: 12px; padding: 4px 10px; width: 220px; text-align: center; text-transform: uppercase; }
@@ -579,7 +583,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 15, 2026 7:00 PM PT · Shop: a treasure shelf of big-ticket suits, trails and dragons</div>
+  <div class="build">Updated Nov 15, 2026 8:00 PM PT · Legend suit double jump; Team: share items with your partner</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -718,11 +722,19 @@
       <div class="tmbtns"><button type="button" class="btn" id="tmHost">Start a game</button><button type="button" class="btn alt" id="tmJoinBtn">Join a game</button></div>
       <div id="tmModeBox" class="hidden"><div class="tmlabel">What do you want to play?</div>
         <div class="tmbtns"><button type="button" class="btn" id="tmBossGo">Fight a boss</button></div>
-        <div class="tmbtns tmrun"><select id="tmLvl"></select><button type="button" class="btn" id="tmRunGo">Run this level</button></div></div>
+        <div class="tmbtns tmrun"><select id="tmLvl"></select><button type="button" class="btn" id="tmRunGo">Run this level</button></div>
+        <div class="tmbtns tmrun"><button type="button" class="btn alt" id="tmShareGo">Share items</button></div></div>
       <div id="tmCodeBox" class="hidden"><div class="tmlabel">Tell your partner this code:</div><div class="tmcode" id="tmCode"></div><div class="tmhint">On their screen: Team, Join a game.</div></div>
       <div id="tmJoinBox" class="hidden"><div class="tmlabel">Type your partner's code:</div><input id="tmIn" class="tmcode" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="text"><button type="button" class="btn" id="tmGo">Join ▶</button></div>
       <div class="padmsg" id="tmStatus"></div>
       <button type="button" class="btn alt" id="tmBack">Back</button>
+    </div>
+    <div id="tmShare" class="hidden">
+      <h2>Share items</h2>
+      <p class="tmhint" id="tmShareHint"></p>
+      <div id="tmShareGrid"></div>
+      <div class="padmsg" id="tmShareMsg"></div>
+      <button type="button" class="btn alt" id="tmShareDone">Done</button>
     </div>
     <div id="tmPlay" class="hidden">
       <div class="dojotop"><b id="tmBossName"></b><button type="button" class="wkx" id="tmLeave" aria-label="Leave">✕</button></div>
@@ -2672,7 +2684,7 @@ const SHOP = [
   { id: 'suit-galaxy', slot: 'suit', name: 'Galaxy suit', price: 3000, col: ['#1a1a4a', '#7a5ae0'], fx: 'star' },
   { id: 'suit-dragon', slot: 'suit', name: 'Dragon suit', price: 5000, col: ['#a01818', '#ffd23f'], fx: 'ember' },
   { id: 'suit-rainbow', slot: 'suit', name: 'Rainbow suit', price: 8000, col: ['#c43a4b', '#ff9aa5'], fx: 'rainbow', anim: [['#c43a4b', '#ff9aa5'], ['#d8642a', '#ffb36b'], ['#c99a1a', '#ffe08a'], ['#1f8a4a', '#7bd36a'], ['#1d4fa8', '#7fb0ff'], ['#6b2fa3', '#c9a0f0']] },
-  { id: 'suit-legend', slot: 'suit', name: 'Legend suit', price: 15000, col: ['#f4f7fb', '#ffd23f'], fx: 'gold' },
+  { id: 'suit-legend', slot: 'suit', name: 'Legend suit', price: 15000, col: ['#f4f7fb', '#ffd23f'], fx: 'gold', power: 'Double jump' },   // the one shop item with a power (owner): jump again in the air
   { id: 'trail-spark', slot: 'trail', name: 'Sparkle trail', price: 120 },
   { id: 'trail-fire', slot: 'trail', name: 'Flame trail', price: 180 },
   { id: 'trail-star', slot: 'trail', name: 'Star trail', price: 0, badge: 'as-add5' },
@@ -6490,8 +6502,10 @@ function updatePlayer() {
   if (p.onGround) p.coyote = 7; else if (p.coyote > 0) p.coyote--;
   if (p.jbuf > 0 && p.coyote > 0) { p.vy = hasPower('jump') ? -16.5 : hasFriend('spring') ? -14.2 : -13.2; p.onGround = false; p.coyote = 0; p.jbuf = 0; p.squash = -8; sfx.jump(); }
   if (p.onGround) { p.usedDouble = false; G.jetFuel = JET_FUEL; G.jetFly = false; }   // (the Jetpack refills on landing)
-  else if (p.jbuf > 0 && p.coyote === 0 && hasPower('double') && !p.usedDouble) {
-    p.vy = -12; p.usedDouble = true; p.jbuf = 0; sfx.jump(); burst(p.x + p.w / 2, p.y + p.h, '#ffffff', 8, 2);
+  else if (p.jbuf > 0 && p.coyote === 0 && (hasPower('double') || prog.equip.suit === 'suit-legend') && !p.usedDouble) {   // (the Legend suit: always a double jump)
+    const lg = !hasPower('double');
+    p.vy = -12; p.usedDouble = true; p.jbuf = 0; sfx.jump(); burst(p.x + p.w / 2, p.y + p.h, lg ? '#ffd23f' : '#ffffff', lg ? 14 : 8, lg ? 3 : 2);
+    if (lg) tone(1047, 0.1, 'triangle', 0.03, 1568);
   }
   if (G.glide > 0) {   // flying with the koi kite: slow fall, tap jump to flap
     if (p.jbuf > 0 && !p.onGround) { p.vy = -6; p.jbuf = 0; tone(500, 0.08, 'triangle', 0.03); }
@@ -11378,6 +11392,10 @@ function begin() {
     const id = gearPow(); G.gearTip = true; prog.gearTips = { ...(prog.gearTips || {}), [id]: ((prog.gearTips || {})[id] || 0) + 1 }; save();
     floatText(cam + VW / 2, P.y - 90, `${GEAR[id].power}! ${isTouch ? (id === 'jetpack' ? 'Hold' : 'Tap') + ' the gear button' : (id === 'jetpack' ? 'Hold' : 'Press') + ' G'}`, '#ffd23f', VW < 700 ? 18 : 22);
   }
+  if (G && prog.equip.suit === 'suit-legend' && !L.boss && (prog.legendTips || 0) < 3) {   // the Legend suit's power, the first few times
+    prog.legendTips = (prog.legendTips || 0) + 1; save();
+    floatText(cam + VW / 2, P.y - 120, 'Legend suit: jump again in the air!', '#ffd23f', VW < 700 ? 18 : 22);
+  }
   if (G && !G.kickTip && kickOn() && (prog.kickTips || 0) < 3) {
     G.kickTip = true; prog.kickTips = (prog.kickTips || 0) + 1; save();
     floatText(cam + VW / 2, P.y - 60, isTouch ? 'High kick! Tap the fist button to kick.' : 'High kick! Press X to kick.', '#ffd23f', 22);
@@ -11585,7 +11603,7 @@ function renderShop() {
   for (const it of SHOP) {
     const owned = prog.owned.includes(it.id), on = prog.equip[it.slot] === it.id;
     const el = document.createElement('div'); el.className = 'item';
-    el.innerHTML = `<canvas width="90" height="54"></canvas><div class="nm">${it.name}</div><div class="pr">${owned ? 'Owned' : `${gemSm()} ${it.price}`}</div><button type="button"></button>`;
+    el.innerHTML = `<canvas width="90" height="54"></canvas><div class="nm">${it.name}</div>${it.power ? `<div class="ipow">Power: ${it.power}</div>` : ''}<div class="pr">${owned ? 'Owned' : `${gemSm()} ${it.price}`}</div><button type="button"></button>`;
     drawItemPreview(el.querySelector('canvas'), it);
     const b = el.querySelector('button');
     if (it.badge && !prog.badges[it.badge] && !owned) { b.innerHTML = `${pixSm('lock')} Badge: ${BADGE[it.badge].name}`; b.disabled = true; el.querySelector('.pr').textContent = BADGE[it.badge].text; }
@@ -12633,7 +12651,7 @@ $('dojoBtn').onclick = () => { audio(); startDojo(); };
 // (no library). A room is rooms/<CODE>: { t, boss (world), max, r (round), p: { h: { i, hits }, j: { i, hits } } }. Each
 // device only ever writes its own hit count, so there is nothing to collide; boss health = max - both counts. Only
 // game data is sent: the player's picture id (a game character), never a name. Leaving deletes the room.
-const TEAM_V = 7;   // bump when the team messages change: a partner on an older version gets a "please update" note
+const TEAM_V = 8;   // bump when the team messages change: a partner on an older version gets a "please update" note
 const TEAM_DB = 'https://math-ninja-team-default-rtdb.firebaseio.com', TEAM_HP = 20, TEAM_ABC = 'BCDFGHJKLMNPRSTVWXZ2345679';
 let team = null;
 const tmUrl = (path = '') => `${TEAM_DB}/rooms/${team.code}${path}.json`;
@@ -12642,7 +12660,7 @@ const tmSend = (path, body, method = 'PATCH') => { const ac = new AbortControlle
 const tmSay = t => { $('tmStatus').textContent = t; };
 const tmIcon = id => playerIcon(fixIcon(String(id || 'kai').replace(/[^a-z0-9-]/gi, '')));
 function openTeam() {
-  hide('menu'); tmClose(); show('team'); show('tmLobby'); hide('tmPlay'); hide('tmCodeBox'); hide('tmJoinBox'); hide('tmModeBox'); $('tmHost').disabled = false; $('tmJoinBtn').disabled = false;
+  hide('menu'); tmClose(); show('team'); show('tmLobby'); hide('tmPlay'); hide('tmShare'); hide('tmCodeBox'); hide('tmJoinBox'); hide('tmModeBox'); $('tmHost').disabled = false; $('tmJoinBtn').disabled = false;
   tmSay(navigator.onLine === false ? 'You need the internet to play together.' : '');
   const open = Math.min(unlockedCount(), STAGES.length), lv = STAGES.map((st, i) => [st, i]).filter(([st, i]) => !st.boss && i < open);   // the levels this player has opened
   $('tmLvl').innerHTML = lv.map(([st, i]) => `<option value="${i}">${st.label} ${st.name}</option>`).join(''); if (lv.length) $('tmLvl').value = lv[lv.length - 1][1];
@@ -12682,14 +12700,14 @@ function tmListen() {
 function tmRelisten() { if (!team || !team.code) return; if (team.es) team.es.close(); team.sent = ''; team.busy = false; tmListen(); }
 document.addEventListener('visibilitychange', () => { if (!document.hidden && team && team.es) tmRelisten(); });
 window.addEventListener('online', () => { if (team && team.es) tmRelisten(); });
-async function tmHost(run) {   // run = a level run (the level picked in #tmLvl), else a boss fight
+async function tmHost(run) {   // run = true: a level run (the level picked in #tmLvl); 'share': the sharing screen; else a boss fight
   audio(); $('tmHost').disabled = true; $('tmJoinBtn').disabled = true; hide('tmJoinBox'); hide('tmModeBox'); tmSay('Making a game...');
   try {
     const old = await fetch(`${TEAM_DB}/rooms.json`).then(r => r.json()).catch(() => null) || {};   // tidy up: rooms older than 3 hours
     for (const [c, rm] of Object.entries(old)) if (!rm || !rm.t || Date.now() - rm.t > 108e5) fetch(`${TEAM_DB}/rooms/${c}.json`, { method: 'DELETE' }).catch(() => {});
     let code = ''; do { code = range(0, 3).map(() => TEAM_ABC[R(0, TEAM_ABC.length - 1)]).join(''); } while (old[code]);
     team = { code, me: 'h', hits: 0, r: 1 };
-    await tmSend('', { t: { '.sv': 'timestamp' }, mode: run ? 'run' : 'boss', lvl: run ? +$('tmLvl').value : 0, boss: R(0, WORLDS.length - 1), max: TEAM_HP, r: 1, p: { h: { i: curPlayer().icon, hits: 0, v: TEAM_V, ez: prog.easy ? 1 : 0 } } }, 'PUT');
+    await tmSend('', { t: { '.sv': 'timestamp' }, mode: run === 'share' ? 'share' : run ? 'run' : 'boss', lvl: run === true ? +$('tmLvl').value : 0, boss: R(0, WORLDS.length - 1), max: TEAM_HP, r: 1, p: { h: { i: curPlayer().icon, hits: 0, v: TEAM_V, ez: prog.easy ? 1 : 0 } } }, 'PUT');
     $('tmCode').textContent = code; show('tmCodeBox'); tmSay('Waiting for your partner...'); tmListen();
   } catch (err) { tmClose(); tmSay('Could not start. Check the internet and try again.'); $('tmHost').disabled = false; $('tmJoinBtn').disabled = false; }
 }
@@ -12713,14 +12731,68 @@ function tmSync() {
   if (!rm) {   // the room is gone: the partner left
     const was = team.playing || team.won, run = team.run; tmClose();
     if (run) { toastMsg('Your partner left the team run.'); return; }   // keep playing the level alone
-    if (was) { hide('msg'); show('team'); show('tmLobby'); hide('tmPlay'); hide('tmCodeBox'); hide('tmJoinBox'); $('tmHost').disabled = false; $('tmJoinBtn').disabled = false; tmSay('Your partner left the game.'); }
+    if (was) { hide('msg'); show('team'); show('tmLobby'); hide('tmPlay'); hide('tmShare'); hide('tmCodeBox'); hide('tmJoinBox'); $('tmHost').disabled = false; $('tmJoinBtn').disabled = false; tmSay('Your partner left the game.'); }
     return;
   }
   if (!rm.p || !rm.p.h || !rm.p.j) return;   // still waiting for the second ninja
   const pv = (rm.p[team.me === 'h' ? 'j' : 'h'] || {}).v || 0;   // the partner's game is an older (or newer) version: say so once
   if (pv !== TEAM_V && !team.vTold) { team.vTold = true; toastMsg(pv < TEAM_V ? 'Your partner has an older version. Ask them to close Math Ninja and open it again.' : 'There is a newer version. Close Math Ninja and open it again.', 7000); }
+  if (rm.mode === 'share') { tmShareSync(); return; }
   if (!team.playing || rm.r !== team.r) { if (rm.mode === 'run') tmRunStart(); else tmStart(); }
   if (rm.mode === 'run') tmRunSync(); else tmDraw();
+}
+// ---- Share items (owner, Nov 15 2026: "teammates can share items they buy: it goes to the other person and they
+// don't have it any longer"). Team → Start a game → Share items (room mode 'share'). Each kid sees the shop items they
+// BOUGHT (price > 0; badge prizes and gear stay theirs). Give → tap again to be sure → the item goes over.
+// Safe hand-over with counters, like the rest of team play: I append the id to my `gf` list; the partner adds it to
+// their `prog.owned` and raises their `ga` (gifts accepted); only when I see that do I take it out of my own
+// `prog.owned` (and take it off Kai). Each side also sends `own` (what it has bought) so nobody is given a double.
+const tmGiftable = () => SHOP.filter(it => it.price > 0 && prog.owned.includes(it.id)).map(it => it.id);
+function tmShareSend() { tmSend(`/p/${team.me}`, { own: tmGiftable(), gf: team.gf || [], ga: team.gotN || 0 }).catch(() => { $('tmShareMsg').textContent = 'No internet... trying again.'; setTimeout(() => { if (team && team.share) tmShareSend(); }, 2500); }); }
+function tmShareSync() {
+  const rm = team.room, you = rm.p[tmYou()] || {};
+  if (!team.share) {   // both are in: open the screen
+    team.share = true; team.playing = true; team.gf = []; team.gotN = 0; team.ackN = 0; team.sure = null;
+    hide('msg'); hide('menu'); show('team'); hide('tmLobby'); hide('tmPlay'); show('tmShare'); $('tmShareMsg').textContent = '';
+    tmShareSend(); sfx.gate();
+  }
+  const theirs = Array.isArray(you.gf) ? you.gf : Object.values(you.gf || {});
+  let got = null;
+  while (team.gotN < theirs.length) {   // gifts for me
+    const id = theirs[team.gotN++], it = ITEM[id];
+    if (it && it.price > 0 && !prog.owned.includes(id)) { prog.owned.push(id); got = it; }
+  }
+  if (got) { save(); sfx.win(); $('tmShareMsg').innerHTML = `${tmIcon(you.i)} Your partner gave you the <b>${got.name}</b>! It is in your shop now.`; tmShareSend(); }
+  if ((you.ga || 0) > team.ackN) {   // the partner has it now: it leaves my shelf
+    for (let k = team.ackN; k < you.ga && k < team.gf.length; k++) {
+      const id = team.gf[k], it = ITEM[id]; prog.owned = prog.owned.filter(x => x !== id);
+      if (it && prog.equip[it.slot] === id) prog.equip[it.slot] = it.slot === 'band' ? 'band-red' : it.slot === 'suit' ? 'suit-navy' : null;
+      if (it) $('tmShareMsg').innerHTML = `You gave the <b>${it.name}</b> to your partner.`;
+    }
+    team.ackN = you.ga; save(); sfx.correct(); tmShareSend();
+  }
+  tmShareDraw();
+}
+function tmShareDraw() {
+  const you = team.room.p[tmYou()] || {}, theirOwn = new Set(Array.isArray(you.own) ? you.own : Object.values(you.own || {})), mine = tmGiftable(), sending = new Set(team.gf.slice(team.ackN));
+  $('tmShareHint').innerHTML = `${tmIcon(you.i)} Give something you bought to your partner. Then it is theirs, not yours.`;
+  const grid = $('tmShareGrid'); grid.innerHTML = mine.length ? '' : '<p class="tmhint" style="grid-column: span 2">You have not bought anything yet. Visit the shop!</p>';
+  for (const id of mine) {
+    const it = ITEM[id], el = document.createElement('div'); el.className = 'tmgift';
+    el.innerHTML = `<canvas width="90" height="54"></canvas>${it.name}<br><button type="button"></button>`;
+    drawItemPreview(el.querySelector('canvas'), it);
+    const b = el.querySelector('button');
+    if (sending.has(id)) { b.textContent = 'Sending...'; b.disabled = true; }
+    else if (theirOwn.has(id)) { b.textContent = 'They have it'; b.disabled = true; }
+    else if (team.sure === id) { b.textContent = 'Sure? Give it'; b.className = 'sure'; }
+    else b.textContent = 'Give';
+    b.onclick = () => {
+      audio();
+      if (team.sure !== id) { team.sure = id; tmShareDraw(); return; }
+      team.sure = null; team.gf.push(id); tmShareSend(); tmShareDraw();
+    };
+    grid.appendChild(el);
+  }
 }
 // ---- Team run (owner, Nov 14 2026): both play the SAME level, each on their own screen with their own math. A small
 // tracker on the HUD shows where the partner is (rooms/<CODE>/p/<who>: x = percent of the level, g = gates opened,
@@ -13262,6 +13334,8 @@ $('tmCheers').querySelectorAll('button').forEach(b => { b.onclick = () => tmChee
 $('tmCheerBtn').onclick = () => { audio(); $('tmCheers').classList.toggle('hidden'); };
 $('tmHost').onclick = () => { audio(); hide('tmJoinBox'); hide('tmCodeBox'); show('tmModeBox'); tmSay(''); };
 $('tmBossGo').onclick = () => tmHost(false);
+$('tmShareGo').onclick = () => tmHost('share');
+$('tmShareDone').onclick = () => { tmClose(true); hide('team'); buildMenu(); show('menu'); };
 $('tmRunGo').onclick = () => tmHost(true);
 $('tmJoinBtn').onclick = () => { audio(); hide('tmCodeBox'); hide('tmModeBox'); show('tmJoinBox'); tmSay(''); $('tmIn').value = ''; $('tmIn').focus(); };
 $('tmGo').onclick = tmJoin;
