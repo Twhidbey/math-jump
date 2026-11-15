@@ -114,6 +114,11 @@
   .tbtn[data-k="gear"] img { max-width: 52px; max-height: 52px; image-rendering: pixelated; pointer-events: none; }
   .tbtn[data-k="gear"]:not(.ready) img { opacity: .45; }
   body.cangear .tbtn[data-k="gear"] { display: flex; }
+  .tbtn[data-k="suit"] { display: none; right: 32px; bottom: 130px; background: rgba(255,255,255,.12); border: 3px solid rgba(255,210,63,.5); }   /* the Legend suit's power: jump again in the air */
+  .tbtn[data-k="suit"] img { width: 48px; height: 48px; image-rendering: pixelated; pointer-events: none; opacity: .45; }
+  .tbtn[data-k="suit"].ready { background: rgba(255,210,63,.55); border-color: #ffd23f; box-shadow: 0 0 14px rgba(255,210,63,.8); } .tbtn[data-k="suit"].ready img { opacity: 1; }
+  body.cansuit .tbtn[data-k="suit"] { display: flex; }
+  body.asking .tbtn[data-k="suit"] { display: none; }   /* the answer buttons go there; jumping again in the air still works */
   /* Tap-to-answer bar for gates and bosses */
   #ansbar { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 7; display: flex; flex-direction: column; align-items: center; gap: 6px;
     -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; }
@@ -150,6 +155,7 @@
   body.portrait .tbtn[data-k="dolphin"] { left: 122px; bottom: calc(max(36px, env(safe-area-inset-bottom)) + 122px); }
   body.portrait .tbtn[data-k="vanish"] { left: 122px; bottom: calc(max(36px, env(safe-area-inset-bottom)) + 122px); }
   body.portrait .tbtn[data-k="gear"] { left: 12px; bottom: calc(max(36px, env(safe-area-inset-bottom)) + 234px); }
+  body.portrait .tbtn[data-k="suit"] { right: 22px; bottom: calc(max(36px, env(safe-area-inset-bottom)) + 132px); }   /* above ▲, by the jumping thumb */
   body.portrait .tbtn[data-k="down"] { right: 22px; bottom: calc(max(36px, env(safe-area-inset-bottom)) + 132px); }   /* above ▲ */   /* above the left arrow (after the rule above, which would win otherwise) */
   body.touch .keys { display: none; }
   body.racing .tbtn[data-k="jump"] { display: none; }
@@ -583,7 +589,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 15, 2026 8:00 PM PT · Legend suit double jump; Team: share items with your partner</div>
+  <div class="build">Updated Nov 15, 2026 8:40 PM PT · Legend suit: its own gold button</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -779,6 +785,7 @@
   <div class="tbtn" data-k="vanish"><span data-pix="vanish"></span></div>
   <div class="tbtn" data-k="dolphin"><span data-pix="dolphin"></span></div>
   <div class="tbtn" data-k="gear"><img alt=""></div>
+  <div class="tbtn" data-k="suit"><img alt=""></div>
 </div>
 
 <script>
@@ -1635,6 +1642,18 @@ function gearBtnSync() {
   if (id !== gearBtnId) { gearBtnId = id; b.querySelector('img').src = gearImg(id, 6).toDataURL(); gearBtnF = -1; }
   const f = id === 'jetpack' ? Math.round(100 * (G.jetFuel ?? JET_FUEL) / JET_FUEL) : Math.round(100 - (G.gearCool || 0) / GEAR_CHARGE[id] * 100);
   if (f !== gearBtnF) { gearBtnF = f; b.style.setProperty('--f', f + '%'); b.classList.toggle('ready', f >= 100); }
+}
+// The Legend suit's button (owner, Nov 15 2026: "a button for the suit to make it super obvious"): shown while the suit
+// is worn, glowing gold whenever the power can be used (on the ground, or in the air with the second jump unused).
+const suitBtnOn = () => !!(G && P && mode === 'play' && prog.equip.suit === 'suit-legend' && !L.water && !L.vault && !G.rescue && !G.groom && !G.cross && !G.swing && !G.down);
+let suitBtnSet = false, suitBtnReady = null;
+function suitBtnSync() {
+  const on = suitBtnOn(); document.body.classList.toggle('cansuit', on);
+  if (!on) return;
+  const b = document.querySelector('.tbtn[data-k="suit"]');
+  if (!suitBtnSet) { suitBtnSet = true; const cv = document.createElement('canvas'); cv.width = 48; cv.height = 48; drawNinjaPreview(cv, { band: 'band-red', suit: 'suit-legend', trail: null, pet: null }, 3); b.querySelector('img').src = cv.toDataURL(); }
+  const ready = P.onGround || !P.usedDouble;
+  if (ready !== suitBtnReady) { suitBtnReady = ready; b.classList.toggle('ready', ready); }
 }
 function gearPowTick(p) {
   const id = gearPow(), go = keys.gearPressed && gearBtnOn();
@@ -6502,6 +6521,13 @@ function updatePlayer() {
   if (p.onGround) p.coyote = 7; else if (p.coyote > 0) p.coyote--;
   if (p.jbuf > 0 && p.coyote > 0) { p.vy = hasPower('jump') ? -16.5 : hasFriend('spring') ? -14.2 : -13.2; p.onGround = false; p.coyote = 0; p.jbuf = 0; p.squash = -8; sfx.jump(); }
   if (p.onGround) { p.usedDouble = false; G.jetFuel = JET_FUEL; G.jetFly = false; }   // (the Jetpack refills on landing)
+  if (keys.suitPressed) {   // the Legend suit's own button (L on a computer): a full jump from the ground, the gold jump in the air
+    keys.suitPressed = false;
+    if (suitBtnOn()) {
+      if (p.onGround || p.coyote > 0) { p.vy = -13.2; p.onGround = false; p.coyote = 0; p.jbuf = 0; p.bounce = true; p.squash = -8; sfx.jump(); }
+      else if (!p.usedDouble) { p.vy = -12; p.usedDouble = true; p.jbuf = 0; p.bounce = true; sfx.jump(); burst(p.x + p.w / 2, p.y + p.h, '#ffd23f', 14, 3); tone(1047, 0.1, 'triangle', 0.03, 1568); floatText(p.x + p.w / 2, p.y - 20, 'Legend jump!', '#ffd23f', 20); }
+    }
+  }
   else if (p.jbuf > 0 && p.coyote === 0 && (hasPower('double') || prog.equip.suit === 'suit-legend') && !p.usedDouble) {   // (the Legend suit: always a double jump)
     const lg = !hasPower('double');
     p.vy = -12; p.usedDouble = true; p.jbuf = 0; sfx.jump(); burst(p.x + p.w / 2, p.y + p.h, lg ? '#ffd23f' : '#ffffff', lg ? 14 : 8, lg ? 3 : 2);
@@ -11394,7 +11420,7 @@ function begin() {
   }
   if (G && prog.equip.suit === 'suit-legend' && !L.boss && (prog.legendTips || 0) < 3) {   // the Legend suit's power, the first few times
     prog.legendTips = (prog.legendTips || 0) + 1; save();
-    floatText(cam + VW / 2, P.y - 120, 'Legend suit: jump again in the air!', '#ffd23f', VW < 700 ? 18 : 22);
+    floatText(cam + VW / 2, P.y - 120, isTouch ? 'Legend suit: tap the gold button in the air!' : 'Legend suit: press L (or jump again) in the air!', '#ffd23f', VW < 700 ? 16 : 22);
   }
   if (G && !G.kickTip && kickOn() && (prog.kickTips || 0) < 3) {
     G.kickTip = true; prog.kickTips = (prog.kickTips || 0) + 1; save();
@@ -13502,7 +13528,7 @@ $('packClose').onclick = () => { hide('pack'); buildMenu(); show('menu'); };
 $('badgesClose').onclick = () => { hide('badges'); buildMenu(); show('menu'); };
 
 // ---------------------------------------------------------------- input
-const KMAP = { KeyG: 'gear', KeyX: 'move', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'jump', KeyW: 'jump', Space: 'jump', KeyZ: 'jump' };
+const KMAP = { KeyL: 'suit', KeyG: 'gear', KeyX: 'move', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'jump', KeyW: 'jump', Space: 'jump', KeyZ: 'jump' };
 window.addEventListener('keydown', e => {
   if (sceneSt && sceneSt[0].cv.isConnected && !$('msg').classList.contains('hidden') && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) { e.preventDefault(); sceneSt[0].go(e.code === 'ArrowLeft' ? -1 : 1); return; }   // story pictures
   if (e.target.tagName === 'TEXTAREA') return;   // pasting a save code
@@ -13546,6 +13572,7 @@ window.addEventListener('keydown', e => {
     if (k === 'jump' && !keys.jump) keys.jumpPressed = true;
     if (k === 'down' && !keys.down) keys.downPressed = true;
     if (k === 'gear' && !keys.gear) keys.gearPressed = true;
+    if (k === 'suit' && !keys.suit) keys.suitPressed = true;
     keys[k] = true;
   }
   if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
@@ -13594,7 +13621,7 @@ document.querySelectorAll('.tbtn').forEach(el => {
     if (k === 'vanish') { if (G) doVanish(); el.classList.add('on'); return; }
     if (k === 'dolphin') { if (G) doDolphin(); el.classList.add('on'); return; }   // right away: a quick tap ends before the next frame
     if (mode === 'race') raceSteer(k === 'left' ? -1 : k === 'right' ? 1 : 0);
-    if (k === 'jump' && !keys.jump) keys.jumpPressed = true; if (k === 'down' && !keys.down) keys.downPressed = true; if (k === 'gear' && !keys.gear) keys.gearPressed = true; keys[k] = true; el.classList.add('on');
+    if (k === 'jump' && !keys.jump) keys.jumpPressed = true; if (k === 'down' && !keys.down) keys.downPressed = true; if (k === 'gear' && !keys.gear) keys.gearPressed = true; if (k === 'suit' && !keys.suit) keys.suitPressed = true; keys[k] = true; el.classList.add('on');
   };
   const up = e => { e.preventDefault(); keys[k] = false; el.classList.remove('on'); };
   el.addEventListener('pointerdown', down);
@@ -13614,6 +13641,7 @@ function frame(now) {
   document.body.classList.toggle('canleave', canLeaveDrill());   // the lesson's Leave button
   tmBarSync();   // team run: the give-a-heart and cheer buttons
   gearBtnSync();   // the gear button: shown with the worn piece's picture, fills up as it recharges
+  suitBtnSync();   // the Legend suit's button
   document.body.classList.toggle('swim', mode === 'play' && !!(L && L.water));   // the sea: a ▼ button to swim down
   while (acc >= STEP) {
     dojoTick(STEP / 1000);
