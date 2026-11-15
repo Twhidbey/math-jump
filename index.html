@@ -570,7 +570,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 15, 2026 3:45 PM PT · Team run: gear beats raiding twins; stays in sync better</div>
+  <div class="build">Updated Nov 15, 2026 4:45 PM PT · Team run: both kids get the same level</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1547,6 +1547,12 @@ function seaDoors(st, map) {
 }
 // The grade-track plan of the level being built (set by startStage, null otherwise): questions come from mixGen.
 var LEVEL_MIX = null;
+// Team run (owner, Nov 15 2026: "is there a way to make them match so they are seeing the same things, even if the
+// challenges are different"): when set (by startStage), the level's SHAPE comes from this shared layout instead of the
+// player's own math and Easy setting: { easy } = Easy-mode shape if either kid plays in Easy, and always the simple
+// shape (stepping stones, no number-stone bridges, no pattern walls), so two devices build the very same level. The
+// questions still come from each kid's own math (L.gen, stepSeq). Hearts and timers stay each kid's own.
+var LAYOUT = null;
 // The Gear Pack (owner, Nov 10 2026: "a lost item they can wear or hold ... a gear pack they collect and add to").
 // One lost item per world for now (owner: one per level later), hidden in an old chest on a high ledge (Coral Reef: on
 // the sea floor between two coral rocks); 5 right answers open its lock. Looks only for now (owner: maybe actions later).
@@ -1753,6 +1759,7 @@ function focusGen(skill) {
   return () => (want.length && Math.random() < 0.75 ? { ...want[i++ % want.length] } : base());
 }
 function buildLevel(idx, easy = false, skill = curSkill()) {
+  const shared = LAYOUT; if (shared) easy = !!shared.easy;   // team run: one layout for both devices
   const def = STAGES[idx], W = WORLDS[def.w], rng = mulberry32(1234 + def.si * 7919);
   const map = newMap();
   const twist = def.boss ? null : TWISTS[slotOf(def)];
@@ -2104,7 +2111,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
   L.squads = []; L.steps = [];
   // Bridges and stepping stones take turns, level by level (each is in about half the levels). Kindergarten math never
   // gets a number-stone bridge (carrying stones to an exact sum is the trickiest thing in the game): stones every level.
-  const young = skill.tier === 1, useBridge = !young && slotOf(def) % 2 === 1;
+  const young = shared ? true : skill.tier === 1, useBridge = !young && slotOf(def) % 2 === 1;
   const feedAt = Math.floor(def.n / 2), stepsAt = useBridge ? [] : [1];   // one set of stepping stones in a stones level
   // Breathing room: after each big moment a long stretch of plain running. The first two also get a pair of ledges
   // up in the sky (the world's own blocks, one higher than the other) with gems on top, just for jumping.
@@ -2115,7 +2122,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     if (gid && !L.gearChest) { L.gearChest = { id: gid, x: (c + 7) * T + T / 2, y: (GR - 7) * T, lock: 0, open: 0 }; L.coins = L.coins.filter(g => !(Math.abs(g.x - L.gearChest.x) < T && Math.abs(g.y - (GR - 8) * T - T / 2) < T)); }   // the Gear Pack chest, up on the high ledge
   };
   const run = () => { const s = flat(ri(rng, 14, 18)); if (skyLeft > 0 && !def.boss) { skyLeft--; sky(s + 3); } };
-  const wk = def.boss ? [] : wallKinds(skill), wallGate = wk.length && def.n >= 3 ? feedAt : -1;   // older players: the middle gate is a pattern wall
+  const wk = def.boss || shared ? [] : wallKinds(skill), wallGate = wk.length && def.n >= 3 ? feedAt : -1;   // older players: the middle gate is a pattern wall
   for (let i = 0; i < def.n; i++) {
     if (i === feedAt) {   // one hungry animal per level, mid-way, with three numbered foods floating ahead of it
       const s0 = flat(11), [kind, food] = ANIMALS[slotOf(def)] || ANIMALS[0], q = wordQ(L.gen(), kind, food);
@@ -11292,7 +11299,9 @@ function startStage(i) {
   const plan = planStage(i, true); if (plan) plan.stage = i; else prog.trackNow = null;
   FOCUS = !!prog.focusOnce && !plan; prog.focusOnce = false;
   prog.pickOnce = false; LEVEL_MIX = plan;
+  LAYOUT = team && team.run && i === team.lvl && !st.boss ? { easy: !!team.lyEasy } : null;   // team run: both devices build the same level
   L = st.boss ? buildArena(i, prog.easy) : buildLevel(i, prog.easy);
+  LAYOUT = null;
   LEVEL_MIX = null; FOCUS = false;
   P = { x: 1.5 * T, y: GR * T - 44, w: 24, h: 44, vx: 0, vy: 0, onGround: false, face: 1, inv: 0, anim: 0, coyote: 0, jbuf: 0, throwT: 0 };
   const hearts = prog.easy ? 5 : 3;
@@ -12581,7 +12590,7 @@ $('dojoBtn').onclick = () => { audio(); startDojo(); };
 // (no library). A room is rooms/<CODE>: { t, boss (world), max, r (round), p: { h: { i, hits }, j: { i, hits } } }. Each
 // device only ever writes its own hit count, so there is nothing to collide; boss health = max - both counts. Only
 // game data is sent: the player's picture id (a game character), never a name. Leaving deletes the room.
-const TEAM_V = 5;   // bump when the team messages change: a partner on an older version gets a "please update" note
+const TEAM_V = 6;   // bump when the team messages change: a partner on an older version gets a "please update" note
 const TEAM_DB = 'https://math-ninja-team-default-rtdb.firebaseio.com', TEAM_HP = 20, TEAM_ABC = 'BCDFGHJKLMNPRSTVWXZ2345679';
 let team = null;
 const tmUrl = (path = '') => `${TEAM_DB}/rooms/${team.code}${path}.json`;
@@ -12637,7 +12646,7 @@ async function tmHost(run) {   // run = a level run (the level picked in #tmLvl)
     for (const [c, rm] of Object.entries(old)) if (!rm || !rm.t || Date.now() - rm.t > 108e5) fetch(`${TEAM_DB}/rooms/${c}.json`, { method: 'DELETE' }).catch(() => {});
     let code = ''; do { code = range(0, 3).map(() => TEAM_ABC[R(0, TEAM_ABC.length - 1)]).join(''); } while (old[code]);
     team = { code, me: 'h', hits: 0, r: 1 };
-    await tmSend('', { t: { '.sv': 'timestamp' }, mode: run ? 'run' : 'boss', lvl: run ? +$('tmLvl').value : 0, boss: R(0, WORLDS.length - 1), max: TEAM_HP, r: 1, p: { h: { i: curPlayer().icon, hits: 0, v: TEAM_V } } }, 'PUT');
+    await tmSend('', { t: { '.sv': 'timestamp' }, mode: run ? 'run' : 'boss', lvl: run ? +$('tmLvl').value : 0, boss: R(0, WORLDS.length - 1), max: TEAM_HP, r: 1, p: { h: { i: curPlayer().icon, hits: 0, v: TEAM_V, ez: prog.easy ? 1 : 0 } } }, 'PUT');
     $('tmCode').textContent = code; show('tmCodeBox'); tmSay('Waiting for your partner...'); tmListen();
   } catch (err) { tmClose(); tmSay('Could not start. Check the internet and try again.'); $('tmHost').disabled = false; $('tmJoinBtn').disabled = false; }
 }
@@ -12651,7 +12660,7 @@ async function tmJoin() {
     if (!rm || !rm.p || !rm.p.h) { tmClose(); tmSay('No game with that code. Check it with your partner.'); return; }
     if (rm.p.j) { tmClose(); tmSay('That game already has two ninjas.'); return; }
     team.r = rm.r || 1;
-    await tmSend('/p/j', { i: curPlayer().icon, hits: 0, v: TEAM_V }, 'PUT');
+    await tmSend('/p/j', { i: curPlayer().icon, hits: 0, v: TEAM_V, ez: prog.easy ? 1 : 0 }, 'PUT');
     tmListen();
   } catch (err) { tmClose(); tmSay('Could not join. Check the internet and try again.'); }
 }
@@ -12679,6 +12688,7 @@ function tmRunStart() {
   team.r = rm.r; team.run = true; team.playing = true; team.won = false; team.paid = false; team.sent = ''; team.pg = 0; team.pdone = false;
   team.twDmg = 0; team.rc = 0; team.prc = 0; team.twin = null; team.twBeat = false; team.raidN = 0; team.sd = null; team.sdN = 0; team.bs = 0; team.wonSd = 0; team.tickG = null; team.lastSolved = 0; team.myRightAt = -1e9; team.pRightAt = -1e9; team.lvl = STAGES[i].boss ? 0 : i;
   hide('msg'); hide('team'); hide('menu');
+  team.lyEasy = !!(rm.p.h.ez || rm.p.j.ez);   // the shared layout: the Easy shape if either kid plays in Easy
   startStage(team.lvl);
   toastMsg(`Team run: ${STAGES[team.lvl].name}!`, 3200);
 }
@@ -13023,7 +13033,7 @@ function tmRunBox() {
   if (b) b.onclick = () => {   // either ninja: the next level for both
     const rm = team.room; if (!rm || rm.r !== team.r) return;
     let n = team.lvl + 1; while (n < STAGES.length && STAGES[n].boss) n++; if (n >= STAGES.length) n = team.lvl;
-    b.disabled = true; tmSend('', { r: rm.r + 1, lvl: n, p: { h: { i: rm.p.h.i, hits: 0, v: rm.p.h.v || 0 }, j: { i: rm.p.j.i, hits: 0, v: rm.p.j.v || 0 } } }).catch(() => { b.disabled = false; });
+    b.disabled = true; tmSend('', { r: rm.r + 1, lvl: n, p: { h: { i: rm.p.h.i, hits: 0, v: rm.p.h.v || 0, ez: rm.p.h.ez || 0 }, j: { i: rm.p.j.i, hits: 0, v: rm.p.j.v || 0, ez: rm.p.j.ez || 0 } } }).catch(() => { b.disabled = false; });
   };
 }
 function tmRunDone() {   // from finishLevel: tell the partner we are home (with our final gate count)
@@ -13099,7 +13109,7 @@ function tmAgain() {   // either ninja can ask for another round: a new boss, bo
   if (!team || !team.room) { openTeam(); return; }
   const rm = team.room;
   if (rm.r !== team.r) return;   // the partner already started it
-  tmSend('', { r: rm.r + 1, boss: (rm.boss + 1 + R(0, WORLDS.length - 2)) % WORLDS.length, p: { h: { i: rm.p.h.i, hits: 0, v: rm.p.h.v || 0 }, j: { i: rm.p.j.i, hits: 0, v: rm.p.j.v || 0 } } }).catch(() => { showMsg('Oops', '<p>No internet. Try again.</p>', [{ label: 'OK', fn: () => { tmClose(true); toMenu(); }, primary: true }]); });
+  tmSend('', { r: rm.r + 1, boss: (rm.boss + 1 + R(0, WORLDS.length - 2)) % WORLDS.length, p: { h: { i: rm.p.h.i, hits: 0, v: rm.p.h.v || 0, ez: rm.p.h.ez || 0 }, j: { i: rm.p.j.i, hits: 0, v: rm.p.j.v || 0, ez: rm.p.j.ez || 0 } } }).catch(() => { showMsg('Oops', '<p>No internet. Try again.</p>', [{ label: 'OK', fn: () => { tmClose(true); toMenu(); }, primary: true }]); });
 }
 function teamKey(e) {
   if (!team || !team.playing) return;
