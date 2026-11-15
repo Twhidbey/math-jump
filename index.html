@@ -83,6 +83,13 @@
   #leaveBtn { display: none; position: fixed; left: 12px; bottom: max(24px, env(safe-area-inset-bottom)); z-index: 7; padding: 10px 16px; border-radius: 12px;
     border: 2px solid rgba(255,255,255,.5); background: rgba(20,16,40,.7); color: #fff; font: 18px "Lilita One", "Trebuchet MS", sans-serif; }
   body.canleave #leaveBtn { display: block; }
+  #tmBar { display: none; position: absolute; left: 1%; top: 30%; z-index: 6; flex-direction: column; gap: 6px; }
+  body.teamrun #tmBar { display: flex; }
+  #tmBar > button { width: max(40px, 5.2vmin); height: max(40px, 5.2vmin); border-radius: 12px; border: 2px solid rgba(255,255,255,.5); background: rgba(20,24,48,.72); color: #fff; font: 800 14px "Lilita One", "Trebuchet MS", sans-serif; padding: 0; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; }
+  #tmBar > button img { width: 20px; height: 20px; image-rendering: pixelated; } #tmBar > button small { font-size: 9px; }
+  #tmBar > button:disabled { opacity: .35; }
+  #tmCheers { position: absolute; left: 110%; top: 46px; display: flex; flex-direction: column; gap: 5px; } #tmCheers.hidden { display: none; }
+  #tmCheers button { white-space: nowrap; padding: 7px 10px; border-radius: 10px; border: 2px solid #ffd23f; background: rgba(20,24,48,.9); color: #fff; font: 800 14px "Lilita One", "Trebuchet MS", sans-serif; cursor: pointer; text-align: left; }
   #pauseBtn { position: absolute; top: 1.2%; right: 1%; width: max(40px, 5%); aspect-ratio: 1; border-radius: 10px;
     border: none; background: rgba(0,0,0,.35); color: #fff; font-size: clamp(14px, 2.4vw, 26px); cursor: pointer; z-index: 5; }
   #touch { position: fixed; inset: auto 0 0 0; height: 0; z-index: 6; }
@@ -546,6 +553,8 @@
     <canvas id="game" width="960" height="540"></canvas>
     <button id="pauseBtn" class="hidden" aria-label="Pause">⏸</button>
     <button id="leaveBtn" aria-label="Leave the lesson">◀ Leave</button>
+    <div id="tmBar"><button type="button" id="tmHeartBtn" aria-label="Give a heart"><span data-pix="heart"></span><small>Give</small></button><button type="button" id="tmCheerBtn" aria-label="Cheer">Hi!</button>
+      <div id="tmCheers" class="hidden"></div></div>
   </div>
 </div>
 
@@ -570,7 +579,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 15, 2026 4:45 PM PT · Team run: both kids get the same level</div>
+  <div class="build">Updated Nov 15, 2026 6:00 PM PT · Team run: give a heart, cheer, rescue your partner</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -4933,7 +4942,7 @@ function diveTick(p) {
   if (p.x > d.x || d.t > 300) { G.dive = null; p.vx = 2; }
 }
 function hurt() {
-  if (P.inv > 0 || mode !== 'play' || hasPower('star') || G.swing || G.dive || G.ride || G.groom || vanished() || (G.dol && G.dol.ph === 'ride') || (G.flame && G.dash > 0) || G.pound || G.charge > 0) return;   // (vanished: Mei's Ninja vanish; gear powers: Ground Pound, Horn Charge)
+  if (P.inv > 0 || mode !== 'play' || hasPower('star') || G.swing || G.dive || G.ride || G.down || G.groom || vanished() || (G.dol && G.dol.ph === 'ride') || (G.flame && G.dash > 0) || G.pound || G.charge > 0) return;   // (vanished: Mei's Ninja vanish; gear powers: Ground Pound, Horn Charge)
   if (prog.safe) {   // "Never get hurt" (Settings, per player): Kai blinks and hops back a little, no heart lost
     P.inv = 70; P.vy = -5; P.vx = -P.face * 3; sfx.bump();
     return;
@@ -4966,6 +4975,7 @@ function fell() {
 // Out of hearts: the level starts over, like most games. Kindergarten and 1st grade players instead go on from the
 // last gate they opened (the level stays as it was), with "Restart level" as the other choice. Bosses always start over.
 function gameOver() {
+  if (team && team.run && !L.boss && G.idx === team.lvl && tmDown()) return;   // team run: a rescue bubble, the partner pops it
   mode = 'over'; stopMusic(); sfx.over(); showTouch(false); hide('pauseBtn');
   const young = ['K', '1'].includes(curPlayer().grade) && !L.boss;
   if (team && team.run && !L.boss && G.idx === team.lvl) {   // team run (owner): back to the last gate with full hearts, never out of the game
@@ -6401,7 +6411,8 @@ function updatePlayer() {
   if (G.groom) { groomTick(); petTick(); return; }   // in the Gear Pack's secret room
   if (G.swing) { swingTick(); petTick(); return; }   // on a swing crossing
   if (G.dive) { diveTick(p); petTick(); return; }
-  if (G.ride) { rideTick(p); petTick(); return; }   // the sea: carried through a current tunnel   // the sea: swimming through the door that just opened
+  if (G.ride) { rideTick(p); petTick(); return; }   // the sea: carried through a current tunnel
+  if (G.down) { tmDownTick(p); petTick(); return; }   // team run: out of hearts, floating in a rescue bubble   // the sea: swimming through the door that just opened
   updateTwist();
   updateFlavor();
   updateFriend();
@@ -11206,7 +11217,7 @@ function render() {
   drawPits(c0, c1);   // after enemies, so lava blobs rise out of the lava
   drawBoss();
   if (L.boss) { drawOrbs(); }
-  if (G) { drawTeamGhost(); drawTeamTwin(); drawDolphin(); drawPet(); drawPlayer(); drawGearFx(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
+  if (G) { drawTeamGhost(); drawTeamTwin(); drawDolphin(); drawPet(); drawPlayer(); drawTeamFx(); drawGearFx(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
   if (L.twist && G) drawTwistFront();
   if (L.flavor && G) drawFlavorFront();
   if (L.water && !L.room) drawWaterFront();
@@ -12590,7 +12601,7 @@ $('dojoBtn').onclick = () => { audio(); startDojo(); };
 // (no library). A room is rooms/<CODE>: { t, boss (world), max, r (round), p: { h: { i, hits }, j: { i, hits } } }. Each
 // device only ever writes its own hit count, so there is nothing to collide; boss health = max - both counts. Only
 // game data is sent: the player's picture id (a game character), never a name. Leaving deletes the room.
-const TEAM_V = 6;   // bump when the team messages change: a partner on an older version gets a "please update" note
+const TEAM_V = 7;   // bump when the team messages change: a partner on an older version gets a "please update" note
 const TEAM_DB = 'https://math-ninja-team-default-rtdb.firebaseio.com', TEAM_HP = 20, TEAM_ABC = 'BCDFGHJKLMNPRSTVWXZ2345679';
 let team = null;
 const tmUrl = (path = '') => `${TEAM_DB}/rooms/${team.code}${path}.json`;
@@ -12686,6 +12697,7 @@ function tmSync() {
 function tmRunStart() {
   const rm = team.room, i = clamp(rm.lvl | 0, 0, STAGES.length - 1);
   team.r = rm.r; team.run = true; team.playing = true; team.won = false; team.paid = false; team.sent = ''; team.pg = 0; team.pdone = false;
+  team.hg = 0; team.ch = 0; team.cw = 0; team.dnN = 0; team.pp = 0; team.phg = null; team.pch = null; team.cheer = null;
   team.twDmg = 0; team.rc = 0; team.prc = 0; team.twin = null; team.twBeat = false; team.raidN = 0; team.sd = null; team.sdN = 0; team.bs = 0; team.wonSd = 0; team.tickG = null; team.lastSolved = 0; team.myRightAt = -1e9; team.pRightAt = -1e9; team.lvl = STAGES[i].boss ? 0 : i;
   hide('msg'); hide('team'); hide('menu');
   team.lyEasy = !!(rm.p.h.ez || rm.p.j.ez);   // the shared layout: the Easy shape if either kid plays in Easy
@@ -12693,6 +12705,87 @@ function tmRunStart() {
   toastMsg(`Team run: ${STAGES[team.lvl].name}!`, 3200);
 }
 const tmYou = () => (team.me === 'h' ? 'j' : 'h');
+// ---- Helping each other (owner picked, Nov 15 2026): give a heart, cheer, rescue your partner. Each device only
+// writes its own p/<who>, so everything is a counter the other side watches: `hg` hearts given, `ch` + `cw` cheers
+// (count + which word), `dn` / `dnN` I am down (and which time), `pp` = the partner's `dnN` that I popped.
+// GIVE A HEART (#tmHeartBtn): when I have more than one and the partner (their `hp` / `hm`) is not full: mine −1, theirs +1.
+// CHEER (#tmCheerBtn → four words): a speech bubble over my ninja on the partner's screen (or at the screen edge).
+// RESCUE: out of hearts in a team run = no card: Kai floats in a bubble (`G.down`, `tmDownTick`). The partner's Kai
+// touching my ninja on their screen pops it (they send `pp`): I come back right there with full hearts. Nobody near
+// after TM_DOWN_T frames (or no partner): it pops by itself and Kai goes back to the last gate, as before.
+const TM_CHEERS = ['Go!', 'Nice!', 'Wait for me!', 'Help!'], TM_DOWN_T = 480;
+function tmDown() {
+  const you = (team.room && team.room.p && team.room.p[tmYou()]) || null; if (!you) return false;
+  team.dnN = (team.dnN || 0) + 1; G.down = { t: 0, n: team.dnN }; G.hearts = 0; P.vx = P.vy = 0; team.sent = '';
+  sfx.over(); floatText(P.x + P.w / 2, P.y - 50, 'Help!', '#7df9ff', 28); toastMsg('Your partner can pop your bubble!', 3600);
+  return true;
+}
+function tmRevive(byPartner) {
+  G.down = null; G.hearts = G.maxHearts; G.streak = 0; G.power = null; G.dash = 0; G.cross = null; G.mbox = null; P.inv = 150; P.vx = P.vy = 0; team.sent = '';
+  if (!byPartner) { P.x = G.checkpoint; P.y = L.water ? L.water : GR * T - P.h; }   // nobody came: back to the last gate
+  if (team && team.twin) team.twin.balls = [];
+  burst(P.x + P.w / 2, P.y + P.h / 2, '#bfefff', 16, 5); sfx.power(); confetti(P.x + P.w / 2, P.y - 20);
+  floatText(P.x + P.w / 2, P.y - 50, byPartner ? 'Thanks, partner!' : 'Back to the last gate!', '#ffd23f', 26);
+}
+function tmDownTick(p) {
+  const d = G.down; d.t++; p.vx = 0; p.vy = 0; p.y += Math.sin(d.t * 0.08) * 0.4;
+  const you = (team && team.run && team.room && team.room.p && team.room.p[tmYou()]) || null;
+  if (you && you.pp === d.n) { tmRevive(true); return; }
+  if (d.t > (you && !you.done ? TM_DOWN_T : 120)) tmRevive(false);
+}
+function tmFriendSync(you) {
+  const first = team.phg == null;
+  if (first) { team.phg = you.hg || 0; team.pch = you.ch || 0; }
+  if ((you.hg || 0) < team.phg) team.phg = you.hg || 0; if ((you.ch || 0) < team.pch) team.pch = you.ch || 0;   // (a new level: the counters start over)
+  if (G && (you.hg || 0) > team.phg) {   // the partner gave me a heart
+    const n = you.hg - team.phg; team.phg = you.hg;
+    G.hearts = Math.min(G.maxHearts, G.hearts + n); sfx.power(); G.pulse = 8;
+    floatText(P.x + P.w / 2, P.y - 50, 'A heart from your partner!', '#ff6b9a', 24); toastMsg(`${tmIcon(you.i)} Your partner gave you a heart!`, 3000);
+  }
+  if ((you.ch || 0) > team.pch) {   // the partner cheered
+    team.pch = you.ch; team.cheer = { w: TM_CHEERS[(you.cw | 0) % TM_CHEERS.length], t: 200 };
+    tone(784, 0.1, 'triangle', 0.04); tone(988, 0.12, 'triangle', 0.04, null, 0.09);
+  }
+}
+function tmGiveHeart() {
+  if (!team || !team.run || !G || mode !== 'play' || G.down) return;
+  const you = (team.room && team.room.p && team.room.p[tmYou()]) || {};
+  if (G.hearts <= 1) { toastMsg('You need your last heart!', 2200); return; }
+  if (you.hm == null || you.hp >= you.hm) { toastMsg('Your partner has all their hearts.', 2200); return; }
+  audio(); G.hearts--; team.hg = (team.hg || 0) + 1; team.sent = ''; you.hp = (you.hp || 0) + 1;   // (shown at once; their own count follows)
+  floatText(P.x + P.w / 2, P.y - 50, 'You gave a heart!', '#ff6b9a', 24); sfx.correct();
+  G.parts.push({ k: 'bit', x: P.x + P.w / 2, y: P.y, vx: 0, vy: -3, life: 40, col: '#ff4d6d', s: 8, up: true });
+}
+function tmCheer(i) {
+  if (!team || !team.run || !G) return;
+  $('tmCheers').classList.add('hidden');
+  if (performance.now() - (team.cheerAt || 0) < 1500) return; team.cheerAt = performance.now();
+  audio(); team.ch = (team.ch || 0) + 1; team.cw = i; team.sent = '';
+  floatText(P.x + P.w / 2, P.y - 50, TM_CHEERS[i], '#ffffff', 24); tone(784, 0.1, 'triangle', 0.04);
+}
+function tmBarSync() {   // from frame(): show the two team buttons during a team run
+  const on = !!(team && team.run && G && mode === 'play' && G.idx === team.lvl && !L.vault && !G.rescue && !G.groom);
+  document.body.classList.toggle('teamrun', on);
+  if (!on) { if (!$('tmCheers').classList.contains('hidden')) $('tmCheers').classList.add('hidden'); return; }
+  const you = (team.room && team.room.p && team.room.p[tmYou()]) || {};
+  $('tmHeartBtn').disabled = !(G.hearts > 1 && you.hm != null && you.hp < you.hm) || !!G.down;
+}
+function tmSpeech(txt, x, y) {   // a small speech bubble (canvas, world coordinates)
+  ctx.font = '15px "Lilita One", "Trebuchet MS", sans-serif'; const w = ctx.measureText(txt).width + 16;
+  ctx.fillStyle = '#ffffff'; rrect(Math.round(x - w / 2), y - 24, w, 24, 8); ctx.fill(); ctx.fillRect(Math.round(x) - 4, y - 2, 8, 6);
+  ctx.fillStyle = '#1a1426'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, Math.round(x), y - 11);
+}
+function tmBubble(x, y, r) {   // a rescue bubble: a ring of pixel blocks with a shine
+  ctx.fillStyle = 'rgba(160,230,255,.22)'; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+  ctx.fillStyle = 'rgba(230,250,255,.9)'; for (let i = 0; i < 20; i++) { const a = i * Math.PI / 10 + tick * 0.01; ctx.fillRect(Math.round(x + Math.cos(a) * r) - 2, Math.round(y + Math.sin(a) * r) - 2, 5, 5); }
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(x - r * 0.5), Math.round(y - r * 0.6), 7, 4); ctx.fillRect(Math.round(x - r * 0.62), Math.round(y - r * 0.46), 4, 6);
+}
+function drawTeamFx() {   // after the player: my own rescue bubble
+  if (!G || !G.down || !team) return;
+  const cx = P.x + P.w / 2, cy = P.y + P.h / 2, left = Math.max(0, Math.ceil((TM_DOWN_T - G.down.t) / 60));
+  tmBubble(cx, cy, 36);
+  hudText('Waiting for your partner...', cx, P.y - 34, 15, '#7df9ff', 'center'); hudText(String(left), cx, P.y - 54, 18, '#ffffff', 'center');
+}
 // ---- Gates together (owner, Nov 15 2026: "they have to do gates together"): in a team run my gate number k opens only
 // when BOTH kids have answered their own gate k (each on their own screen, their own math). The first one to answer
 // waits at the gate ("Waiting for your partner"); the second answer opens both. Counted through `g` (gates answered),
@@ -12723,7 +12816,8 @@ function tmRunTick() {   // four times a second while playing: tell the partner 
   if (!team || !team.run || !team.room || !G || mode !== 'play' || G.idx !== team.lvl || team.busy) return;
   const ML = G.saved ? G.saved.L : L, wx = G.saved ? G.saved.x : P.x, wy = G.saved ? G.saved.y : P.y;
   const x = Math.round(clamp(wx / (ML.flagC * T), 0, 1) * 1000) / 10, g = ML.stations.filter(st => st.solved).length;
-  const body = { x, g, px: Math.round(wx), py: Math.round(wy), f: P.face < 0 ? -1 : 1, a: G.saved || P.onGround ? 0 : 1, sig: tmSig(ML), su: prog.equip.suit, ba: prog.equip.band, tw: team.twDmg || 0, rc: team.rc || 0, n: ML.stations.length, sd: team.sdN || 0, bs: team.bs || 0, won: team.wonSd || 0 }, key = JSON.stringify(body);
+  const body = { x, g, px: Math.round(wx), py: Math.round(wy), f: P.face < 0 ? -1 : 1, a: G.saved || P.onGround ? 0 : 1, sig: tmSig(ML), su: prog.equip.suit, ba: prog.equip.band, tw: team.twDmg || 0, rc: team.rc || 0, n: ML.stations.length, sd: team.sdN || 0, bs: team.bs || 0, won: team.wonSd || 0,
+    hp: G.hearts, hm: G.maxHearts, hg: team.hg || 0, ch: team.ch || 0, cw: team.cw || 0, dn: G.down ? 1 : 0, dnN: team.dnN || 0, pp: team.pp || 0 }, key = JSON.stringify(body);
   if (key === team.sent && performance.now() - (team.sentAt || 0) < 3000) return;   // (unchanged: still re-sent every 3 s)
   team.sent = key; team.sentAt = performance.now(); team.busy = true;
   const mine = team; tmSend(`/p/${team.me}`, body).catch(() => {}).then(() => { mine.busy = false; });
@@ -12794,7 +12888,7 @@ function tmTwinTick() {   // every frame of a team run
       sfx.stomp(); burst(tw.x + 12, tw.y + 20, '#ffffff', 10, 4); floatText(tw.x + 12, tw.y - 16, "POW! We'll be back!", '#ffd23f', 22);
     }
   }
-  const busy = !!(L.vault || G.rescue || G.groom || G.swing || G.cross || G.dive || G.ride || G.victory);
+  const busy = !!(L.vault || G.rescue || G.groom || G.swing || G.cross || G.dive || G.ride || G.victory || G.down);
   tmShowdownTick(busy);
   if (team.sd) { if (team.twin) { tmPuff(team.twin.x + 12, team.twin.y + 22); tmTwinGone(); } return; }
   const quiet = busy || L.twist === 'dark' || L.deep || currentStationNear() || miniTarget() || P.inv > 0 || tmHeldGate();
@@ -12979,19 +13073,32 @@ function drawTeamGhost() {
   if (Math.abs(tx - gh.x) > 12 * T) { gh.x = tx; gh.y = ty; }   // far away (a restart, a dolphin ride): just appear there
   const dx = (tx - gh.x) * 0.18; gh.x += dx; gh.y += (ty - gh.y) * 0.25; gh.walk = Math.abs(dx) > 0.3 ? gh.walk + 1 : 0;
   team.ghOn = true;
-  if (gh.x < cam - 20 || gh.x > cam + VW - 4) { tmGhostEdge(gh.x, you.i); return; }   // off my screen: show which way they are
+  if (team.cheer && --team.cheer.t <= 0) team.cheer = null;
+  if (you.dn && !G.down && mode === 'play' && (team.pp || 0) !== you.dnN && Math.abs(P.x - gh.x) < 34 && Math.abs(P.y - gh.y) < 60) {   // I reached my partner's bubble: pop!
+    team.pp = you.dnN; team.sent = ''; payGems(gh.x + 12, gh.y, 2); sfx.power(); burst(gh.x + 12, gh.y + 22, '#bfefff', 16, 5);
+    floatText(P.x + P.w / 2, P.y - 50, 'You saved your partner!', '#ffd23f', 26);
+  }
+  if (gh.x < cam - 20 || gh.x > cam + VW - 4) {   // off my screen: show which way they are
+    tmGhostEdge(gh.x, you.i);
+    const ex = gh.x < cam ? cam + 60 : cam + VW - 70, ey = GR * T - 160;
+    if (you.dn) tmSpeech('Help! Pop my bubble!', gh.x < cam ? cam + 96 : cam + VW - 100, ey); else if (team.cheer) tmSpeech(team.cheer.w, ex, ey);
+    return;
+  }
   const key = (ITEM[you.su] && ITEM[you.su].col ? you.su : 'suit-navy') + '|' + (ITEM[you.ba] && ITEM[you.ba].col ? you.ba : 'band-red') + (L.abyss ? '|d' : '');
   if (!tmGhostSpr[key]) { const [su, ba] = key.split('|'), pal = { r: ITEM[ba].col[0], R: ITEM[ba].col[1], n: ITEM[su].col[0], N: ITEM[su].col[1] }; tmGhostSpr[key] = L.abyss ? bakeDiver(pal) : bakeNinja(pal); }
   const frame = you.a && !L.water ? 'jump' : gh.walk && Math.floor(gh.walk / 6) % 2 ? 'walkA' : 'stand', box = { x: Math.round(gh.x), y: Math.round(gh.y), w: 24, h };
   ctx.globalAlpha = 0.6; drawBaked(tmGhostSpr[key], frame, you.f < 0, box); ctx.globalAlpha = 1;
   const k = fixIcon(String(you.i || 'kai')); if (!tmIconIm[k]) { playerIcon(k); tmIconIm[k] = new Image(); tmIconIm[k].src = playerIconURL[k]; }   // their picture over the ninja's head
   if (tmIconIm[k].complete && tmIconIm[k].naturalWidth) { ctx.imageSmoothingEnabled = false; ctx.globalAlpha = 0.9; ctx.drawImage(tmIconIm[k], box.x + 2, box.y - 26 + Math.round(Math.sin(tick * 0.08) * 2), 20, 20); ctx.globalAlpha = 1; }
+  if (you.dn) { tmBubble(box.x + 12, box.y + 22, 36); tmSpeech('Help! Pop my bubble!', box.x + 12, box.y - 34); }
+  else if (team.cheer) tmSpeech(team.cheer.w, box.x + 12, box.y - 30);
 }
 function tmRunSync() {   // the partner's news
   const rm = team.room, you = rm.p[tmYou()] || {}, g = you.g || 0;
   if (g > team.pg && mode === 'play') { const mineG = L.stations ? L.stations.filter(st => st.solved).length : 0; toastMsg(g > mineG ? `${tmIcon(you.i)} Your partner is waiting at gate ${g}!` : `${tmIcon(you.i)} Your partner answered gate ${g}!`, 2600); tone(880, 0.1, 'triangle', 0.03); tone(1175, 0.12, 'triangle', 0.03, null, 0.09); }
   if (you.done && !team.pdone && mode === 'play') toastMsg(`${tmIcon(you.i)} Your partner is home! Go, go, go!`, 3200);
   team.pg = g; team.pdone = !!you.done;
+  tmFriendSync(you);   // hearts given, cheers, the rescue bubble
   if ((you.rc || 0) > (team.prc || 0)) {   // the partner just got one right: within a few seconds of mine = a team combo
     team.prc = you.rc; team.pRightAt = performance.now();
     if (performance.now() - team.myRightAt < TW_COMBO && mode === 'play') tmCombo();
@@ -13117,6 +13224,10 @@ function teamKey(e) {
   if (i != null) { e.preventDefault(); tmPick(i); }
 }
 $('teamBtn').onclick = () => { audio(); openTeam(); };
+$('tmHeartBtn').onclick = tmGiveHeart;
+$('tmCheers').innerHTML = TM_CHEERS.map((w, i) => `<button type="button" data-c="${i}">${w}</button>`).join('');
+$('tmCheers').querySelectorAll('button').forEach(b => { b.onclick = () => tmCheer(+b.dataset.c); });
+$('tmCheerBtn').onclick = () => { audio(); $('tmCheers').classList.toggle('hidden'); };
 $('tmHost').onclick = () => { audio(); hide('tmJoinBox'); hide('tmCodeBox'); show('tmModeBox'); tmSay(''); };
 $('tmBossGo').onclick = () => tmHost(false);
 $('tmRunGo').onclick = () => tmHost(true);
@@ -13395,6 +13506,7 @@ const STEP = 1000 / 60;
 function frame(now) {
   acc += Math.min(100, now - last); last = now;
   document.body.classList.toggle('canleave', canLeaveDrill());   // the lesson's Leave button
+  tmBarSync();   // team run: the give-a-heart and cheer buttons
   gearBtnSync();   // the gear button: shown with the worn piece's picture, fills up as it recharges
   document.body.classList.toggle('swim', mode === 'play' && !!(L && L.water));   // the sea: a ▼ button to swim down
   while (acc >= STEP) {
