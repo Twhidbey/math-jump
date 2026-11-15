@@ -570,7 +570,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 15, 2026 3:00 PM PT · Team run: beat a raiding Shadow Twin with your gear</div>
+  <div class="build">Updated Nov 15, 2026 3:45 PM PT · Team run: gear beats raiding twins; stays in sync better</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -12585,7 +12585,8 @@ const TEAM_V = 5;   // bump when the team messages change: a partner on an older
 const TEAM_DB = 'https://math-ninja-team-default-rtdb.firebaseio.com', TEAM_HP = 20, TEAM_ABC = 'BCDFGHJKLMNPRSTVWXZ2345679';
 let team = null;
 const tmUrl = (path = '') => `${TEAM_DB}/rooms/${team.code}${path}.json`;
-const tmSend = (path, body, method = 'PATCH') => fetch(tmUrl(path), { method, body: body === undefined ? undefined : JSON.stringify(body) }).then(r => { if (!r.ok) throw new Error('net'); return r.json(); });
+// (every send gives up after 6 s: a request that hangs on a phone's flaky connection must not block the ones after it)
+const tmSend = (path, body, method = 'PATCH') => { const ac = new AbortController(), to = setTimeout(() => ac.abort(), 6000); return fetch(tmUrl(path), { method, body: body === undefined ? undefined : JSON.stringify(body), signal: ac.signal }).then(r => { clearTimeout(to); if (!r.ok) throw new Error('net'); return r.json(); }, e => { clearTimeout(to); throw e; }); };
 const tmSay = t => { $('tmStatus').textContent = t; };
 const tmIcon = id => playerIcon(fixIcon(String(id || 'kai').replace(/[^a-z0-9-]/gi, '')));
 function openTeam() {
@@ -12616,8 +12617,19 @@ function tmListen() {
     mine.live = true; tmSync();
   };
   es.addEventListener('put', on('put')); es.addEventListener('patch', on('patch'));
-  es.onerror = () => { if (team === mine && mine.playing) $('tmMsg').textContent = 'Finding your partner again...'; };
+  es.onerror = () => {
+    if (team !== mine) return;
+    if (mine.playing && !mine.run) $('tmMsg').textContent = 'Finding your partner again...';
+    if (es.readyState === 2) setTimeout(() => { if (team === mine && mine.es === es) tmRelisten(); }, 2000);   // the browser gave up: open a new one
+  };
 }
+// Staying in sync (owner, Nov 15 2026: "their two games got out of sync"): phones drop connections when the game goes to
+// the background or the wifi hiccups. So: a fresh listener (which starts with a full copy of the room) whenever the
+// game comes back to the front or the network returns; sends time out; and the run's state is re-sent every 3 s
+// even when nothing changed, so a lost message heals itself.
+function tmRelisten() { if (!team || !team.code) return; if (team.es) team.es.close(); team.sent = ''; team.busy = false; tmListen(); }
+document.addEventListener('visibilitychange', () => { if (!document.hidden && team && team.es) tmRelisten(); });
+window.addEventListener('online', () => { if (team && team.es) tmRelisten(); });
 async function tmHost(run) {   // run = a level run (the level picked in #tmLvl), else a boss fight
   audio(); $('tmHost').disabled = true; $('tmJoinBtn').disabled = true; hide('tmJoinBox'); hide('tmModeBox'); tmSay('Making a game...');
   try {
@@ -12702,7 +12714,8 @@ function tmRunTick() {   // four times a second while playing: tell the partner 
   const ML = G.saved ? G.saved.L : L, wx = G.saved ? G.saved.x : P.x, wy = G.saved ? G.saved.y : P.y;
   const x = Math.round(clamp(wx / (ML.flagC * T), 0, 1) * 1000) / 10, g = ML.stations.filter(st => st.solved).length;
   const body = { x, g, px: Math.round(wx), py: Math.round(wy), f: P.face < 0 ? -1 : 1, a: G.saved || P.onGround ? 0 : 1, sig: tmSig(ML), su: prog.equip.suit, ba: prog.equip.band, tw: team.twDmg || 0, rc: team.rc || 0, n: ML.stations.length, sd: team.sdN || 0, bs: team.bs || 0, won: team.wonSd || 0 }, key = JSON.stringify(body);
-  if (key === team.sent) return; team.sent = key; team.busy = true;
+  if (key === team.sent && performance.now() - (team.sentAt || 0) < 3000) return;   // (unchanged: still re-sent every 3 s)
+  team.sent = key; team.sentAt = performance.now(); team.busy = true;
   const mine = team; tmSend(`/p/${team.me}`, body).catch(() => {}).then(() => { mine.busy = false; });
 }
 // The partner's ninja in my level (owner, Nov 14 2026: "can you see each other?"): a see-through ninja in their own suit
