@@ -570,7 +570,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 15, 2026 1:30 PM PT · Team run: Shadow Twins raid, then a SHOWDOWN battle at the last gate</div>
+  <div class="build">Updated Nov 15, 2026 2:15 PM PT · Team run: out of hearts = back to the last gate</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -4961,6 +4961,10 @@ function fell() {
 function gameOver() {
   mode = 'over'; stopMusic(); sfx.over(); showTouch(false); hide('pauseBtn');
   const young = ['K', '1'].includes(curPlayer().grade) && !L.boss;
+  if (team && team.run && !L.boss && G.idx === team.lvl) {   // team run (owner): back to the last gate with full hearts, never out of the game
+    setTimeout(() => showMsg('Out of hearts!', '<p>Every ninja falls sometimes. Back to the last gate. Your partner needs you!</p>', [{ label: 'Keep going ▶', fn: continueLevel, primary: true }]), 900);
+    return;
+  }
   setTimeout(() => showMsg('Out of hearts!', '<p>Every ninja falls sometimes. Get up and try again!</p>', young ? [
     { label: 'Try again', fn: continueLevel, primary: true },
     { label: 'Restart level', fn: () => startStage(G.idx), alt: true },
@@ -4972,7 +4976,8 @@ function gameOver() {
 }
 function continueLevel() {
   G.hearts = G.maxHearts; G.streak = 0; G.power = null; G.dash = 0; G.cross = null; G.mbox = null; G.tip = null; G.wrongRun = 0;
-  P.x = G.checkpoint; P.y = GR * T - P.h; P.vx = P.vy = 0; P.inv = 120;
+  P.x = G.checkpoint; P.y = L.water ? L.water : GR * T - P.h; P.vx = P.vy = 0; P.inv = 120;   // (in the sea: back at swimming depth)
+  if (team && team.twin) team.twin.balls = [];
   const st = STAGES[G.idx]; playMusic(L.world.key, st.boss ? 3 : st.k); begin();
 }
 
