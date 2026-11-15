@@ -265,6 +265,7 @@
   .z-snow { background: linear-gradient(#e6f5ff, #8cc4e8); color: #12324a; }
   .z-castle { background: linear-gradient(#0d1033, #4b2a8a); color: #fff; }
   .z-sea { background: linear-gradient(#7ad8ff, #1f6aa8); color: #fff; }
+  .z-desert { background: linear-gradient(#ffd9a8, #c2562c); color: #fff; }
   .zone .wname { position: relative; z-index: 2; margin: 0 2px; }
   .zmap { position: relative; height: 160px; }
   .zmap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -282,6 +283,7 @@
   .z-snow .node:not(.boss) { background: #3aa0dc; color: #fff; }
   .z-castle .node:not(.boss) { background: #a678ff; color: #fff; }
   .z-sea .node:not(.boss) { background: #ff7aa8; color: #fff; }
+  .z-desert .node:not(.boss) { background: #ff9f43; color: #3a1a0a; }
   .node.won { border-color: #ffd23f; }
 
   .node:hover:not(:disabled) { transform: translate(-50%, -50%) scale(1.08); }
@@ -856,7 +858,7 @@ const mk = (a, op, b, ans) => ({ a, op, b, ans, text: `${a} ${op} ${b}` });
 
 // ---------------------------------------------------------------- story & worlds
 // The story, kept very short so kids can read it (STORY.md is the source). Kuro is Kai's brother from page one.
-const STORY = `Kuro is Kai's big brother. He took the six Math Scrolls and ran away.
+const STORY = `Kuro is Kai's big brother. He took the seven Math Scrolls and ran away.
   <br><br>He put on a mask. Now he is the <b>Shadow Shogun</b>.
   <br><br>Sensei says: <i>"Bring the scrolls home, Kai. And bring your brother home too."</i>`;
 const MORNING = `Kuro cries. <i>"Why did you save me?"</i>
@@ -896,6 +898,14 @@ const WORLDS = [
     gate: ['#ff8a9a', '#a83a4a', '#ffd0d8', '#ffd23f'], dojo: ['#cfeef8', '#1f5a7a', '#ffd23f'],
     intro: `The Octopus keeps every piece for himself. Swim down to get past!`,
     boss: { kind: 'octo', name: 'The Great Octopus', hp: 8, taunt: 'Eight arms, and every piece is MINE!' } },
+  // The desert world (added Nov 2026, before the castle so the castle stays last): red rock country, arches, hoodoos
+  // and a slot canyon. Its per-level slot is 18-20 (slotOf), its stages keep si 24-27.
+  { key: 'desert', name: 'Red Rock Desert', scroll: 'Scroll of Remembering', slot: 18, walker: 'scorpion', pit: 'canyon', flag: '#ff9f43',
+    skies: [['#5db4f0', '#ffe6c0'], ['#f08a52', '#ffe2a8'], ['#7ab8e8', '#ffd9a8']],
+    brick: ['#c96a3a', '#7e3a1c'], pipe: ['#d98a4a', '#8a4a22', '#f4c08a'], stair: ['#d99a5e', '#96562a', '#f2c890'],
+    gate: ['#b5512a', '#6e2a12', '#f2c48a', '#ffd23f'], dojo: ['#e8c090', '#8a3f1c', '#ffd23f'],
+    intro: `The Scorpion stings everyone. Forgive him anyway.`,
+    boss: { kind: 'scorpion', name: 'The Red Scorpion', hp: 8, taunt: 'Come closer... and I will STING you!' } },
   { key: 'castle', name: 'Night Castle', scroll: 'Scroll of Patterns', slot: 12, walker: 'shadow', pit: 'void', flag: '#b388ff',
     skies: [['#070b24', '#1f2a5a'], ['#0a0820', '#2a1f5a'], ['#05071a', '#1a1f48']],
     brick: ['#4a4f7a', '#252845'], pipe: ['#6b4a35', '#3a2618', '#9a7050'], stair: ['#3c4470', '#1c2140', '#5a64a0'],
@@ -1193,7 +1203,8 @@ const STAGES = [
   { w: 2, name: 'Gear Works', n: 7, enemy: 0.3, pit: 3 }, { w: 2, name: 'Conveyor Run', n: 8, enemy: 0.35, pit: 3 }, { w: 2, name: 'Laser Lab', n: 8, enemy: 0.38, pit: 3 }, { w: 2, boss: true },
   { w: 3, name: 'Frosty Slopes', n: 8, enemy: 0.38, pit: 3 }, { w: 3, name: 'Icicle Caves', n: 8, enemy: 0.4, pit: 3 }, { w: 3, name: 'Blizzard Peak', n: 9, enemy: 0.42, pit: 3 }, { w: 3, boss: true },
   { w: 4, name: 'Coral Reef', n: 8, enemy: 0.3, pit: 0, si: 20 }, { w: 4, name: 'Kelp Forest', n: 8, enemy: 0.35, pit: 0, si: 21 }, { w: 4, name: 'Sunken Ship', n: 9, enemy: 0.4, pit: 0, si: 22 }, { w: 4, boss: true, si: 23 },
-  { w: 5, name: 'Lantern Roofs', n: 8, enemy: 0.4, pit: 3, si: 16 }, { w: 5, name: 'Moon Tower', n: 9, enemy: 0.45, pit: 3, si: 17 }, { w: 5, name: 'Shadow Walls', n: 9, enemy: 0.48, pit: 3, si: 18 }, { w: 5, boss: true, si: 19 },
+  { w: 5, name: 'Arch Canyon', n: 8, enemy: 0.36, pit: 3, si: 24 }, { w: 5, name: 'Hoodoo Trail', n: 9, enemy: 0.4, pit: 3, si: 25 }, { w: 5, name: 'Slot Canyon', n: 9, enemy: 0.44, pit: 3, si: 26 }, { w: 5, boss: true, si: 27 },
+  { w: 6, name: 'Lantern Roofs', n: 8, enemy: 0.4, pit: 3, si: 16 }, { w: 6, name: 'Moon Tower', n: 9, enemy: 0.45, pit: 3, si: 17 }, { w: 6, name: 'Shadow Walls', n: 9, enemy: 0.48, pit: 3, si: 18 }, { w: 6, boss: true, si: 19 },
 ];
 const PER_WORLD = 4, bossOf = w => w * PER_WORLD + 3;
 STAGES.forEach((s, i) => { s.k = i % PER_WORLD; s.label = s.boss ? 'BOSS' : `${s.w + 1}-${s.k + 1}`; if (s.si === undefined) s.si = i; });
@@ -1502,14 +1513,15 @@ function drawWalls() {
 const ANIMALS = [['rabbit', 'carrot'], ['panda', 'bamboo'], ['duck', 'bread'], ['salamander', 'bug'], ['lizard', 'chili'], ['mole', 'mushroom'],
   ['robodog', 'bolt'], ['robocat', 'battery'], ['drone', 'spark'], ['penguin', 'fish'], ['seal', 'fish'], ['fox', 'berries'],
   ['cat', 'riceball'], ['moonrabbit', 'dango'], ['raccoon', 'apple'],
-  ['turtle', 'jelly'], ['otter', 'clam'], ['seahorse', 'shrimp']];   // the sea (slots 15–17): Coral Reef, Kelp Forest, Sunken Ship
+  ['turtle', 'jelly'], ['otter', 'clam'], ['seahorse', 'shrimp'],
+  ['roadrunner', 'bug'], ['tortoise', 'pear'], ['coyote', 'bone']];   // the desert (slots 18–20): Arch Canyon, Hoodoo Trail, Slot Canyon  //   // the sea (slots 15–17): Coral Reef, Kelp Forest, Sunken Ship
 // One short story per level at the hungry animal (shown to readers, 2nd grade and up): same numbers, same answer,
 // so choosing the operation is practised without touching the Fact Book. Think skills and missing numbers stay plain.
-const WORD_ANIMAL = { robodog: 'robot dog', robocat: 'robot cat', moonrabbit: 'moon rabbit', turtle: 'sea turtle', otter: 'sea otter' };
+const WORD_ANIMAL = { coyote: 'coyote pup', robodog: 'robot dog', robocat: 'robot cat', moonrabbit: 'moon rabbit', turtle: 'sea turtle', otter: 'sea otter' };
 const WORD_FOOD = { carrot: ['carrot', 'carrots'], bamboo: ['bamboo', 'bamboo'], bread: ['bread', 'bread'], bug: ['bug', 'bugs'], chili: ['chili', 'chilis'],
   mushroom: ['mushroom', 'mushrooms'], bolt: ['bolt', 'bolts'], battery: ['battery', 'batteries'], spark: ['spark', 'sparks'], fish: ['fish', 'fish'],
   berries: ['berry', 'berries'], riceball: ['rice ball', 'rice balls'], dango: ['dango', 'dango'], apple: ['apple', 'apples'],
-  jelly: ['jellyfish', 'jellyfish'], clam: ['clam', 'clams'], shrimp: ['shrimp', 'shrimp'] };
+  jelly: ['jellyfish', 'jellyfish'], clam: ['clam', 'clams'], shrimp: ['shrimp', 'shrimp'], pear: ['cactus pear', 'cactus pears'], bone: ['bone', 'bones'] };
 function wordQ(q, animal, food) {
   if (!q || q.missing || q.step || q.puzzle || !['+', '−', '×', '÷'].includes(q.op)) return q;
   const an = WORD_ANIMAL[animal] || animal, [one, many] = WORD_FOOD[food] || [food, food + 's'], f = n => (n === 1 ? one : many);
@@ -1540,16 +1552,16 @@ const FRIENDS = [
   { id: 'niko', name: 'Niko', w: 2, k: 1, way: 'crate', dir: 1, power: 'magnet', pname: 'Gem magnet', ptip: 'Gems near you fly to you.' },
   { id: 'yuki', name: 'Yuki', w: 3, k: 1, way: 'falls', dir: 1, power: 'spring', pname: 'Spring feet', ptip: 'You jump a little higher.' },
   { id: 'nami', name: 'Nami', w: 4, k: 2, way: 'ship', dir: 1, power: 'dolphin', pname: 'Dolphin swim', ptip: 'Tap the dolphin button: a dolphin comes to give you a ride!' },   // Sunken Ship (owner, Nov 2026)
-  { id: 'mei', name: 'Mei', w: 5, k: 1, way: 'ladder', dir: -1, power: 'vanish', pname: 'Ninja vanish', ptip: 'Vanish for 5 seconds. Nothing can hurt you!' },
+  { id: 'mei', name: 'Mei', w: 6, k: 1, way: 'ladder', dir: -1, power: 'vanish', pname: 'Ninja vanish', ptip: 'Vanish for 5 seconds. Nothing can hurt you!' },
 ];
 const friendOf = def => (def.boss ? null : FRIENDS.find(f => f.w === def.w && f.k === def.k) || null);
-const FLAVORS = ['sakura', 'grove', 'frogs', 'vents', 'bubbles', 'shrooms', 'steam', 'boxes', 'lab', 'snowmen', 'chimes', 'wind', 'lanterns', 'owls', 'bats', 'anemones', 'otters', 'glowjelly'];   // addFlavor (the last three: the sea)
-const TWISTS = ['kite', 'spring', 'koi', 'rocks', 'chase', 'dark', 'gears', 'conveyor', 'lasers', 'ice', 'icicles', 'avalanche', 'walljump', 'ladders', 'sneak', 'drift', 'kelp', 'barrels'];
+const FLAVORS = ['sakura', 'grove', 'frogs', 'vents', 'bubbles', 'shrooms', 'steam', 'boxes', 'lab', 'snowmen', 'chimes', 'wind', 'lanterns', 'owls', 'bats', 'anemones', 'otters', 'glowjelly', 'arches', 'cactus', 'sunbeams'];   // addFlavor (the last three: the sea)
+const TWISTS = ['kite', 'spring', 'koi', 'rocks', 'chase', 'dark', 'gears', 'conveyor', 'lasers', 'ice', 'icicles', 'avalanche', 'walljump', 'ladders', 'sneak', 'drift', 'kelp', 'barrels', 'crumble', 'devil', 'quicksand'];   // (the last three: the desert)
 // ---------------------------------------------------------------- level builders
 function newMap() { const m = []; for (let r = 0; r < ROWS; r++) m.push([]); return m; }
 
 function walkerFor(kind, c, speed) {
-  const size = { ninja: [24, 44], shadow: [24, 44], rock: [34, 30], robot: [30, 36], penguin: [28, 32], bear: [38, 41] }[kind];
+  const size = { ninja: [24, 44], shadow: [24, 44], rock: [34, 30], robot: [30, 36], penguin: [28, 32], bear: [38, 41], scorpion: [36, 26], snake: [38, 24] }[kind];
   return { kind, x: c * T + 4, y: GR * T - size[1], w: size[0], h: size[1], vx: -speed, vy: 0, onGround: false, dead: null, t: R(0, 60) };
 }
 
@@ -1596,7 +1608,7 @@ const GEAR = {
     rows: ['kw..........wk', 'kwk........kwk', '.kwk.kkkkk.kwk', '..kkkggggGkk..', '..kgggggggGk..', '..kyyyyyyyyk..'] },
   trident: { name: 'Trident', slot: 'hand', power: 'Water Blast', w: 4, k: 0, gx: 12, gy: 0, pal: { y: '#ffd23f', Y: '#c99a1a' },
     rows: ['y.y.y', 'y.y.y', 'yyyyy', '.kYk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '..k..'] },
-  lantern: { name: 'Paper Lantern', slot: 'hand', power: 'Light flash', w: 5, k: 0, gx: 12, gy: 8, pal: { o: '#ffb627', O: '#ff8c1a', r: '#a8323e' },
+  lantern: { name: 'Paper Lantern', slot: 'hand', power: 'Light flash', w: 6, k: 0, gx: 12, gy: 8, pal: { o: '#ffb627', O: '#ff8c1a', r: '#a8323e' },
     rows: ['.k.', '.k.', 'krk', 'koO', 'koO', 'krk', '.k.'] },
   // More gear (owner, Nov 2026: about one new item a week). Second rooms in Japan, the volcano and the factory.
   boomerang: { name: 'Golden Boomerang', slot: 'hand', power: 'Boomerang', w: 0, k: 2, gx: 12, gy: 7, pal: { y: '#ffd23f', Y: '#c99a1a', r: '#e63946' },
@@ -1814,7 +1826,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
   const goldSpots = [];   // pillar and stair tops: the golden gem floats high above one of them
   const coin = (c, r, v = 1) => L.coins.push({ x: c * T + T / 2, y: r * T + T / 2, v, taken: false });
   const speed = (0.9 + def.si * 0.05) * (easy ? 0.7 : 1);
-  const walker = W.key === 'snow' && def.k === 2 ? 'bear' : W.walker;   // Blizzard Peak: polar bear ninjas instead of penguins (owner)
+  const walker = W.key === 'snow' && def.k === 2 ? 'bear' : W.key === 'desert' && def.k === 2 ? 'snake' : W.walker;   // Blizzard Peak: polar bear ninjas instead of penguins (owner)
   const maybeEnemy = c => { if (rng() < def.enemy * (easy ? 0.4 : 1)) L.enemies.push(walkerFor(walker, c, speed)); };
   if (W.key === 'sea') return seaBuild();
 
@@ -2135,6 +2147,24 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
         coin(s + 5, GR - 10, 10);   // one red gem up top
         break;
       }
+      case 'crumble': {   // three sandstone ledges, like steps, that crumble a moment after Kai lands on them (gems on top)
+        const s = flat(13);
+        [[2, 3], [5, 5], [8, 7]].forEach(([dc, up], i) => {
+          L.plats.push({ k: 'crumb', x: (s + dc) * T, y0: (GR - up) * T, y: (GR - up) * T, w: 2 * T, dx: 0, dy: 0, sink: 0, gone: 0 });
+          coin(s + dc, GR - up - 1, i === 2 ? 5 : 1); coin(s + dc + 1, GR - up - 1, i === 2 ? 5 : 1);
+        });
+        break;
+      }
+      case 'devil': {   // a dust devil wanders back and forth; step in and it lifts Kai up to the gems
+        const s = flat(13); fx({ k: 'devil', x: (s + 4) * T, x0: (s + 3) * T, x1: (s + 10) * T, dir: 1 });
+        for (let i = 0; i < 4; i++) coin(s + 4 + i * 2, GR - 8 - (i % 2), i === 1 || i === 2 ? 5 : 1);
+        break;
+      }
+      case 'quicksand': {   // a patch of soft sand: walking is slow, hopping gets Kai through (gems above it)
+        const s = flat(13); fx({ k: 'sand', x: (s + 2) * T, w: 9 * T });
+        for (let i = 0; i < 4; i++) coin(s + 3 + i * 2, GR - 3 - (i % 2));
+        break;
+      }
       case 'sneak': {   // a guard with a flashlight; barrels to hide in
         const s = flat(14);
         fx({ k: 'guard', x: (s + 10) * T, min: (s + 3) * T, max: (s + 12) * T, dir: -1, seen: false });
@@ -2188,7 +2218,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
   // A steady number of ? boxes: 3 in the first world up to 6 in the last. Extra ones become bricks;
   // missing ones turn bricks over solid ground into ? boxes, then go over open flat ground.
   {
-    const want = { japan: 3, lava: 4, robot: 5, snow: 5, sea: 5, castle: 6 }[W.key] || 5, boxes = [], spare = [];
+    const want = { japan: 3, lava: 4, robot: 5, snow: 5, sea: 5, desert: 5, castle: 6 }[W.key] || 5, boxes = [], spare = [];
     const nearGate = c => (L.swings || []).some(w => c >= w.s - 2 && c <= w.e + 2) || L.steps.some(z => c >= z.c0 - 6 && c <= z.c0 + z.w + 2) || L.squads.some(q => c >= q.s && c <= q.s + 10) || L.stations.some(st => c >= st.s - 1 && c <= st.gate[1] + 1) || L.walls.some(w => c >= w.s - 1 && c <= w.gate[1] + 1) || L.bridges.some(b => c >= b.signC - 1 && c <= b.altarC + 1) || L.doors.some(d => Math.abs(c - d.c) <= 2);
     for (let c = 0; c < L.w; c++) for (let r = 0; r < GR; r++) {
       if (map[r][c] === '?') boxes.push([r, c]);
@@ -2269,9 +2299,9 @@ function balanceQ(tier, times) {
 // Sensei teaches one move per level, easy to hard. Each right answer is one step of the move (Kai holds that pose),
 // and after the last step Kai does the whole move at full speed. Poses: r = lean (deg), y = lift (px),
 // arm / arm2 / leg = [angle, length] (0 = straight ahead, -90 = up, 90 = down), flip = facing away.
-const ENTRANCES = ['door', 'bamboo', 'torii', 'cave', 'ledge', 'crack', 'hatch', 'crate', 'vent', 'igloo', 'drift', 'ledge', 'roof', 'banner', 'brick', 'clam', 'seaarch', 'shiphatch'];   // (the sea's three are on the sea floor)
-const TRAIN_SIGN = { japan: 'Dojo', lava: 'Training Cave', robot: 'Training Lab', snow: 'Ice Temple', sea: 'Sea Dojo', castle: 'Tower Hall' };
-const TRAIN_ROOM = { japan: 'the Dojo', lava: 'the Training Cave', robot: 'the Training Lab', snow: 'the Ice Temple', sea: 'the Sea Dojo', castle: 'the Tower Hall' };
+const ENTRANCES = ['door', 'bamboo', 'torii', 'cave', 'ledge', 'crack', 'hatch', 'crate', 'vent', 'igloo', 'drift', 'ledge', 'roof', 'banner', 'brick', 'clam', 'seaarch', 'shiphatch', 'cave', 'crack', 'cave'];   // (the sea's three are on the sea floor)
+const TRAIN_SIGN = { japan: 'Dojo', lava: 'Training Cave', robot: 'Training Lab', snow: 'Ice Temple', sea: 'Sea Dojo', desert: 'Canyon Dojo', castle: 'Tower Hall' };
+const TRAIN_ROOM = { japan: 'the Dojo', lava: 'the Training Cave', robot: 'the Training Lab', snow: 'the Ice Temple', sea: 'the Sea Dojo', desert: 'the Canyon Dojo', castle: 'the Tower Hall' };
 const GUARD = { arm: [-5, 15], arm2: [25, 15] };
 const MOVES = [
   { name: 'Bow', fx: 'bow', intro: 'Every ninja starts with a bow.', lesson: 'Respect comes first.', steps: [
@@ -2311,6 +2341,13 @@ const MOVES = [
     { say: 'Guard up.', pose: GUARD }, { say: 'Swing the leg up and out...', pose: { r: -10, ...GUARD, leg: [-70, 26] } }, { say: 'Sweep it across!', pose: { r: -20, ...GUARD, leg: [-35, 30] } }] },
   { name: 'Back Kick', fx: 'board', spin: true, intro: 'Today: the back kick!', lesson: 'Look first, then kick. Strong like a dolphin tail!', steps: [
     { say: 'Turn and look back.', pose: { flip: true, ...GUARD } }, { say: 'Knee up close.', pose: { flip: true, r: 15, ...GUARD, leg: [-40, 12] } }, { say: 'Kick back!', pose: { flip: true, r: 30, ...GUARD, leg: [-10, 32] } }] },
+  // The Canyon Dojo (slots 18-20: the desert world, lessons 16-18 in play order).
+  { name: 'Elbow Strike', fx: 'wind', intro: 'Today: the elbow strike!', lesson: 'Short and strong. Like red rock.', steps: [
+    { say: 'Guard up.', pose: GUARD }, { say: 'Fist to your chest.', pose: { r: -8, arm: [70, 8], arm2: [60, 7] } }, { say: 'Elbow out!', pose: { r: 12, arm: [-20, 14], arm2: [60, 7] } }] },
+  { name: 'Axe Kick', fx: 'board', intro: 'Today: the axe kick!', lesson: 'Up high, then straight down. Crack!', steps: [
+    { say: 'Guard up.', pose: GUARD }, { say: 'Leg up, as high as you can!', pose: { r: -18, ...GUARD, leg: [-80, 30] } }, { say: 'Chop it down!', pose: { r: 6, ...GUARD, leg: [-15, 30] } }] },
+  { name: 'Tornado Kick', fx: 'boards', spin: true, intro: 'Today: the tornado kick!', lesson: 'You spin like a dust devil!', steps: [
+    { say: 'Guard up.', pose: GUARD }, { say: 'Jump and turn!', pose: { y: 26, flip: true, ...GUARD, leg: [-25, 12] } }, { say: 'Kick around!', pose: { y: 32, r: -30, ...GUARD, leg: [-40, 30] } }] },
 ];
 // The moves in the order a kid meets them (the sea's three come before the castle's), for "Lesson n of 18" and the rack.
 let movesPlayCache = null;
@@ -2547,6 +2584,7 @@ const BOSS_SPECS = {
   yeti:   { w: 88, h: 92, speed: 1.0, hop: 110, every: 105, attack: 'snow' },
   shogun: { w: 74, h: 94, speed: 1.4, hop: 170, every: 90,  attack: 'mix' },
   octo:   { w: 88, h: 92, speed: 0.9, hop: 0,   every: 105, attack: 'ink' },
+  scorpion: { w: 96, h: 88, speed: 1.2, hop: 0, every: 105, attack: 'sand' },
 };
 
 // Boss stage: one screen-wide arena, answer blocks on the left, the boss on the right.
@@ -2864,6 +2902,18 @@ const BOSS_SPR = {
     if (f) { R(11, 10, 2, 1, 'r'); }
   }, 2), ['a', 'b'], 4),
   shogun: bake(SHOGUN_SHEET, ['a', 'b'], 4),
+  scorpion: bake(makeFrames(26, 26, { r: '#c2562c', R: '#e0844a', d: '#8a3a1e', y: '#ffd23f', w: '#ffffff', e: '#16121f' }, ({ P, R, E, L }, f) => {
+    const s = f ? 1 : 0;
+    for (let i = 0; i < 4; i++) { const x = 9 + i * 3.2; L(x, 21, x + ((i + s) % 2 ? 1.4 : -1.4), 24, 'd'); }   // legs, stepping in turns
+    [[21, 16], [23, 13], [23, 9.5 - s], [21.5, 6 - s], [18.5, 4 - s], [15.5, 4 - s]].forEach(([x, y], i) => E(x, y, 2.1, 2.1, i % 2 ? 'R' : 'r'));   // the tail curls up and over
+    L(13.5, 5 - s, 12.5, 8 - s, 'y'); P(13, 5 - s, 'y'); P(14, 6 - s, 'y');   // the stinger
+    E(14, 18.5, 8, 4.4, 'r'); R(9, 15, 10, 1, 'R'); for (let i = 0; i < 3; i++) R(12 + i * 3, 16, 1, 5, 'd');   // body, with plates
+    E(7, 18.5, 3.8, 3.6, 'r'); R(5, 16, 5, 1, 'R');   // head
+    L(5, 17, 3, 13 + s, 'r'); L(6, 17, 4, 13 + s, 'r'); E(3.2, 10.5 + s, 2.7, 2.6, 'R'); R(3, 8 + s, 1, 3, 'e');   // the low claw, open
+    L(9, 15, 9.5, 11 - s, 'r'); L(10, 15, 10.5, 11 - s, 'r'); E(9.5, 8.5 - s, 2.5, 2.5, 'R'); R(9, 6 - s, 1, 3, 'e');   // the high claw
+    R(4, 18, 2, 2, 'w'); P(4, 19, 'e'); R(8, 18, 2, 2, 'w'); P(8, 19, 'e');   // eyes
+    L(3, 17, 5, 18, 'd'); L(10, 17, 8, 18, 'd');   // an angry brow
+  }, 2), ['a', 'b'], 4),
   octo: bake(makeFrames(26, 26, { p: '#c2507a', P: '#e88ab0', d: '#8a2a52', w: '#ffffff', e: '#16121f', s: '#ffd0e0' }, ({ P, R, E, L }, f) => {
     for (let i = 0; i < 8; i++) {   // eight arms, wiggling in turns
       const bx = 5 + i * 2.3, ex = 1 + i * 3.3, mx = (bx + ex) / 2 + ((i + f) % 2 ? 1.5 : -1.5);
@@ -2966,6 +3016,11 @@ const SONGS = {
                D2 . . . A2 . . . Bb1 . . . F2 . . .   C2 . . . G2 . . . F2 . . . . . . .`),
     bossBass: seq(`F2 . F3 . C3 . F3 . F2 . F3 . C3 . A2 .   C2 . C3 . G2 . C3 . C2 . C3 . G2 . E2 .
                    D2 . D3 . A2 . D3 . Bb1 . Bb2 . F2 . Bb2 .   C2 . C3 . G2 . C3 . F2 . C3 . F2 . . .`) },   // the octopus fight: a bouncy octave bass
+  desert: { bpm: 104, lead: 'triangle', vol: 0.05, drum: 'k..h..k.s..h....',   // a walk under a big sky
+    mel: seq(`D5 . . E5 F#5 . A5 . B5 . A5 . F#5 . . .   E5 . . F#5 A5 . B5 . D6 . B5 . A5 . . .
+              B5 . . A5 F#5 . E5 . D5 . E5 . F#5 . A5 .   E5 . . D5 B4 . D5 . D5 . . . . . . .`),
+    bass: seq(`D2 . . . A2 . . . D2 . . . A2 . . .   G2 . . . D3 . . . G2 . . . D3 . . .
+               B1 . . . F#2 . . . G2 . . . D3 . . .   A1 . . . E2 . . . D2 . . . . . . .`) },
   castle: { bpm: 92, lead: 'triangle', vol: 0.05, drum: 'k.......s...h...',
     mel: seq(`D5 . . . F5 . E5 . D5 . . . A4 . . .   Bb4 . . . D5 . C5 . A4 . . . . . . .
               D5 . . . F5 . G5 . A5 . . . G5 . F5 .   E5 . . . C#5 . . . D5 . . . . . . .`),
@@ -3213,7 +3268,7 @@ players.list.forEach(pl => { pl.icon = fixIcon(pl.icon); });
 const keyFor = id => (id === 'p1' ? SAVE_KEY : `${SAVE_KEY}:${id}`);
 const curPlayer = () => players.list.find(x => x.id === players.cur) || players.list[0];
 function savePlayers() { try { localStorage.setItem(PLAYERS_KEY, JSON.stringify(players)); } catch (e) { /* no storage */ } }
-const freshProg = () => ({ best: {}, skill: 'add10', ride: 'panda', track: 'cherry', mastery: {}, easy: null, allOpen: false, seenIntro: false, seenWorld: {}, bank: 0, music: true, layout: 6, auto: true, facts: {}, win: {}, trophies: {}, daily: { last: 0, streak: 0, best: 0 },
+const freshProg = () => ({ best: {}, skill: 'add10', ride: 'panda', track: 'cherry', mastery: {}, easy: null, allOpen: false, seenIntro: false, seenWorld: {}, bank: 0, music: true, layout: 7, auto: true, facts: {}, win: {}, trophies: {}, daily: { last: 0, streak: 0, best: 0 },
   badges: {}, golden: {}, friends: {}, moves: {}, dojoRpm: {}, stats: { bridges: 0, gems: 0 },
   owned: ['band-red', 'suit-navy'], equip: { band: 'band-red', suit: 'suit-navy', trail: null, pet: null }, raceBest: {} });
 let prog;
@@ -3228,7 +3283,7 @@ function loadProg(id) {
   prog.owned = prog.owned.filter(id => id !== 'pet-cat');
   if (prog.equip.pet === 'pet-cat') prog.equip.pet = null;
   if (prog.ride === 'dragon') prog.ride = 'panda';
-  const lay = saved ? saved.layout || 3 : 6;
+  const lay = saved ? saved.layout || 3 : 7;
   const remap = (o, f) => Object.fromEntries(Object.entries(o).map(([i, v]) => [f(Number(i)), v]));
   if (lay === 3) { const f = i => Math.floor(i / 3) * 4 + (i % 3 === 2 ? 3 : i % 3); prog.best = remap(prog.best, f); prog.golden = remap(prog.golden, f); }
   if (lay < 5) {   // the snow world was added before the castle
@@ -3239,7 +3294,11 @@ function loadProg(id) {
     const f = i => (i >= 16 ? i + 4 : i); prog.best = remap(prog.best, f); prog.golden = remap(prog.golden, f);
     if (prog.seenWorld[4]) { prog.seenWorld[5] = true; delete prog.seenWorld[4]; }
   }
-  prog.layout = 6;
+  if (lay < 7) {   // the desert world was added before the castle (Nov 2026)
+    const f = i => (i >= 20 ? i + 4 : i); prog.best = remap(prog.best, f); prog.golden = remap(prog.golden, f);
+    if (prog.seenWorld[5]) { prog.seenWorld[6] = true; delete prog.seenWorld[5]; }
+  }
+  prog.layout = 7;
 }
 if (!players.list.some(x => x.id === players.cur)) players.cur = players.list[0].id;
 loadProg(players.cur);
@@ -3425,6 +3484,7 @@ const ANS_COLS = {
   robot:  [['#7df9ff', '#1a8a9a'], ['#b6ff5c', '#5a9a1a'], ['#ff8ad8', '#a8327f'], ['#ffe066', '#a8860a'], ['#c8d3de', '#5d6d82']],
   snow:   [['#bdf0ff', '#3a8fc0'], ['#d6c8ff', '#6a58b5'], ['#8ff0e0', '#2a9a88'], ['#ffc8e0', '#b5587f'], ['#f4f9ff', '#7a95b0']],
   sea:    [['#ffb3c7', '#c2185b'], ['#ffe066', '#a8860a'], ['#8ff0e0', '#2a9a88'], ['#ffb38a', '#a8501f'], ['#d6c8ff', '#6a58b5']],
+  desert: [['#ffb38a', '#b3501f'], ['#ffe066', '#a8860a'], ['#9be5d0', '#2a8a78'], ['#ffb3c7', '#c2185b'], ['#e8dcc8', '#7a6a52']],
   castle: [['#c9a8ff', '#6a3fb5'], ['#fff2a8', '#a8960a'], ['#8fb0ff', '#3a4fb5'], ['#ff9ec4', '#a83a6a'], ['#d8dfe8', '#5a6472']],
 };
 const ansCol = i => (ANS_COLS[L.world.key] || ANS_COLS.japan)[i % 5];
@@ -3603,7 +3663,7 @@ function padType(k) {
 }
 
 // Boss fights: two rows of answers for the harder bosses. A timeout isn't a mistake, but the boss attacks.
-const PAD_TIME = [12, 10, 10, 9, 9, 9];   // seconds, per world
+const PAD_TIME = [12, 10, 10, 9, 9, 9, 9];   // seconds, per world
 function openBossPad() {
   const ar = L.arena, w = STAGES[L.idx].w;
   const here = () => [P.x + P.w / 2, P.y];
@@ -3686,14 +3746,14 @@ const BADGES = [
   { id: 'golden', pix: 'gem', swap: { c: '#ffd23f', b: '#e8452c', w: '#fff6c8' }, sec: 'adv', name: 'Golden Gem', text: 'Grab a flaming golden gem.' },
   { id: 'golden-all', pix: 'crown', sec: 'adv', name: 'Golden Hunter', text: `Grab all ${GOLD_N} golden gems.`, prog: () => [nKeys(prog.golden), GOLD_N], prize: 'suit-gold' },
   { id: 'boss-nohit', pix: 'shield', sec: 'adv', name: 'Untouchable', text: 'Beat a boss without getting hit.' },
-  { id: 'boss-all', pix: 'scroll', sec: 'adv', name: 'Scroll Keeper', text: 'Win back all six scrolls.' },
+  { id: 'boss-all', pix: 'scroll', sec: 'adv', name: 'Scroll Keeper', text: 'Win back all seven scrolls.' },
   { id: 'race-win', pix: 'trophy', sec: 'adv', name: 'Champion Rider', text: 'Win a race.' },
   { id: 'race-perfect', pix: 'horse', sec: 'adv', name: 'Perfect Ride', text: 'Get every gate right in a race.' },
   { id: 'roads', pix: 'race', sec: 'adv', name: 'Every Road', text: 'Win a race on every track.', prog: () => [nKeys(prog.stats.roads), 5], gems: 50 },
   { id: 'shopper', pix: 'bag', sec: 'adv', name: 'Shopper', text: 'Buy something in the Dojo Shop.' },
   { id: 'gems500', pix: 'gem', sec: 'adv', name: 'Gem Collector', text: 'Collect 500 gems in total.', prog: () => [statOf('gems'), 500] },
   { id: 'black-belt', pix: 'belt', swap: { b: '#26262e' }, sec: 'adv', name: 'Black Belt', text: 'Reach the Black Belt rank.' },
-  { id: 'friends', pix: 'house', sec: 'adv', name: 'Every One Matters', text: 'Find all six lost friends and bring them home.', prog: () => [FRIENDS.filter(f => (prog.friends || {})[f.id]).length, FRIENDS.length] },
+  { id: 'friends', pix: 'house', sec: 'adv', name: 'Every One Matters', text: 'Find all the lost friends and bring them home.', prog: () => [FRIENDS.filter(f => (prog.friends || {})[f.id]).length, FRIENDS.length] },
 ];
 for (const b of BADGES) if (b.sk && !b.prog) b.prog = () => factGoal(b);   // fact-set tiles count gold facts
 const BADGE = Object.fromEntries(BADGES.map(b => [b.id, b]));
@@ -4802,6 +4862,7 @@ const SWING_LOOK = {
   lava: { post: '#3a2f2c', beam: '#2a201e', rope: '#9aa7b8', chain: true, tell: 'Answer to swing on the chains!' },
   robot: { post: '#6c7a89', beam: '#ffd23f', rope: '#2b2b38', hook: true, tell: 'Answer to ride the crane hooks!' },
   snow: { post: '#5a6b7a', beam: '#2b2b38', rope: '#2b2b38', lift: true, tell: 'Answer to ride the ski lift!' },
+  desert: { post: '#7e3a1c', beam: '#5e2412', rope: '#c9a063', tell: 'Answer to swing across the canyon!' },
   castle: { post: '#3a2a20', beam: '#8b5a2b', rope: '#8b5a2b', lantern: true, tell: 'Answer to swing across!' },
 };
 const swingTop = () => (GR - 3) * T;   // the ledges and the perch are 3 blocks high
@@ -5765,6 +5826,15 @@ function drawMini() {
 // Feeding animals as little pixel sprites (16 wide, chibi: big head, big eyes). Each has its own palette; a dark outline
 // is added around the shape. eyes = top-left of each 2×2 eye, mouth = where it chews, face = colour used to blink.
 const ANIMAL_SPR = {
+  roadrunner: { pal: { B: '#8a6a4a', L: '#f0e0c0', C: '#4a3a2a', O: '#ffb627', e: '#1a1426', w: '#ffffff', p: '#ffb3a0' }, eyes: [[4, 4], [8, 4]], mouth: [10, 6], face: 'B', rows: [
+    '....CC.C........', '.....CCCC.......', '....BBBBBB......', '...BBBBBBBB.....', '...BeeBBeeB.....', '...BewBBewBOO...', '...BpBBBBpBO....', '....BBBBBB......',
+    '....LLLLLLBB....', '...LLLLLLLBBBC..', '...LLLLLLLBBCCC.', '....LLLLLLB..CC.', '.....O...O......', '....OO..OO......'] },
+  tortoise: { pal: { G: '#c9c47a', S: '#9a6a3a', s: '#6e4526', e: '#1a1426', w: '#ffffff', p: '#ffb3a0' }, eyes: [[5, 3], [9, 3]], mouth: [7, 6], face: 'G', rows: [
+    '.....GGGGGG.....', '....GGGGGGGG....', '...GGGGGGGGGG...', '...GGeeGGeeGG...', '...GGewGGewGG...', '...GpGGGGGGpG...', '....GGGGGGGG....', '..SSSSSSSSSSSS..',
+    '.SSsSSsSSsSSsSS.', 'GSSSSSSSSSSSSSSG', 'GSsSSsSSsSSsSSSG', '.SSSSSSSSSSSSSS.', '..SSSSSSSSSSSS..', '..GG........GG..'] },
+  coyote: { pal: { W: '#d9b27a', P: '#f6e0bc', T: '#a8804a', e: '#1a1426', w: '#ffffff', p: '#ffb3c8', k: '#2d3436' }, eyes: [[4, 5], [10, 5]], mouth: [7, 8], face: 'W', rows: [
+    '..W..........W..', '..WW........WW..', '..WPW......WPW..', '..WWWWWWWWWWWW..', '.WWWWWWWWWWWWWW.', '.WWWeeWWWWeeWWW.', '.WWWewWWWWewWWW.', '..WpWWWkkWWWpW..',
+    '...WWWWWWWWWW...', '....WWWWWWWW.TT.', '...WWWWWWWWWTTTT', '...WWWWWWWWWTTT.', '...WW.WW.WW.....'] },
   turtle: { pal: { G: '#7bd36a', S: '#3a8a4a', s: '#2a6a3a', e: '#1a1426', w: '#ffffff', p: '#ffb3a0' }, eyes: [[5, 3], [9, 3]], mouth: [7, 6], face: 'G', rows: [
     '.....GGGGGG.....', '....GGGGGGGG....', '...GGGGGGGGGG...', '...GGeeGGeeGG...', '...GGewGGewGG...', '...GpGGGGGGpG...', '....GGGGGGGG....', '..SSSSSSSSSSSS..',
     '.SSsSSsSSsSSsSS.', 'GSSSSSSSSSSSSSSG', 'GSsSSsSSsSSsSSSG', '.SSSSSSSSSSSSSS.', '..SSSSSSSSSSSS..', '..GG........GG..'] },
@@ -5822,6 +5892,8 @@ const ANIMAL_SPR = {
 };
 // little pixel foods (10 wide), same outline treatment
 const FOOD_SPR = {
+  pear: { pal: { m: '#e0408a', M: '#b02a66', g: '#5f9a4a', w: '#ffb3d0' }, rows: ['....gg....', '...mmmm...', '..mwmmmm..', '..mmmmMm..', '..mmMmmm..', '..mmmmmm..', '...mmmm...'] },
+  bone: { pal: { w: '#f4f0e0', d: '#c9c0a8' }, rows: ['.ww....ww.', 'wwww..wwww', '.wwwwwwww.', '.wwddddww.', 'wwww..wwww', '.ww....ww.'] },
   jelly: { pal: { p: '#ff9ccf', P: '#c8609a', w: '#ffffff' }, rows: ['...pppp...', '..pwpppp..', '.pppppppp.', '.PPPPPPPP.', '..p.p.p...', '..p..p.p..', '...p...p..'] },
   clam: { pal: { c: '#c58aff', d: '#8a52c8', w: '#ffffff' }, rows: ['..cccccc..', '.cdcdcdcc.', 'cccccccccc', 'cdcdcdcdcc', '.cccccccc.', '..wwwwww..'] },
   shrimp: { pal: { o: '#ff8a6a', d: '#d8603a', e: '#1a1426' }, rows: ['.......oo.', '..oooooeo.', '.oodoodooo', 'oooooooo..', '.o.o.o....', 'oo........'] },
@@ -5986,6 +6058,11 @@ function addFlavor(L) {
     case 'anemones': spots(11, 2).filter((c, i) => i % 3 === 0).forEach((c, i) => add({ k: 'anem', x: X(c), col: i % 3, out: 0, done: false })); break;
     case 'otters': spots(17, 2).filter((c, i) => i % 3 === 1).forEach(c => { if (map[SEA_TOP - 1][c] === '.' && map[SEA_TOP][c] === '.') add({ k: 'otter', x: X(c), t: rng() * 100, done: false, give: 0 }); }); break;
     case 'glowjelly': spots(7, 2).forEach(c => add({ k: 'gjelly', x: X(c), y: (SEA_TOP + 2 + rng() * 5) * T, ph: rng() * 6, lit: false })); break;
+    // The desert (one small thing per level): stone arches to run under, tall cactuses whose flower pops off with a gem
+    // when Kai brushes past, and shafts of sunlight coming down into the slot canyon.
+    case 'arches': spots(22, 6, 4).forEach(c => { add({ k: 'arch', x: X(c) + 2 * T }); L.coins.push({ x: X(c) + 2 * T, y: Y - 3.4 * T, v: 5, taken: false }); }); break;
+    case 'cactus': spots(13, 5).filter((c, i) => i % 2 === 0).forEach(c => add({ k: 'cactus', x: X(c), fl: null })); break;
+    case 'sunbeams': spots(15, 7, 2).forEach(c => add({ k: 'beam', x: X(c), ph: rng() * 6 })); break;
     case 'bats':
       spots(9, 4).forEach(c => add({ k: 'torch', x: X(c) }));
       spots(14, 7).forEach(c => [-14, 0, 14].forEach((d, i) => add({ k: 'bat', x: X(c) + d, y: Y - 5.2 * T + (i % 2) * 8, fly: false, vx: 0, vy: 0, t: i * 20 })));
@@ -6030,6 +6107,11 @@ function updateFlavor() {
     }
     if (f.k === 'pipe') { f.t = (f.t + 1) % 200; if (f.t > 160 && tick % 3 === 0 && near(f.x, VW)) G.parts.push({ k: 'bit', x: f.x + 14, y: Y - 3 * T, vx: 2 + Math.random() * 2, vy: -1.2 - Math.random(), life: 28, col: 'rgba(255,255,255,.7)', s: 7 }); }
     if (f.k === 'belt' || f.k === 'beaker' || f.k === 'screen' || f.k === 'mirror') f.t++;
+    if (f.k === 'cactus' && !f.fl && Math.abs(cx - f.x) < 20 && feet > Y - 60) {   // brush past: the flower pops off and out comes a gem
+      f.fl = { x: f.x, y: Y - 4.2 * T, vx: (p.vx >= 0 ? 1 : -1) * 1.5, vy: -6, a: 0 }; tone(520, 0.15, 'triangle', 0.05, 780);
+      burst(f.x, Y - 4 * T, '#ff8ab0', 8, 3); payGems(f.x, Y - 4.4 * T, 1);
+    }
+    if (f.k === 'cactus' && f.fl) { const h = f.fl; if (h.y < Y - 4) { h.x += h.vx; h.vy += 0.3; h.y += h.vy; h.a += 0.2; } else { h.y = Y - 4; h.a = 0; } }
     if (f.k === 'snowman' && !f.hat && Math.abs(cx - f.x) < 20 && feet > Y - 60) {   // bump it: the hat pops off and out comes a gem
       f.hat = { x: f.x, y: Y - 56, vx: (p.vx >= 0 ? 1 : -1) * 2, vy: -8, a: 0 }; tone(520, 0.15, 'triangle', 0.05, 780);
       burst(f.x, Y - 40, '#ffffff', 10, 3); payGems(f.x, Y - 70, 1);
@@ -6091,6 +6173,14 @@ function drawFlavorBack() {
   const Y = GR * T, vis = (x, m = 120) => x > cam - m && x < cam + VW + m;
   for (const f of L.fl) {
     if (!vis(f.x, f.k === 'belt' ? 260 : 140)) continue;
+    if (f.k === 'arch') { rockArch(f.x, Y, 1.25); continue; }
+    if (f.k === 'beam') {   // a shaft of sunlight slanting down to the canyon floor, with a few drifting motes
+      const g = ctx.createLinearGradient(0, 0, 0, Y); g.addColorStop(0, 'rgba(255,240,200,.42)'); g.addColorStop(1, 'rgba(255,240,200,.08)');
+      ctx.fillStyle = g; poly([[f.x + 70, 0], [f.x + 110, 0], [f.x + 40, Y], [f.x - 40, Y]], g);
+      ctx.fillStyle = 'rgba(255,250,225,.8)';
+      for (let i = 0; i < 5; i++) { const u = ((tick * 0.004 + i * 0.21 + f.ph) % 1), yy = u * Y; ctx.fillRect(Math.round(f.x + 90 - u * 90 + Math.sin(tick * 0.03 + i * 2) * 14), Math.round(yy), 3, 3); }
+      continue;
+    }
     if (f.k === 'tree') {
       ctx.fillStyle = '#6b4226'; ctx.fillRect(f.x - 9, Y - 3 * T, 18, 3 * T); ctx.fillRect(f.x - 9, Y - 2.6 * T, 40, 8); ctx.fillRect(f.x - 30, Y - 2.2 * T, 30, 7);
       const sw = Math.sin(tick * 0.02 + f.x) * 3;
@@ -6211,6 +6301,13 @@ function drawFlavor() {
     } else if (f.k === 'bubble') {
       const r = 3 + f.t / 5; ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2; ctx.fillStyle = '#ff8a1a';
       ctx.beginPath(); ctx.arc(f.x, f.y - f.t * 0.3, r, 0, 7); ctx.fill(); ctx.stroke();
+    } else if (f.k === 'cactus') {   // a tall saguaro with two arms and a pink flower on top
+      ctx.fillStyle = '#5f9a4a'; rrect(f.x - 10, Y - 4 * T, 20, 4 * T, 10); ctx.fill();
+      rrect(f.x - 34, Y - 2.9 * T, 12, 1.1 * T, 6); ctx.fill(); ctx.fillRect(f.x - 28, Y - 2.05 * T, 22, 10);
+      rrect(f.x + 22, Y - 3.3 * T, 12, 1.2 * T, 6); ctx.fill(); ctx.fillRect(f.x + 6, Y - 2.4 * T, 22, 10);
+      ctx.fillStyle = '#4a7f3a'; ctx.fillRect(f.x - 4, Y - 3.8 * T, 2, 3.7 * T); ctx.fillRect(f.x + 3, Y - 3.8 * T, 2, 3.7 * T);
+      const h = f.fl || { x: f.x, y: Y - 4 * T - 4, a: 0 };
+      ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(h.a); ctx.fillStyle = '#ff8ab0'; ctx.fillRect(-6, -5, 12, 9); ctx.fillStyle = '#ffd23f'; ctx.fillRect(-2, -3, 4, 4); ctx.restore();
     } else if (f.k === 'snowman') {   // a big snowman with a top hat
       ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(f.x, Y - 16, 18, 0, 7); ctx.arc(f.x, Y - 44, 13, 0, 7); ctx.fill();
       ctx.fillStyle = '#dceefa'; ctx.beginPath(); ctx.arc(f.x + 5, Y - 12, 10, 0, 7); ctx.fill();
@@ -6261,12 +6358,13 @@ const TWIST_HINT = {
   ice: 'Slippery ice! Slide carefully', icicles: 'Icicles fall when you run under them!', avalanche: 'Giant snowballs! Jump over them',
   walljump: 'Wall jump: jump again while touching a wall', ladders: 'Hold jump to climb ladders', sneak: 'Sneak past the guards. Hide in barrels!',
   drift: 'Currents pull you down and lift you up. Ride them to gems!', kelp: 'Swim through the thick kelp. Gems hide inside!', barrels: 'Barrels sink from the ship! Dive on top to crack them',
+  crumble: 'These ledges crumble! Hop up quick', devil: 'Step into the dust devil. It lifts you up!', quicksand: 'Soft sand! Hop to get through faster',
 };
 // the pixel icon in front of each hint (pix name, optional recolour)
 const TWIST_PIX = {
   kite: ['kite'], spring: ['bamboo'], koi: ['fish'], rocks: ['rock'], chase: ['volcano'], dark: ['gem', { c: '#c9a8ff', b: '#6a3fb5' }],
   gears: ['gear'], conveyor: ['crate'], lasers: ['bolt'], ice: ['flake'], icicles: ['icicle'], avalanche: ['snowball'],
-  walljump: ['bricks'], ladders: ['ladder'], sneak: ['barrel'], drift: ['fish'], kelp: ['bamboo'], barrels: ['barrel'],
+  walljump: ['bricks'], ladders: ['ladder'], sneak: ['barrel'], drift: ['fish'], kelp: ['bamboo'], barrels: ['barrel'], crumble: ['rock'], devil: ['kite'], quicksand: ['cactus'],
 };
 // no rolling snowballs while the ninja is working out a gate
 function currentStationNear() { const cs = currentStation(); return cs && cs.s && Math.abs(P.x - (cs.s + 6) * T) < 9 * T; }
@@ -6348,7 +6446,32 @@ function updateTwist() {
       if (pl.gone > 0) { if (--pl.gone === 0) { pl.y = pl.y0; pl.sink = 0; } else pl.y = 9999; }
       else { pl.y = pl.y0 + Math.max(0, pl.sink - 30) * 0.7; if (pl.sink > 85) { pl.gone = 180; splash(pl.x + pl.w / 2); } if (!pl.on) pl.sink = Math.max(0, pl.sink - 1); }
     }
+    if (pl.k === 'crumb') {   // stands for a moment, shakes, then drops; it grows back after a while
+      if (pl.gone > 0) { if (--pl.gone === 0) { pl.y = pl.y0; pl.sink = 0; } else pl.y = 9999; }
+      else if (pl.sink > 50) { pl.gone = 200; burst(pl.x + pl.w / 2, pl.y0 + 8, '#c2562c', 10, 3); burst(pl.x + pl.w / 2, pl.y0 + 8, '#f2c48a', 6, 3); sfx.stomp(); }
+      else if (!pl.on && pl.sink > 0 && pl.sink < 12) pl.sink--;
+      else if (pl.sink >= 12) pl.sink++;   // once it starts to go, it goes
+    }
     pl.dx = pl.x - ox; pl.dy = pl.y - oy; pl.on = false;
+  }
+  if (G.sandIn > 0) G.sandIn--;
+  for (const f of L.fx) {
+    if (f.k === 'devil') {
+      f.x += f.dir * 0.7; if (f.x > f.x1) f.dir = -1; if (f.x < f.x0) f.dir = 1;
+      const cx = p.x + p.w / 2;
+      if (Math.abs(cx - f.x) < 0.8 * T && p.y + p.h > GR * T - 7.5 * T) {   // inside the funnel: up he goes, carried along
+        if (p.onGround || p.vy > -3) tone(220, 0.25, 'sine', 0.025, 520);
+        p.vy = Math.max(p.vy - 1.1, -8.5); p.onGround = false; p.bounce = true; p.x += f.dir * 0.7;
+      }
+      if (tick % 3 === 0 && Math.abs(f.x - cam - VW / 2) < VW) G.parts.push({ k: 'bit', x: f.x + (Math.random() - 0.5) * 30, y: GR * T - 6, vx: (Math.random() - 0.5) * 2, vy: -3 - Math.random() * 3, life: 34, col: ['#e8b070', '#f2c48a', '#c98a4a'][R(0, 2)], s: 4 });
+    }
+    if (f.k === 'sand') {
+      const cx = p.x + p.w / 2;
+      if (p.onGround && cx > f.x && cx < f.x + f.w && p.y + p.h > GR * T - 4) {
+        G.sandIn = 6;
+        if (Math.abs(p.vx) > 0.2 && tick % 10 === 0) G.parts.push({ k: 'bit', x: cx, y: GR * T - 4, vx: -p.vx * 0.3, vy: -1.5, life: 20, col: '#f2c48a', s: 4 });
+      }
+    }
   }
   for (const f of L.fx) {
     if (f.k === 'kite' && !f.taken && overlap(p, { x: f.x - 22, y: f.y - 30, w: 44, h: 110 })) {
@@ -6446,9 +6569,10 @@ function twistMove(p, feetBefore, fallSpeed) {
   const tw = L.twist; if (!tw) return;
   for (const pl of L.plats) {
     if (p.vy >= 0 && p.x + p.w > pl.x && p.x < pl.x + pl.w && feetBefore <= pl.y + 6 && p.y + p.h >= pl.y - 1) {
-      p.y = pl.y - p.h; p.vy = 0; p.onGround = true; p.x += pl.dx; pl.on = true; if (pl.k === 'lily') pl.sink++;
+      p.y = pl.y - p.h; p.vy = 0; p.onGround = true; p.x += pl.dx; pl.on = true; if (pl.k === 'lily' || pl.k === 'crumb') pl.sink++;
     }
   }
+  if (G.sandIn > 0 && p.onGround) p.x -= p.vx * 0.55;
   const under = c => { const r = Math.floor((p.y + p.h + 2) / T); return r < ROWS && c >= 0 && c < L.w ? L.map[r][c] : '.'; };
   const cl = Math.floor(p.x / T), cr = Math.floor((p.x + p.w - 1) / T);
   if (p.onGround) {
@@ -6725,6 +6849,7 @@ function bossAttack(b) {
   else if (kind === 'laser') low('laser', 5.5, 9);
   else if (kind === 'rock') lob('rock');
   else if (kind === 'snow') { b.flip ^= 1; if (b.flip) lob('snow'); else low('snowroll', 3.8, 16); }
+  else if (kind === 'sand') { b.flip ^= 1; if (b.flip) lob('sand'); else low('weed', 3.8, 15); }   // a ball of sand, then a rolling tumbleweed to jump
   else if (kind === 'ink') {   // the octopus squirts ink at Kai's depth (every other time a second blob, higher or lower): swim out of the way
     // Each blob comes out of the octopus, then drifts into its lane (ty) as it travels, so kids see where it's going.
     const top = (L.water || 0) + 16, bot = GR * T - 16, aim = clamp(P.y + P.h / 2, top, bot), ink = y => L.proj.push({ k: 'ink', x: sx, y: b.y + b.h * 0.45, ty: y, vx: b.face * 4 * easy, vy: 0, g: 0, r: 13 });
@@ -6741,7 +6866,7 @@ function bossAttack(b) {
   sfx.attack();
 }
 
-const PAUSE_SAY = { kage: 'Sword stuck!', golem: 'Overheated!', bot: 'RECHARGING...', yeti: 'Ah-CHOO! Stuck!', octo: 'Arms all tangled!', shogun: 'Catching his breath...' };
+const PAUSE_SAY = { kage: 'Sword stuck!', golem: 'Overheated!', bot: 'RECHARGING...', yeti: 'Ah-CHOO! Stuck!', octo: 'Arms all tangled!', scorpion: 'Tail in a knot!', shogun: 'Catching his breath...' };
 // little bits of show while the boss is open
 function pauseFx(b) {
   const cx = b.x + b.w / 2;
@@ -6849,7 +6974,7 @@ function updateHand() {
   keys.down = !!L.water && P.y + P.h < b.y + b.h - 6;   // under water Kai swims down to the octopus
   if (Math.abs(d) > 12 && h.t < 360) { keys.right = d > 0; keys.left = d < 0; return; }
   keys.left = keys.right = false; P.vx = 0; P.face = right ? 1 : -1;
-  if (++h.reached === 1 && ['golem', 'bot', 'yeti'].includes(b.kind)) floatText(b.x + b.w / 2, b.y - 20, '♥', '#ff5a8a', 34);   // they take it
+  if (++h.reached === 1 && ['golem', 'bot', 'yeti', 'scorpion'].includes(b.kind)) floatText(b.x + b.w / 2, b.y - 20, '♥', '#ff5a8a', 34);   // they take it
   if (h.reached < 40) return;
   b.hp = 0; b.dying = 70; b.gentle = true; L.proj = []; sfx.bossDown(); shake(8, 3); G.slow = 60; G.flash = 0.4;
 }
@@ -6893,6 +7018,12 @@ function runOutro(b) {
     if (t === 270) { say('boss', 'Here! Everyone gets a piece!', 120); octoDrop(b, 8); }
     if (t > 270 && t < 380 && t % 8 === 0) G.parts.push({ k: 'bit', x: b.x + Math.random() * b.w, y: b.y + 10, vx: 0, vy: -1.2, life: 40, col: 'rgba(225,245,255,.85)', s: 4 });
     if (t === 400) { o.done = true; b.friendly = true; dropPrize(b, (P.x + cx) / 2); }
+  } else if (k === 'scorpion') {   // forgiveness: he stung first, and Kai forgives him anyway
+    if (t === 20) say('kai', 'I forgive you.');
+    if (t === 120) say('boss', 'But... I stung you!', 100);
+    if (t > 120 && t < 230 && t % 6 === 0) G.parts.push({ k: 'bit', x: b.x + Math.random() * b.w, y: b.y + 20, vx: 0, vy: -1.2, life: 40, col: 'rgba(255,230,180,.85)', s: 5 });
+    if (t === 230) { b.calm = true; say('boss', 'Then I will put my stinger down.', 120); floatText(cx, b.y - 30, '♥', '#ff5a8a', 40); }
+    if (t === 360) { o.done = true; b.friendly = true; dropPrize(b, (P.x + cx) / 2); }
   } else if (k === 'shogun') {
     if (t % 8 === 0 && t < 330) { shake(4, 2); L.proj.push({ k: 'rock', x: R(40, L.w * T - 40), y: -20, vx: 0, vy: 2, g: 0.3, r: 8, deco: true }); }
     if (t === 30) say('boss', "Why... why didn't you finish me?", 120);
@@ -7045,6 +7176,7 @@ function openGate(st) {
   if (k === 'snow') for (let i = 0; i < 30; i++) bits.push({ x: x0 + Math.random() * w, y: Math.random() * GR * T, vx: 6 + Math.random() * 6, vy: -0.5 - Math.random(), s: 8 + Math.random() * 12, a: Math.random() * 6, va: (Math.random() - 0.5) * 0.3 });
   if (k === 'lava') for (let i = 0; i < 16; i++) bits.push({ x: x0 + Math.random() * w, y: Math.random() * GR * T, vx: (Math.random() - 0.5) * 3, vy: -2 - Math.random() * 3, va: 0.2 });
   if (k === 'japan') for (let i = 0; i < 30; i++) bits.push({ x: x0 + w / 2, y: Math.random() * GR * T, vx: (Math.random() - 0.2) * 5, vy: -Math.random() * 2, a: Math.random() * 6 });
+  if (k === 'desert') { for (let i = 0; i < 26; i++) bits.push({ x: x0 + Math.random() * w, y: Math.random() * GR * T, vx: (Math.random() - 0.5) * 4, vy: -2 - Math.random() * 3, s: 8 + Math.random() * 10, a: Math.random() * 6, va: (Math.random() - 0.5) * 0.3 }); sfx.stomp(); shake(5, 3); }
   if (k === 'castle') for (let i = 0; i < 9; i++) bits.push({ x: x0 + Math.random() * w, y: 80 + Math.random() * (GR * T - 140), vx: 1 + Math.random() * 2, vy: -1.5 - Math.random() * 1.5, a: Math.random() * 6 });
   st.gfx = { t: 0, x0, w, k, bits };
   if (k === 'robot') sfx.attack();
@@ -7086,7 +7218,7 @@ function updateGates() {
 // in smoke), its name slams onto the screen with a gong, its taunt, then FIGHT! Kai waits in guard. Jump / a tap skips.
 // Replaces the boss card (its taunt and "Dodge! Then grab the right answer." are in the scene).
 const BOSS_IN = 240, BOSS_LAND = 70, BOSS_SLAM = 92, BOSS_FIGHT = 196;
-const BOSS_ENTRY = { kage: 'smoke', golem: 'drop', bot: 'drop', yeti: 'drop', octo: 'rise', shogun: 'leap' };
+const BOSS_ENTRY = { kage: 'smoke', golem: 'drop', bot: 'drop', yeti: 'drop', octo: 'rise', scorpion: 'dig', shogun: 'leap' };
 function startBossIn() {
   const b = L.boss;
   G.bossIn = { t: 0, how: BOSS_ENTRY[b.kind] || 'drop', hx: b.x, hy: b.y };
@@ -7098,6 +7230,7 @@ function bossInPlace(bi) {   // where the boss is at this frame of its entrance
   b.x = bi.hx; b.y = bi.hy; delete b.alpha; b.face = -1;
   if (bi.how === 'drop') b.y = bi.hy - (1 - e * e) * (bi.hy + b.h + 40);
   else if (bi.how === 'rise') b.y = bi.hy + (1 - e) * (1 - e) * (VH - bi.hy + 30);
+  else if (bi.how === 'dig') { b.y = bi.hy + (1 - e) * (1 - e) * (VH - bi.hy + 30); if (e < 1 && bi.t % 5 === 0) burst(bi.hx + b.w / 2 + (Math.random() - 0.5) * b.w, GR * T - 4, '#e8a868', 4, 3); }   // he digs up out of the sand
   else if (bi.how === 'leap') { b.x = bi.hx + (1 - e) * 7 * T; b.y = bi.hy - Math.sin(e * Math.PI) * 4 * T; }
   else if (bi.how === 'smoke') b.alpha = clamp((bi.t - (BOSS_LAND - 14)) / 14, 0, 1);
 }
@@ -7112,6 +7245,7 @@ function bossInTick() {
   if (bi.how === 'smoke' && bi.t === BOSS_LAND - 16) { for (let i = 0; i < 3; i++) burst(cx, feet - b.h / 2, ['#3a3448', '#6a6480', '#9a94b0'][i], 12, 4); tone(180, 0.4, 'sawtooth', 0.03, 60); }
   if (bi.t === BOSS_LAND) {
     if (bi.how === 'rise') { burst(cx, feet - b.h / 2, '#bfefff', 16, 4); tone(300, 0.5, 'sine', 0.05, 120); }
+    else if (bi.how === 'dig') { shake(10, 4); tone(90, 0.5, 'square', 0.06, 50); burst(cx - b.w / 2, feet - 4, '#e8a868', 12, 4); burst(cx + b.w / 2, feet - 4, '#e8a868', 12, 4); }
     else if (bi.how !== 'smoke') { shake(bi.how === 'drop' ? 20 : 12, bi.how === 'drop' ? 8 : 5); tone(70, 0.5, 'square', 0.07, 40); burst(cx - b.w / 2, feet - 4, '#b8a890', 10, 4); burst(cx + b.w / 2, feet - 4, '#b8a890', 10, 4); }
   }
   if (bi.t === BOSS_SLAM) { shake(12, 5); G.flash = 0.3; tone(98, 1.4, 'sine', 0.09); tone(196, 1.1, 'sine', 0.04); tone(147, 0.25, 'square', 0.04); }   // the gong
@@ -7278,6 +7412,7 @@ const BOSS_CARD = {
   bot: 'The robots can rest now.',
   yeti: 'The Snowman has a friend now: you!',
   octo: 'Kai shared first. Now the Octopus shares too.',
+  scorpion: 'Kai forgave him. The Scorpion puts his stinger down.',
   shogun: '',
 };
 
@@ -7423,6 +7558,7 @@ const TRACKS = {
   lava: { name: 'Lava Run', icon: 'volcano', sky: ['#1a0505', '#8a2a0a'], ground: ['#ff5a00', '#e84a00'], rumble: ['#1a1414', '#ff8c1a'], road: ['#2b2422', '#332b28'], lane: '#ff8c1a' },
   sea: { name: 'Seaside Road', icon: 'fish', sky: ['#5fc8ff', '#d4f6ff'], ground: ['#efd49a', '#e6c98c'], rumble: ['#ff7aa8', '#ffffff'], road: ['#b8a890', '#ae9e86'], lane: '#ffffff' },
   snow: { name: 'Snowy Pass', icon: 'flake', sky: ['#9fd4ff', '#eaf6ff'], ground: ['#f4f9ff', '#e4f0fa'], rumble: ['#e63946', '#ffffff'], road: ['#b9c7d6', '#aebdcd'], lane: '#ffffff' },
+  desert: { name: 'Red Rock Road', icon: 'rock', sky: ['#5db4f0', '#ffe6c0'], ground: ['#d9995c', '#cf8d50'], rumble: ['#8a3a1e', '#f2c48a'], road: ['#a8765a', '#9e6c50'], lane: '#fff0d0' },
   city: { name: 'Night City', icon: 'moon', sky: ['#05071a', '#2a1f5a'], ground: ['#1b1f3a', '#171a33'], rumble: ['#ff3d9a', '#3ae0ff'], road: ['#22232e', '#272837'], lane: '#ffd23f' },
 };
 let RC = null;
@@ -7456,7 +7592,7 @@ function showRaceSetup() {
 }
 
 // Between worlds you ride to the next one. The track matches where you're going.
-const TRAVEL_TRACK = [null, 'lava', 'city', 'snow', 'sea', 'city'];   // the ride into each world (by world number)
+const TRAVEL_TRACK = [null, 'lava', 'city', 'snow', 'sea', 'desert', 'city'];   // the ride into each world (by world number)
 function travelRace(w) {
   hide('msg');
   const tr = TRAVEL_TRACK[w], save = prog.track;
@@ -7893,7 +8029,7 @@ function drawBackground() {
   const g = ctx.createLinearGradient(0, 0, 0, VH);
   g.addColorStop(0, L.sky[0]); g.addColorStop(1, L.sky[1]);
   ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
-  ({ japan: bgJapan, lava: bgLava, robot: bgRobot, snow: bgSnow, sea: bgSea, castle: bgCastle })[L.world.key]();
+  ({ japan: bgJapan, lava: bgLava, robot: bgRobot, snow: bgSnow, sea: bgSea, desert: bgDesert, castle: bgCastle })[L.world.key]();
   for (const p of ambient) {
     if (p.k === 'flake') { ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fillRect(p.x, p.y, 3, 3); continue; }
     if (p.k === 'bubble') { ctx.strokeStyle = 'rgba(225,245,255,.6)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.stroke(); continue; }
@@ -8452,6 +8588,54 @@ function bgRobot() {
   }, 95);
   if (k === 2) { ctx.fillStyle = 'rgba(150,210,255,.13)'; ctx.fillRect(0, 0, VW, VH); }   // Laser Lab: a brighter, bluer light
 }
+// The desert: one red rock country for all three levels (far mesas, banded buttes, low dunes). Each level adds its own
+// rock shapes, all standing on the ground: stone arches (Arch Canyon), thin hoodoo spires (Hoodoo Trail), and the tall
+// striped walls of a slot canyon with a strip of sky above (Slot Canyon).
+function butte(x, b, w, h, body, cap, stripe) {
+  poly([[x - w * 0.95, b], [x - w * 0.55, b - h * 0.45], [x + w * 0.55, b - h * 0.45], [x + w * 0.95, b]], body);   // the sloping skirt
+  ctx.fillStyle = body; ctx.fillRect(x - w * 0.5, b - h, w, h * 0.6);                                              // the cliff
+  ctx.fillStyle = cap; ctx.fillRect(x - w * 0.5, b - h, w, Math.max(4, h * 0.07));
+  if (stripe) { ctx.fillStyle = stripe; ctx.fillRect(x - w * 0.5, b - h * 0.78, w, h * 0.06); ctx.fillRect(x - w * 0.5, b - h * 0.6, w, h * 0.04); }
+}
+function rockArch(x, b, s) {   // a fin of red rock with a window through it
+  const w = 150 * s, h = 150 * s;
+  ctx.save(); ctx.beginPath(); ctx.rect(x - w / 2, b - h, w, h);
+  ctx.moveTo(x - w * 0.3, b); ctx.lineTo(x - w * 0.3, b - h * 0.4); ctx.quadraticCurveTo(x, b - h * 0.92, x + w * 0.3, b - h * 0.4); ctx.lineTo(x + w * 0.3, b); ctx.closePath();
+  ctx.clip('evenodd');
+  poly([[x - w * 0.5, b], [x - w * 0.42, b - h * 0.8], [x - w * 0.2, b - h], [x + w * 0.28, b - h * 0.96], [x + w * 0.46, b - h * 0.7], [x + w * 0.5, b]], '#b5512a');
+  ctx.fillStyle = '#e0844a'; ctx.fillRect(x - w / 2, b - h * 0.72, w, h * 0.06); ctx.fillStyle = '#f2c48a'; ctx.fillRect(x - w / 2, b - h * 0.52, w, h * 0.04);
+  ctx.restore();
+}
+function hoodoo(x, b, h, w) {   // a thin banded spire with a darker cap rock
+  ctx.save(); ctx.beginPath(); ctx.moveTo(x - w * 0.7, b); ctx.lineTo(x - w * 0.45, b - h * 0.5); ctx.lineTo(x - w * 0.3, b - h); ctx.lineTo(x + w * 0.3, b - h); ctx.lineTo(x + w * 0.45, b - h * 0.5); ctx.lineTo(x + w * 0.7, b); ctx.closePath(); ctx.clip();
+  for (let y = b - h, i = 0; y < b; y += 14, i++) { ctx.fillStyle = ['#d0683a', '#e0844a', '#f2c48a', '#c2562c'][i % 4]; ctx.fillRect(x - w, y, w * 2, 14); }
+  ctx.fillStyle = 'rgba(94,36,18,.22)'; ctx.fillRect(x + w * 0.1, b - h, w, h);
+  ctx.restore();
+  ctx.fillStyle = '#8a3a1e'; ctx.fillRect(x - w * 0.5, b - h - 9, w, 11);
+}
+function bgDesert() {
+  const b = GR * T, k = L.def && !L.def.boss ? L.def.k : -1;
+  if (k !== 2) clouds('rgba(255,255,255,.55)');
+  repeat(0.05, 620, (x, i) => butte(x, b, 190 + hash(i + 2) * 120, 200 + hash(i + 5) * 90, '#d9a08a', '#e6b49a'), 41);   // far mesas, hazy
+  repeat(0.16, 520, (x, i) => butte(x, b, 120 + hash(i + 3) * 110, 130 + hash(i + 8) * 80, '#c2562c', '#e0844a', '#f2c48a'), 43);
+  if (k === 0) repeat(0.3, 560, (x, i) => rockArch(x, b, 0.8 + hash(i + 4) * 0.5), 47);
+  if (k === 1) repeat(0.3, 330, (x, i) => { for (let j = 0; j < 3; j++) hoodoo(x + j * 46 - 40, b, 110 + hash(i * 3 + j) * 110, 24 + hash(i + j * 7) * 10); }, 53);
+  if (k === 2) {   // slot canyon: two layers of tall, wavy, striped walls; the sky is a strip at the top
+    for (const [sp, top, cols, seed] of [[0.2, 40, ['#8a3a1e', '#7a3018', '#9a4a26'], 3], [0.4, 120, ['#b5512a', '#a8481f', '#c2602f', '#b0502a', '#cf7a44'], 9]]) {
+      const off = cam * sp, edge = x => top + Math.sin((x + off) * 0.006 + seed) * 46 + Math.sin((x + off) * 0.017 + seed * 2) * 22;
+      ctx.save(); ctx.beginPath(); ctx.moveTo(0, b); for (let x = 0; x <= VW + 20; x += 20) ctx.lineTo(x, edge(x)); ctx.lineTo(VW + 20, b); ctx.closePath(); ctx.clip();
+      for (let y = 0, i = 0; y < b; y += 22, i++) {   // bands that flow like poured sand
+        ctx.fillStyle = cols[i % cols.length]; ctx.beginPath(); ctx.moveTo(0, b);
+        for (let x = 0; x <= VW + 40; x += 40) ctx.lineTo(x, y + Math.sin((x + off) * 0.008 + i * 0.9 + seed) * 16);
+        ctx.lineTo(VW + 40, b); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+    }
+    ctx.fillStyle = 'rgba(60,20,10,.22)'; ctx.fillRect(0, 0, VW, b);   // cooler and darker down here
+  }
+  ctx.fillStyle = '#e8a868';
+  repeat(0.55, 300, (x, i) => { const r = 60 * (0.7 + hash(i + 34) * 0.6); ctx.beginPath(); ctx.ellipse(x, b, r * 2.2, r * 0.55, 0, Math.PI, 0); ctx.fill(); }, 29);   // low dunes
+}
 function bgCastle() {
   ctx.fillStyle = 'rgba(255,255,255,.8)';
   for (let i = 0; i < 80; i++) {
@@ -8519,8 +8703,28 @@ function block(x, y, fill, dark, light) {
 // ---------------------------------------------------------------- level twist art
 function drawTwist() {
   if (SEA_TWISTS.includes(L.twist)) { drawSeaTwist(false); return; }
+  for (const f of L.fx) {
+    if (f.k === 'devil' && f.x > cam - 80 && f.x < cam + VW + 80) {   // a funnel of spinning sand, narrow at the ground
+      for (let i = 0; i < 9; i++) {
+        const y = GR * T - 10 - i * 28, r = 8 + i * 4.2, wob = Math.sin(tick * 0.22 + i * 0.9) * (3 + i);
+        ctx.fillStyle = `rgba(255,236,200,${0.75 - i * 0.05})`; ctx.beginPath(); ctx.ellipse(f.x + wob, y, r, 9, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = 'rgba(255,240,210,.5)'; ctx.fillRect(f.x + wob + Math.cos(tick * 0.3 + i * 1.7) * r * 0.8 - 2, y - 2, 4, 3);
+      }
+    }
+    if (f.k === 'sand' && f.x + f.w > cam - 20 && f.x < cam + VW + 20) {   // soft, rippled sand in the ground
+      ctx.fillStyle = '#f6d9a8'; ctx.fillRect(f.x, GR * T, f.w, 12);
+      ctx.fillStyle = '#e0b478'; for (let x = f.x + 6; x < f.x + f.w - 10; x += 22) ctx.fillRect(x + Math.sin(tick * 0.04 + x) * 3, GR * T + 4 + ((x / 22) % 2) * 3, 12, 2);
+    }
+  }
   for (const pl of L.plats) {
     if (pl.y > VH + 50) continue;
+    if (pl.k === 'crumb') {   // a slab of banded sandstone; it shakes before it goes
+      const sh = pl.sink >= 12 ? Math.sin(tick * 1.3) * 2 : 0;
+      rockBands(pl.x + sh, pl.y, pl.w, 16); ctx.fillStyle = '#8a3a1e'; ctx.fillRect(pl.x + sh, pl.y + 14, pl.w, 3);
+      ctx.fillStyle = '#f2c48a'; ctx.fillRect(pl.x + sh, pl.y, pl.w, 3);
+      if (pl.sink >= 12) { ctx.fillStyle = '#5e2412'; ctx.fillRect(pl.x + sh + pl.w * 0.3, pl.y + 3, 2, 9); ctx.fillRect(pl.x + sh + pl.w * 0.66, pl.y + 6, 2, 8); }
+      continue;
+    }
     if (pl.k === 'lily') {
       ctx.fillStyle = '#2f8a3a'; ctx.beginPath(); ctx.ellipse(pl.x + pl.w / 2, pl.y + 6, pl.w / 2 + 4, 9, 0, 0.25, Math.PI * 2 - 0.25); ctx.lineTo(pl.x + pl.w / 2, pl.y + 6); ctx.fill();
       ctx.fillStyle = '#5cc463'; ctx.beginPath(); ctx.ellipse(pl.x + pl.w / 2, pl.y + 4, pl.w / 2, 6, 0, 0.3, Math.PI * 2 - 0.3); ctx.lineTo(pl.x + pl.w / 2, pl.y + 4); ctx.fill();
@@ -8607,6 +8811,7 @@ function drawTwist() {
 }
 function drawTwistFront() {
   if (SEA_TWISTS.includes(L.twist)) { drawSeaTwist(true); return; }
+  if (G && G.sandIn > 0) { ctx.fillStyle = '#f6d9a8'; ctx.beginPath(); ctx.ellipse(P.x + P.w / 2, GR * T + 1, 17, 9, 0, Math.PI, 0); ctx.fill(); }   // Kai's feet sink into the sand
   for (const f of L.fx) if (f.k === 'barrel') {
     const x = f.x - 18, y = GR * T - 44;
     ctx.fillStyle = '#6b4a2e'; rrect(x, y, 36, 44, 8); ctx.fill(); ctx.fillStyle = '#3a2614'; ctx.fillRect(x, y + 10, 36, 4); ctx.fillRect(x, y + 30, 36, 4);
@@ -8719,6 +8924,18 @@ function drawRoomBg() {
     for (let x = 10; x < W; x += 34) { const h = 18 + hash(x) * 40; poly([[x - 9, 20], [x + 9, 20], [x, 20 + h]], '#d8f2ff'); }
     ctx.fillStyle = '#e8fbff'; ctx.fillRect(0, 0, W, 22);
     for (const fx of [90, W - 90]) { glowAt(fx, floorY - 40, 70, 'rgba(255,170,60,.4)'); ctx.fillStyle = '#5a3d2b'; ctx.fillRect(fx - 16, floorY - 14, 32, 8); ctx.fillStyle = '#ff8c1a'; ctx.beginPath(); ctx.ellipse(fx, floorY - 30, 9, 16 + Math.sin(tick * 0.3) * 3, 0, 0, 7); ctx.fill(); ctx.fillStyle = '#ffe066'; ctx.beginPath(); ctx.ellipse(fx, floorY - 24, 4, 8, 0, 0, 7); ctx.fill(); }
+  } else if (k === 'desert') {   // the Canyon Dojo: a cool cave in striped red rock, two openings look out on the desert
+    for (let y = 0; y < floorY; y += 18) { ctx.fillStyle = ['#7a3018', '#8a3a1e', '#9a4a26', '#84341a'][(y / 18) % 4]; ctx.fillRect(0, y, W, 18); }
+    for (const wx of [W * 0.3, W * 0.7]) {
+      ctx.fillStyle = '#5e2412'; ctx.beginPath(); ctx.ellipse(wx, 150, 70, 78, 0, 0, 7); ctx.fill();
+      ctx.save(); ctx.beginPath(); ctx.ellipse(wx, 150, 60, 68, 0, 0, 7); ctx.clip();
+      const g = ctx.createLinearGradient(0, 80, 0, 220); g.addColorStop(0, '#5db4f0'); g.addColorStop(1, '#ffe6c0'); ctx.fillStyle = g; ctx.fillRect(wx - 62, 80, 124, 140);
+      ctx.fillStyle = '#c2562c'; ctx.fillRect(wx - 62, 176, 40, 44); ctx.fillRect(wx + 10, 164, 52, 56); ctx.fillStyle = '#e0844a'; ctx.fillRect(wx - 62, 176, 40, 5); ctx.fillRect(wx + 10, 164, 52, 5);
+      ctx.fillStyle = '#f0c080'; ctx.fillRect(wx - 62, 204, 124, 16);
+      ctx.restore();
+    }
+    for (const bx of [70, W - 70]) { glowAt(bx, floorY - 50, 60, 'rgba(255,170,60,.35)'); ctx.fillStyle = '#5a3d2b'; ctx.fillRect(bx - 4, floorY - 44, 8, 44); ctx.fillStyle = '#ff8c1a'; ctx.beginPath(); ctx.ellipse(bx, floorY - 54, 7, 12 + Math.sin(tick * 0.3) * 2, 0, 0, 7); ctx.fill(); }
+    ctx.fillStyle = '#5e2412'; ctx.fillRect(0, 0, W, 24);
   } else if (k === 'sea') {   // the Sea Dojo: a dry cave under the sea, with big round windows looking out at the water
     ctx.fillStyle = '#20434e'; ctx.fillRect(0, 0, W, floorY);
     for (let y = 0; y < floorY; y += 30) for (let x = (y / 30) % 2 ? -36 : 0; x < W; x += 72) { ctx.fillStyle = '#2a5260'; ctx.fillRect(x + 3, y + 3, 66, 24); }   // rock blocks
@@ -8778,6 +8995,9 @@ function drawRoomFloor(x, y, c, r, top) {
   } else if (k === 'snow') {   // packed snow
     ctx.fillStyle = '#e4f1fa'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#cfe2ef'; ctx.fillRect(x + ((c * 7) % 20), y + 12, 10, 4); ctx.fillRect(x + ((c * 13) % 22), y + 26, 8, 3);
     if (top) { ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y, T, 5); }
+  } else if (k === 'desert') {   // smooth red sand
+    ctx.fillStyle = '#d9925a'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#c47a44'; ctx.fillRect(x + ((c * 7) % 22), y + 12, 8, 4); ctx.fillRect(x + ((c * 11) % 24), y + 26, 6, 3);
+    if (top) { ctx.fillStyle = '#f0c080'; ctx.fillRect(x, y, T, 4); }
   } else if (k === 'sea') {   // sand
     ctx.fillStyle = '#e8d3a0'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#d4bc84'; ctx.fillRect(x + ((c * 7) % 22), y + 12, 8, 4); ctx.fillRect(x + ((c * 11) % 24), y + 26, 6, 3);
     if (top) { ctx.fillStyle = '#f4e4b8'; ctx.fillRect(x, y, T, 4); }
@@ -8923,6 +9143,13 @@ function drawGround(x, y, c, r, top) {
       if (top) { ctx.fillStyle = '#f6dfa8'; ctx.fillRect(x, y, T, 8); ctx.fillStyle = 'rgba(0,0,0,.1)'; ctx.fillRect(x, y + 8, T, 2); }
       break;
     }
+    case 'desert': {   // red sandy soil with a pale sand cap
+      ctx.fillStyle = '#c9743e'; ctx.fillRect(x, y, T, T);
+      ctx.fillStyle = '#ad5a2a'; const h = (c * 41 + r * 23) % 9; ctx.fillRect(x + 5 + h, y + 15, 5, 3); ctx.fillRect(x + 22 - h, y + 27, 6, 3);
+      ctx.fillStyle = '#dd9258'; ctx.fillRect(x, y + 20 + (c % 2) * 2, T, 2);
+      if (top) { ctx.fillStyle = '#f0c080'; ctx.fillRect(x, y, T, 8); ctx.fillStyle = 'rgba(0,0,0,.12)'; ctx.fillRect(x, y + 8, T, 2); }
+      break;
+    }
     case 'castle': {
       ctx.fillStyle = '#283055'; ctx.fillRect(x, y, T, T);
       ctx.fillStyle = '#1c2240'; ctx.fillRect(x, y + T / 2, T, 2); ctx.fillRect(x + (r % 2 ? 0 : T / 2), y, 2, T);
@@ -8936,6 +9163,21 @@ function drawGround(x, y, c, r, top) {
   }
 }
 
+function rockBandsClip(pts) {   // a shape filled with the red rock bands
+  ctx.save(); ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath(); ctx.clip();
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]); rockBands(Math.min(...xs), Math.min(...ys), Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+  ctx.restore();
+}
+// Red rock: flat bands of colour that line up across tiles (the stripes depend only on the height).
+const ROCK_BANDS = ['#c2562c', '#b5512a', '#e0844a', '#c2562c', '#f2c48a', '#d0683a', '#a8421e', '#c2562c', '#e0844a', '#b5512a'];
+function rockBands(x, y, w, h, shade) {
+  const b0 = Math.floor(y / 12);
+  for (let b = b0; b * 12 < y + h; b++) {
+    const y0 = Math.max(y, b * 12), y1 = Math.min(y + h, b * 12 + 12);
+    ctx.fillStyle = ROCK_BANDS[((b % 10) + 10) % 10]; ctx.fillRect(x, y0, w, y1 - y0);
+  }
+  if (shade) { ctx.fillStyle = shade; ctx.fillRect(x, y, w, h); }
+}
 function drawPillar(k, x, y, c, r) {
   const top = L.map[r - 1][c] !== 'O', left = L.map[r][c - 1] !== 'O', cx = left ? x + T : x;
   if (k === 'japan') {   // a stone lantern
@@ -8954,6 +9196,9 @@ function drawPillar(k, x, y, c, r) {
   } else if (k === 'snow') {   // stacked ice blocks under a snow cap
     ctx.fillStyle = '#7ab8d8'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#bfe6fa'; ctx.fillRect(x + 2, y + 2, T - 4, T - 4); ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(x + 6, y + 6, 4, 12);
     if (top) { ctx.fillStyle = '#ffffff'; ctx.fillRect(x - 2, y - 6, T + 4, 9); ctx.beginPath(); ctx.arc(x + 10, y + 3, 5, 0, Math.PI); ctx.fill(); }
+  } else if (k === 'desert') {   // banded sandstone with a darker cap rock (a little hoodoo)
+    rockBands(x, y, T, T); ctx.fillStyle = 'rgba(94,36,18,.25)'; ctx.fillRect(left ? x : x + T - 5, y, 5, T);
+    if (top) { ctx.fillStyle = '#8a3a1e'; ctx.fillRect(x - 3, y - 4, T + 6, 9); ctx.fillStyle = '#b5512a'; ctx.fillRect(x - 3, y - 4, T + 6, 3); }
   } else {   // castle stone with a gold cap
     ctx.fillStyle = '#3c4470'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#2a3058'; ctx.fillRect(x, y + T / 2, T, 2); ctx.fillRect(x + (r % 2 ? 8 : 24), y, 2, T / 2); ctx.fillRect(x + (r % 2 ? 24 : 8), y + T / 2, 2, T / 2);
     if (top) { ctx.fillStyle = '#c9a24f'; ctx.fillRect(x - 2, y, T + 4, 6); }
@@ -9007,6 +9252,12 @@ function drawGateTile(k, x, y, r, c) {
     if (L.map[r - 1] && L.map[r - 1][c] !== 'G' && L.map[r - 1][c] !== 'A') { ctx.fillStyle = '#ff9ab0'; ctx.fillRect(x, y, T, 6); }
     return true;
   }
+  if (k === 'desert') {   // stacked slabs of striped sandstone
+    rockBands(x, y, T, T);
+    ctx.fillStyle = '#6e2a12'; ctx.fillRect(x, y + T - 2, T, 2); ctx.fillRect(x + ((r % 2 ? 10 : 24) + (left ? 0 : 6)) % T, y, 2, T);
+    if (left) ctx.fillRect(x, y, 2, T); else ctx.fillRect(x + T - 2, y, 2, T);
+    return true;
+  }
   if (k === 'castle') {   // a wall of swirling shadow
     ctx.fillStyle = '#1d1033'; ctx.fillRect(x, y, T, T);
     ctx.fillStyle = `rgba(166,120,255,${0.25 + 0.2 * Math.sin(tick * 0.1 + r * 0.7)})`; ctx.beginPath(); ctx.arc(x + T / 2 + Math.sin(tick * 0.05 + r) * 6, y + T / 2, 12, 0, 7); ctx.fill();
@@ -9053,6 +9304,10 @@ function drawGateFx(st) {
   } else if (g.k === 'sea') {   // bubbles pour out of the open door
     ctx.strokeStyle = `rgba(230,248,255,${0.8 * fade})`; ctx.lineWidth = 2;
     for (const b of g.bits) { ctx.beginPath(); ctx.arc(b.x, b.y, b.s, 0, 7); ctx.stroke(); }
+  } else if (g.k === 'desert') {   // the sandstone slabs tumble down in a cloud of red dust
+    if (t < 50) for (let i = 0; i < 4; i++) { ctx.fillStyle = `rgba(226,150,96,${0.5 * (1 - t / 50)})`; ctx.beginPath(); ctx.arc(g.x0 + g.w / 2 + Math.sin(i * 2) * 24, H - 30 - i * 70, 30 + t, 0, 7); ctx.fill(); }
+    ctx.globalAlpha = fade; for (const b of g.bits) { ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.a); ctx.fillStyle = '#c2562c'; ctx.fillRect(-b.s / 2, -b.s / 2, b.s, b.s); ctx.fillStyle = '#f2c48a'; ctx.fillRect(-b.s / 2, -b.s / 2, b.s, 3); ctx.restore(); }
+    ctx.globalAlpha = 1;
   } else if (g.k === 'castle') {   // the shadow fades into white doves
     if (t < 40) { ctx.fillStyle = `rgba(29,16,51,${1 - t / 40})`; ctx.fillRect(g.x0, 0, g.w, H); }
     for (const b of g.bits) {
@@ -9246,7 +9501,9 @@ function drawPits(c0, c1) {
   for (let c = c0; c <= c1; c++) {
     if (L.map[GR][c] !== '.' && L.map[GR][c] !== 'b') continue;
     const x = c * T, y = GR * T + 14 + Math.sin(tick * 0.08 + c) * 3;
-    if (kind === 'water' || kind === 'ice') {
+    if (kind === 'canyon') {   // a deep crack in the red rock
+      const y0 = GR * T, g = ctx.createLinearGradient(0, y0, 0, VH); g.addColorStop(0, '#8a3a1e'); g.addColorStop(1, '#3a140a'); ctx.fillStyle = g; ctx.fillRect(x, y0, T, VH - y0);
+    } else if (kind === 'water' || kind === 'ice') {
       ctx.fillStyle = kind === 'ice' ? '#2a6a9a' : '#3a8fd6'; ctx.fillRect(x, y, T, VH - y);
       ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.fillRect(x + 4, y, T - 14, 3);
       if (kind === 'ice' && c % 2) { ctx.fillStyle = '#e8fbff'; ctx.fillRect(x + 6, y - 4, 18, 6); }
@@ -9465,6 +9722,18 @@ function drawDecor(c) {
       ctx.strokeStyle = '#5e4526'; ctx.lineWidth = 3; ctx.strokeRect(x - 16, y - 32, 30, 30);
       ctx.beginPath(); ctx.moveTo(x - 16, y - 32); ctx.lineTo(x + 14, y - 2); ctx.stroke();
       break;
+    case 'desert':
+      if (c % 3 === 0) {   // a small round cactus with a pink flower
+        ctx.fillStyle = '#5f9a4a'; rrect(x - 9, y - 22, 18, 22, 8); ctx.fill(); ctx.fillStyle = '#4a7f3a'; ctx.fillRect(x - 3, y - 20, 2, 18); ctx.fillRect(x + 3, y - 20, 2, 18);
+        ctx.fillStyle = '#ff8ab0'; ctx.fillRect(x - 3, y - 27, 6, 6);
+      } else if (c % 3 === 1) {   // a red rock
+        poly([[x - 22, y], [x - 14, y - 18], [x + 2, y - 24], [x + 18, y - 12], [x + 24, y]], '#b5512a');
+        poly([[x - 14, y - 18], [x + 2, y - 24], [x + 6, y - 14], [x - 10, y - 10]], '#e0844a');
+      } else {   // a dry bush
+        ctx.strokeStyle = '#a8864a'; ctx.lineWidth = 2; ctx.beginPath();
+        for (let i = -3; i <= 3; i++) { ctx.moveTo(x, y); ctx.lineTo(x + i * 6, y - 18 + Math.abs(i) * 3); } ctx.stroke();
+      }
+      break;
     case 'castle':
       if (L.flavor !== 'lanterns') {   // a little pine in a pot (stone lanterns only on Lantern Roofs)
         ctx.fillStyle = '#5a3a2a'; ctx.fillRect(x - 12, y - 10, 24, 10); ctx.fillStyle = '#4a3020'; ctx.fillRect(x - 2, y - 22, 4, 12);
@@ -9480,7 +9749,7 @@ function drawDecor(c) {
 
 // ---------------------------------------------------------------- end of a level: scroll holder and home
 // Each level hangs its scroll piece from something of its own; each world ends at a fitting home.
-const SCROLL_AT = { sea: [[-32, -2.9], [0, -2.9]], snow: [[-30, -4.2], [-34, -4.0]], japan: [[-34, -4.1], [-30, -4.4]], lava: [[0, -3.7], [0, -3.2]], robot: [[-36, -3.1], [0, -3.4]], castle: [[-30, -3.2], [-28, -3.1]] };
+const SCROLL_AT = { desert: [[0, -3.9], [-30, -3.0]], sea: [[-32, -2.9], [0, -2.9]], snow: [[-30, -4.2], [-34, -4.0]], japan: [[-34, -4.1], [-30, -4.4]], lava: [[0, -3.7], [0, -3.2]], robot: [[-36, -3.1], [0, -3.4]], castle: [[-30, -3.2], [-28, -3.1]] };
 function scrollSpot() {
   const [dx, dy] = L.abyss ? [-30, -2.2] : SCROLL_AT[L.world.key][L.def.k % 2] || [0, -3];
   const bob = L.world.key === 'robot' && L.def.k % 2 === 1 ? Math.sin(tick * 0.06) * 6 : 0;
@@ -9585,6 +9854,20 @@ const HOLDERS = {
       pineTree(px, b, 1.5);
       line(px - 34, b - 4.3 * T, px - 34, b - 4.0 * T - 12, '#e63946', 2);
     }],
+  desert: [
+    (px, b) => {   // a balanced rock: the scroll sits on top
+      rockBandsClip([[px - 16, b], [px - 9, b - 2.2 * T], [px + 9, b - 2.2 * T], [px + 16, b]]);
+      ctx.fillStyle = '#8a3a1e'; rrect(px - 26, b - 3.4 * T, 52, 1.25 * T, 12); ctx.fill(); ctx.fillStyle = '#b5512a'; rrect(px - 26, b - 3.4 * T, 52, 10, 5); ctx.fill();
+    },
+    (px, b) => {   // a tall cactus: the scroll hangs from one arm
+      ctx.fillStyle = '#5f9a4a'; rrect(px - 9, b - 4 * T, 18, 4 * T, 9); ctx.fill();
+      rrect(px - 36, b - 3 * T, 12, 1.2 * T, 6); ctx.fill(); ctx.fillRect(px - 30, b - 2.1 * T, 24, 10);
+      rrect(px + 22, b - 3.4 * T, 12, 1.3 * T, 6); ctx.fill(); ctx.fillRect(px + 6, b - 2.4 * T, 24, 10);
+      ctx.fillStyle = '#4a7f3a'; ctx.fillRect(px - 3, b - 3.8 * T, 2, 3.7 * T); ctx.fillRect(px + 3, b - 3.8 * T, 2, 3.7 * T);
+      ctx.fillStyle = '#ff8ab0'; ctx.fillRect(px - 4, b - 4 * T - 5, 8, 6);
+      line(px - 30, b - 3 * T, px - 30, b - 3 * T - 12, '#e63946', 2);
+    },
+  ],
   castle: [
     (px, b) => {   // wooden post with a big paper lantern
       ctx.fillStyle = '#5a3d2b'; ctx.fillRect(px - 5, b - 5 * T, 10, 5 * T);
@@ -9676,6 +9959,16 @@ const HOMES = {
     glowAt(cx + 2.5 * T, b - 0.8 * T, 50, 'rgba(255,190,90,.5)');
     ctx.fillStyle = '#3a2a1a'; ctx.beginPath(); ctx.arc(cx + 2.5 * T, b - 0.9 * T, 0.6 * T, Math.PI, 0); ctx.fillRect(cx + 1.9 * T, b - 0.9 * T, 1.2 * T, 0.9 * T); ctx.fill();
     ctx.fillStyle = 'rgba(255,170,60,.6)'; ctx.fillRect(cx + 2.1 * T, b - 0.7 * T, 0.8 * T, 0.7 * T);
+  },
+  desert(cx, b) {   // an adobe house: thick clay walls, roof beams sticking out, a ladder, a blue door
+    ctx.fillStyle = '#d9925a'; rrect(cx + 6, b - 2.6 * T, 5 * T - 12, 2.6 * T + 6, 10); ctx.fill();
+    ctx.fillStyle = '#e8a868'; rrect(cx + 6, b - 2.6 * T, 5 * T - 12, 12, 6); ctx.fill();
+    ctx.fillStyle = '#d9925a'; rrect(cx + 2.4 * T, b - 4 * T, 2.3 * T, 1.6 * T, 8); ctx.fill(); ctx.fillStyle = '#e8a868'; rrect(cx + 2.4 * T, b - 4 * T, 2.3 * T, 10, 5); ctx.fill();
+    ctx.fillStyle = '#7a4f28'; for (let k = 0; k < 5; k++) ctx.fillRect(cx + 18 + k * 32, b - 2.6 * T + 16, 8, 8);
+    ctx.fillStyle = '#3a8fd6'; rrect(cx + 1.1 * T, b - 1.6 * T, 0.8 * T, 1.6 * T, 4); ctx.fill(); ctx.fillStyle = '#2a6aa8'; ctx.fillRect(cx + 1.1 * T, b - 0.85 * T, 0.8 * T, 3);
+    ctx.fillStyle = '#5a3a1c'; ctx.fillRect(cx + 3.1 * T, b - 3.4 * T, 0.8 * T, 0.7 * T); ctx.fillRect(cx + 3.2 * T, b - 1.7 * T, 0.7 * T, 0.7 * T);
+    line(cx + 4.15 * T, b - 2.6 * T, cx + 4.15 * T, b - 4.6 * T, '#7a4f28', 3); line(cx + 4.55 * T, b - 2.6 * T, cx + 4.55 * T, b - 4.6 * T, '#7a4f28', 3);
+    for (let k = 0; k < 4; k++) line(cx + 4.15 * T, b - 2.8 * T - k * 16, cx + 4.55 * T, b - 2.8 * T - k * 16, '#7a4f28', 3);
   },
   castle(cx, b) {  // a castle keep with a big wooden gate
     poly([[cx - 22, b], [cx, b - 2.2 * T], [cx + 5 * T, b - 2.2 * T], [cx + 5 * T + 22, b]], '#4a4f6a');
@@ -9830,6 +10123,34 @@ function drawEnemy(e) {
       ctx.restore();
       break;
     }
+    case 'scorpion': {   // a scorpion ninja: red headband, two claws, a curled tail
+      const f = e.vx > 0 ? 1 : -1, cx = x + 18, tw = step ? 1 : -1;
+      ctx.fillStyle = '#7a2a12';   // legs
+      for (let i = 0; i < 3; i++) { ctx.fillRect(cx - 12 + i * 8, y + 20 + ((i + step) % 2) * 2, 3, 6); }
+      ctx.strokeStyle = '#a8421e'; ctx.lineWidth = 5; ctx.lineCap = 'round';   // the tail curls up over the back
+      ctx.beginPath(); ctx.moveTo(cx - f * 10, y + 14); ctx.quadraticCurveTo(cx - f * 22, y + 2, cx - f * 12, y - 6 + tw); ctx.quadraticCurveTo(cx - f * 4, y - 10 + tw, cx - f * 2, y - 2 + tw); ctx.stroke(); ctx.lineCap = 'butt';
+      poly([[cx - f * 4, y - 3 + tw], [cx + f * 3, y + 3 + tw], [cx - f * 3, y + 3 + tw]], '#ffd23f');   // the stinger
+      ctx.fillStyle = '#c2562c'; ctx.beginPath(); ctx.ellipse(cx, y + 15, 13, 8, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#e0844a'; ctx.fillRect(cx - 8, y + 10, 16, 3);
+      ctx.fillStyle = '#c2562c'; ctx.fillRect(cx + f * 10 - 3, y + 12, 8 * 1, 4); ctx.beginPath(); ctx.arc(cx + f * 17, y + 12 + (step ? 1 : -1), 5, 0, 7); ctx.fill();   // front claw
+      ctx.fillStyle = '#7a2a12'; ctx.fillRect(cx + f * 17 - 1, y + 11 + (step ? 1 : -1), f * 5 + 1, 2);
+      ctx.fillStyle = '#e63946'; ctx.fillRect(cx - 10, y + 8, 20, 3); ctx.fillRect(cx - f * 13, y + 9, 4, 6);   // headband
+      ctx.fillStyle = '#fff'; ctx.fillRect(cx + f * 3 - 1, y + 12, 3, 3); ctx.fillRect(cx + f * 8 - 1, y + 12, 3, 3);
+      ctx.fillStyle = '#111'; ctx.fillRect(cx + f * 3 + (f > 0 ? 0 : -1), y + 13, 2, 2); ctx.fillRect(cx + f * 8 + (f > 0 ? 0 : -1), y + 13, 2, 2);
+      break;
+    }
+    case 'snake': {   // a rattlesnake: a striped coil, head up, rattle shaking
+      const f = e.vx > 0 ? 1 : -1, cx = x + 19, by = y + 24;
+      ctx.fillStyle = '#c9a063'; ctx.beginPath(); ctx.ellipse(cx - f * 4, by - 6, 15, 6, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#a8864a'; ctx.beginPath(); ctx.ellipse(cx - f * 4, by - 10, 10, 4, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#7a5a2a'; for (let i = -2; i <= 2; i++) ctx.fillRect(cx - f * 4 + i * 6 - 1, by - 5, 3, 3);
+      ctx.fillStyle = '#c9a063'; ctx.fillRect(cx + f * 6 - 3, by - 20, 6, 14);   // the neck
+      ctx.beginPath(); ctx.ellipse(cx + f * 9, by - 21, 7, 5, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#111'; ctx.fillRect(cx + f * 10 - 1, by - 23, 2, 2);
+      if (step) { ctx.fillStyle = '#e63946'; ctx.fillRect(cx + f * 15 - (f > 0 ? 0 : 5), by - 21, 5, 1); }   // tongue
+      ctx.fillStyle = '#f2e2b8'; ctx.fillRect(cx - f * 19 - 2 + (step ? 1 : -1), by - 14, 4, 8);   // rattle
+      break;
+    }
     case 'penguin': {   // a grumpy penguin in a scarf
       const wob = step ? 2 : -2, f = e.vx > 0 ? 1 : -1;
       ctx.fillStyle = '#ff9a1a'; ctx.fillRect(x + 6, y + 29, 7, 3); ctx.fillRect(x + 15, y + 29, 7, 3);
@@ -9926,6 +10247,16 @@ function drawProjectiles() {
       ctx.fillStyle = 'rgba(40,20,60,.35)'; for (let k = 1; k <= 3; k++) { ctx.beginPath(); ctx.arc(p.x - Math.sign(p.vx) * k * 12, p.y + Math.sin(tick * 0.3 + k) * 2, p.r - k * 3, 0, 7); ctx.fill(); }
       ctx.fillStyle = '#2a1a3a'; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
       ctx.fillStyle = '#5a3a7a'; ctx.beginPath(); ctx.arc(p.x - 4, p.y - 4, 4, 0, 7); ctx.fill();
+    }
+    else if (p.k === 'sand') {   // a ball of sand, with its shadow where it will land
+      const k = clamp(1 - (GR * T - p.y) / 300, 0.3, 1), d = Math.max(0, GR * T - p.y), lt = (-p.vy + Math.sqrt(p.vy * p.vy + 2 * p.g * d)) / p.g;
+      ctx.fillStyle = `rgba(90,40,20,${0.35 * k})`; ctx.beginPath(); ctx.ellipse(p.x + p.vx * lt, GR * T - 2, 12 * k, 4 * k, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#e8b070'; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill(); ctx.fillStyle = '#c98a4a'; ctx.fillRect(p.x - 5, p.y - 2, 4, 4); ctx.fillRect(p.x + 2, p.y + 3, 3, 3);
+    }
+    else if (p.k === 'weed') {   // a rolling tumbleweed
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(-tick * 0.25 * Math.sign(p.vx || 1)); ctx.strokeStyle = '#a8864a'; ctx.lineWidth = 2;
+      for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.ellipse(0, 0, p.r, p.r * (0.35 + i * 0.13), i * 1.25, 0, 7); ctx.stroke(); }
+      ctx.restore();
     }
     else if (p.k === 'laser') {
       ctx.fillStyle = 'rgba(255,51,85,.35)'; rrect(p.x - 18, p.y - 8, 36, 16, 8); ctx.fill();
@@ -11443,7 +11774,7 @@ function worldScene(w) {
   const saved = { ctx, L, cam, VW }; ctx = big.getContext('2d'); VW = 960;
   L = { world: W, def: { k: 0, w }, sky: W.skies[0], map: [], w: 0 }; cam = 300 + w * 170;
   const g = ctx.createLinearGradient(0, 0, 0, 540); g.addColorStop(0, W.skies[0][0]); g.addColorStop(1, W.skies[0][1]); ctx.fillStyle = g; ctx.fillRect(0, 0, 960, 540);
-  try { ({ japan: bgJapan, lava: bgLava, robot: bgRobot, snow: bgSnow, sea: bgSea, castle: bgCastle })[W.key](); } catch (e) { /* scenery is decoration */ }
+  try { ({ japan: bgJapan, lava: bgLava, robot: bgRobot, snow: bgSnow, sea: bgSea, desert: bgDesert, castle: bgCastle })[W.key](); } catch (e) { /* scenery is decoration */ }
   for (let c = 0; c < 27; c++) { L.map[GR - 1] = []; try { drawGround(c * T, GR * T, c, GR, true); drawGround(c * T, (GR + 1) * T, c, GR + 1, false); } catch (e) { /* decoration */ } }
   ({ ctx, L, cam, VW } = saved);
   const crop = document.createElement('canvas'); crop.width = 960; crop.height = 330;
@@ -11503,7 +11834,7 @@ function buildMenu() {
   // The world map: four coloured zones with a winding path; Kai stands on the newest level.
   const box = $('worlds'); box.innerHTML = '';
   const open = unlockedCount(), here = Math.min(open - 1, STAGES.length - 1);
-  const DECOR = [['blossom', 'torii', 'blossom'], ['volcano', 'flame', 'volcano'], ['gear', 'bolt', 'gear'], ['flake', 'pine', 'flake'], ['fish', 'gem', 'fish'], ['moon', 'pagoda', 'star']];
+  const DECOR = [['blossom', 'torii', 'blossom'], ['volcano', 'flame', 'volcano'], ['gear', 'bolt', 'gear'], ['flake', 'pine', 'flake'], ['fish', 'gem', 'fish'], ['cactus', 'arch', 'cactus'], ['moon', 'pagoda', 'star']];
   WORLDS.forEach((W, w) => {
     const won = !!prog.best[bossOf(w)], found = [0, 1, 2].filter(j => prog.best[w * PER_WORLD + j]).length;
     const xs = [13, 37, 62, 87], ys = [48, 48, 48, 48];
@@ -11758,6 +12089,8 @@ const PIX = {
   volcano: ['....ryyr', '....ryyr', '.....rr', '....dddd', '...dddrdd', '...ddrrdd', '..dddrrddd', '..ddrrddddd', '.dddrddddddd', '.ddddddddddd', 'dddddddddddd'],
   bolt: ['......yyy', '.....yyy', '....yyy', '...yyy', '..yyyyyyy', '......yyy', '.....yyy', '....yyy', '...yy', '..y'],
   flake: ['.....c', '...c.c.c', '....ccc', '.c..ccc..c', '..c.ccc.c', 'ccccccccccc', '..c.ccc.c', '.c..ccc..c', '....ccc', '...c.c.c', '.....c'],
+  cactus: ['.....LL', '.....LL', '.L...LL', '.L...LL..L', '.L...LL..L', '.LLLLLL..L', '.....LLLLL', '.....LL', '.....LL', '.....LL', '.....LL', '....SSSS'],
+  arch: ['', '..nnnnnnnn', '.nnnnnnnnnn', 'nnnSnnnnSnnn', 'nnn......nnn', 'nn........nn', 'nn........nn', 'nS........nn', 'nn........Sn', 'nn........nn', 'nn........nn'],
   pine: ['.....G', '....GGG', '...GwGGG', '..GGGGGwG', '....GGG', '...GGGGGG', '..GwGGGGwG', '.GGGGGGGGGG', '....GGG', '...GGGGGG', '..GGGGGGGG', '.....qq'],
   moon: ['....yyyy', '..yyyy', '.yyyy', '.yyy', 'yyyy', 'yyyy', 'yyyy', 'yyyyy', '.yyyyy....y', '.yyyyyyyyy', '..yyyyyyy', '....yyyy'],
   scroll: ['.qWWWWWWWWq', 'qqWWWWWWWWqq', '.qWddddddWq', '.qWWWWWWWWq', '.qWddddddWq', '.qWWWWWWWWq', '.qWdddddWWq', '.qWWWWWWWWq', '.qWddddddWq', '.qWWWWWWWWq', 'qqWWWWWWWWqq', '.qWWWWWWWWq'],
@@ -11852,7 +12185,7 @@ const sceneHTML = name => `<div class="scenebox"><div class="scenepic"><canvas c
 let sceneSt = null;
 const SCENE_MOOD = {
   opening: [null, null], japan: ['petal', null], kage: ['ember', 'rgba(60,0,40,.10)'], lava: ['ember', 'rgba(255,90,0,.08)'], golem: ['ember', 'rgba(255,120,40,.06)'],
-  robot: ['spark', null], bot: ['spark', 'rgba(0,80,160,.08)'], snow: ['snow', null], yeti: ['snow', 'rgba(120,180,255,.08)'], sea: ['bubble', null], octo: ['bubble', 'rgba(0,60,120,.08)'],
+  robot: ['spark', null], bot: ['spark', 'rgba(0,80,160,.08)'], snow: ['snow', null], yeti: ['snow', 'rgba(120,180,255,.08)'], sea: ['bubble', null], octo: ['bubble', 'rgba(0,60,120,.08)'], desert: ['mote', null], scorpion: ['mote', 'rgba(255,140,60,.08)'],
   castle: ['star', 'rgba(20,0,60,.10)'], falls: ['star', 'rgba(20,0,60,.12)'], morning: ['mote', 'rgba(255,200,100,.10)'], home: ['mote', 'rgba(255,190,90,.10)'],
 };
 function sceneLife(a, name, t) {   // a few single pixels drifting over the picture (deterministic, so it never flickers)
@@ -12162,6 +12495,13 @@ function iceCave(c) {
   dot(c, 0, 92, SW, 16, '#cfefff'); dot(c, 0, 92, SW, 2, '#ffffff');
 }
 function snowfall(c, t, n, seed) { for (let i = 0; i < n; i++) dot(c, (rnd(seed, i) * SW + Math.sin(t + i) * 4) % SW, (rnd(seed + 1, i) * SH + t * (8 + i % 5)) % SH, 1, 1, '#ffffff'); }
+function desertScene(c) {   // a big sky, a far mesa, a striped butte and a stone arch on red sand
+  bands(c, ['#5db4f0', '#8cc8f0', '#c8dcec', '#ffe6c0'], 0, 86);
+  dot(c, 8, 48, 56, 38, '#d9a08a'); dot(c, 8, 48, 56, 2, '#e6b49a');
+  dot(c, 132, 36, 46, 50, '#c2562c'); dot(c, 132, 36, 46, 3, '#e0844a'); dot(c, 132, 48, 46, 3, '#f2c48a'); dot(c, 132, 60, 46, 2, '#e0844a'); dot(c, 124, 72, 62, 14, '#c2562c');
+  dot(c, 76, 52, 36, 34, '#b5512a'); dot(c, 76, 52, 36, 2, '#e0844a'); dot(c, 84, 62, 20, 24, '#ffe6c0'); dot(c, 86, 60, 16, 2, '#ffe6c0');
+  ground(c, 86, '#d9925a', '#f0c080');
+}
 function seaScene(c, t) {   // sky, water in bands, a sandy floor with coral, rising bubbles
   bands(c, ['#8adcff', '#b8ecff'], 0, 24);
   bands(c, ['#43b8ec', '#2f9ad8', '#2482c8', '#1a6ab0'], 24, SH);
@@ -12338,6 +12678,27 @@ Object.assign(SCENES, {
       seaScene(c, t); sPut(c, bossS('octo', t % 1 < 0.5 ? 'a' : 'b'), 96, 102);
       for (let i = 0; i < 4; i++) { const x = 40 + i * 36 + (i > 1 ? 30 : 0), y = 66 + Math.round(Math.sin(t * 3 + i) * 2); dot(c, x, y, 6, 4, '#ff8a3a'); dot(c, x - 2, y, 2, 4, '#e8601a'); dot(c, x + 4, y + 1, 1, 1, '#16121f'); }
       scHeart(c, 96, 40);
+    } },
+  ],
+  desert: [
+    { cap: 'Red Rock Desert.', draw(c, t) {
+      desertScene(c); sPut(c, scSpr.kai().stand[0], 40 + Math.round((t * 12) % 100), 96);
+    } },
+    { cap: 'The Scorpion stings everyone.', draw(c, t, p) {
+      desertScene(c); sPut(c, bossS('scorpion', t % 1 < 0.5 ? 'a' : 'b'), 60, 96);
+      for (let i = 0; i < 3; i++) animal(c, ['roadrunner', 'coyote', 'tortoise'][i], 110 + p * 60 + i * 22, 98, false);
+    } },
+  ],
+  scorpion: [
+    { cap: '"I forgive you."', draw(c, t) {
+      desertScene(c); sPut(c, scSpr.kai().stand[0], 64, 96); sPut(c, bossS('scorpion'), 128, 96);
+    } },
+    { cap: '"But I stung you!"', draw(c, t) {
+      desertScene(c); sPut(c, scSpr.kai().stand[0], 64, 96); sPut(c, bossS('scorpion', t % 1 < 0.5 ? 'a' : 'b'), 128, 96);
+    } },
+    { cap: 'He puts his stinger down.', draw(c, t) {
+      desertScene(c); sPut(c, scSpr.kai().stand[0], 64, 96); sPut(c, bossS('scorpion'), 124, 96); scHeart(c, 96, 56);
+      for (let i = 0; i < 2; i++) animal(c, ['roadrunner', 'coyote'][i], 150 + i * 20, 98 - (Math.floor(t * 4 + i) % 2) * 2, true);
     } },
   ],
   castle: [
@@ -12677,7 +13038,7 @@ $('dojoBtn').onclick = () => { audio(); startDojo(); };
 // (no library). A room is rooms/<CODE>: { t, boss (world), max, r (round), p: { h: { i, hits }, j: { i, hits } } }. Each
 // device only ever writes its own hit count, so there is nothing to collide; boss health = max - both counts. Only
 // game data is sent: the player's picture id (a game character), never a name. Leaving deletes the room.
-const TEAM_V = 8;   // bump when the team messages change: a partner on an older version gets a "please update" note
+const TEAM_V = 9;   // bump when the team messages change: a partner on an older version gets a "please update" note
 const TEAM_DB = 'https://math-ninja-team-default-rtdb.firebaseio.com', TEAM_HP = 20, TEAM_ABC = 'BCDFGHJKLMNPRSTVWXZ2345679';
 let team = null;
 const tmUrl = (path = '') => `${TEAM_DB}/rooms/${team.code}${path}.json`;
