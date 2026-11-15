@@ -579,7 +579,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 15, 2026 6:00 PM PT · Team run: give a heart, cheer, rescue your partner</div>
+  <div class="build">Updated Nov 15, 2026 7:00 PM PT · Shop: a treasure shelf of big-ticket suits, trails and dragons</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -2654,6 +2654,10 @@ const SHOP = [
   { id: 'band-mint', slot: 'band', name: 'Mint headband', price: 0, col: ['#3fe0b0', '#1f9a78'], badge: 'as-add10' },
   { id: 'band-royal', slot: 'band', name: 'Royal headband', price: 0, col: ['#9b59d6', '#6b2fa3'], badge: 'as-sub20' },
   { id: 'band-rainbow', slot: 'band', name: 'Rainbow headband', price: 0, col: ['#e63946', '#a91d2b'], badge: 't9', anim: [['#e63946', '#a91d2b'], ['#ff8c1a', '#c45f00'], ['#ffd23f', '#c99a1a'], ['#3fbf6a', '#2a8a4a'], ['#3a86ff', '#1d4fa8'], ['#9b59d6', '#6b2fa3']] },
+  // The treasure shelf (owner, Nov 15 2026: a kid had 29,000 gems and nothing to spend them on): pricey, showy things.
+  { id: 'band-flame', slot: 'band', name: 'Flame headband', price: 600, col: ['#ff3b1f', '#a91d2b'], anim: [['#ff3b1f', '#a91d2b'], ['#ff8c1a', '#c45f00'], ['#ffd23f', '#c99a1a'], ['#ff8c1a', '#c45f00']] },
+  { id: 'band-ice', slot: 'band', name: 'Ice headband', price: 600, col: ['#7fd6ff', '#3a8fc4'], anim: [['#7fd6ff', '#3a8fc4'], ['#ffffff', '#bfefff']] },
+  { id: 'band-galaxy', slot: 'band', name: 'Galaxy headband', price: 1200, col: ['#9b59d6', '#4b2a8a'], anim: [['#9b59d6', '#4b2a8a'], ['#3a86ff', '#1d4fa8'], ['#ff6fb5', '#c43d84'], ['#3fe0b0', '#1f9a78']] },
   { id: 'suit-navy', slot: 'suit', name: 'Navy suit', price: 0, col: ['#2c3a6b', '#5a72c2'] },
   { id: 'suit-black', slot: 'suit', name: 'Midnight suit', price: 70, col: ['#1c1a24', '#3d3a52'] },
   { id: 'suit-green', slot: 'suit', name: 'Forest suit', price: 85, col: ['#1f6b3a', '#3fa35f'] },
@@ -2664,6 +2668,11 @@ const SHOP = [
   { id: 'suit-ocean', slot: 'suit', name: 'Ocean suit', price: 0, col: ['#0f6f7a', '#36c6c0'], badge: 't5' },
   { id: 'suit-lava', slot: 'suit', name: 'Lava suit', price: 0, col: ['#2a1416', '#ff6a1a'], badge: 't7', fx: 'ember' },
   { id: 'suit-diamond', slot: 'suit', name: 'Diamond suit', price: 0, col: ['#6fbfe0', '#e8fbff'], badge: 't-all', fx: 'sparkle' },
+  { id: 'suit-shadow', slot: 'suit', name: 'Shadow suit', price: 1500, col: ['#14101c', '#6a45a8'], fx: 'shadow' },
+  { id: 'suit-galaxy', slot: 'suit', name: 'Galaxy suit', price: 3000, col: ['#1a1a4a', '#7a5ae0'], fx: 'star' },
+  { id: 'suit-dragon', slot: 'suit', name: 'Dragon suit', price: 5000, col: ['#a01818', '#ffd23f'], fx: 'ember' },
+  { id: 'suit-rainbow', slot: 'suit', name: 'Rainbow suit', price: 8000, col: ['#c43a4b', '#ff9aa5'], fx: 'rainbow', anim: [['#c43a4b', '#ff9aa5'], ['#d8642a', '#ffb36b'], ['#c99a1a', '#ffe08a'], ['#1f8a4a', '#7bd36a'], ['#1d4fa8', '#7fb0ff'], ['#6b2fa3', '#c9a0f0']] },
+  { id: 'suit-legend', slot: 'suit', name: 'Legend suit', price: 15000, col: ['#f4f7fb', '#ffd23f'], fx: 'gold' },
   { id: 'trail-spark', slot: 'trail', name: 'Sparkle trail', price: 120 },
   { id: 'trail-fire', slot: 'trail', name: 'Flame trail', price: 180 },
   { id: 'trail-star', slot: 'trail', name: 'Star trail', price: 0, badge: 'as-add5' },
@@ -2673,9 +2682,16 @@ const SHOP = [
   { id: 'trail-petal', slot: 'trail', name: 'Petal trail', price: 0, badge: 't2' },
   { id: 'trail-bubble', slot: 'trail', name: 'Bubble trail', price: 0, badge: 't4' },
   { id: 'trail-snow', slot: 'trail', name: 'Snowflake trail', price: 0, badge: 't6' },
+  { id: 'trail-bolt', slot: 'trail', name: 'Lightning trail', price: 1000 },
+  { id: 'trail-gold', slot: 'trail', name: 'Gold dust trail', price: 2000 },
+  { id: 'trail-galaxy', slot: 'trail', name: 'Galaxy trail', price: 2500 },
+  { id: 'trail-dragon', slot: 'trail', name: 'Dragon fire trail', price: 4000 },
   { id: 'pet-wolf', slot: 'pet', name: 'Wolf pup', price: 5 },
   { id: 'pet-fox', slot: 'pet', name: 'Kitsune pup', price: 225 },
   { id: 'pet-dragon', slot: 'pet', name: 'Baby dragon', price: 330 },
+  { id: 'pet-dragon-shadow', slot: 'pet', name: 'Shadow dragon', price: 3500 },
+  { id: 'pet-dragon-fire', slot: 'pet', name: 'Fire dragon', price: 5000 },
+  { id: 'pet-dragon-gold', slot: 'pet', name: 'Golden dragon', price: 10000 },
   { id: 'pet-octo', slot: 'pet', name: 'Little octopus', price: 0, badge: 't8' },
   { id: 'pet-owl', slot: 'pet', name: 'Owl', price: 0, badge: 't10' },
 ];
@@ -2690,8 +2706,21 @@ const TRAIL_LOOK = {
   'trail-rainbow': { cols: ['#ff4d6d', '#ff8c1a', '#ffd23f', '#3ae374', '#3a86ff', '#9b59d6'], vy: -0.4, life: 36, s: 5, up: true },
   'trail-bubble': { cols: ['#bfefff', '#e8fbff', '#7fd6ff'], vy: -1.5, life: 40, s: 5, up: true },
   'trail-snow': { cols: ['#ffffff', '#e8f4ff', '#cfe6ff'], vy: 0.55, vx: 0.4, life: 54, up: true },
+  'trail-bolt': { cols: ['#ffd23f', '#ffffff', '#fff6a0'], vy: -0.2, vx: 2.2, life: 16, s: 6, up: true },
+  'trail-gold': { cols: ['#ffd23f', '#c99a1a', '#fff6c8'], vy: 0.5, vx: 0.8, life: 46, s: 5, up: true },
+  'trail-galaxy': { cols: ['#9b59d6', '#3a86ff', '#ff6fb5', '#ffffff'], vy: -0.7, life: 44, s: 5, up: true },
+  'trail-dragon': { cols: ['#ff3b1f', '#ff8c1a', '#ffd23f'], vy: -1.6, vx: 1.4, life: 30, s: 8, up: true },
 };
-const FLY_PETS = ['pet-dragon', 'pet-owl'];
+// Suit effects: little bits that drift off Kai as he moves (every = one bit every n frames).
+const SUIT_FX = {
+  sparkle: { cols: ['#ffffff', '#bff4ff', '#e8fbff'], vy: -0.2, life: 18, every: 7 },
+  ember: { cols: ['#ff6a1a', '#ffb627', '#ff3b1f'], vy: -0.9, life: 26, every: 6 },
+  shadow: { cols: ['#2a1a3a', '#6a45a8', '#14101c'], vy: -0.5, life: 30, every: 4, s: 5 },
+  star: { cols: ['#ffffff', '#ffe08a', '#b9a0ff'], vy: -0.3, life: 28, every: 5 },
+  rainbow: { cols: ['#ff4d6d', '#ff8c1a', '#ffd23f', '#3ae374', '#3a86ff', '#9b59d6'], vy: -0.7, life: 30, every: 3, s: 4 },
+  gold: { cols: ['#ffd23f', '#fff6c8', '#ffffff'], vy: -0.6, life: 30, every: 3, s: 4 },
+};
+const FLY_PETS = ['pet-dragon', 'pet-owl', 'pet-dragon-shadow', 'pet-dragon-fire', 'pet-dragon-gold'];
 let SPR_ANIM = null;   // an animated headband: one baked Kai per colour (startStage)
 const ITEM = Object.fromEntries(SHOP.map(i => [i.id, i]));
 // The hero's colours: the equipped headband and suit, and the belt that matches the current rank.
@@ -2700,6 +2729,11 @@ function heroPal(equip = prog.equip) {
   return { r: band[0], R: band[1], n: suit[0], N: suit[1], b: currentBelt().col };
 }
 // Pets follow the hero around. Two frames each; they face right.
+function drawDragonPet({ P, L, E }, f) {
+    if (f) E(4, 6, 2.6, 1.6, 'G'); else E(4, 3.5, 2.4, 2, 'G');
+    L(4, 9, 1, 10, 'g'); E(7, 7.5, 3.4, 2.8, 'g'); E(7, 8.5, 2, 1.5, 'y');
+    E(11, 4.5, 2.6, 2.3, 'g'); P(13, 5, 'g'); P(10, 2, 'w'); P(12, 2, 'w'); P(12, 4, 'e'); P(13, 6, 'r');
+  }
 const PET_SPR = {
   'pet-wolf': bake(makeFrames(16, 12, { g: '#8a8f9e', G: '#5b6070', w: '#e8eaf0', y: '#ffb627', n: '#16121f' }, ({ P, R, E }, f) => {
     E(2.6, 6 - f * 0.6, 2.3, 1.6, 'g'); P(1, 5 - f, 'w');
@@ -2716,11 +2750,10 @@ const PET_SPR = {
     P(12, 6, 'w'); P(13, 6, 'w'); P(13, 5, 'e'); P(11, 4, 'e');
     if (f) { P(6, 10, 'O'); P(9, 10, 'O'); } else { P(5, 10, 'O'); P(10, 10, 'O'); }
   }, 2), ['a', 'b']),
-  'pet-dragon': bake(makeFrames(14, 12, { g: '#3fbf6a', G: '#2a8a4a', y: '#ffe08a', w: '#f4ead5', e: '#16121f', r: '#e8452c' }, ({ P, L, E }, f) => {
-    if (f) E(4, 6, 2.6, 1.6, 'G'); else E(4, 3.5, 2.4, 2, 'G');
-    L(4, 9, 1, 10, 'g'); E(7, 7.5, 3.4, 2.8, 'g'); E(7, 8.5, 2, 1.5, 'y');
-    E(11, 4.5, 2.6, 2.3, 'g'); P(13, 5, 'g'); P(10, 2, 'w'); P(12, 2, 'w'); P(12, 4, 'e'); P(13, 6, 'r');
-  }, 2), ['a', 'b']),
+  'pet-dragon': bake(makeFrames(14, 12, { g: '#3fbf6a', G: '#2a8a4a', y: '#ffe08a', w: '#f4ead5', e: '#16121f', r: '#e8452c' }, drawDragonPet, 2), ['a', 'b']),
+  'pet-dragon-shadow': bake(makeFrames(14, 12, { g: '#3a2a5a', G: '#1c1430', y: '#8a6ad0', w: '#c9b8f0', e: '#ff4d6d', r: '#b98aff' }, drawDragonPet, 2), ['a', 'b']),
+  'pet-dragon-fire': bake(makeFrames(14, 12, { g: '#e8452c', G: '#a01818', y: '#ffd23f', w: '#fff0c8', e: '#16121f', r: '#ffd23f' }, drawDragonPet, 2), ['a', 'b']),
+  'pet-dragon-gold': bake(makeFrames(14, 12, { g: '#ffd23f', G: '#c99a1a', y: '#fff6c8', w: '#ffffff', e: '#16121f', r: '#ff8c1a' }, drawDragonPet, 2), ['a', 'b']),
   'pet-octo': bake(makeFrames(14, 12, { p: '#b968e0', P: '#8a3fb0', w: '#ffffff', e: '#16121f', k: '#ff9cc4' }, ({ P, R, E }, f) => {   // Master of 8s
     E(7, 4.2, 4.3, 3.8, 'p'); P(5, 2, 'w');
     R(5, 4, 1, 2, 'w'); R(9, 4, 1, 2, 'w'); P(5, 5, 'e'); P(9, 5, 'e'); P(4, 6, 'k'); P(10, 6, 'k'); P(7, 7, 'P');
@@ -6535,10 +6568,8 @@ function updatePlayer() {
     G.parts.push({ k: 'bit', x: p.x + p.w / 2 - p.face * 10, y: p.y + p.h - 6 - (trail.up ? Math.random() * 20 : 0), vx: -p.face * (trail.vx ?? 0.5), vy: trail.vy ?? -1 - Math.random(), life: trail.life || 26, col: trail.cols[R(0, trail.cols.length - 1)], s: trail.s || 4, up: trail.up });
   }
   const suitFx = (ITEM[prog.equip.suit] || {}).fx;   // badge suits: the Diamond suit sparkles, the Lava suit sends up embers
-  if (suitFx && !van && tick % (suitFx === 'sparkle' ? 7 : 6) === 0) {
-    const sp = suitFx === 'sparkle';
-    G.parts.push({ k: 'bit', x: p.x + Math.random() * p.w, y: p.y + 10 + Math.random() * (p.h - 12), vx: 0, vy: sp ? -0.2 : -0.9, life: sp ? 18 : 26, col: sp ? ['#ffffff', '#bff4ff', '#e8fbff'][R(0, 2)] : ['#ff6a1a', '#ffb627', '#ff3b1f'][R(0, 2)], s: 3, up: true });
-  }
+  const sfxLook = SUIT_FX[suitFx];
+  if (sfxLook && !van && tick % sfxLook.every === 0) G.parts.push({ k: 'bit', x: p.x + Math.random() * p.w, y: p.y + 10 + Math.random() * (p.h - 12), vx: 0, vy: sfxLook.vy, life: sfxLook.life, col: sfxLook.cols[R(0, sfxLook.cols.length - 1)], s: sfxLook.s || 3, up: true });
   if (SPR_ANIM) {   // animated headbands: the Lightning one flashes, the Rainbow one slowly changes colour
     const t50 = tick % 50;
     SPR = SPR_ANIM[SPR_ANIM.length === 2 ? (t50 < 4 || (t50 >= 8 && t50 < 11) ? 1 : 0) : Math.floor(tick / 10) % SPR_ANIM.length];
@@ -11319,7 +11350,8 @@ function startStage(i) {
   G = { idx: i, skill: L.skill, hearts, maxHearts: hearts, coins: 0, score: 0, shake: 0, shakeAmp: 0, freeze: 0, slow: 0, flash: 0, flyers: [], pulse: 0, chain: 0, lastGem: -99, mistakes: 0, streak: 0, bestStreak: 0, solved: 0, fastN: 0, lightN: 0, missed: [], practice: new Map(), power: null, powerN: 0, carry: null, saved: null,
     pet: prog.equip.pet ? { x: P.x, y: P.y, mood: null, moodT: 0 } : null, glide: 0, alarm: 0, climb: false, hidden: false, bubble: null, tip: null, mbox: null, dash: 0, cross: null, wrongRun: 0, tipSoon: !!(plan && plan.mode === 'back'), byTrack: plan ? {} : null, checkpoint: 1.5 * T, time: 0, parts: [], shots: [], bumps: new Map(), winT: 0 };
   SPR = bakeNinja(heroPal());   // equipped headband and suit, plus the belt you've earned
-  const bandIt = ITEM[prog.equip.band]; SPR_ANIM = bandIt && bandIt.anim ? bandIt.anim.map(c => bakeNinja({ ...heroPal(), r: c[0], R: c[1] })) : null;
+  const bandIt = ITEM[prog.equip.band], suitIt = ITEM[prog.equip.suit];   // an animated suit (Rainbow) wins over an animated headband
+  SPR_ANIM = suitIt && suitIt.anim ? suitIt.anim.map(c => bakeNinja({ ...heroPal(), n: c[0], N: c[1] })) : bandIt && bandIt.anim ? bandIt.anim.map(c => bakeNinja({ ...heroPal(), r: c[0], R: c[1] })) : null;
   DIVER = null;
   if (prog.vanishNext === i) G.friendPow = { vanish: true };   // Mei was freed in the level before: Ninja vanish here too (kept on a restart)
   if (prog.dolphinLeft && prog.dolphinLeft[i]) G.friendPow = { ...(G.friendPow || {}), dolphin: true };   // Nami's Dolphin swim: once in each other sea level (used up when it's finished)
