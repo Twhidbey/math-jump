@@ -47,7 +47,7 @@ This file is the one source for the story. Every bit of story text in `index.htm
 
 ## Lost friends (optional, one per world)
 
-Five little students from Sensei's dojo: **Hana** (Japan), **Tomo** (Lava), **Niko** (Robot), **Yuki** (Snow) and **Mei** with her lamb (Castle). Lines: "Help!" (near the secret), "Help me, Kai!", "Thank you, Kai!", "See you at the dojo!". The Welcome Home page shows the ones found: "Hana, Tomo came home too!" or, with all five, "Every one came home!" (Mei going after her one lost lamb is a quiet nod to the lost sheep.)
+Little students from Sensei's dojo: **Hana** (Japan), **Tomo** (Lava), **Niko** (Robot), **Yuki** (Snow), **Nami** (Sea), **Suna** (Desert, in a straw hat) and **Mei** with her lamb (Castle). Lines: "Help!" (near the secret), "Help me, Kai!", "Thank you, Kai!", "See you at the dojo!". The Welcome Home page shows the ones found: "Hana, Tomo came home too!" or, with all five, "Every one came home!" (Mei going after her one lost lamb is a quiet nod to the lost sheep.)
 
 ## Home screen
 

@@ -23,7 +23,7 @@ The detail lives in `docs/`, one file per area. **Open the file for the area you
 | `docs/crossings.md` | Gates, the hungry animal and math ? boxes, stepping stones, pattern walls, swings, bridges, ski lift | `gateNear`, `resolveAnswer`, `miniTarget`, `stepsPick`, `wallPuzzle`, `swingTick`, `liftChunk` |
 | `docs/dojo.md` | Training rooms: the drill, moves, poses, entrances, leaving early | `MOVES`, `buildVault`, `trainAnswer`, `posedFigure`, `ENTRANCES` |
 | `docs/bosses.md` | Bosses and their entrances, the held-out hand, game over, victory moves, races | `buildArena`, `BOSS_SPECS`, `offerHand`, `gameOver`, `startVictory`, `startRace` |
-| `docs/friends.md` | The six lost friends, rescue scenes, guards, treasures, friend powers | `FRIENDS`, `addFriend`, `startRescue`, `GUARD_STYLE`, `hasFriend` |
+| `docs/friends.md` | The seven lost friends, rescue scenes, guards, treasures, friend powers | `FRIENDS`, `addFriend`, `startRescue`, `GUARD_STYLE`, `hasFriend` |
 | `docs/badges-gear.md` | Badges, the Gear Pack and gear powers, the shop, pixel icons, saves, music | `BADGES`, `GEAR`, `gearPowTick`, `SHOP`, `PIX`, `loadProg`, `SONGS` |
 | `docs/team.md` | Team play on two devices (Firebase rooms): team boss, team run, shared level, gates together, Shadow Twins and showdown, helping each other, staying in sync | `TEAM_DB`, `tmSync`, `tmRunTick`, `LAYOUT`, `tmGateTick`, `tmTwinTick`, `tmShowdownTick`, `tmFriendSync` |
 
