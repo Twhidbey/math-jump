@@ -591,7 +591,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 16, 2026 9:30 AM PT · New world: Red Rock Desert</div>
+  <div class="build">Updated Nov 16, 2026 10:00 AM PT · New world: Red Rock Desert</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -10946,7 +10946,7 @@ function drawSwings() {
         rockBands(a - 22, top - 40, b - a + 44, base - top + 40);
         ctx.restore();
       }
-    } else if (look.rock) for (const x of [xA, xM, xB]) { rockBands(x - 8, top, 16, base - top); ctx.fillStyle = '#8a3a1e'; ctx.fillRect(x - 12, top - 6, 24, 8); }   // thin rock spires
+    } else if (look.rock && L.def.k === 1) for (const x of [xA, xM, xB]) { rockBands(x - 8, top, 16, base - top); ctx.fillStyle = '#8a3a1e'; ctx.fillRect(x - 12, top - 6, 24, 8); }   // thin rock spires
     else for (const x of [xA, xM, xB]) { ctx.fillStyle = look.post; ctx.fillRect(x - 5, top, 10, base - top); ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(x + 2, top, 3, base - top); }
     const anchors = [(xA + xM) / 2, (xM + xB) / 2];
     if (look.lift) {   // a ski lift: a cable that sags between the poles, a chair on each span
