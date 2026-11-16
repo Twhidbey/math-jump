@@ -589,7 +589,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 15, 2026 8:40 PM PT · Legend suit: its own gold button</div>
+  <div class="build">Updated Nov 16, 2026 10:15 AM PT · Stepping stones: no more counting by 1s</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -5073,7 +5073,7 @@ function stepSeq(skill, n) {
   const tab = /^[xd](\d+)$/.exec(id);
   if (tab) step = +tab[1];
   else if (skill.cat === 'mul' || skill.cat === 'div') step = id === 'xmix25' ? R(2, 5) : id === 'xtens' ? pick([10, 20, 30]) : R(3, 9);
-  else step = tier === 1 ? pick([1, 2]) : tier === 2 ? pick([2, 5, 10]) : tier === 3 ? pick([3, 4, 5, 10]) : pick([4, 6, 7, 8, 9, 25]);
+  else step = tier === 1 ? pick([2, 2, 5, 10]) : tier === 2 ? pick([2, 5, 10]) : tier === 3 ? pick([3, 4, 5, 10]) : pick([4, 6, 7, 8, 9, 25]);
   const back = skill.cat === 'sub';
   if (skill.cat === 'mul' || skill.cat === 'div' || step === 1) start = (R(step === 1 ? 1 : 0, 3) * step) || step;
   else start = tier >= 3 ? R(1, 9) + (step === 10 ? R(1, 4) * 10 : 0) : R(0, 3) * step;
