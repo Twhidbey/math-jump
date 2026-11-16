@@ -591,7 +591,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 15, 2026 10:45 PM PT · New world: Red Rock Desert</div>
+  <div class="build">Updated Nov 16, 2026 9:30 AM PT · New world: Red Rock Desert</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -901,7 +901,7 @@ const WORLDS = [
   // The desert world (added Nov 2026, before the castle so the castle stays last): red rock country, arches, hoodoos
   // and a slot canyon. Its per-level slot is 18-20 (slotOf), its stages keep si 24-27.
   { key: 'desert', name: 'Red Rock Desert', scroll: 'Scroll of Remembering', slot: 18, walker: 'scorpion', pit: 'canyon', flag: '#ff9f43',
-    skies: [['#5db4f0', '#ffe6c0'], ['#f08a52', '#ffe2a8'], ['#7ab8e8', '#ffd9a8']],
+    skies: [['#7cc4f2', '#ffe4d0'], ['#f08a52', '#ffe2a8'], ['#7ab8e8', '#ffd9a8'], ['#10143a', '#6a4470']],   // morning, sunset, shade; the boss: night
     brick: ['#c96a3a', '#7e3a1c'], pipe: ['#d98a4a', '#8a4a22', '#f4c08a'], stair: ['#d99a5e', '#96562a', '#f2c890'],
     gate: ['#b5512a', '#6e2a12', '#f2c48a', '#ffd23f'], dojo: ['#e8c090', '#8a3f1c', '#ffd23f'],
     intro: `The Scorpion stings everyone. Forgive him anyway.`,
@@ -2207,7 +2207,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
   L.squads = []; L.steps = [];
   // Bridges and stepping stones take turns, level by level (each is in about half the levels). Kindergarten math never
   // gets a number-stone bridge (carrying stones to an exact sum is the trickiest thing in the game): stones every level.
-  const young = shared ? true : skill.tier === 1, useBridge = !young && slotOf(def) % 2 === 1;
+  const young = shared ? true : skill.tier === 1, useBridge = !young && slotOf(def) % 2 === 1 && W.key !== 'desert';   // (the desert always has stones: Hoodoo Trail's are the hoodoo hop)
   const feedAt = Math.floor(def.n / 2), stepsAt = useBridge ? [] : [1];   // one set of stepping stones in a stones level
   // Breathing room: after each big moment a long stretch of plain running. The first two also get a pair of ledges
   // up in the sky (the world's own blocks, one higher than the other) with gems on top, just for jumping.
@@ -2618,7 +2618,7 @@ const BOSS_SPECS = {
 function buildArena(idx, easy = false, skill = curSkill()) {
   const def = STAGES[idx], W = WORLDS[def.w], map = newMap(), narrow = VW < 700, cols = narrow ? 18 : 27;
   for (let c = 0; c < cols; c++) { for (let r = 0; r < ROWS; r++) map[r].push('.'); map[GR][c] = '#'; map[GR + 1][c] = '#'; }
-  const L = { idx, def, skill, gen: LEVEL_MIX ? mixGen(LEVEL_MIX) : FOCUS ? focusGen(skill) : genFor(skill), expert: skillProgress(skill).mature, world: W, sky: W.skies[2], map, w: cols, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [1, cols - 4], flagC: -99, castleC: -99, proj: [] };
+  const L = { idx, def, skill, gen: LEVEL_MIX ? mixGen(LEVEL_MIX) : FOCUS ? focusGen(skill) : genFor(skill), expert: skillProgress(skill).mature, world: W, sky: W.skies[3] || W.skies[2], map, w: cols, enemies: [], coins: [], stations: [], bridges: [], doors: [], decor: [1, cols - 4], flagC: -99, castleC: -99, proj: [] };
   const padC = narrow ? 5 : 7;
   // Fights take turns: a 'dodge' phase where the boss attacks, then an 'open' phase where it is dizzy and you answer.
   L.arena = { q: L.gen(), padC, wait: 0, phase: 'dodge', phaseT: 150 };
@@ -4888,7 +4888,7 @@ const SWING_LOOK = {
   lava: { post: '#3a2f2c', beam: '#2a201e', rope: '#9aa7b8', chain: true, tell: 'Answer to swing on the chains!' },
   robot: { post: '#6c7a89', beam: '#ffd23f', rope: '#2b2b38', hook: true, tell: 'Answer to ride the crane hooks!' },
   snow: { post: '#5a6b7a', beam: '#2b2b38', rope: '#2b2b38', lift: true, tell: 'Answer to ride the ski lift!' },
-  desert: { post: '#7e3a1c', beam: '#5e2412', rope: '#c9a063', tell: 'Answer to swing across the canyon!' },
+  desert: { post: '#7e3a1c', beam: '#5e2412', rope: '#c9a063', rock: true, tell: 'Answer to swing across the canyon!' },
   castle: { post: '#3a2a20', beam: '#8b5a2b', rope: '#8b5a2b', lantern: true, tell: 'Answer to swing across!' },
 };
 const swingTop = () => (GR - 3) * T;   // the ledges and the perch are 3 blocks high
@@ -5322,7 +5322,14 @@ function drawSteps() {
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.strokeText(val, x, top + T / 2 + 1); ctx.fillText(val, x, top + T / 2 + 1);
       ctx.globalAlpha = 1;
     };
-    st.path.forEach(o => sq(o.x, o.top, o.val, W.stair[0], W.stair[1], W.stair[2]));
+    const hop = W.key === 'desert' && L.def.k === 1;   // Hoodoo Trail: the hoodoo hop
+    const spire = (x, top) => { ctx.fillStyle = '#5e2412'; ctx.fillRect(x - 12, top + T, 24, VH - top - T); rockBands(x - 10, top + T, 20, VH - top - T); ctx.fillStyle = 'rgba(94,36,18,.25)'; ctx.fillRect(x + 3, top + T, 6, VH - top - T); };
+    st.path.forEach(o => { if (hop) spire(o.x, o.top); sq(o.x, o.top, o.val, W.stair[0], W.stair[1], W.stair[2]); });
+    if (hop && st.opts.length) {   // the three choices are bands of one tall hoodoo that rises out of the canyon (drawn only: the blocks are already there to hop on)
+      const o0 = st.opts[0]; o0.rz = Math.min(16, (o0.rz || 0) + 1); if (o0.rz === 2) tone(140, 0.25, 'sine', 0.04, 260);
+      ctx.save(); ctx.translate(0, (1 - o0.rz / 16) * (1 - o0.rz / 16) * 90);
+      const live = st.opts.filter(o => o.state !== 'gone'); if (live.length) spire(o0.x, Math.min(...live.map(o => o.top)));
+    }
     st.opts.forEach((o, j) => {
       if (o.state === 'gone') return;
       if (o.state === 'fade') { o.t = (o.t || 0) + 1; if (o.t > 20) return; }
@@ -5330,6 +5337,7 @@ function drawSteps() {
       sq(o.x, o.top, o.val, c1, c2, '#ffffff', o.state === 'fade' ? 1 - o.t / 20 : 1);
       if (!isTouch && o.state === 'idle') keyTag(ANS_KEYS(3)[j], o.x + T / 2 - 2, o.top - 2);
     });
+    if (hop && st.opts.length) ctx.restore();
     if (stepTimed() && G.cross && G.cross.st === st && !G.cross.hop && st.opts.length && st.opts.every(o => o.state === 'idle')) {   // the time bar
       const left = clamp(1 - (G.time - st.shownAt) / STEP_TIME(), 0, 1), bx = stepX(st, st.k + 1) - T, by = GR * T - STONE_TOPS[2] * T - 20;
       ctx.fillStyle = 'rgba(0,0,0,.45)'; rrect(bx - 2, by - 2, 2 * T + 4, 12, 6); ctx.fill();
@@ -8661,8 +8669,10 @@ function hoodoo(x, b, h, w) {   // a thin banded spire with a darker cap rock
   ctx.fillStyle = '#8a3a1e'; ctx.fillRect(x - w * 0.5, b - h - 9, w, 11);
 }
 function bgDesert() {
-  const b = GR * T, k = L.def && !L.def.boss ? L.def.k : -1;
-  if (k !== 2) clouds('rgba(255,255,255,.55)');
+  const b = GR * T, boss = !!(L.def && L.def.boss), k = L.def && !boss ? L.def.k : -1;
+  if (boss) { for (let i = 0; i < 60; i++) { ctx.fillStyle = `rgba(255,250,220,${0.5 + 0.4 * Math.sin(tick * 0.04 + i * 2.3)})`; ctx.fillRect(Math.round(hash(i + 3) * VW), Math.round(hash(i + 71) * b * 0.6), 2 + (i % 3 === 0), 2 + (i % 3 === 0)); } }   // the boss fight is at night: stars
+  else if (k === 0) { blob(VW * 0.8 - cam * 0.01, 120, 34, '#fff6c8'); clouds('rgba(255,255,255,.55)'); }   // a low morning sun
+  else if (k !== 2) clouds('rgba(255,255,255,.55)');
   repeat(0.05, 620, (x, i) => butte(x, b, 190 + hash(i + 2) * 120, 200 + hash(i + 5) * 90, '#d9a08a', '#e6b49a'), 41);   // far mesas, hazy
   repeat(0.16, 520, (x, i) => butte(x, b, 120 + hash(i + 3) * 110, 130 + hash(i + 8) * 80, '#c2562c', '#e0844a', '#f2c48a'), 43);
   if (k === 0) repeat(0.3, 560, (x, i) => rockArch(x, b, 0.8 + hash(i + 4) * 0.5), 47);
@@ -8680,7 +8690,8 @@ function bgDesert() {
     }
     ctx.fillStyle = 'rgba(60,20,10,.22)'; ctx.fillRect(0, 0, VW, b);   // cooler and darker down here
   }
-  ctx.fillStyle = '#e8a868';
+  if (boss) { ctx.fillStyle = 'rgba(16,20,58,.5)'; ctx.fillRect(0, 0, VW, b); }
+  ctx.fillStyle = boss ? '#7a5a6a' : '#e8a868';
   repeat(0.55, 300, (x, i) => { const r = 60 * (0.7 + hash(i + 34) * 0.6); ctx.beginPath(); ctx.ellipse(x, b, r * 2.2, r * 0.55, 0, Math.PI, 0); ctx.fill(); }, 29);   // low dunes
 }
 function bgCastle() {
@@ -10925,7 +10936,18 @@ function drawSwings() {
     const xA = (sw.l0 + 0.3) * T, xM = (sw.pm + 1) * T, xB = (sw.l1 + 1.7) * T;
     if (xB < cam - 60 || xA > cam + VW + 60) continue;
     const look = SWING_LOOK[L.world.key] || SWING_LOOK.japan, top = Math.round((GR - 8.4) * T), base = swingTop(), g = G && G.swing && G.swing.sw === sw ? G.swing : null;
-    for (const x of [xA, xM, xB]) { ctx.fillStyle = look.post; ctx.fillRect(x - 5, top, 10, base - top); ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(x + 2, top, 3, base - top); }
+    const arch = look.rock && L.def.k === 0;   // Arch Canyon: the ropes hang from two stone arches that stand on the ledges
+    if (arch) {
+      for (const [a, b] of [[xA, xM], [xM, xB]]) {
+        const m = (a + b) / 2;
+        ctx.save(); ctx.beginPath(); ctx.rect(a - 22, top - 34, b - a + 44, base - top + 34);
+        ctx.moveTo(a + 16, base); ctx.lineTo(a + 16, top + 70); ctx.quadraticCurveTo(m, top - 44, b - 16, top + 70); ctx.lineTo(b - 16, base); ctx.closePath(); ctx.clip('evenodd');
+        ctx.beginPath(); ctx.moveTo(a - 22, base); ctx.lineTo(a - 16, top + 10); ctx.quadraticCurveTo(m, top - 62, b + 16, top + 10); ctx.lineTo(b + 22, base); ctx.closePath(); ctx.clip();
+        rockBands(a - 22, top - 40, b - a + 44, base - top + 40);
+        ctx.restore();
+      }
+    } else if (look.rock) for (const x of [xA, xM, xB]) { rockBands(x - 8, top, 16, base - top); ctx.fillStyle = '#8a3a1e'; ctx.fillRect(x - 12, top - 6, 24, 8); }   // thin rock spires
+    else for (const x of [xA, xM, xB]) { ctx.fillStyle = look.post; ctx.fillRect(x - 5, top, 10, base - top); ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(x + 2, top, 3, base - top); }
     const anchors = [(xA + xM) / 2, (xM + xB) / 2];
     if (look.lift) {   // a ski lift: a cable that sags between the poles, a chair on each span
       ctx.strokeStyle = look.beam; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(xA, top + 6);
@@ -10934,6 +10956,7 @@ function drawSwings() {
     } else if (look.lantern) {   // a rope strung roof to roof, with small lanterns
       ctx.strokeStyle = look.beam; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(xA, top + 4); ctx.quadraticCurveTo((xA + xB) / 2, top + 30, xB, top + 4); ctx.stroke();
       for (let k = 1; k < 8; k++) { const x = xA + (xB - xA) * k / 8, y = top + 4 + Math.sin(Math.PI * k / 8) * 13; ctx.fillStyle = '#e63946'; rrect(x - 5, y, 10, 13, 4); ctx.fill(); glowAt(x, y + 6, 12, 'rgba(255,180,80,.35)'); }
+    } else if (arch) {   // (the arches are the beam)
     } else {   // a beam: torii, rock arch or crane rail
       ctx.fillStyle = look.beam; ctx.fillRect(xA - 14, top - 8, xB - xA + 28, 12);
       if (look.post === '#c0392b') { ctx.fillStyle = '#c0392b'; ctx.fillRect(xA - 8, top + 10, xB - xA + 16, 7); }   // torii: a red tie-beam under the black top

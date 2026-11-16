@@ -67,3 +67,4 @@ Each gets a secret room in a level that has none yet (3 math walls + chest) and 
 - Old saves move over by themselves (castle progress shifts up one world).
 - **Not built: a lost friend for the desert** (who, what power, how hidden: ask the owner).
 - Open for the owner: boss name and story words, scroll name, level names.
+- **Variety between the desert levels** (owner asked, Nov 16; still not live): Arch Canyon's swing hangs from stone arches (owner's idea), Hoodoo Trail's stepping stones are hoodoos that rise out of the canyon, and each level has its own time of day (morning, sunset, shade; the boss at night). Offered next: a canyon raft with forks for Slot Canyon, a tipping rock bridge.
