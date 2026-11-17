@@ -58,14 +58,14 @@ Each gets a secret room in a level that has none yet (3 math walls + chest) and 
 
 ## Built Nov 15 (late): Red Rock Desert, NOT LIVE YET
 
-**The owner wants to try it before it is published** ("let's not push it till i have a chance to check it out myself"). It is committed on the session branch only; `main` (the live game) does not have it. Do not push it to `main` until the owner says so.
+**The owner wants to try it before it is published** ("let's not push it till i have a chance to check it out myself"). **Nov 17: the owner tried it and asked to publish it Wednesday morning (Nov 18, 2026)**; a scheduled reminder in the session does the push. It is committed on the session branch only; `main` (the live game) does not have it. Do not push it to `main` until the owner says so.
 
 - **World 6: Red Rock Desert** (before the Night Castle, which is now world 7): Arch Canyon, Hoodoo Trail, Slot Canyon, boss The Red Scorpion. Details in `docs/levels.md` and `docs/bosses.md`.
 - Twists: crumbling ledges, a dust devil that lifts Kai, quicksand (slow, never hurts). Small extras: arches to run under, cactus flowers, sunbeams.
 - Boss story (my draft, owner has not reviewed the words): "The Scorpion stings everyone. Forgive him anyway." Ending: Kai "I forgive you." Scroll name "Scroll of Remembering" (the desert has no math kind of its own: it practises whatever is furthest behind).
 - Gear: the Lasso, on Hoodoo Trail. Three new dojo moves: Elbow Strike, Axe Kick, Tornado Kick.
 - Old saves move over by themselves (castle progress shifts up one world).
-- **Not built: a lost friend for the desert** (who, what power, how hidden: ask the owner).
+- Lost friend: **Suna** (built Nov 16, see below).
 - Open for the owner: boss name and story words, scroll name, level names.
 - **Variety between the desert levels** (owner asked, Nov 16; still not live): Arch Canyon's swing hangs from stone arches (owner's idea), Hoodoo Trail's stepping stones are hoodoos that rise out of the canyon, and each level has its own time of day (morning, sunset, shade; the boss at night). Offered next: a canyon raft with forks for Slot Canyon, a tipping rock bridge.
 - **Stepping stones: no more counting by 1s** (owner, Nov 16: too easy even for K). Kindergarten math now counts by 2s (most often), 5s or 10s.
