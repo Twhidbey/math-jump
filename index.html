@@ -596,7 +596,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 18, 2026 5:45 AM PT · New world: Red Rock Desert</div>
+  <div class="build">Updated Nov 18, 2026 8:40 AM PT · Fix: quick-question bubbles never inside rocks</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -5834,8 +5834,24 @@ function feedPick(fd, i) {
 }
 function startMathBox(c, r) {
   // the answer bubbles float just ahead of Kai, a small jump up, so he grabs one as he keeps running
-  const q = L.gen(), vals = choices(q, 3), dir = P.face || 1, base = P.y + P.h, x0 = P.x + P.w / 2;
-  G.mbox = { c, r, q, shownAt: G.time, wait: 30, top: base - 3.4 * T, bubbles: vals.map((val, i) => ({ val, x: x0 + dir * (1.6 + i * 1.9) * T, y: base - 2.1 * T })) };
+  // They never go inside a pillar or a wall (owner, Nov 2026: a bubble was stuck in a rock tower): ahead of Kai if
+  // that side is open, else behind him; over a short pillar they go on past it (he jumps over).
+  const q = L.gen(), vals = choices(q, 3), dir = P.face || 1, base = P.y + P.h, x0 = P.x + P.w / 2, by = base - 2.1 * T;
+  const free = (x, y = by) => [x - 20, x + 20].every(xx => [y - 20, y + 20].every(yy => !solid(Math.floor(xx / T), Math.floor(yy / T))));
+  const wallRow = Math.floor((base - 4.4 * T) / T);   // too tall to jump over (a gate, a wall); a short pillar is fine
+  const spots = d => {   // free places walking out from Kai, 1.9 tiles apart (as before on open ground), until a wall
+    const out = [];
+    for (let k = 1.6; k <= 14 && out.length < 3; k += 0.25) {
+      const x = x0 + d * k * T;
+      if (solid(Math.floor(x / T), wallRow)) break;
+      if (free(x) && (!out.length || Math.abs(x - out[out.length - 1]) >= 1.9 * T)) out.push(x);
+    }
+    return out;
+  };
+  const ahead = spots(dir), behind = ahead.length < 3 ? spots(-dir) : [];
+  let pos = (ahead.length === 3 ? ahead : behind.length === 3 ? behind : [...ahead, ...behind].length >= 3 ? [...ahead, ...behind].slice(0, 3) : null)?.map(x => [x, by]);
+  if (!pos) pos = [0, 1, 2].map(i => { const x = x0 + dir * (1.6 + i * 1.9) * T, y = [by, by - 1.5 * T, by - 3 * T].find(yy => free(x, yy)); return [x, y ?? by]; });   // last resort: up over what's there
+  G.mbox = { c, r, q, shownAt: G.time, wait: 30, top: Math.min(base - 3.4 * T, Math.min(...pos.map(p => p[1])) - 1.3 * T), bubbles: vals.map((val, i) => ({ val, x: pos[i][0], y: pos[i][1] })) };
   sfx.coin(); floatText(c * T + T / 2, r * T - 20, 'Quick question!', '#ffd23f', 24);
 }
 // Treasure clams (the sea): touching one asks a question. The answers are pearls over the clam, picked with the buttons

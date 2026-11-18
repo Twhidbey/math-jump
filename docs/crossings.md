@@ -33,3 +33,7 @@ One per level, replaces the middle gate (`wallGate = feedAt` in `buildLevel`, `w
 ## Ski lift (snow world's crossing, owner asked: low to high, ride it up, always running)
 
 `liftChunk` in `buildLevel` (instead of `swingChunk` when `W.key === 'snow'`; only small `flat()` runs so the level's rng rolls don't change): boarding station on the ground (`sw.b`), 8 open tiles with a middle tower, a 6-block cliff (`sw.cl`, 4 wide, 'S') with the top station, stairs down. `sw.lift`; `LIFT_CHAIRS` 6 loop on `sw.ph` (0..1 up, 1..2 back down empty, `liftPos`, `liftSeat`), `LIFT_SPD` 1/360 per frame, moved every frame by `liftsMove` (in `updateSwings` / `swingTick`). `G.swing.lift`: phases ask (at the bottom; ← steps back) → board (hops into the next chair) → ride (2nd question asked at once; if it isn't answered the lift slows near the tower and waits at p 0.495) → off (hops onto the top station). `liftTick`, `drawLift` (stations, wheels, two cables, chairs, answer tiles over Kai's head). Normal jumps reach 4.9 tiles, and the trigger covers all the ground before the cliff, so it can't be skipped
+
+## Math ? box bubbles never inside a wall (owner, Nov 18 2026: a bubble was stuck in a red rock tower)
+
+`startMathBox` walks out from Kai (1.6 tiles, then every 1.9, as before on open ground) and skips spots inside solid tiles; it stops at anything too tall to jump (a gate). Ahead first, else behind, else both sides together, else the bubble moves up over what's there. A short pillar in the way: the bubbles go on past it (he jumps over).
