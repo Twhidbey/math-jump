@@ -502,6 +502,7 @@
   .item .pr { font-size: 13px; opacity: .85; }
   .item button { font: inherit; font-weight: 800; font-size: 13px; border: none; border-radius: 8px; padding: 6px 10px; cursor: pointer; background: #5b6bd6; color: #fff; }
   .item button.buy { background: #2ecc71; }
+  .item .ibtns { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; align-items: center; } .item .ibtns small { width: 100%; text-align: center; font-size: 12px; opacity: .85; }
   .item button:disabled { background: #555566; color: #bbb; cursor: default; }
   .buybox { background: rgba(255,210,63,.12); border: 2px solid #ffd23f; border-radius: 12px; padding: 10px; margin: 6px 0; }
   .buybox p { margin: 4px 0 10px; }
@@ -596,7 +597,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 19, 2026 3:45 PM PT · Preview: parent page, Slot Canyon light, number badges</div>
+  <div class="build">Updated Nov 19, 2026 4:00 PM PT · Preview: parent page, Slot Canyon light</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -3921,7 +3922,7 @@ function playTable(id) {   // "Pick a level": the next level the kid picks on th
   prog.skill = BADGE[id].sk; prog.pickOnce = !!prog.auto; prog.focusOnce = true; save();
   hide('badges'); toMenu();
   const w = $('worlds'); if (w) setTimeout(() => w.scrollIntoView({ block: 'start', behavior: 'smooth' }), 150);
-  toastMsg(`Pick any level to play ${BADGE[id].short === String(BADGE[id].num) ? `Make ${BADGE[id].num}` : `your ${BADGE[id].short}`}!`, 3600);
+  toastMsg(`Pick any level to play ${SKILL[BADGE[id].sk].name}!`, 3600);
 }
 // "Practice 7s": up to 10 questions in the Daily Dojo screen, from the facts of that table that aren't gold (missed ones
 // first, then silver, then new), topped up with gold ones to at least 6. No streak and no gems: the prize is the reward.
@@ -12397,7 +12398,14 @@ function renderShop() {
     el.innerHTML = `<canvas width="90" height="54"></canvas><div class="nm">${it.name}</div>${it.power ? `<div class="ipow">Power: ${it.power}</div>` : ''}<div class="pr">${owned ? 'Owned' : `${gemSm()} ${it.price}`}</div><button type="button"></button>`;
     drawItemPreview(el.querySelector('canvas'), it);
     const b = el.querySelector('button');
-    if (it.badge && !prog.badges[it.badge] && !owned) { b.innerHTML = `${pixSm('lock')} Badge: ${BADGE[it.badge].name}`; b.disabled = true; el.querySelector('.pr').textContent = BADGE[it.badge].text; }
+    if (it.badge && !prog.badges[it.badge] && !owned) {   // a badge prize: how close, and buttons to go and win it (owner, Nov 2026)
+      const bd = BADGE[it.badge], box = document.createElement('div'); box.className = 'ibtns';
+      b.innerHTML = `${pixSm('lock')} Badge: ${bd.name}`; b.disabled = true; el.querySelector('.pr').textContent = bd.text;
+      if (bd.sk && SKILL[bd.sk] && factList(SKILL[bd.sk])) { const [g, need] = factGoal(bd); box.innerHTML = `<small>${g} / ${need} gold</small><button type="button" class="buy" data-go="practice">Practice</button><button type="button" data-go="play">Pick a level</button>`; }
+      else box.innerHTML = '<button type="button" data-go="badges">See the badge</button>';
+      box.querySelectorAll('[data-go]').forEach(x => { x.onclick = () => { audio(); hide('shop'); if (x.dataset.go === 'practice') startPractice(bd.id); else if (x.dataset.go === 'play') playTable(bd.id); else openBadges(); }; });
+      el.appendChild(box);
+    }
     else if (on) { b.textContent = it.slot === 'trail' || it.slot === 'pet' ? 'Take off' : 'Wearing'; b.disabled = !(it.slot === 'trail' || it.slot === 'pet'); }
     else if (owned) b.textContent = 'Wear';
     else if (prog.bank >= it.price) { b.textContent = 'Buy'; b.className = 'buy'; }
