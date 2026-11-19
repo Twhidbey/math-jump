@@ -596,7 +596,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 18, 2026 8:40 AM PT · Fix: quick-question bubbles never inside rocks</div>
+  <div class="build">Updated Nov 19, 2026 3:40 PM PT · Number badges for K and 1st grade</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1078,6 +1078,10 @@ function optChoices(q, n, sorted) {
 }
 SKILLS.find(k => k.id === 'dmix').gen = () => { const n = R(2, 10), k = R(2, 10); return mk(n * k, '÷', n, k); };
 const SKILL = Object.fromEntries(SKILLS.map(k => [k.id, k]));
+// The number tiles for young players (owner, Nov 2026: a kindergartner wanted "Master of 8s"): every way to make n and
+// to take away from n (1 + 7 ... 4 + 4, 8 − 1 ... 8 − 7). Not in the skill picker: reached from the Badge Book's tiles.
+for (let n = 2; n <= 10; n++) SKILL['mk' + n] = { cat: 'add', id: 'mk' + n, name: `Make ${n} and take from ${n}`, ex: `${Math.floor(n / 2)} + ${Math.ceil(n / 2)}`, tier: 1, hidden: true,
+  gen: deck(() => [...range(1, Math.floor(n / 2)).map(a => plus(a, n - a)), ...range(1, n - 1).map(a => minus(n, a))]) };
 // The mixed tables pick at random, but still have a fixed set of facts for the Fact Book.
 SKILL.xall.gen.all = () => pairs(range(2, 12), range(2, 12), (a, b) => a <= b).map(([a, b]) => mk(a, '×', b, a * b));
 SKILL.dmix.gen.all = () => pairs(range(2, 10), range(2, 10), () => true).map(([n, k]) => mk(n * k, '÷', n, k));
@@ -3753,6 +3757,7 @@ const tableProg = n => { const pr = skillProgressRaw(SKILL['x' + n]); return [pr
 const ADDSUB = [['add5', '+ to 5', 'adding to 5', 'Adding to 5', 'trail-star'], ['add10', '+ to 10', 'adding to 10', 'Adding to 10', 'band-mint'],
   ['make10', 'Make 10', 'Make 10', 'Make 10', 'trail-heart'], ['sub10', '− to 10', 'taking away to 10', 'Taking Away to 10', 'suit-sunset'],
   ['add20', '+ to 20', 'adding to 20', 'Adding to 20', 'trail-leaf', 0.9], ['sub20', '− to 20', 'taking away to 20', 'Taking Away to 20', 'band-royal', 0.9]];
+function youngTables() { const g = curPlayer().grade; return g === 'K' || g === '1'; }   // (a hoisted function: BADGES reads it)
 const factGoal = b => { const pr = skillProgressRaw(SKILL[b.sk]); return [pr.gold, b.pct ? Math.ceil(pr.n * b.pct) : pr.n]; };   // a fact-set tile: gold facts / needed
 const TIER_GEMS_B = [30, 75, 150];   // bronze, silver, gold (gold also gives a title)
 const tierBadges = (txt, pix, key, list) => list.map(([id, name, need, title], t) => ({ id, pix, sec: 'tier', grp: list[0][0], tier: t + 1, name, need, title,
@@ -3763,8 +3768,13 @@ const BADGES = [
   // skills have ~60 facts, so they need 90% gold; the others every fact.
   ...ADDSUB.map(([sk, tile, short, name, prize, pct]) => ({ id: 'as-' + sk, set: 'addsub', sk, tile, short, pct, sec: 'math', name, text: `Make the ${short} facts gold.`, prize })),
   { id: 'as-all', pix: 'star', sec: 'math', name: 'Math Star', text: 'Win all six adding and taking-away prizes.', prog: () => [ADDSUB.filter(a => prog.badges['as-' + a[0]]).length, 6], prize: 'trail-rainbow', title: 'Math Star' },
-  ...[2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => ({ id: 't' + n, num: n, set: 'tables', sk: 'x' + n, tile: `${n}×`, short: `${n}s`, sec: 'math', name: `Master of ${n}s`, text: `Make every ${n}s fact gold in the Fact Book.`, prize: TABLE_PRIZE[n] })),
-  { id: 't-all', pix: 'crown', swap: { y: '#9fe8ff', Y: '#4fb3d9' }, sec: 'math', name: 'Times-Table Master', text: 'Master every table from 2s to 10s.', prog: () => [[2, 3, 4, 5, 6, 7, 8, 9, 10].filter(n => prog.badges['t' + n]).length, 9], prize: 'suit-diamond', title: 'Times-Table Master' },
+  // Kindergarten and 1st-grade players get the number version of these tiles (youngTables): "Master of 8" = every way
+  // to make 8 and take away from 8 gold; older players the times tables. Same badge, same prize.
+  ...[2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => ({ id: 't' + n, num: n, set: 'tables', sec: 'math', prize: TABLE_PRIZE[n],
+    get sk() { return youngTables() ? 'mk' + n : 'x' + n; }, get tile() { return youngTables() ? `${n}` : `${n}×`; }, get short() { return youngTables() ? `${n}` : `${n}s`; },
+    get name() { return youngTables() ? `Master of ${n}` : `Master of ${n}s`; },
+    get text() { return youngTables() ? `Make every way to make ${n} and take away from ${n} gold in the Fact Book.` : `Make every ${n}s fact gold in the Fact Book.`; } })),
+  { id: 't-all', pix: 'crown', swap: { y: '#9fe8ff', Y: '#4fb3d9' }, sec: 'math', get name() { return youngTables() ? 'Number Master' : 'Times-Table Master'; }, get text() { return youngTables() ? 'Master every number from 2 to 10.' : 'Master every table from 2s to 10s.'; }, prog: () => [[2, 3, 4, 5, 6, 7, 8, 9, 10].filter(n => prog.badges['t' + n]).length, 9], prize: 'suit-diamond', get title() { return youngTables() ? 'Number Master' : 'Times-Table Master'; } },
   { id: 'gold-medal', pix: 'medal', sec: 'math', name: 'Gold Medal', text: 'Win a gold medal in a math skill (no mistakes).' },
   { id: 'brave', pix: 'brain', sec: 'math', name: 'Brave Brain', text: 'Finish a level with ★★★★ math or harder.' },
   // keep going: bronze, silver, gold
@@ -3803,11 +3813,12 @@ const BADGE = Object.fromEntries(BADGES.map(b => [b.id, b]));
 // The two fact cards in the Badge Book: a tile per skill (tap for progress, the prize, Practice and Play).
 const FACT_SETS = {
   addsub: { title: 'Adding & Taking Away', tip: 'Get the facts gold (right and fast on two different days) to win each prize.', btns: () => true },
-  tables: { title: 'Times Tables', tip: 'Get every fact in a table gold (right and fast on two different days) to win its prize.', btns: () => tableBtns() },
+  tables: { get title() { return youngTables() ? 'Number Masters' : 'Times Tables'; },
+    get tip() { return youngTables() ? 'Get every way to make the number, and to take away from it, gold (right and fast on two different days) to win its prize.' : 'Get every fact in a table gold (right and fast on two different days) to win its prize.'; }, btns: () => tableBtns() },
 };
 const BADGE_SECS = [['math', 'Math'], ['tier', 'Keep going'], ['adv', 'Adventures']];
 const TITLES = () => BADGES.filter(b => b.title && prog.badges[b.id]).map(b => b.title);
-const badgeImg = (b, cls = 'pix big') => (b.set === 'addsub' ? `<span class="tnum${cls.includes('sm') ? ' sm' : ''}">${b.tile.replace(' to ', '')}</span>` : b.num ? `<span class="tnum${cls.includes('sm') ? ' sm' : ''}">${b.num}<i>×</i></span>` : pixImg(b.pix, cls, b.swap || null));
+const badgeImg = (b, cls = 'pix big') => (b.set === 'addsub' ? `<span class="tnum${cls.includes('sm') ? ' sm' : ''}">${b.tile.replace(' to ', '')}</span>` : b.num ? `<span class="tnum${cls.includes('sm') ? ' sm' : ''}">${b.num}${youngTables() ? '' : '<i>×</i>'}</span>` : pixImg(b.pix, cls, b.swap || null));
 // Toasts wait their turn, so two badges at once both show.
 let toastTimer = null; const toastQ = [];
 function toastMsg(html, ms = 3200) {
@@ -3894,16 +3905,18 @@ function ttInfo(id, set = BADGE[id] && BADGE[id].set) {
   const b = BADGE[id], on = !!prog.badges[b.id], pr = skillProgressRaw(SKILL[b.sk]), sv = pr.learned - pr.gold, need = factGoal(b)[1];
   el.innerHTML = on ? `<b>${b.name}!</b> Prize: ${ITEM[b.prize].name}`
     : `<b>${b.tile}:</b> ${pr.gold} / ${need} gold${sv ? `, ${sv} silver` : ''}. Prize: ${ITEM[b.prize].name}`
-      + (FACT_SETS[set].btns() ? `<div class="ttbtns"><button type="button" class="btn" id="ttPractice-${set}">Practice</button><button type="button" class="btn alt" id="ttPlay-${set}">Play</button></div>` : '');
+      + (FACT_SETS[set].btns() ? `<div class="ttbtns"><button type="button" class="btn" id="ttPractice-${set}">Practice</button><button type="button" class="btn alt" id="ttPlay-${set}">Pick a level</button></div>` : '');
   if ($('ttPractice-' + set)) { $('ttPractice-' + set).onclick = () => { audio(); hide('badges'); startPractice(b.id); }; $('ttPlay-' + set).onclick = () => { audio(); playTable(b.id); }; }
   $('badgeGrid').querySelectorAll(`.${set} [data-tt]`).forEach(t => t.classList.toggle('sel', t.dataset.tt === id));
 }
 // Practice / Play buttons on the times tables: not for K and 1st grade players (owner agreed: the tables are out of their reach).
-const tableBtns = () => !['K', '1'].includes(curPlayer().grade);
+const tableBtns = () => true;   // Practice and Pick a level on every tile, every grade (owner, Nov 2026)
 // "Play": the newest level, with that skill (the 7s, Make 10...) for one level and the facts not gold yet first (focusGen).
-function playTable(id) {
+function playTable(id) {   // "Pick a level": the next level the kid picks on the map plays this tile's facts; then his usual math comes back
   prog.skill = BADGE[id].sk; prog.pickOnce = !!prog.auto; prog.focusOnce = true; save();
-  hide('badges'); confirmStage(Math.min(unlockedCount(), STAGES.length) - 1);
+  hide('badges'); toMenu();
+  const w = $('worlds'); if (w) setTimeout(() => w.scrollIntoView({ block: 'start', behavior: 'smooth' }), 150);
+  toastMsg(`Pick any level to play ${BADGE[id].short === String(BADGE[id].num) ? `Make ${BADGE[id].num}` : `your ${BADGE[id].short}`}!`, 3600);
 }
 // "Practice 7s": up to 10 questions in the Daily Dojo screen, from the facts of that table that aren't gold (missed ones
 // first, then silver, then new), topped up with gold ones to at least 6. No streak and no gems: the prize is the reward.

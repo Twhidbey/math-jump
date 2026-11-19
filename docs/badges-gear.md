@@ -29,3 +29,7 @@ Part of the code notes; `CLAUDE.md` has the index. Search `index.html` for the n
 ## Lasso (desert gear, Nov 15 2026)
 
 `GEAR.lasso` (Hoodoo Trail, hand, charge 150): `lassoTick` / gfx `lasso`: a rope loop flies about 9 tiles ahead and comes back; it brings gems home (wider reach than the boomerang), pops ? boxes it touches, ties up enemies ("Got you!"), and turns back at a wall.
+
+## Number tiles for young players (owner, Nov 2026)
+
+A kindergartner wanted "Master of 8s". For K and 1st-grade players (`youngTables()`) the nine times-table badges (`t2`…`t10`, same ids and prizes) are number tiles: **Master of 8** = every way to make 8 and take away from 8 gold (1 + 7 … 4 + 4, 8 − 1 … 8 − 7; hidden skills `mk2`…`mk10` in `SKILL`, not in the skill picker). The badge fields (`sk`, `tile`, `short`, `name`, `text`, and `t-all`'s name/text/title "Number Master") are getters that follow the current player's grade. Every tile, for every grade, has **Practice** (`startPractice`: up to 10 not-yet-gold facts) and **Pick a level** (`playTable`: the next level picked on the map plays those facts, then auto mode takes over again; toast "Pick any level to play Make 8!").
