@@ -72,7 +72,7 @@ Each gets a secret room in a level that has none yet (3 math walls + chest) and 
 - **Desert, more (Nov 16; live Nov 18):** owner picked the raft, a lost friend and a tuning pass. **Suna** (owner chose name, cliff house, roadrunner power): a ladder up to her adobe house on a rock in Arch Canyon, coyote-bandit guard, slingshot rescue (TRIPLE SHOT!), and the **Roadrunner ride** (button / F: Kai is pulled along ~12 tiles, works once in the other two desert levels too). **Slot Canyon raft ride** replaces its swing: three river gates, right = fast water, wrong = shows the answer and slow water, never a heart. Tuning: quicksand a little less slow; enemy counts and lengths checked against the other worlds (in line). Kept as review math (owner chose).
 - **Fix (Nov 18, live):** a math ? box's answer bubbles could land inside a pillar (owner saw one stuck in a red rock tower in Arch Canyon). Now they skip solid spots (see `docs/crossings.md`).
 
-## Built Nov 19: the parent page (NOT LIVE YET, owner to try it first)
+## Built Nov 19: the parent page (LIVE since Nov 19, 2026)
 
 Owner asked for a parent screen with its own link: how long each kid plays, a time-limit toggle, their math level and suggestions. Owner chose: finish the level, then stop; a parent PIN. See `docs/parent.md`. Only time inside the game is seen (said so to the owner). **Database rules** (test mode ends ~Dec 14 2026; the owner was told; this combined version covers team rooms and families):
 ```
@@ -80,7 +80,7 @@ Owner asked for a parent screen with its own link: how long each kid plays, a ti
   "rooms": { "$code": { ".read": "$code.matches(/^[A-Z0-9]{4}$/)", ".write": "$code.matches(/^[A-Z0-9]{4}$/)" } },
   "families": { "$fam": { ".read": "$fam.matches(/^[A-Z0-9]{8}$/)", ".write": "$fam.matches(/^[A-Z0-9]{8}$/)" } } } }
 ```
-- **Slot Canyon light (Nov 19, preview with the parent page):** more and livelier light beams, sand pouring through them, glowing walls, a warm patch on the sand, Kai glows in the light, gems twinkle in it, and a soft canyon echo. Owner picked these; skipped the birds.
+- **Slot Canyon light (Nov 19, live with the parent page):** more and livelier light beams, sand pouring through them, glowing walls, a warm patch on the sand, Kai glows in the light, gems twinkle in it, and a soft canyon echo. Owner picked these; skipped the birds.
 - **Number tiles for young players (Nov 19, live):** a K kid wanted Master of 8s. K and 1st-grade players now see number tiles: Master of 8 = every way to make 8 and take away from 8, gold. Same badges and prizes. Every tile has Practice and Pick a level (pick any level on the map to play those facts). See `docs/badges-gear.md`.
 - **Shop: badge prizes have buttons (Nov 19, live):** a locked prize like the Little octopus shows "3 / 11 gold" with Practice and Pick a level (or See the badge for other badges).
 - **Shop cards small again (Nov 19, live):** owner wanted the badge-prize cards small like before; tapping the grey "Badge: Master of 8" button opens a card with how many are gold, Practice, Pick a level and Back.
