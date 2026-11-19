@@ -596,7 +596,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 19, 2026 PT · Parent page (preview)</div>
+  <div class="build">Updated Nov 19, 2026 PT · Slot Canyon light (preview)</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -3002,14 +3002,18 @@ function tone(f, d, type = 'square', v = 0.05, f2 = null, delay = 0) {
   g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
   o.connect(g).connect(a.destination); o.start(t); o.stop(t + d + 0.02);
 }
+function echoTone(f, d, type, v, f2 = null, delay = 0) {   // Slot Canyon echoes (L.echo): the sound comes back twice, softer
+  tone(f, d, type, v, f2, delay);
+  if (G && L && L.echo) { tone(f, d, type, v * 0.33, f2, delay + 0.17); tone(f, d, type, v * 0.12, f2, delay + 0.34); }
+}
 const sfx = {
-  jump: () => tone(330, 0.18, 'square', 0.035, 660),
+  jump: () => echoTone(330, 0.18, 'square', 0.035, 660),
   coin: () => { tone(880, 0.07, 'triangle', 0.06); tone(1175, 0.22, 'triangle', 0.06, null, 0.07); },
   bump: () => tone(140, 0.1, 'triangle', 0.08, 90),
   brick: () => tone(220, 0.2, 'sawtooth', 0.035, 60),
   stomp: () => tone(500, 0.12, 'square', 0.045, 150),
   hurt: () => tone(440, 0.4, 'sawtooth', 0.045, 110),
-  correct: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.16, 'square', 0.04, null, i * 0.08)),
+  correct: () => [523, 659, 784, 1047].forEach((f, i) => echoTone(f, 0.16, 'square', 0.04, null, i * 0.08)),
   wrong: () => { tone(220, 0.18, 'square', 0.045); tone(165, 0.3, 'square', 0.045, null, 0.18); },
   gate: () => tone(200, 0.6, 'triangle', 0.05, 800),
   throw: () => tone(1200, 0.15, 'sawtooth', 0.025, 300),
@@ -3418,7 +3422,7 @@ function shake(frames, amp) { if (!G) return; G.shakeAmp = G.shake > 0 ? Math.ma
 function gemSound() {
   G.chain = tick - G.lastGem < 45 ? G.chain + 1 : 0; G.lastGem = tick;
   const f = 880 * Math.pow(1.06, Math.min(G.chain, 12));
-  tone(f, 0.07, 'triangle', 0.06); tone(f * 1.335, 0.2, 'triangle', 0.06, null, 0.07);
+  echoTone(f, 0.07, 'triangle', 0.06); echoTone(f * 1.335, 0.2, 'triangle', 0.06, null, 0.07);
 }
 function flyGem(x, y, v, wait = 0) { G.flyers.push({ x: x - cam, y, v, t: -wait }); }
 // Right answers pay real gems: each one pops out where the answer was and flies into the gem counter.
@@ -6218,13 +6222,18 @@ function addFlavor(L) {
     // when Kai brushes past, and shafts of sunlight coming down into the slot canyon.
     case 'arches': spots(22, 6, 4).forEach(c => { add({ k: 'arch', x: X(c) + 2 * T }); L.coins.push({ x: X(c) + 2 * T, y: Y - 3.4 * T, v: 5, taken: false }); }); break;
     case 'cactus': spots(13, 5).filter((c, i) => i % 2 === 0).forEach(c => add({ k: 'cactus', x: X(c), fl: null })); break;
-    case 'sunbeams': spots(15, 7, 2).forEach(c => add({ k: 'beam', x: X(c), ph: rng() * 6 })); break;
+    case 'sunbeams': L.echo = true; spots(9, 7, 1).forEach((c, i) => add({ k: 'beam', x: X(c), ph: rng() * 6, s: 0.7 + rng() * 0.7, pour: i % 2 === 0 })); break;   // (owner: more light; sand pours through every other beam)
     case 'bats':
       spots(9, 4).forEach(c => add({ k: 'torch', x: X(c) }));
       spots(14, 7).forEach(c => [-14, 0, 14].forEach((d, i) => add({ k: 'bat', x: X(c) + d, y: Y - 5.2 * T + (i % 2) * 8, fly: false, vx: 0, vy: 0, t: i * 20 })));
       break;
   }
 }
+// Slot Canyon's beams of light (owner, Nov 2026: "very cool, more effects like this"): the centre and half width of a
+// beam at height y (it slants down to the left), and how bright it is now (it slowly brightens and fades, like clouds
+// passing over the rim).
+const beamAt = (f, y) => [f.x + 90 * (1 - y / (GR * T)), (20 + 20 * y / (GR * T)) * f.s];
+const beamBr = f => 0.72 + 0.28 * Math.sin(tick * 0.008 + f.ph * 3);
 function updateFlavor() {
   if (!L.flavor || !L.fl) return;
   const p = P, cx = p.x + p.w / 2, feet = p.y + p.h, Y = GR * T, near = (x, d) => Math.abs(cx - x) < d && Math.abs(x - cam - VW / 2) < VW;
@@ -6256,6 +6265,7 @@ function updateFlavor() {
     }
     if (f.k === 'fly') f.t++;
     if (f.k === 'shroom' && !f.lit && Math.abs(cx - f.x) < 20 && feet > Y - 30) { f.lit = true; tone(660 + Math.random() * 220, 0.3, 'sine', 0.05, 990); burst(f.x, Y - 16, '#5effd0', 8, 2); }   // touch to light up
+    if (f.k === 'beam') { const [bx, w] = beamAt(f, p.y + p.h / 2); if (Math.abs(cx - bx) < w) G.inBeam = true; }
     if (f.k === 'vent') {
       f.t = (f.t + 1) % 150; f.on = f.t > 100;
       if (f.on && tick % 3 === 0) G.parts.push({ k: 'bit', x: f.x + (Math.random() - 0.5) * 18, y: Y - 8, vx: (Math.random() - 0.5), vy: -6 - Math.random() * 3, life: 30, col: ['#8a8a8a', '#bbb', '#ff8a3a'][R(0, 2)], s: 6 });
@@ -6330,11 +6340,21 @@ function drawFlavorBack() {
   for (const f of L.fl) {
     if (!vis(f.x, f.k === 'belt' ? 260 : 140)) continue;
     if (f.k === 'arch') { rockArch(f.x, Y, 1.25); continue; }
-    if (f.k === 'beam') {   // a shaft of sunlight slanting down to the canyon floor, with a few drifting motes
-      const g = ctx.createLinearGradient(0, 0, 0, Y); g.addColorStop(0, 'rgba(255,240,200,.42)'); g.addColorStop(1, 'rgba(255,240,200,.08)');
-      ctx.fillStyle = g; poly([[f.x + 70, 0], [f.x + 110, 0], [f.x + 40, Y], [f.x - 40, Y]], g);
+    if (f.k === 'beam') {   // a shaft of sunlight slanting down to the canyon floor: the walls glow around it, dust motes drift in it, sand pours through some
+      const br = beamBr(f), [tx, tw] = beamAt(f, 0), [bx, bw] = beamAt(f, Y);
+      glowAt(f.x + 45, Y * 0.45, 210 * f.s, `rgba(255,140,60,${(0.16 * br).toFixed(3)})`);   // light bouncing off the striped walls
+      const g = ctx.createLinearGradient(0, 0, 0, Y); g.addColorStop(0, `rgba(255,240,200,${(0.46 * br).toFixed(3)})`); g.addColorStop(1, `rgba(255,240,200,${(0.1 * br).toFixed(3)})`);
+      poly([[tx - tw, 0], [tx + tw, 0], [bx + bw, Y], [bx - bw, Y]], g);
       ctx.fillStyle = 'rgba(255,250,225,.8)';
-      for (let i = 0; i < 5; i++) { const u = ((tick * 0.004 + i * 0.21 + f.ph) % 1), yy = u * Y; ctx.fillRect(Math.round(f.x + 90 - u * 90 + Math.sin(tick * 0.03 + i * 2) * 14), Math.round(yy), 3, 3); }
+      for (let i = 0; i < 8; i++) { const u = ((tick * 0.004 + i * 0.13 + f.ph) % 1), yy = u * Y, [cx, w] = beamAt(f, yy); ctx.fillRect(Math.round(cx + Math.sin(tick * 0.03 + i * 2) * w * 0.7), Math.round(yy), 3, 3); }
+      if (f.pour) {   // a thin stream of sand trickling from the rim, bright where it crosses the light
+        const sx = f.x + 30;
+        ctx.fillStyle = 'rgba(210,150,90,.3)'; ctx.fillRect(sx - 1, 0, 2, Y);
+        for (let i = 0; i < 32; i++) {
+          const yy = (tick * 2.4 + i * 21 + f.ph * 50) % Y, xx = sx + Math.sin(yy * 0.05 + i) * 1.5, [cx, w] = beamAt(f, yy);
+          ctx.fillStyle = Math.abs(xx - cx) < w ? 'rgba(255,244,210,1)' : 'rgba(210,150,90,.7)'; ctx.fillRect(Math.round(xx) - 1, Math.round(yy), 3, 4);
+        }
+      }
       continue;
     }
     if (f.k === 'tree') {
@@ -6433,6 +6453,11 @@ function drawFlavor() {
   for (const f of L.fl) {
     if (!vis(f.x)) continue;
     if (f.k === 'anem' || f.k === 'otter' || f.k === 'gjelly') { drawSeaFlavor(f, Y); continue; }
+    if (f.k === 'beam') {
+      ctx.fillStyle = `rgba(255,236,180,${(0.38 * beamBr(f)).toFixed(3)})`; ctx.beginPath(); ctx.ellipse(f.x, Y + 3, 46 * f.s, 7, 0, 0, 7); ctx.fill();
+      if (f.pour) { ctx.fillStyle = '#e8b070'; ctx.beginPath(); ctx.ellipse(f.x + 30, Y, 13, 6, 0, Math.PI, 0); ctx.fill(); }
+      continue;
+    }
     if (f.k === 'frog') {
       const sq = f.air ? -3 : Math.max(0, Math.sin(tick * 0.08 + f.x)) * 2;
       ctx.fillStyle = '#3fae49'; ctx.beginPath(); ctx.ellipse(f.x, f.y - 9 + sq / 2, 13, 9 - sq / 2, 0, 0, 7); ctx.fill();
@@ -6500,6 +6525,17 @@ function drawFlavor() {
 }
 // World space, in front of Kai: the closest bamboo.
 function drawFlavorFront() {
+  if (L.flavor === 'sunbeams' && G && P) {   // Kai glows warm in the light; gems in a beam twinkle
+    G.lit = clamp((G.lit || 0) + (G.inBeam ? 0.08 : -0.04), 0, 1); G.inBeam = false;
+    if (G.lit > 0) glowAt(P.x + P.w / 2, P.y + P.h / 2, 54, `rgba(255,200,110,${(0.22 * G.lit).toFixed(3)})`);
+    for (const f of L.fl) if (f.k === 'beam' && f.x > cam - 140 && f.x < cam + VW + 40) L.coins.forEach((c, i) => {
+      if (c.taken || Math.abs(c.x - f.x - 45) > 110) return;
+      const [bx, w] = beamAt(f, c.y); if (Math.abs(c.x - bx) > w || (tick + i * 13) % 50 > 8) return;
+      const s = 4 + ((tick + i * 13) % 50 < 4 ? (tick + i * 13) % 50 : 8 - (tick + i * 13) % 50) * 2;
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(c.x - s), Math.round(c.y - 14) - 1, s * 2, 2); ctx.fillRect(Math.round(c.x) - 1, Math.round(c.y - 14 - s), 2, s * 2);
+    });
+    return;
+  }
   if (L.flavor !== 'grove') return;
   ctx.globalAlpha = 0.85;
   for (const f of L.fl) if (f.k === 'stalk' && !f.back && f.x > cam - 60 && f.x < cam + VW + 60) drawStalk(f, '#3f7a22', '#2c5a16');

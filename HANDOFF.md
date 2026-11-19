@@ -80,3 +80,4 @@ Owner asked for a parent screen with its own link: how long each kid plays, a ti
   "rooms": { "$code": { ".read": "$code.matches(/^[A-Z0-9]{4}$/)", ".write": "$code.matches(/^[A-Z0-9]{4}$/)" } },
   "families": { "$fam": { ".read": "$fam.matches(/^[A-Z0-9]{8}$/)", ".write": "$fam.matches(/^[A-Z0-9]{8}$/)" } } } }
 ```
+- **Slot Canyon light (Nov 19, preview with the parent page):** more and livelier light beams, sand pouring through them, glowing walls, a warm patch on the sand, Kai glows in the light, gems twinkle in it, and a soft canyon echo. Owner picked these; skipped the birds.
