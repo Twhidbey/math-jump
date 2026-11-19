@@ -26,6 +26,7 @@ The detail lives in `docs/`, one file per area. **Open the file for the area you
 | `docs/friends.md` | The seven lost friends, rescue scenes, guards, treasures, friend powers | `FRIENDS`, `addFriend`, `startRescue`, `GUARD_STYLE`, `hasFriend` |
 | `docs/badges-gear.md` | Badges, the Gear Pack and gear powers, the shop, pixel icons, saves, music | `BADGES`, `GEAR`, `gearPowTick`, `SHOP`, `PIX`, `loadProg`, `SONGS` |
 | `docs/team.md` | Team play on two devices (Firebase rooms): team boss, team run, shared level, gates together, Shadow Twins and showdown, helping each other, staying in sync | `TEAM_DB`, `tmSync`, `tmRunTick`, `LAYOUT`, `tmGateTick`, `tmTwinTick`, `tmShowdownTick`, `tmFriendSync` |
+| `docs/parent.md` | The parent page (`parent.html`, its own link): play time, daily time limit, math level and suggestions; the game's reports | `famPush`, `famPull`, `famLeft`, `famStop`, `famMath`, `famSuggest` |
 
 `docs/HISTORY.md` holds the older "what was built" notes that used to be in `HANDOFF.md`.
 

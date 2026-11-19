@@ -596,7 +596,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 18, 2026 8:40 AM PT · Fix: quick-question bubbles never inside rocks</div>
+  <div class="build">Updated Nov 19, 2026 PT · Parent page (preview)</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -609,6 +609,7 @@
       <button class="btn alt" id="safeBtn" type="button">🛡️ Never get hurt: off</button>
       <button class="btn alt" id="unlockBtn" type="button">🔓 Unlock all levels</button>
       <button class="btn alt" id="playersBtn" type="button">👥 Players</button>
+      <button class="btn alt" id="famBtn" type="button">👪 Parent page</button>
       <button class="btn alt" id="storyBtn" type="button">📖 Read the story</button>
       <button class="btn alt" id="helpBtn" type="button">❓ How to play</button>
       <button class="btn alt" id="resetBtn" type="button">↺ Reset progress</button>
@@ -7517,6 +7518,7 @@ function updateAmbient() {
 }
 
 function finishLevel() {
+  if (typeof famPush === 'function') setTimeout(famPush, 500);   // the parent page: a fresh report after each level
   mode = 'done'; checkUpdate(true);   // quietly look for a new version (loaded on the next tap)
   const i = G.idx, st = STAGES[i], W = WORLDS[st.w];
   const dots = G.mistakes === 0 ? 3 : G.mistakes <= 2 ? 2 : 1, sk = G.skill, pts = dots * sk.tier;
@@ -7767,6 +7769,7 @@ function travelRace(w) {
   raceText(`Ride to ${WORLDS[w].name}!`, '#ffd23f');
 }
 function startRace(travel = null) {
+  if (typeof famStop === 'function' && famStop()) return;
   puff();
   hide('raceSetup');
   const topic = curSkill(), length = START_Z + GATES * GATE_GAP + 6000;
@@ -12082,6 +12085,7 @@ function showMsg(title, body, btns) {
 }
 
 function startStage(i) {
+  if (typeof famStop === 'function' && famStop()) return;   // the parent page's daily time limit
   if (team && team.run && i !== team.lvl) tmClose(true);   // went to another level: the team run is over
   if (!(team && team.run) && updateBeforeLeaving(i)) return;   // a new version came out during the last level: load it, then this level
   puff();
@@ -13469,7 +13473,8 @@ function tmListen() {
 function tmRelisten() { if (!team || !team.code) return; if (team.es) team.es.close(); team.sent = ''; team.busy = false; tmListen(); }
 document.addEventListener('visibilitychange', () => { if (!document.hidden && team && team.es) tmRelisten(); });
 window.addEventListener('online', () => { if (team && team.es) tmRelisten(); });
-async function tmHost(run) {   // run = true: a level run (the level picked in #tmLvl); 'share': the sharing screen; else a boss fight
+async function tmHost(run) {
+  if (famStop()) return;   // run = true: a level run (the level picked in #tmLvl); 'share': the sharing screen; else a boss fight
   audio(); $('tmHost').disabled = true; $('tmJoinBtn').disabled = true; hide('tmJoinBox'); hide('tmModeBox'); tmSay('Making a game...');
   try {
     const old = await fetch(`${TEAM_DB}/rooms.json`).then(r => r.json()).catch(() => null) || {};   // tidy up: rooms older than 3 hours
@@ -13481,6 +13486,7 @@ async function tmHost(run) {   // run = true: a level run (the level picked in #
   } catch (err) { tmClose(); tmSay('Could not start. Check the internet and try again.'); $('tmHost').disabled = false; $('tmJoinBtn').disabled = false; }
 }
 async function tmJoin() {
+  if (famStop()) return;
   audio();
   const code = $('tmIn').value.toUpperCase().replace(/[^A-Z0-9]/g, ''); if (code.length !== 4) { tmSay('The code has 4 letters.'); return; }
   tmSay('Looking for the game...');
@@ -14451,6 +14457,106 @@ function fetchStamp() {
   const get = hd => fetch(url, { cache: 'no-store', headers: hd }).then(r => (r.ok ? r.text() : '')).catch(() => '');
   return get({ Range: 'bytes=0-65535' }).then(h => pick(h) || get({}).then(pick));
 }
+// ---------------------------------------------------------------- the parent page (owner, Nov 2026)
+// parent.html (a separate link) shows each kid's play time, math level and suggestions, and can set a daily time limit.
+// A grown-up links this device once (Settings > Parent page, typing the family code from the parent page). Then the
+// game reports to families/<code>/kids/<kidId> in the team database: only numbers, the player's grade and picture,
+// never a name (the parent names each kid on their own phone). The limit comes from families/<code>/limits/<kidId>.
+// Time counts while the game is on screen and being played (any input in the last 2 minutes, or in a level).
+// When the limit is reached the kid finishes the level they're in; then "Time's up for today!" until tomorrow.
+const FAM_KEY = 'mathninja-family';
+let famCode = null; try { famCode = localStorage.getItem(FAM_KEY) || null; } catch (e) { /* no storage */ }
+const famUrl = p => `${TEAM_DB}/families/${famCode}${p}.json`;
+const dayStr = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const famKid = () => prog.kidId || (prog.kidId = Array.from({ length: 8 }, () => TEAM_ABC[R(0, TEAM_ABC.length - 1)]).join(''));
+let famInput = Date.now(), famTick = 0;
+['pointerdown', 'keydown', 'touchstart'].forEach(ev => window.addEventListener(ev, () => { famInput = Date.now(); }, { passive: true }));
+function famSecs(day = dayStr()) { return (prog.time || {})[day] || 0; }
+function famLeft() {   // seconds left today (Infinity: no limit)
+  const lm = prog.limit; if (!famCode || !lm || !lm.on) return Infinity;
+  const extra = lm.extra && lm.extra.day === dayStr() ? lm.extra.mins || 0 : 0;
+  return (lm.mins + extra) * 60 - famSecs();
+}
+function famMath() {   // what the parent page shows: grade, belt, each kind of math, tricky facts
+  const pl = curPlayer(), plan = trackPlan(), facts = Object.values(prog.facts || {});
+  const said = f => qSolved(f.q);
+  const tracks = plan ? plan.sts.map(x => ({ n: x.t.name, p: Math.round(x.frac * 100), now: x.done ? '' : SKILL[x.t.ids[x.f]].name, wait: !!x.waiting, lock: !!x.locked })) : [];
+  const weak = facts.filter(f => f.weak).sort((a, b) => b.miss - a.miss || b.last - a.last).slice(0, 8).map(said);
+  const slow = facts.filter(f => !f.weak && f.practice).sort((a, b) => b.last - a.last).slice(0, 8).map(said);
+  const sk = SKILL[prog.skill], kp = sk ? skillProgress(sk) : null;
+  return { grade: plan ? GRADES[plan.gi].name : GRADE[pl.grade] ? GRADE[pl.grade].name : '', skill: sk ? sk.name : '', skillP: kp ? Math.round(kp.learned / Math.max(1, kp.n) * 100) : 0,
+    belt: currentBelt().name, tracks, weak, slow, gold: facts.filter(f => f.days && f.days.length >= 2 && !f.weak).length, levels: Object.keys(prog.best || {}).length, auto: !!prog.auto };
+}
+function famSuggest(m) {   // a few plain sentences for the parent
+  const out = [];
+  if (!m.grade) out.push('No grade is set for this player. In the game, tap their picture and pick a grade so the game can plan their math.');
+  if (m.weak.length) out.push(`Still tricky: ${m.weak.slice(0, 3).join(', ')}. The game brings these back on its own; a minute with flash cards helps too.`);
+  if (m.slow.length) out.push(`Gets these right but slowly (probably counting): ${m.slow.slice(0, 3).join(', ')}. Quick practice helps them stick.`);
+  const open = m.tracks.filter(t => t.now && !t.lock);
+  const hi = Math.max(0, ...open.map(t => t.p));
+  if (!m.levels && !m.weak.length) out.push('Just getting started. After a few levels this page shows what to practise.');
+  else if (open.length > 1 && hi >= 15) { const lo = open.reduce((a, b) => (b.p < a.p ? b : a)); if (hi - lo.p >= 15) out.push(`${lo.n} is furthest behind (${lo.p}%). Now working on: ${lo.now}.`); }
+  const wait = m.tracks.filter(t => t.wait);
+  if (wait.length) out.push(`${wait.map(t => t.n).join(' and ')}: learned, needs one more good day to pass. Playing again tomorrow moves it on.`);
+  if (m.tracks.length && m.tracks.every(t => !t.now)) out.push(`Finished all of ${m.grade} math! The game moves on to the next grade by itself.`);
+  if (!m.auto) out.push('Auto mode is off, so the math stays the same. Turning it on (the math button on the home screen) lets the game move up by itself.');
+  return out.slice(0, 4);
+}
+function famPush(keep) {   // send this player's report
+  if (!famCode) return;
+  const days = {}; for (let i = 0; i < 7; i++) { const d = new Date(); d.setDate(d.getDate() - i); const k = dayStr(d); days[k] = famSecs(k); }
+  const pl = curPlayer(), m = famMath(), where = mode === 'play' && G && STAGES[G.idx] ? (STAGES[G.idx].boss ? `${WORLDS[STAGES[G.idx].w].boss.name}` : STAGES[G.idx].name) : mode === 'race' ? 'a race' : '';
+  if (!playerIconURL[pl.icon]) playerIcon(pl.icon);
+  const body = { pic: playerIconURL[pl.icon] || '', grade: pl.grade || '', seen: { '.sv': 'timestamp' }, where, days, math: m, sugg: famSuggest(m), v: 1 };
+  fetch(famUrl(`/kids/${famKid()}`), { method: 'PATCH', body: JSON.stringify(body), keepalive: !!keep }).catch(() => {});
+}
+async function famPull() {   // the time limit for this player
+  if (!famCode) return;
+  try { const lm = await fetch(famUrl(`/limits/${famKid()}`)).then(r => r.json()); prog.limit = lm && typeof lm.mins === 'number' ? lm : null; save(); } catch (e) { /* offline: keep the last one */ }
+}
+function famTimeUp() {
+  const pl = curPlayer();
+  hide('menu');
+  showMsg("Time's up for today!", `<p>${playerIcon(pl.icon)}</p><p>Great work today, ${pl.name}! Come back tomorrow.</p>`, [
+    { label: 'Check again', fn: async () => { await famPull(); if (famLeft() > 0) toMenu(); else famTimeUp(); }, primary: true },
+    { label: 'Switch player', fn: () => { hide('msg'); showPlayers(); }, alt: true },
+  ]);
+}
+function famStop() { if (famLeft() > 0) return false; famTimeUp(); return true; }   // at the start of a level, race or team game
+setInterval(() => {   // once a second
+  if (!prog || document.hidden) return;
+  const playing = mode === 'play' || mode === 'race', active = playing || Date.now() - famInput < 120000;
+  if (!active) return;
+  const d = dayStr(); prog.time = prog.time || {}; prog.time[d] = (prog.time[d] || 0) + 1;
+  if (++famTick % 15 === 0) { for (const k of Object.keys(prog.time)) if (k < dayStr(new Date(Date.now() - 14 * 864e5))) delete prog.time[k]; save(); }
+  if (!famCode) return;
+  if (famTick % 60 === 0) { famPush(); famPull(); }
+  const left = famLeft();
+  if (left === 300 && playing && G && P) floatText(P.x + P.w / 2, P.y - 60, '5 minutes left today!', '#ffd23f', 24);
+  if (left === 0 && playing && G && P) floatText(P.x + P.w / 2, P.y - 60, "Time's up! Finish this level.", '#ffd23f', 24);
+  if (left <= 0 && mode === 'menu' && !$('menu').classList.contains('hidden')) famTimeUp();
+}, 1000);
+document.addEventListener('visibilitychange', () => { if (!famCode) return; if (document.hidden) famPush(true); else { famPull().then(() => { if (famLeft() <= 0 && mode === 'menu') famTimeUp(); }); famPush(); } });
+async function famLink() {
+  if (famCode) {
+    const c = (prompt('This game sends play time and math progress to a parent page. To unlink it, type the family code:') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (!c) return;
+    if (c !== famCode) { alert("That's not the family code."); return; }
+    try { localStorage.removeItem(FAM_KEY); } catch (e) { /* no storage */ }
+    famCode = null; prog.limit = null; save(); famBtnSync(); alert('Unlinked.'); return;
+  }
+  const c = (prompt('Grown-ups: type the family code from the parent page (math-jump/parent.html).') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!c) return;
+  if (!/^[A-Z0-9]{8}$/.test(c)) { alert('A family code has 8 letters and numbers.'); return; }
+  let made = null; try { made = await fetch(`${TEAM_DB}/families/${c}/made.json`).then(r => r.json()); } catch (e) { alert("Couldn't reach the parent page. Check the internet and try again."); return; }
+  if (!made) { alert("That family code wasn't found."); return; }
+  famCode = c; try { localStorage.setItem(FAM_KEY, c); } catch (e) { /* no storage */ }
+  famPush(); await famPull(); famBtnSync(); alert('Linked! This game now reports to the parent page.');
+}
+function famBtnSync() { $('famBtn').textContent = famCode ? '👪 Parent page: linked' : '👪 Parent page'; }
+$('famBtn').onclick = () => { audio(); famLink(); };
+famBtnSync();
+if (famCode) { famPull().then(() => { if (famLeft() <= 0 && mode === 'menu') famTimeUp(); }); setTimeout(famPush, 3000); }
 function checkUpdate(later) {
   if (!/^https?:/.test(location.protocol) || (!later && mode !== 'menu')) return;
   const here = (document.querySelector('.build') || {}).textContent || '';

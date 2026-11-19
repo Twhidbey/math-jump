@@ -71,3 +71,12 @@ Each gets a secret room in a level that has none yet (3 math walls + chest) and 
 - **Stepping stones: no more counting by 1s** (owner, Nov 16: too easy even for K). Kindergarten math now counts by 2s (most often), 5s or 10s.
 - **Desert, more (Nov 16; live Nov 18):** owner picked the raft, a lost friend and a tuning pass. **Suna** (owner chose name, cliff house, roadrunner power): a ladder up to her adobe house on a rock in Arch Canyon, coyote-bandit guard, slingshot rescue (TRIPLE SHOT!), and the **Roadrunner ride** (button / F: Kai is pulled along ~12 tiles, works once in the other two desert levels too). **Slot Canyon raft ride** replaces its swing: three river gates, right = fast water, wrong = shows the answer and slow water, never a heart. Tuning: quicksand a little less slow; enemy counts and lengths checked against the other worlds (in line). Kept as review math (owner chose).
 - **Fix (Nov 18, live):** a math ? box's answer bubbles could land inside a pillar (owner saw one stuck in a red rock tower in Arch Canyon). Now they skip solid spots (see `docs/crossings.md`).
+
+## Built Nov 19: the parent page (NOT LIVE YET, owner to try it first)
+
+Owner asked for a parent screen with its own link: how long each kid plays, a time-limit toggle, their math level and suggestions. Owner chose: finish the level, then stop; a parent PIN. See `docs/parent.md`. Only time inside the game is seen (said so to the owner). **Database rules** (test mode ends ~Dec 14 2026; the owner was told; this combined version covers team rooms and families):
+```
+{ "rules": { ".read": false, ".write": false,
+  "rooms": { "$code": { ".read": "$code.matches(/^[A-Z0-9]{4}$/)", ".write": "$code.matches(/^[A-Z0-9]{4}$/)" } },
+  "families": { "$fam": { ".read": "$fam.matches(/^[A-Z0-9]{8}$/)", ".write": "$fam.matches(/^[A-Z0-9]{8}$/)" } } } }
+```

@@ -1,0 +1,19 @@
+# Math Ninja notes: the parent page
+
+Part of the code notes; `CLAUDE.md` has the index. Search `index.html` / `parent.html` for the names in backticks.
+
+## What it is (owner, Nov 2026)
+
+`parent.html` is a separate page (its own link, not linked from the game): each kid's play time (today, last 7 days, playing now), a daily time limit per kid, their math level and plain suggestions. Owner chose: when time runs out the kid finishes the level they're in, then "Time's up for today!"; a 4-digit parent PIN.
+
+## Data (the team database, `TEAM_DB`)
+
+`families/<8-char code>`: `made` (server time), `kids/<kidId>` (the game's report), `limits/<kidId>` (`{on, mins, extra: {day, mins}}`, written by the parent page). Only numbers, the grade, the player's picture (a small PNG data URL) and plain-text facts/suggestions are sent: **never a name**. The parent names each kid on their own phone (`mathninja-parent` in localStorage: `fam`, `pin`, `names`). The PIN is only on that phone; "Forgot the PIN?" asks for the family code. The database rules must allow `families/$fam` (8 letters/numbers) next to `rooms/$code`; the rules text is in `HANDOFF.md`.
+
+## In the game
+
+At the end of the script, above `checkUpdate`: `FAM_KEY` (`mathninja-family`, the device's family code), `famKid` (`prog.kidId`, random, per player), the 1-second timer (counts `prog.time[YYYY-MM-DD]` while the page is visible and the kid is in a level/race or touched something in the last 2 minutes; keeps 14 days), `famPush` (every 60 s, after each level, when the app goes to the background), `famPull` (the limit, every 60 s and when the app comes back), `famLeft`, `famStop` (at the top of `startStage`, `startRace`, `tmHost`, `tmJoin`), `famTimeUp` (the card: Check again / Switch player), `famMath` (grade from `trackPlan`, belt, each grade track's %, current skill, weak facts, right-but-slow facts), `famSuggest` (up to 4 sentences). "5 minutes left today!" and "Time's up! Finish this level." float over Kai. Settings > `famBtn` "Parent page" links the device (type the family code; checked against `made`); unlinking needs the code too. Nothing happens on a device that isn't linked.
+
+## Honest limits
+
+It only sees time inside Math Ninja (not the whole device; that's Apple Screen Time). Clearing the browser's data or using another browser gets around it. Anyone who knows a family code could read or change that family's data (no names in it).
