@@ -81,3 +81,4 @@ Owner asked for a parent screen with its own link: how long each kid plays, a ti
   "families": { "$fam": { ".read": "$fam.matches(/^[A-Z0-9]{8}$/)", ".write": "$fam.matches(/^[A-Z0-9]{8}$/)" } } } }
 ```
 - **Slot Canyon light (Nov 19, preview with the parent page):** more and livelier light beams, sand pouring through them, glowing walls, a warm patch on the sand, Kai glows in the light, gems twinkle in it, and a soft canyon echo. Owner picked these; skipped the birds.
+- **Number tiles for young players (Nov 19, live):** a K kid wanted Master of 8s. K and 1st-grade players now see number tiles: Master of 8 = every way to make 8 and take away from 8, gold. Same badges and prizes. Every tile has Practice and Pick a level (pick any level on the map to play those facts). See `docs/badges-gear.md`.
