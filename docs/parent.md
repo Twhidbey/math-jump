@@ -8,7 +8,7 @@ Part of the code notes; `CLAUDE.md` has the index. Search `index.html` / `parent
 
 ## Data (the team database, `TEAM_DB`)
 
-`families/<8-char code>`: `made` (server time), `kids/<kidId>` (the game's report), `limits/<kidId>` (`{on, mins, extra: {day, mins}}`, written by the parent page). Only numbers, the grade, the player's picture (a small PNG data URL) and plain-text facts/suggestions are sent: **never a name**. The parent names each kid on their own phone (`mathninja-parent` in localStorage: `fam`, `pin`, `names`). The PIN is only on that phone; "Forgot the PIN?" asks for the family code. The database rules must allow `families/$fam` (8 letters/numbers) next to `rooms/$code`; the rules text is in `HANDOFF.md`.
+`families/<8-char code>`: `made` (server time), `kids/<kidId>` (the game's report), `limits/<kidId>` (`{on, mins, extra: {day, mins}}`, written by the parent page). Only numbers, the grade, the player's picture (a small PNG data URL) and plain-text facts/suggestions are sent: **never a name**. The parent names each kid on their own phone (`mathninja-parent` in localStorage: `fam`, `pin`, `names`). The PIN is only on that phone; "Forgot the PIN?" asks for the family code. The database rules allow `families/$fam` (8 letters/numbers) next to `rooms/$code` and deny everything else; the owner pasted them on Nov 20 2026 (text in `HANDOFF.md`). Any new path the game writes needs a rules change first.
 
 ## In the game
 
