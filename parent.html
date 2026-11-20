@@ -152,16 +152,25 @@
       <h3>Lost friends rescued</h3><div>${(d.friends || []).map(esc).join(', ') || '<span class="muted">None yet</span>'}</div></div>`;
   }
 
-  function setup() {   // no family yet: make one, or join one made on another phone
+  const useFam = c => { st.fam = c; st.fams = [...new Set([c, ...(st.fams || [])])].slice(0, 8); data = null; keep(); msg = ''; switching = false; route(); };
+  let switching = false;
+  function setup() {   // no family yet (or switching): make one, use one made on another phone, or go back to one used here before
+    const others = (st.fams || []).filter(c => c !== st.fam);
     app.innerHTML = `<h1>Math Ninja · Parent page</h1>
-      <div class="card"><h2>Set up</h2>
-        <p>See how long your kids play, set a daily time limit, and see how their math is going.</p>
-        <div class="row"><button class="btn" id="make">Make a family code</button></div>
-        <h3>Already made one on another phone?</h3>
+      <div class="card"><h2>${switching ? 'Switch family' : 'Set up'}</h2>
+        ${switching ? `<p>Now: <b class="code" style="font-size:22px">${esc(st.fam)}</b></p>` : '<p>See how long your kids play, set a daily time limit, and see how their math is going.</p>'}
+        ${others.length ? `<h3>Used on this phone before</h3><div class="chips">${others.map(c => `<button class="chip" data-fam="${esc(c)}">${esc(c)}</button>`).join('')}</div>` : ''}
+        <h3>${switching ? 'Another family code' : 'Already made one on another phone?'}</h3>
         <input id="have" maxlength="8" placeholder="Family code" autocomplete="off">
         <div class="row"><button class="btn alt" id="join">Use this code</button></div>
+        <h3>${switching ? 'Or start over' : 'New here?'}</h3>
+        <div class="row"><button class="btn" id="make">Make a new family code</button></div>
+        ${switching ? '<p class="muted">A new family starts empty: link each kid\'s game to it (Settings → Parent page).</p><div class="row"><button class="btn alt" id="back">Back</button></div>' : ''}
         <p class="err">${esc(msg)}</p></div>`;
+    app.querySelectorAll('[data-fam]').forEach(b => b.onclick = () => useFam(b.dataset.fam));
+    const back = document.getElementById('back'); if (back) back.onclick = () => { switching = false; msg = ''; route(); };
     document.getElementById('make').onclick = async () => {
+      if (switching && !confirm('Make a brand-new, empty family?')) return;
       let code;
       for (let i = 0; i < 5; i++) {
         code = Array.from({ length: 8 }, () => ABC[Math.floor(Math.random() * ABC.length)]).join('');
@@ -171,14 +180,14 @@
       }
       const ok = await fetch(`${DB}/families/${code}/made.json`, { method: 'PUT', body: JSON.stringify({ '.sv': 'timestamp' }) }).then(r => r.ok).catch(() => false);
       if (!ok) { msg = "Couldn't make the code. Try again."; return setup(); }
-      st.fam = code; keep(); msg = ''; route();
+      useFam(code);
     };
     document.getElementById('join').onclick = async () => {
       const c = document.getElementById('have').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
       if (!/^[A-Z0-9]{8}$/.test(c)) { msg = 'A family code has 8 letters and numbers.'; return setup(); }
       const made = await fetch(`${DB}/families/${c}/made.json`).then(r => r.json()).catch(() => null);
       if (!made) { msg = "That code wasn't found."; return setup(); }
-      st.fam = c; keep(); msg = ''; route();
+      useFam(c);
     };
   }
 
@@ -271,7 +280,8 @@
         <p>On each kid's iPhone or iPad, open Math Ninja, then <b>Settings → Parent page</b>, and type this code:</p>
         <div class="code">${esc(st.fam)}</div>
         <p class="muted">Once linked, switching or adding players in the game needs your parent PIN. Each player on that device shows up here after they play for a minute. Only play time, math and their picture are sent; names stay on this phone.</p></div>
-      <div class="row"><button class="linkish" id="lock">Lock this page</button></div>`;
+      <div class="row"><button class="btn small alt" id="switchFam">Switch family</button><button class="linkish" id="lock">Lock this page</button></div>`;
+    document.getElementById('switchFam').onclick = () => { switching = true; msg = ''; clearInterval(timer); setup(); };
     const all = async stop => {
       for (const [id] of kids) { const v = { on: false, mins: 30, ...(limits[id] || {}) }; if (stop) v.stop = dayStr(); else delete v.stop; limits[id] = v; }
       data.limits = limits; render();
@@ -317,6 +327,7 @@
   }
   function route() {
     clearInterval(timer);
+    if (st.fam && !(st.fams || []).includes(st.fam)) { st.fams = [st.fam, ...(st.fams || [])]; keep(); }
     if (!st.fam) return setup();
     if (!st.pin) return pinScreen(true);
     if (!unlocked) return pinScreen(false);

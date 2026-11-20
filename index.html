@@ -597,7 +597,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 20, 2026 5:18 PM PT · Linked devices: parent PIN to switch or add players</div>
+  <div class="build">Updated Nov 20, 2026 5:31 PM PT · Parent page: switch families</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -14658,22 +14658,33 @@ setInterval(() => {   // once a second
   if (left <= 0 && mode === 'menu' && !$('menu').classList.contains('hidden')) famTimeUp();
 }, 1000);
 document.addEventListener('visibilitychange', () => { if (!famCode) return; if (document.hidden) famPush(true); else { famPull().then(() => { if (famLeft() <= 0 && mode === 'menu') famTimeUp(); }); famPush(); } });
-async function famLink() {
-  if (famCode) {
-    const c = (prompt('This game sends play time and math progress to a parent page. To unlink it, type the family code:') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-    if (!c) return;
-    if (c !== famCode) { alert("That's not the family code."); return; }
-    try { localStorage.removeItem(FAM_KEY); } catch (e) { /* no storage */ }
-    try { localStorage.removeItem(FAM_PIN_KEY); } catch (e) { /* no storage */ }
-    famCode = null; prog.limit = null; save(); famBtnSync(); alert('Unlinked.'); return;
-  }
+async function famLinkNew() {   // link this device to a family (a new one, or another one)
   const c = (prompt('Grown-ups: type the family code from the parent page (math-jump/parent.html).') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (!c) return;
   if (!/^[A-Z0-9]{8}$/.test(c)) { alert('A family code has 8 letters and numbers.'); return; }
   let made = null; try { made = await fetch(`${TEAM_DB}/families/${c}/made.json`).then(r => r.json()); } catch (e) { alert("Couldn't reach the parent page. Check the internet and try again."); return; }
   if (!made) { alert("That family code wasn't found."); return; }
-  famCode = c; try { localStorage.setItem(FAM_KEY, c); } catch (e) { /* no storage */ }
+  famCode = c; prog.limit = null; save();
+  try { localStorage.setItem(FAM_KEY, c); localStorage.removeItem(FAM_PIN_KEY); } catch (e) { /* no storage */ }
   famPush(); famPushDetail(); await famPull(); famBtnSync(); alert('Linked! This game now reports to the parent page.');
+}
+async function famLink() {
+  if (!famCode) { famLinkNew(); return; }
+  // Linked already: a grown-up (parent PIN, or the family code) can link it to another family or unlink it (owner, Nov 2026)
+  let h = null; try { h = localStorage.getItem(FAM_PIN_KEY); } catch (e) { /* no storage */ }
+  const typed = prompt('This game reports to a parent page. Grown-ups: type your parent PIN (or the family code) to change it.');
+  if (!typed) return;
+  let ok = typed.toUpperCase().replace(/[^A-Z0-9]/g, '') === famCode;
+  if (!ok && h) { try { ok = (await famSha(`mn:${famCode}:${typed.trim()}`)) === h; } catch (e) { ok = false; } }
+  if (!ok) { alert("That's not the parent PIN or the family code."); return; }
+  hide('settings');
+  showMsg('Parent page', '<p>This game reports play time and math to a parent page.</p>', [
+    { label: 'Link to another family', fn: () => { hide('msg'); show('settings'); famLinkNew(); }, primary: true },
+    { label: 'Unlink', fn: () => {
+      try { localStorage.removeItem(FAM_KEY); localStorage.removeItem(FAM_PIN_KEY); } catch (e) { /* no storage */ }
+      famCode = null; prog.limit = null; save(); famBtnSync(); hide('msg'); show('settings'); alert('Unlinked.');
+    } },
+    { label: 'Back', fn: () => { hide('msg'); show('settings'); }, alt: true }]);
 }
 function famBtnSync() { $('famBtn').textContent = famCode ? '👪 Parent page: linked' : '👪 Parent page'; }
 $('famBtn').onclick = () => { audio(); famLink(); };

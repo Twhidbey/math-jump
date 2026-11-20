@@ -29,3 +29,7 @@ The game also sends `families/<code>/detail/<kidId>` after each level, when link
 ## Parent PIN on the kids' devices (owner, Nov 20 2026: switching player got around the time limit)
 
 On a linked device, switching to another player, adding one, or opening Edit (change / delete / move) asks for the parent PIN (`famAsk`, from the Players screen in `showPlayers`). The parent page saves `sha256('mn:<code>:<pin>')` at `families/<code>/pin` (`sendPin`, once per family, again after a new PIN); the game caches it in `mathninja-family-pin` (refreshed by `famPull`). Before the parent page has sent a PIN, the family code works instead. The prompt is asked first (still inside the tap, for iPhone) and checked after. Unlinked devices are unchanged.
+
+## Switching families (owner, Nov 20 2026, after losing a code)
+
+Parent page: **Switch family** (bottom) opens `setup()` in switching mode: the families used on this phone before (`st.fams`, up to 8, tap to go back), another code, or a new empty family (asks first). The PIN stays the same and is sent to the new family (`sendPin`). In the game, Settings > Parent page on a linked device asks for the parent PIN or the family code (`famLink`), then offers **Link to another family** (`famLinkNew`: the same kid id moves over, its limit is cleared until the new family sets one) or **Unlink**. Lost code: the Firebase console's Data tab shows `families/<code>` (the owner can see it; the rules hide the list from everyone else).
