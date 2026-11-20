@@ -17,3 +17,7 @@ At the end of the script, above `checkUpdate`: `FAM_KEY` (`mathninja-family`, th
 ## Honest limits
 
 It only sees time inside Math Ninja (not the whole device; that's Apple Screen Time). Clearing the browser's data or using another browser gets around it. Anyone who knows a family code could read or change that family's data (no names in it).
+
+## Stop after this level (owner, Nov 20 2026)
+
+Parent page: a red **Stop after this level** button on each kid (and **Stop everyone after this level** at the top when there's more than one) writes `stop: <today>` into `limits/<kidId>`; **Let them play** removes it. In the game `famStopped()` makes `famLeft()` 0 for today only (it clears by itself the next day): the kid finishes the level they're in ("Last level! Finish this one."), then the card says "Time to stop! Great work today, Sam! See you next time." (Check again / Switch player). The game asks for the limit every 20 s.

@@ -597,7 +597,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 19, 2026 3:58 PM PT · Parent page and Slot Canyon light</div>
+  <div class="build">Updated Nov 20, 2026 4:18 PM PT · Parent page: Stop after this level</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -14536,7 +14536,9 @@ const famKid = () => prog.kidId || (prog.kidId = Array.from({ length: 8 }, () =>
 let famInput = Date.now(), famTick = 0;
 ['pointerdown', 'keydown', 'touchstart'].forEach(ev => window.addEventListener(ev, () => { famInput = Date.now(); }, { passive: true }));
 function famSecs(day = dayStr()) { return (prog.time || {})[day] || 0; }
+const famStopped = () => !!(famCode && prog.limit && prog.limit.stop === dayStr());   // the parent page's "Stop after this level" (until tomorrow, or until they let them play)
 function famLeft() {   // seconds left today (Infinity: no limit)
+  if (famStopped()) return 0;
   const lm = prog.limit; if (!famCode || !lm || !lm.on) return Infinity;
   const extra = lm.extra && lm.extra.day === dayStr() ? lm.extra.mins || 0 : 0;
   return (lm.mins + extra) * 60 - famSecs();
@@ -14581,7 +14583,7 @@ async function famPull() {   // the time limit for this player
 function famTimeUp() {
   const pl = curPlayer();
   hide('menu');
-  showMsg("Time's up for today!", `<p>${playerIcon(pl.icon)}</p><p>Great work today, ${pl.name}! Come back tomorrow.</p>`, [
+  showMsg(famStopped() ? 'Time to stop!' : "Time's up for today!", `<p>${playerIcon(pl.icon)}</p><p>Great work today, ${pl.name}! ${famStopped() ? 'See you next time.' : 'Come back tomorrow.'}</p>`, [
     { label: 'Check again', fn: async () => { await famPull(); if (famLeft() > 0) toMenu(); else famTimeUp(); }, primary: true },
     { label: 'Switch player', fn: () => { hide('msg'); showPlayers(); }, alt: true },
   ]);
@@ -14594,10 +14596,11 @@ setInterval(() => {   // once a second
   const d = dayStr(); prog.time = prog.time || {}; prog.time[d] = (prog.time[d] || 0) + 1;
   if (++famTick % 15 === 0) { for (const k of Object.keys(prog.time)) if (k < dayStr(new Date(Date.now() - 14 * 864e5))) delete prog.time[k]; save(); }
   if (!famCode) return;
-  if (famTick % 60 === 0) { famPush(); famPull(); }
+  if (famTick % 60 === 0) famPush();
+  if (famTick % 20 === 0) famPull();   // (often, so "Stop after this level" gets here quickly)
   const left = famLeft();
-  if (left === 300 && playing && G && P) floatText(P.x + P.w / 2, P.y - 60, '5 minutes left today!', '#ffd23f', 24);
-  if (left === 0 && playing && G && P) floatText(P.x + P.w / 2, P.y - 60, "Time's up! Finish this level.", '#ffd23f', 24);
+  if (left === 300 && playing && G && P) floatText(cam + VW / 2, P.y - 60, '5 minutes left today!', '#ffd23f', 24);
+  if (left <= 0 && playing && G && P && !G.upTold) { G.upTold = true; floatText(cam + VW / 2, P.y - 60, famStopped() ? 'Last level! Finish this one.' : "Time's up! Finish this level.", '#ffd23f', 26); }
   if (left <= 0 && mode === 'menu' && !$('menu').classList.contains('hidden')) famTimeUp();
 }, 1000);
 document.addEventListener('visibilitychange', () => { if (!famCode) return; if (document.hidden) famPush(true); else { famPull().then(() => { if (famLeft() <= 0 && mode === 'menu') famTimeUp(); }); famPush(); } });

@@ -25,6 +25,7 @@
   .btn { font: 18px "Lilita One", "Trebuchet MS", sans-serif; border: 0; border-radius: 12px; padding: 10px 16px; background: #ffd23f; color: #2a1a00; cursor: pointer; }
   .btn.alt { background: #3a3a6e; color: #fff; }
   .btn.small { font-size: 15px; padding: 7px 12px; }
+  .btn.stop { background: #ff6b6b; color: #fff; }
   .btn:disabled { opacity: .45; }
   input { font: 800 22px Nunito, sans-serif; padding: 10px 12px; border-radius: 12px; border: 2px solid #4a4a86; background: #14142b; color: #fff; width: 100%; letter-spacing: 2px; text-transform: uppercase; }
   .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
@@ -161,13 +162,14 @@
     const live = k.seen && Date.now() - k.seen < 150000;
     const pic = typeof k.pic === 'string' && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(k.pic) ? k.pic : '';
     const on = !!(lm && lm.on), lmins = lm && lm.mins || 30, extra = lm && lm.extra && lm.extra.day === dayStr() ? lm.extra.mins || 0 : 0;
-    const left = on ? (lmins + extra) * 60 - today : null;
+    const left = on ? (lmins + extra) * 60 - today : null, stopped = !!(lm && lm.stop === dayStr());
     const tracks = (m.tracks || []).map(t => `<div class="trk"><span>${esc(t.n)}</span><span class="bar"><b style="width:${Math.max(0, Math.min(100, +t.p || 0))}%"></b></span><span>${+t.p || 0}%</span>
       <small>${t.now ? `Now: ${esc(t.now)}${t.wait ? ' (needs one more good day)' : ''}${t.lock ? ' (comes later)' : ''}` : 'Done!'}</small></div>`).join('');
     return `<div class="card" data-kid="${esc(id)}">
       <div class="kidhead">${pic ? `<img src="${pic}" alt="">` : ''}<div class="nm"><h2>${esc(name)}</h2>
         <div class="muted"><span class="dot ${live ? 'on' : ''}"></span>${live ? (k.where ? `Playing now: ${esc(k.where)}` : 'In the game now') : k.seen ? `Last played ${ago(k.seen)}` : 'Not played yet'}</div></div>
         <button class="linkish" data-act="name">${st.names[id] ? 'Rename' : 'Name'}</button></div>
+      <div class="row">${stopped ? `<span class="left out">Stopped: the game ends after this level</span><button class="btn small alt" data-act="go">Let them play</button>` : '<button class="btn small stop" data-act="stop">Stop after this level</button>'}</div>
       <h3>Play time</h3>
       <div><b>Today: ${mins(today)}</b> <span class="muted">· this week ${mins(Object.entries(k.days || {}).reduce((a, [, s]) => a + (+s || 0), 0))}</span></div>
       ${weekHTML(k.days)}
@@ -190,13 +192,22 @@
 
   function render() {
     const kids = Object.entries((data && data.kids) || {}).sort((a, b) => (b[1].seen || 0) - (a[1].seen || 0)), limits = (data && data.limits) || {};
+    const anyOn = kids.some(([id]) => !(limits[id] && limits[id].stop === dayStr()));
     app.innerHTML = `<h1>Math Ninja · Parent page</h1>
+      ${kids.length > 1 ? `<div class="row">${anyOn ? '<button class="btn stop" id="stopAll">Stop everyone after this level</button>' : '<button class="btn alt" id="goAll">Let everyone play</button>'}</div>` : ''}
       ${kids.map(([id, k]) => kidHTML(id, k, limits[id])).join('')}
       <div class="card"><h2>Add a device</h2>
         <p>On each kid's iPhone or iPad, open Math Ninja, then <b>Settings → Parent page</b>, and type this code:</p>
         <div class="code">${esc(st.fam)}</div>
         <p class="muted">Each player on that device shows up here after they play for a minute. Only play time, math and their picture are sent; names stay on this phone.</p></div>
       <div class="row"><button class="linkish" id="lock">Lock this page</button></div>`;
+    const all = async stop => {
+      for (const [id] of kids) { const v = { on: false, mins: 30, ...(limits[id] || {}) }; if (stop) v.stop = dayStr(); else delete v.stop; limits[id] = v; }
+      data.limits = limits; render();
+      await Promise.all(kids.map(([id]) => fetch(url(`/limits/${id}`), { method: 'PUT', body: JSON.stringify(limits[id]) }))).catch(() => alert("Couldn't save. Check the internet."));
+    };
+    if (document.getElementById('stopAll')) document.getElementById('stopAll').onclick = () => all(true);
+    if (document.getElementById('goAll')) document.getElementById('goAll').onclick = () => all(false);
     document.getElementById('lock').onclick = () => { unlocked = false; sessionStorage.removeItem('mn-parent-ok'); route(); };
     app.querySelectorAll('[data-kid]').forEach(card => {
       const id = card.dataset.kid, lm = { on: false, mins: 30, ...(limits[id] || {}) };
@@ -205,6 +216,8 @@
         const act = b.dataset.act;
         if (act === 'name') { const n = prompt("This player's name (only kept on this phone):", st.names[id] || ''); if (n != null) { st.names[id] = n.trim().slice(0, 20); keep(); render(); } }
         if (act === 'limit') put({ ...lm, on: !lm.on });
+        if (act === 'stop') put({ ...lm, stop: dayStr() });
+        if (act === 'go') { const v = { ...lm }; delete v.stop; put(v); }
         if (act === 'mins') put({ ...lm, on: true, mins: +b.dataset.n });
         if (act === 'extra') { const ex = lm.extra && lm.extra.day === dayStr() ? lm.extra.mins || 0 : 0; put({ ...lm, extra: { day: dayStr(), mins: ex + 15 } }); }
         if (act === 'remove' && confirm('Remove this player from the page? (If they play again on a linked device, they come back.)')) {

@@ -85,3 +85,4 @@ Owner asked for a parent screen with its own link: how long each kid plays, a ti
 - **Shop: badge prizes have buttons (Nov 19, live):** a locked prize like the Little octopus shows "3 / 11 gold" with Practice and Pick a level (or See the badge for other badges).
 - **Shop cards small again (Nov 19, live):** owner wanted the badge-prize cards small like before; tapping the grey "Badge: Master of 8" button opens a card with how many are gold, Practice, Pick a level and Back.
 - **Firebase rules are in (Nov 20, owner pasted them):** only `rooms/<4 chars>` and `families/<8 chars>` can be read or written; everything else is denied (checked: other paths return 401). Test mode no longer matters.
+- **Parent page: Stop after this level (Nov 20, live):** a button per kid and "Stop everyone"; the kid finishes the current level, then "Time to stop!" until the parent taps Let them play (or until tomorrow). See `docs/parent.md`.
