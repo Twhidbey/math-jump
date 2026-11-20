@@ -597,7 +597,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 20, 2026 4:18 PM PT · Parent page: Stop after this level</div>
+  <div class="build">Updated Nov 20, 2026 4:29 PM PT · Parent page: tap for details</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -5245,7 +5245,8 @@ function fell() {
 // Out of hearts: the level starts over, like most games. Kindergarten and 1st grade players instead go on from the
 // last gate they opened (the level stays as it was), with "Restart level" as the other choice. Bosses always start over.
 function gameOver() {
-  if (team && team.run && !L.boss && G.idx === team.lvl && tmDown()) return;   // team run: a rescue bubble, the partner pops it
+  if (team && team.run && !L.boss && G.idx === team.lvl && tmDown()) return;
+  if (typeof famLog === 'function') famLog(false);   // the parent page: a level that ran out of hearts   // team run: a rescue bubble, the partner pops it
   mode = 'over'; stopMusic(); sfx.over(); showTouch(false); hide('pauseBtn');
   const young = ['K', '1'].includes(curPlayer().grade) && !L.boss;
   if (team && team.run && !L.boss && G.idx === team.lvl) {   // team run (owner): back to the last gate with full hearts, never out of the game
@@ -7568,7 +7569,8 @@ function updateAmbient() {
 }
 
 function finishLevel() {
-  if (typeof famPush === 'function') setTimeout(famPush, 500);   // the parent page: a fresh report after each level
+  if (typeof famLog === 'function') famLog(true);   // the parent page: what was played
+  if (typeof famPush === 'function') setTimeout(() => { famPush(); famPushDetail(); }, 500);   // the parent page: a fresh report after each level
   mode = 'done'; checkUpdate(true);   // quietly look for a new version (loaded on the next tap)
   const i = G.idx, st = STAGES[i], W = WORLDS[st.w];
   const dots = G.mistakes === 0 ? 3 : G.mistakes <= 2 ? 2 : 1, sk = G.skill, pts = dots * sk.tier;
@@ -14568,6 +14570,42 @@ function famSuggest(m) {   // a few plain sentences for the parent
   if (!m.auto) out.push('Auto mode is off, so the math stays the same. Turning it on (the math button on the home screen) lets the game move up by itself.');
   return out.slice(0, 4);
 }
+// The detail behind the summary (owner, Nov 2026: "summary, but I can dive in"): every skill of each kind of math, every
+// fact of those skills (right / wrong / fast or slow / last seen), levels won, badges, friends, the last 14 days and the
+// levels played each day. Sent after each level (it's bigger than the summary), to families/<code>/detail/<kidId>.
+function famLog(won) {   // one line per level played, for the parent page's day-by-day list (kept 14 days)
+  if (!G || !STAGES[G.idx]) return;
+  const st = STAGES[G.idx], d = new Date(), name = st.boss ? WORLDS[st.w].boss.name : st.name;
+  prog.plog = (prog.plog || []).filter(e => e.d >= dayStr(new Date(Date.now() - 14 * 864e5)));
+  prog.plog.push({ d: dayStr(d), t: `${d.getHours() % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')} ${d.getHours() < 12 ? 'am' : 'pm'}`, n: name, sk: G.skill ? G.skill.name : '', r: G.solved || 0, w: G.mistakes || 0, won: !!won, dots: won ? (G.mistakes === 0 ? 3 : G.mistakes <= 2 ? 2 : 1) : 0 });
+  if (prog.plog.length > 120) prog.plog = prog.plog.slice(-120);
+}
+function famDetail() {
+  const plan = trackPlan(), td = today(), facts = {};
+  const factOf = q => {   // one fact's record, shared by every skill it belongs to
+    const k = factKey(q); if (facts[k]) return k;
+    const f = prog.facts[k], st = factStatus(k);
+    facts[k] = { t: q.text, a: q.ans, s: st === 'weak' ? 'tricky' : st, ok: f ? f.ok || 0 : 0, miss: f ? f.miss || 0 : 0, slow: !!(f && f.practice), ago: f ? td - f.last : -1, days: f ? (f.days || []).length : 0 };
+    return k;
+  };
+  const skillOf = (id, state) => {
+    const k = SKILL[id], pr = skillProgress(k), list = factList(k);
+    const o = { id, n: k.name, st: state, learned: pr.learned, gold: pr.gold, of: pr.n };
+    if (list) o.f = list.map(factOf); else o.win = (prog.win[id] || []).map(x => (x ? 1 : 0));   // Think skills: the last 10 tries (1 = right and fast)
+    return o;
+  };
+  const tracks = plan ? plan.sts.map(x => ({ n: x.t.name, skills: x.t.ids.map((id, i) => skillOf(id, i < x.f ? 'pass' : i === x.f && !x.done ? (x.locked ? 'later' : 'now') : 'later')) }))
+    : [{ n: SKILL[prog.skill] ? SKILL[prog.skill].name : 'Math', skills: [skillOf(prog.skill, 'now')] }];
+  const days = {}; for (let i = 0; i < 14; i++) { const d = new Date(); d.setDate(d.getDate() - i); const k = dayStr(d); days[k] = famSecs(k); }
+  const levels = Object.entries(prog.best || {}).map(([i, b]) => { const st = STAGES[+i]; return st ? { n: st.boss ? WORLDS[st.w].boss.name : `${st.label} ${st.name}`, dots: b.dots || 0, gold: !!(prog.golden || {})[i] } : null; }).filter(Boolean);
+  const close = BADGES.filter(b => !prog.badges[b.id] && b.prog).map(b => { const [now, need] = b.prog(); return { n: b.name, t: b.text, now, need }; }).filter(b => b.need > 0 && b.now > 0).sort((a, b) => b.now / b.need - a.now / a.need).slice(0, 6);
+  return { tracks, facts, days, plog: prog.plog || [], levels, badges: BADGES.filter(b => prog.badges[b.id]).map(b => b.name), close,
+    friends: FRIENDS.filter(f => (prog.friends || {})[f.id]).map(f => f.name), gems: prog.bank || 0, golden: nKeys(prog.golden || {}), gates: (prog.stats || {}).gates || 0, v: 1 };
+}
+function famPushDetail(keep) {
+  if (!famCode) return;
+  try { fetch(famUrl(`/detail/${famKid()}`), { method: 'PUT', body: JSON.stringify(famDetail()), keepalive: !!keep }).catch(() => {}); } catch (e) { /* never let the report break the game */ }
+}
 function famPush(keep) {   // send this player's report
   if (!famCode) return;
   const days = {}; for (let i = 0; i < 7; i++) { const d = new Date(); d.setDate(d.getDate() - i); const k = dayStr(d); days[k] = famSecs(k); }
@@ -14618,12 +14656,12 @@ async function famLink() {
   let made = null; try { made = await fetch(`${TEAM_DB}/families/${c}/made.json`).then(r => r.json()); } catch (e) { alert("Couldn't reach the parent page. Check the internet and try again."); return; }
   if (!made) { alert("That family code wasn't found."); return; }
   famCode = c; try { localStorage.setItem(FAM_KEY, c); } catch (e) { /* no storage */ }
-  famPush(); await famPull(); famBtnSync(); alert('Linked! This game now reports to the parent page.');
+  famPush(); famPushDetail(); await famPull(); famBtnSync(); alert('Linked! This game now reports to the parent page.');
 }
 function famBtnSync() { $('famBtn').textContent = famCode ? '👪 Parent page: linked' : '👪 Parent page'; }
 $('famBtn').onclick = () => { audio(); famLink(); };
 famBtnSync();
-if (famCode) { famPull().then(() => { if (famLeft() <= 0 && mode === 'menu') famTimeUp(); }); setTimeout(famPush, 3000); }
+if (famCode) { famPull().then(() => { if (famLeft() <= 0 && mode === 'menu') famTimeUp(); }); setTimeout(() => { famPush(); famPushDetail(); }, 3000); }
 function checkUpdate(later) {
   if (!/^https?:/.test(location.protocol) || (!later && mode !== 'menu')) return;
   const here = (document.querySelector('.build') || {}).textContent || '';

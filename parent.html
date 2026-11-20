@@ -63,6 +63,30 @@
   .pinpad button { height: 60px; font: 26px "Lilita One", sans-serif; border-radius: 14px; border: 0; background: #3a3a6e; color: #fff; }
   .pins { text-align: center; font: 34px "Lilita One", sans-serif; letter-spacing: 12px; min-height: 44px; color: #ffd23f; }
   .err { color: #ff8c8c; font-weight: 800; }
+  /* tap to open the detail (owner, Nov 2026) */
+  details > summary { cursor: pointer; list-style: none; position: relative; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::after { content: '›'; position: absolute; right: 2px; top: 50%; transform: translateY(-50%); font: 22px "Lilita One", sans-serif; color: #9fb0ff; transition: transform .15s; }
+  details[open] > summary::after { transform: translateY(-50%) rotate(90deg); }
+  details > summary .trk, details > summary .week, details > summary .sk { margin-right: 20px; }
+  .more { background: #1b1b3a; border-radius: 12px; padding: 10px 12px; margin: 6px 0 10px; font-size: 15px; }
+  .sk { display: grid; grid-template-columns: 22px 1fr auto; gap: 6px; align-items: center; padding: 4px 0; }
+  .sk .ic { text-align: center; font-weight: 900; }
+  .sk .ic.pass { color: #ffd23f; } .sk .ic.now { color: #3ae374; } .sk .ic.later { color: #6a6c90; }
+  .grid { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+  .fc { border: 0; border-radius: 8px; padding: 5px 8px; font: 800 14px Nunito, sans-serif; cursor: pointer; color: #1a1426; }
+  .fc.gold { background: #ffd23f; } .fc.silver { background: #cfd6e4; } .fc.tricky { background: #ff8c9a; } .fc.new { background: #3a3a6e; color: #cfd2ff; }
+  .fc.sel { outline: 3px solid #fff; }
+  .legend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; color: #a9abd0; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
+  .finfo { background: #2c2c5a; border-radius: 10px; padding: 8px 10px; margin: 6px 0; }
+  .finfo b { font-size: 18px; }
+  .day { padding: 6px 0; border-top: 1px solid #2f2f5c; }
+  .day:first-child { border-top: 0; }
+  .lv { font-size: 14px; color: #cfd2ff; margin-left: 10px; }
+  .tries i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 3px; background: #3a3a6e; }
+  .tries i.y { background: #3ae374; }
+  .fact { cursor: pointer; border: 0; font-family: Nunito, sans-serif; }
 </style>
 </head>
 <body>
@@ -83,8 +107,50 @@
   const url = p => `${DB}/families/${st.fam}${p}.json`;
   const dayStr = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const mins = s => { const m = Math.round((s || 0) / 60); return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`; };
+  const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
   const ago = t => { const s = (Date.now() - t) / 1000; return s < 3600 ? `${Math.max(1, Math.round(s / 60))} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} days ago`; };
   let data = null, unlocked = sessionStorage.getItem('mn-parent-ok') === '1', timer = null, msg = '';
+  let openSet = new Set(); try { openSet = new Set(JSON.parse(sessionStorage.getItem('mn-parent-open')) || []); } catch (e) { /* none */ }
+  const sel = {};   // kid -> { key, where }: the fact tapped, and which list it was tapped in
+  const dt = (id, key, sum, body) => `<details data-o="${esc(id + ':' + key)}"${openSet.has(id + ':' + key) ? ' open' : ''}><summary>${sum}</summary>${body}</details>`;
+  const STATUS = { gold: 'Knows it by heart (right and fast on two different days).', silver: 'Right and fast once. One more good day makes it gold.', tricky: 'Missed it last time. It keeps coming back in levels until it is right and fast twice.', new: 'Not seen yet.' };
+  function factInfo(f) {
+    if (!f) return '';
+    const seen = f.ago < 0 ? 'never' : f.ago === 0 ? 'today' : f.ago === 1 ? 'yesterday' : `${f.ago} days ago`;
+    return `<div class="finfo"><b>${esc(f.t)} = ${esc(f.a)}</b><div>${esc(STATUS[f.s] || '')}</div>
+      <div class="muted">Right and fast: ${+f.ok || 0} · Wrong: ${+f.miss || 0} · Last seen: ${seen}${f.slow ? ' · Gets it right but slowly (probably counting)' : ''}</div></div>`;
+  }
+  function factGrid(id, where, keys, facts) {
+    const s = sel[id] && sel[id].where === where ? sel[id].key : null;
+    return `<div class="grid">${keys.map(k => { const f = facts[k]; return f ? `<button class="fc ${esc(f.s)}${k === s ? ' sel' : ''}" data-fact="${esc(k)}" data-where="${esc(where)}">${esc(f.t)}</button>` : ''; }).join('')}</div>${s ? factInfo(facts[s]) : ''}`;
+  }
+  function trackBody(id, t, facts) {
+    if (!t) return '<div class="more muted">More detail shows up after the next level they play.</div>';
+    return `<div class="more">${t.skills.map(sk => {
+      const ic = sk.st === 'pass' ? '✓' : sk.st === 'now' ? '▶' : '·', line = `<div class="sk"><span class="ic ${esc(sk.st)}">${ic}</span><span>${esc(sk.n)}</span><span class="muted">${sk.st === 'pass' ? 'passed' : `${+sk.gold || 0} gold / ${+sk.of || 0}`}</span></div>`;
+      const body = sk.f ? factGrid(id, 'sk:' + sk.id, sk.f, facts) : sk.win ? `<div class="tries">Last ${sk.win.length} tries: ${sk.win.map(x => `<i class="${x ? 'y' : ''}"></i>`).join('')} <span class="muted">(green = right and fast)</span></div>` : '';
+      return sk.st === 'now' ? `${line}${body}` : body ? dt(id, 'sk:' + sk.id, line, body) : line;
+    }).join('')}<div class="legend"><span><i style="background:#ffd23f"></i>gold</span><span><i style="background:#cfd6e4"></i>silver</span><span><i style="background:#ff8c9a"></i>tricky</span><span><i style="background:#3a3a6e"></i>not seen yet</span> · tap a fact for more</div></div>`;
+  }
+  function timeBody(d) {
+    if (!d) return '<div class="more muted">More detail shows up after the next level they play.</div>';
+    const list = []; for (let i = 0; i < 14; i++) { const x = new Date(); x.setDate(x.getDate() - i); list.push([dayStr(x), x]); }
+    return `<div class="more">${list.map(([k, x], i) => {
+      const lv = (d.plog || []).filter(e => e.d === k), s = (d.days || {})[k] || 0;
+      if (!s && !lv.length) return '';
+      return `<div class="day"><b>${i === 0 ? 'Today' : i === 1 ? 'Yesterday' : x.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</b> · ${mins(s)}
+        ${lv.map(e => `<div class="lv">${esc(e.t)} · ${esc(e.n)}${e.sk ? ` <span class="muted">(${esc(e.sk)})</span>` : ''}: ${+e.r || 0} right, ${+e.w || 0} wrong · ${e.won ? `${'●'.repeat(+e.dots || 0)}${'○'.repeat(3 - (+e.dots || 0))}` : 'ran out of hearts'}</div>`).join('')}</div>`;
+    }).join('') || '<span class="muted">No play in the last 14 days.</span>'}<p class="muted" style="margin:6px 0 0">Levels played are listed from Nov 20, 2026 on.</p></div>`;
+  }
+  function progBody(d) {
+    if (!d) return '<div class="more muted">More detail shows up after the next level they play.</div>';
+    return `<div class="more">
+      <div>${+d.gems || 0} gems saved · ${+d.gates || 0} gates opened · ${+d.golden || 0} golden gems</div>
+      <h3>Levels won (${(d.levels || []).length})</h3>${(d.levels || []).map(l => `<div class="lv" style="margin-left:0">${esc(l.n)} ${'●'.repeat(+l.dots || 0)}${'○'.repeat(Math.max(0, 3 - (+l.dots || 0)))}${l.gold ? ' · golden gem' : ''}</div>`).join('') || '<span class="muted">None yet</span>'}
+      <h3>Almost there</h3>${(d.close || []).map(b => `<div class="lv" style="margin-left:0"><b>${esc(b.n)}</b>: ${+b.now} / ${+b.need} <span class="muted">· ${esc(b.t)}</span></div>`).join('') || '<span class="muted">Nothing close yet</span>'}
+      <h3>Badges (${(d.badges || []).length})</h3><div class="chips">${(d.badges || []).map(b => `<span class="chip" style="cursor:default">${esc(b)}</span>`).join('') || '<span class="muted">None yet</span>'}</div>
+      <h3>Lost friends rescued</h3><div>${(d.friends || []).map(esc).join(', ') || '<span class="muted">None yet</span>'}</div></div>`;
+  }
 
   function setup() {   // no family yet: make one, or join one made on another phone
     app.innerHTML = `<h1>Math Ninja · Parent page</h1>
@@ -163,8 +229,11 @@
     const pic = typeof k.pic === 'string' && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(k.pic) ? k.pic : '';
     const on = !!(lm && lm.on), lmins = lm && lm.mins || 30, extra = lm && lm.extra && lm.extra.day === dayStr() ? lm.extra.mins || 0 : 0;
     const left = on ? (lmins + extra) * 60 - today : null, stopped = !!(lm && lm.stop === dayStr());
-    const tracks = (m.tracks || []).map(t => `<div class="trk"><span>${esc(t.n)}</span><span class="bar"><b style="width:${Math.max(0, Math.min(100, +t.p || 0))}%"></b></span><span>${+t.p || 0}%</span>
-      <small>${t.now ? `Now: ${esc(t.now)}${t.wait ? ' (needs one more good day)' : ''}${t.lock ? ' (comes later)' : ''}` : 'Done!'}</small></div>`).join('');
+    const d = (data && data.detail || {})[id], facts = (d && d.facts) || {};
+    const keyOf = txt => Object.keys(facts).find(k => `${facts[k].t} = ${facts[k].a}` === txt);
+    const chips = (list, cls, where) => `<div class="chips">${list.map(f => { const k = keyOf(f); return `<button class="fact ${cls}${sel[id] && sel[id].where === where && sel[id].key === k ? ' sel' : ''}" ${k ? `data-fact="${esc(k)}" data-where="${where}"` : ''}>${esc(f)}</button>`; }).join('')}</div>${sel[id] && sel[id].where === where ? factInfo(facts[sel[id].key]) : ''}`;
+    const tracks = (m.tracks || []).map((t, i) => dt(id, 'trk' + i, `<div class="trk"><span>${esc(t.n)}</span><span class="bar"><b style="width:${Math.max(0, Math.min(100, +t.p || 0))}%"></b></span><span>${+t.p || 0}%</span>
+      <small>${t.now ? `Now: ${esc(t.now)}${t.wait ? ' (needs one more good day)' : ''}${t.lock ? ' (comes later)' : ''}` : 'Done!'}</small></div>`, trackBody(id, d && (d.tracks || []).find(x => x.n === t.n), facts))).join('');
     return `<div class="card" data-kid="${esc(id)}">
       <div class="kidhead">${pic ? `<img src="${pic}" alt="">` : ''}<div class="nm"><h2>${esc(name)}</h2>
         <div class="muted"><span class="dot ${live ? 'on' : ''}"></span>${live ? (k.where ? `Playing now: ${esc(k.where)}` : 'In the game now') : k.seen ? `Last played ${ago(k.seen)}` : 'Not played yet'}</div></div>
@@ -172,7 +241,7 @@
       <div class="row">${stopped ? `<span class="left out">Stopped: the game ends after this level</span><button class="btn small alt" data-act="go">Let them play</button>` : '<button class="btn small stop" data-act="stop">Stop after this level</button>'}</div>
       <h3>Play time</h3>
       <div><b>Today: ${mins(today)}</b> <span class="muted">· this week ${mins(Object.entries(k.days || {}).reduce((a, [, s]) => a + (+s || 0), 0))}</span></div>
-      ${weekHTML(k.days)}
+      ${dt(id, 'time', weekHTML(k.days), timeBody(d))}
       <h3>Daily time limit</h3>
       <div class="row" style="margin-top:0"><button class="switch ${on ? 'on' : ''}" data-act="limit" aria-label="Time limit"></button>
         <span>${on ? `<span class="left ${left <= 0 ? 'out' : ''}">${left <= 0 ? "Time's up for today" : `${mins(left)} left today`}</span>` : '<span class="muted">Off: no limit</span>'}</span></div>
@@ -183,8 +252,10 @@
       <div>${m.grade ? `<b>${esc(m.grade)}</b> · ` : ''}${esc(m.belt || '')} belt · ${+m.levels || 0} levels won · ${+m.gold || 0} facts known by heart</div>
       ${m.skill ? `<div class="muted">Playing with: ${esc(m.skill)} (${+m.skillP || 0}% learned)</div>` : ''}
       ${tracks}
-      ${(m.weak || []).length ? `<h3>Still tricky</h3><div class="chips">${m.weak.map(f => `<span class="fact weak">${esc(f)}</span>`).join('')}</div>` : ''}
-      ${(m.slow || []).length ? `<h3>Right, but slow</h3><div class="chips">${m.slow.map(f => `<span class="fact slow">${esc(f)}</span>`).join('')}</div>` : ''}
+      ${!m.tracks || !m.tracks.length ? (d && d.tracks ? d.tracks.map((t, i) => dt(id, 'trk' + i, `<div><b>${esc(t.n)}</b></div>`, trackBody(id, t, facts))).join('') : '') : ''}
+      ${(m.weak || []).length ? `<h3>Still tricky</h3>${chips(m.weak, 'weak', 'weak')}` : ''}
+      ${(m.slow || []).length ? `<h3>Right, but slow</h3>${chips(m.slow, 'slow', 'slow')}` : ''}
+      ${dt(id, 'prog', `<h3 style="margin:14px 0 0">Progress</h3><div class="muted">${d ? `${plural((d.levels || []).length, 'level')} won · ${plural((d.badges || []).length, 'badge')} · ${plural((d.friends || []).length, 'friend')} rescued` : 'Levels, badges and friends'}</div>`, progBody(d))}
       ${(k.sugg || []).length ? `<h3>Suggestions</h3><ul class="sugg">${k.sugg.map(s => `<li>${esc(s)}</li>`).join('')}</ul>` : ''}
       <div class="row"><button class="linkish" data-act="remove">Remove this player from the page</button></div>
     </div>`;
@@ -209,7 +280,15 @@
     if (document.getElementById('stopAll')) document.getElementById('stopAll').onclick = () => all(true);
     if (document.getElementById('goAll')) document.getElementById('goAll').onclick = () => all(false);
     document.getElementById('lock').onclick = () => { unlocked = false; sessionStorage.removeItem('mn-parent-ok'); route(); };
+    app.querySelectorAll('details[data-o]').forEach(el => el.addEventListener('toggle', () => {
+      if (el.open) openSet.add(el.dataset.o); else openSet.delete(el.dataset.o);
+      try { sessionStorage.setItem('mn-parent-open', JSON.stringify([...openSet])); } catch (e) { /* none */ }
+    }));
     app.querySelectorAll('[data-kid]').forEach(card => {
+      card.querySelectorAll('[data-fact]').forEach(b => b.onclick = e => {
+        e.preventDefault(); const id = card.dataset.kid, cur = sel[id];
+        sel[id] = cur && cur.key === b.dataset.fact && cur.where === b.dataset.where ? null : { key: b.dataset.fact, where: b.dataset.where }; render();
+      });
       const id = card.dataset.kid, lm = { on: false, mins: 30, ...(limits[id] || {}) };
       const put = async v => { limits[id] = v; data.limits = limits; render(); await fetch(url(`/limits/${id}`), { method: 'PUT', body: JSON.stringify(v) }).catch(() => alert("Couldn't save. Check the internet.")); };
       card.querySelectorAll('[data-act]').forEach(b => b.onclick = () => {
