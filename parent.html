@@ -186,7 +186,7 @@
     let typed = '', first = null;
     const draw = (txt) => {
       app.innerHTML = `<h1>Math Ninja · Parent page</h1><div class="card"><h2>${making ? (first ? 'Type it again' : 'Choose a 4-digit PIN') : 'Parent PIN'}</h2>
-        <p class="muted">${making ? 'Only on this phone. You type it each time you open this page.' : ''}</p>
+        <p class="muted">${making ? "You type it each time you open this page. The kids' games ask for it too, before anyone switches or adds a player." : ''}</p>
         <div class="pins">${'●'.repeat(typed.length)}</div><p class="err" style="text-align:center">${esc(txt || '')}</p>
         <div class="pinpad">${[1, 2, 3, 4, 5, 6, 7, 8, 9, '', 0, '⌫'].map(k => k === '' ? '<span></span>' : `<button data-k="${k}">${k}</button>`).join('')}</div>
         ${making ? '' : '<div class="row" style="justify-content:center"><button class="linkish" id="forgot">Forgot the PIN?</button></div>'}</div>`;
@@ -203,7 +203,7 @@
       if (making) {
         if (!first) { first = typed; typed = ''; return draw(); }
         if (typed !== first) { first = null; typed = ''; return draw("They didn't match. Try again."); }
-        st.pin = typed; keep(); unlocked = true; sessionStorage.setItem('mn-parent-ok', '1'); return route();
+        st.pin = typed; delete st.pinSent; keep(); unlocked = true; sessionStorage.setItem('mn-parent-ok', '1'); return route();
       }
       if (typed === st.pin) { unlocked = true; sessionStorage.setItem('mn-parent-ok', '1'); return route(); }
       typed = ''; draw('Wrong PIN');
@@ -270,7 +270,7 @@
       <div class="card"><h2>Add a device</h2>
         <p>On each kid's iPhone or iPad, open Math Ninja, then <b>Settings → Parent page</b>, and type this code:</p>
         <div class="code">${esc(st.fam)}</div>
-        <p class="muted">Each player on that device shows up here after they play for a minute. Only play time, math and their picture are sent; names stay on this phone.</p></div>
+        <p class="muted">Once linked, switching or adding players in the game needs your parent PIN. Each player on that device shows up here after they play for a minute. Only play time, math and their picture are sent; names stay on this phone.</p></div>
       <div class="row"><button class="linkish" id="lock">Lock this page</button></div>`;
     const all = async stop => {
       for (const [id] of kids) { const v = { on: false, mins: 30, ...(limits[id] || {}) }; if (stop) v.stop = dayStr(); else delete v.stop; limits[id] = v; }
@@ -307,11 +307,20 @@
     });
   }
 
+  async function sendPin() {
+    try {
+      const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`mn:${st.fam}:${st.pin}`));
+      const h = [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+      const ok = await fetch(url('/pin'), { method: 'PUT', body: JSON.stringify(h) }).then(r => r.ok);
+      if (ok) { st.pinSent = st.fam; keep(); }
+    } catch (e) { /* try again next time */ }
+  }
   function route() {
     clearInterval(timer);
     if (!st.fam) return setup();
     if (!st.pin) return pinScreen(true);
     if (!unlocked) return pinScreen(false);
+    if (st.pinSent !== st.fam) sendPin();   // the kids' games check the PIN against this (a hash, never the PIN itself)
     app.innerHTML = '<h1>Math Ninja · Parent page</h1><p class="muted">Loading...</p>';
     load(); timer = setInterval(load, 20000);
   }

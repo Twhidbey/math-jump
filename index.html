@@ -597,7 +597,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 20, 2026 4:29 PM PT · Parent page: tap for details</div>
+  <div class="build">Updated Nov 20, 2026 5:18 PM PT · Linked devices: parent PIN to switch or add players</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -14196,13 +14196,13 @@ function showPlayers() {
     const b = document.createElement('div'); b.className = 'pcard' + (pl.id === players.cur ? ' on' : ''); b.tabIndex = 0;
     b.innerHTML = `<span class="pi">${playerIcon(pl.icon)}</span><span class="pn"></span><span class="pg">${GRADE[pl.grade] ? GRADE[pl.grade].name : 'No grade set'} · ${beltFor(pts).name} belt</span><button class="pe" type="button" aria-label="Edit">✏️</button>`;
     b.querySelector('.pn').textContent = pl.name;
-    b.onclick = () => { audio(); switchPlayer(pl.id); };
-    b.querySelector('.pe').onclick = e => { e.stopPropagation(); audio(); editPlayer(pl); };
+    b.onclick = async () => { audio(); if (pl.id !== players.cur && typeof famAsk === 'function' && !(await famAsk('switch player'))) return; switchPlayer(pl.id); };
+    b.querySelector('.pe').onclick = async e => { e.stopPropagation(); audio(); if (typeof famAsk === 'function' && !(await famAsk('change a player'))) return; editPlayer(pl); };
     grid.appendChild(b);
   }
   const add = document.createElement('div'); add.className = 'pcard add'; add.tabIndex = 0;
   add.innerHTML = '<span class="pi">➕</span><span class="pn">Add player</span>';
-  add.onclick = () => { audio(); editPlayer(null); };
+  add.onclick = async () => { audio(); if (typeof famAsk === 'function' && !(await famAsk('add a player'))) return; editPlayer(null); };
   grid.appendChild(add);
   show('players');
 }
@@ -14614,8 +14614,24 @@ function famPush(keep) {   // send this player's report
   const body = { pic: playerIconURL[pl.icon] || '', grade: pl.grade || '', seen: { '.sv': 'timestamp' }, where, days, math: m, sugg: famSuggest(m), v: 1 };
   fetch(famUrl(`/kids/${famKid()}`), { method: 'PATCH', body: JSON.stringify(body), keepalive: !!keep }).catch(() => {});
 }
-async function famPull() {   // the time limit for this player
+// On a linked device, switching, adding, changing or deleting a player needs a grown-up (owner, Nov 2026: otherwise it
+// gets around the time limit). The parent page saves a hash of its 4-digit PIN at families/<code>/pin; the game keeps
+// the last one it saw. Before the parent page has a PIN, the family code works instead.
+const FAM_PIN_KEY = 'mathninja-family-pin';
+async function famSha(t) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+async function famAsk(what) {
+  if (!famCode) return true;
+  let h = null; try { h = localStorage.getItem(FAM_PIN_KEY); } catch (e) { /* no storage */ }
+  const typed = prompt(h ? `Grown-ups: type your parent PIN to ${what}.` : `Grown-ups: type the family code to ${what}.`);   // asked first, while it's still the tap
+  if (!typed) return false;
+  if (!h) { if (typed.toUpperCase().replace(/[^A-Z0-9]/g, '') === famCode) return true; alert("That's not the family code."); return false; }
+  let ok = false; try { ok = (await famSha(`mn:${famCode}:${typed.trim()}`)) === h; } catch (e) { ok = false; }
+  if (!ok) alert('Wrong PIN.');
+  return ok;
+}
+async function famPull() {   // the time limit for this player (and the parent PIN's hash)
   if (!famCode) return;
+  fetch(famUrl('/pin')).then(r => r.json()).then(h => { try { if (typeof h === 'string') localStorage.setItem(FAM_PIN_KEY, h); } catch (e) { /* no storage */ } }).catch(() => {});
   try { const lm = await fetch(famUrl(`/limits/${famKid()}`)).then(r => r.json()); prog.limit = lm && typeof lm.mins === 'number' ? lm : null; save(); } catch (e) { /* offline: keep the last one */ }
 }
 function famTimeUp() {
@@ -14648,6 +14664,7 @@ async function famLink() {
     if (!c) return;
     if (c !== famCode) { alert("That's not the family code."); return; }
     try { localStorage.removeItem(FAM_KEY); } catch (e) { /* no storage */ }
+    try { localStorage.removeItem(FAM_PIN_KEY); } catch (e) { /* no storage */ }
     famCode = null; prog.limit = null; save(); famBtnSync(); alert('Unlinked.'); return;
   }
   const c = (prompt('Grown-ups: type the family code from the parent page (math-jump/parent.html).') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
