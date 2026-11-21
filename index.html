@@ -597,7 +597,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 21, 2026 3:41 PM PT · Rainbow jump over gaps, dragon pets look like dragons</div>
+  <div class="build">Updated Nov 21, 2026 3:50 PM PT · Japanese dragon pets</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -2847,18 +2847,20 @@ function heroPal(equip = prog.equip) {
   return { r: band[0], R: band[1], n: suit[0], N: suit[1], b: currentBelt().col };
 }
 // Pets follow the hero around. Two frames each; they face right.
-function drawDragonPet({ P, R, L, E }, f) {   // 16 × 12, facing right (owner, Nov 2026: "more dragon like"): bat wings that flap, back spikes, horns, a snout, an arrow-tipped tail
-    if (f) { R(2, 6, 5, 1, 'G'); R(1, 7, 5, 1, 'G'); R(2, 8, 3, 1, 'G'); L(6, 6, 1, 7, 'g'); }   // wing down
-    else { R(4, 1, 2, 1, 'G'); R(3, 2, 4, 1, 'G'); R(3, 3, 5, 1, 'G'); R(4, 4, 4, 1, 'G'); R(5, 5, 3, 1, 'G'); L(7, 5, 3, 1, 'g'); P(5, 1, 'g'); }   // wing up
-    L(1, 9, 4, 9, 'g'); P(1, 10, 'g'); P(0, 8, 'r'); P(0, 9, 'r'); P(0, 10, 'r'); P(1, 9, 'r');   // the tail, with an arrow tip
-    E(7.5, 8, 3.6, 2.5, 'g'); E(7.8, 9.1, 2.3, 1.1, 'y'); P(6, 9, 'G'); P(8, 9, 'G');   // body, striped belly
-    P(5, 5, 'G'); P(7, 5, 'G'); P(9, 5, 'G'); P(11, 3, 'G');   // spikes along the back
-    E(12, 5, 2.4, 2.1, 'g'); R(13, 5, 3, 2, 'g'); P(15, 5, 'G'); P(14, 7, 'g');   // head and snout, a nostril
-    P(10, 2, 'w'); P(11, 1, 'w'); P(12, 2, 'w'); P(13, 1, 'w');   // horns
-    P(12, 4, 'w'); P(13, 4, 'e');   // eye
-    if (f) P(15, 7, 'r');   // a puff of breath
-    P(f ? 6 : 5, 11, 'G'); P(f ? 9 : 10, 11, 'G');   // little legs
+// The dragon pets (owner chose "Japanese dragon", Nov 2026): long and wavy like a kite, with a mane, whiskers, antlers
+// and little legs; the body ripples between the two frames. 24 × 12, facing right; baked a bit bigger than other pets.
+function drawDragonPet({ P, R, L, E }, f) {
+    const wy = x => 6 + 2.4 * Math.sin(x * 0.55 + f * 1.6);
+    for (let x = 2; x <= 17; x++) { const y = wy(x); E(x, y, 1.6, 1.7, 'g'); P(x, Math.round(y + 1.2), 'y'); if (x % 2 === 0) P(x, Math.round(y - 1.8), 'r'); }   // body, belly, mane
+    const hy = wy(18);
+    E(19.5, hy - 0.5, 2.6, 2.1, 'g'); R(21, Math.round(hy - 1), 3, 2, 'g'); P(23, Math.round(hy - 1), 'G');   // head and snout
+    P(20, Math.round(hy - 2), 'w'); P(20, Math.round(hy - 1), 'e');   // eye
+    P(18, Math.round(hy - 3), 'w'); P(17, Math.round(hy - 4), 'w'); P(19, Math.round(hy - 4), 'w');   // antlers
+    L(22, Math.round(hy + 1), 23, Math.round(hy + 3), 'r'); L(21, Math.round(hy + 1), 20, Math.round(hy + 3), 'r');   // whiskers
+    P(0, Math.round(wy(1.1) ), 'r'); P(1, Math.round(wy(1.1) - 1), 'r');   // a tuft on the tail
+    for (const lx of [6, 13]) { const ly = Math.round(wy(lx)) + 2; P(lx, ly, 'G'); P(lx + 1, ly + 1, 'G'); }   // little legs
   }
+const DRAGON_PX = 4;   // the dragon pets are baked bigger than the other pets (owner: "a bit bigger")
 const PET_SPR = {
   'pet-wolf': bake(makeFrames(16, 12, { g: '#8a8f9e', G: '#5b6070', w: '#e8eaf0', y: '#ffb627', n: '#16121f' }, ({ P, R, E }, f) => {
     E(2.6, 6 - f * 0.6, 2.3, 1.6, 'g'); P(1, 5 - f, 'w');
@@ -2875,10 +2877,10 @@ const PET_SPR = {
     P(12, 6, 'w'); P(13, 6, 'w'); P(13, 5, 'e'); P(11, 4, 'e');
     if (f) { P(6, 10, 'O'); P(9, 10, 'O'); } else { P(5, 10, 'O'); P(10, 10, 'O'); }
   }, 2), ['a', 'b']),
-  'pet-dragon': bake(makeFrames(16, 12, { g: '#3fbf6a', G: '#2a8a4a', y: '#ffe08a', w: '#f4ead5', e: '#16121f', r: '#e8452c' }, drawDragonPet, 2), ['a', 'b']),
-  'pet-dragon-shadow': bake(makeFrames(16, 12, { g: '#3a2a5a', G: '#1c1430', y: '#8a6ad0', w: '#c9b8f0', e: '#ff4d6d', r: '#b98aff' }, drawDragonPet, 2), ['a', 'b']),
-  'pet-dragon-fire': bake(makeFrames(16, 12, { g: '#e8452c', G: '#a01818', y: '#ffd23f', w: '#fff0c8', e: '#16121f', r: '#ffd23f' }, drawDragonPet, 2), ['a', 'b']),
-  'pet-dragon-gold': bake(makeFrames(16, 12, { g: '#ffd23f', G: '#c99a1a', y: '#fff6c8', w: '#ffffff', e: '#16121f', r: '#ff8c1a' }, drawDragonPet, 2), ['a', 'b']),
+  'pet-dragon': bake(makeFrames(24, 12, { g: '#3fbf6a', G: '#2a8a4a', y: '#ffe08a', w: '#f4ead5', e: '#16121f', r: '#e8452c' }, drawDragonPet, 2), ['a', 'b'], DRAGON_PX),
+  'pet-dragon-shadow': bake(makeFrames(24, 12, { g: '#3a2a5a', G: '#1c1430', y: '#8a6ad0', w: '#c9b8f0', e: '#ff4d6d', r: '#b98aff' }, drawDragonPet, 2), ['a', 'b'], DRAGON_PX),
+  'pet-dragon-fire': bake(makeFrames(24, 12, { g: '#e8452c', G: '#a01818', y: '#ffd23f', w: '#fff0c8', e: '#16121f', r: '#ffd23f' }, drawDragonPet, 2), ['a', 'b'], DRAGON_PX),
+  'pet-dragon-gold': bake(makeFrames(24, 12, { g: '#ffd23f', G: '#c99a1a', y: '#fff6c8', w: '#ffffff', e: '#16121f', r: '#ff8c1a' }, drawDragonPet, 2), ['a', 'b'], DRAGON_PX),
   'pet-octo': bake(makeFrames(14, 12, { p: '#b968e0', P: '#8a3fb0', w: '#ffffff', e: '#16121f', k: '#ff9cc4' }, ({ P, R, E }, f) => {   // Master of 8s
     E(7, 4.2, 4.3, 3.8, 'p'); P(5, 2, 'w');
     R(5, 4, 1, 2, 'w'); R(9, 4, 1, 2, 'w'); P(5, 5, 'e'); P(9, 5, 'e'); P(4, 6, 'k'); P(10, 6, 'k'); P(7, 7, 'P');
@@ -4015,7 +4017,8 @@ function petSay(mood) {
 function petTick() {
   if (!G.pet) return;
   const p = P, pt = G.pet;
-  const tx = p.x + p.w / 2 - p.face * 34, ty = p.y + (FLY_PETS.includes(prog.equip.pet) ? -14 : 14) + Math.sin(tick * 0.12) * 3;
+  const big = /^pet-dragon/.test(prog.equip.pet || '');   // the long dragons fly a little further back and higher, clear of Kai
+  const tx = p.x + p.w / 2 - p.face * (big ? 62 : 34), ty = p.y + (big ? -26 : FLY_PETS.includes(prog.equip.pet) ? -14 : 14) + Math.sin(tick * 0.12) * 3;
   pt.x += (tx - pt.x) * 0.12; pt.y += (ty - pt.y) * 0.12;
   if (pt.moodT > 0) pt.moodT--;
   if (G.bubble && --G.bubble.t <= 0) G.bubble = null;
@@ -12518,14 +12521,14 @@ function drawNinjaPreview(cv, equip, scale) {
   const c = cv.getContext('2d'); c.clearRect(0, 0, cv.width, cv.height); c.imageSmoothingEnabled = false;
   const set = bake(makeFrames(16, 16, { ...KAI_PAL, ...heroPal(equip) }, drawKai, 1), ['stand'], scale);
   c.drawImage(set.stand[0], equip.pet ? 4 : (cv.width - 16 * scale) / 2, cv.height - 16 * scale - 2);
-  if (equip.pet) c.drawImage(PET_SPR[equip.pet].a[0], 16 * scale + 8, cv.height - 12 * 3 - 2);
+  if (equip.pet) { const im = PET_SPR[equip.pet].a[0], k = Math.min(1, 48 / im.width); c.drawImage(im, 16 * scale + 8, cv.height - im.height * k - 2, im.width * k, im.height * k); }
 }
 function drawItemPreview(cv, it) {
   const c = cv.getContext('2d'); c.clearRect(0, 0, cv.width, cv.height); c.imageSmoothingEnabled = false;
   if (it.slot === 'band' || it.slot === 'suit') {
     const set = bake(makeFrames(16, 16, { ...KAI_PAL, ...heroPal({ ...prog.equip, [it.slot]: it.id }) }, drawKai, 1), ['stand'], 3);
     c.drawImage(set.stand[0], (cv.width - 48) / 2, cv.height - 48);
-  } else if (it.slot === 'pet') c.drawImage(PET_SPR[it.id].a[0], (cv.width - 42) / 2, cv.height - 40);
+  } else if (it.slot === 'pet') { const im = PET_SPR[it.id].a[0], k = Math.min(1, (cv.width - 6) / im.width, (cv.height - 6) / im.height); c.drawImage(im, (cv.width - im.width * k) / 2, cv.height - 4 - im.height * k, im.width * k, im.height * k); }
   else {
     const cols = (TRAIL_LOOK[it.id] || TRAIL_LOOK['trail-spark']).cols;
     for (let i = 0; i < 18; i++) { c.fillStyle = cols[i % cols.length]; c.fillRect(8 + i * 4, cv.height - 10 - Math.abs(Math.sin(i * 1.3)) * 30, 5, 5); }
