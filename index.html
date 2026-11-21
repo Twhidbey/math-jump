@@ -597,7 +597,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 21, 2026 3:34 PM PT · Powers for the treasure shelf</div>
+  <div class="build">Updated Nov 21, 2026 3:41 PM PT · Rainbow jump over gaps, dragon pets look like dragons</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -2847,10 +2847,17 @@ function heroPal(equip = prog.equip) {
   return { r: band[0], R: band[1], n: suit[0], N: suit[1], b: currentBelt().col };
 }
 // Pets follow the hero around. Two frames each; they face right.
-function drawDragonPet({ P, L, E }, f) {
-    if (f) E(4, 6, 2.6, 1.6, 'G'); else E(4, 3.5, 2.4, 2, 'G');
-    L(4, 9, 1, 10, 'g'); E(7, 7.5, 3.4, 2.8, 'g'); E(7, 8.5, 2, 1.5, 'y');
-    E(11, 4.5, 2.6, 2.3, 'g'); P(13, 5, 'g'); P(10, 2, 'w'); P(12, 2, 'w'); P(12, 4, 'e'); P(13, 6, 'r');
+function drawDragonPet({ P, R, L, E }, f) {   // 16 × 12, facing right (owner, Nov 2026: "more dragon like"): bat wings that flap, back spikes, horns, a snout, an arrow-tipped tail
+    if (f) { R(2, 6, 5, 1, 'G'); R(1, 7, 5, 1, 'G'); R(2, 8, 3, 1, 'G'); L(6, 6, 1, 7, 'g'); }   // wing down
+    else { R(4, 1, 2, 1, 'G'); R(3, 2, 4, 1, 'G'); R(3, 3, 5, 1, 'G'); R(4, 4, 4, 1, 'G'); R(5, 5, 3, 1, 'G'); L(7, 5, 3, 1, 'g'); P(5, 1, 'g'); }   // wing up
+    L(1, 9, 4, 9, 'g'); P(1, 10, 'g'); P(0, 8, 'r'); P(0, 9, 'r'); P(0, 10, 'r'); P(1, 9, 'r');   // the tail, with an arrow tip
+    E(7.5, 8, 3.6, 2.5, 'g'); E(7.8, 9.1, 2.3, 1.1, 'y'); P(6, 9, 'G'); P(8, 9, 'G');   // body, striped belly
+    P(5, 5, 'G'); P(7, 5, 'G'); P(9, 5, 'G'); P(11, 3, 'G');   // spikes along the back
+    E(12, 5, 2.4, 2.1, 'g'); R(13, 5, 3, 2, 'g'); P(15, 5, 'G'); P(14, 7, 'g');   // head and snout, a nostril
+    P(10, 2, 'w'); P(11, 1, 'w'); P(12, 2, 'w'); P(13, 1, 'w');   // horns
+    P(12, 4, 'w'); P(13, 4, 'e');   // eye
+    if (f) P(15, 7, 'r');   // a puff of breath
+    P(f ? 6 : 5, 11, 'G'); P(f ? 9 : 10, 11, 'G');   // little legs
   }
 const PET_SPR = {
   'pet-wolf': bake(makeFrames(16, 12, { g: '#8a8f9e', G: '#5b6070', w: '#e8eaf0', y: '#ffb627', n: '#16121f' }, ({ P, R, E }, f) => {
@@ -2868,10 +2875,10 @@ const PET_SPR = {
     P(12, 6, 'w'); P(13, 6, 'w'); P(13, 5, 'e'); P(11, 4, 'e');
     if (f) { P(6, 10, 'O'); P(9, 10, 'O'); } else { P(5, 10, 'O'); P(10, 10, 'O'); }
   }, 2), ['a', 'b']),
-  'pet-dragon': bake(makeFrames(14, 12, { g: '#3fbf6a', G: '#2a8a4a', y: '#ffe08a', w: '#f4ead5', e: '#16121f', r: '#e8452c' }, drawDragonPet, 2), ['a', 'b']),
-  'pet-dragon-shadow': bake(makeFrames(14, 12, { g: '#3a2a5a', G: '#1c1430', y: '#8a6ad0', w: '#c9b8f0', e: '#ff4d6d', r: '#b98aff' }, drawDragonPet, 2), ['a', 'b']),
-  'pet-dragon-fire': bake(makeFrames(14, 12, { g: '#e8452c', G: '#a01818', y: '#ffd23f', w: '#fff0c8', e: '#16121f', r: '#ffd23f' }, drawDragonPet, 2), ['a', 'b']),
-  'pet-dragon-gold': bake(makeFrames(14, 12, { g: '#ffd23f', G: '#c99a1a', y: '#fff6c8', w: '#ffffff', e: '#16121f', r: '#ff8c1a' }, drawDragonPet, 2), ['a', 'b']),
+  'pet-dragon': bake(makeFrames(16, 12, { g: '#3fbf6a', G: '#2a8a4a', y: '#ffe08a', w: '#f4ead5', e: '#16121f', r: '#e8452c' }, drawDragonPet, 2), ['a', 'b']),
+  'pet-dragon-shadow': bake(makeFrames(16, 12, { g: '#3a2a5a', G: '#1c1430', y: '#8a6ad0', w: '#c9b8f0', e: '#ff4d6d', r: '#b98aff' }, drawDragonPet, 2), ['a', 'b']),
+  'pet-dragon-fire': bake(makeFrames(16, 12, { g: '#e8452c', G: '#a01818', y: '#ffd23f', w: '#fff0c8', e: '#16121f', r: '#ffd23f' }, drawDragonPet, 2), ['a', 'b']),
+  'pet-dragon-gold': bake(makeFrames(16, 12, { g: '#ffd23f', G: '#c99a1a', y: '#fff6c8', w: '#ffffff', e: '#16121f', r: '#ff8c1a' }, drawDragonPet, 2), ['a', 'b']),
   'pet-octo': bake(makeFrames(14, 12, { p: '#b968e0', P: '#8a3fb0', w: '#ffffff', e: '#16121f', k: '#ff9cc4' }, ({ P, R, E }, f) => {   // Master of 8s
     E(7, 4.2, 4.3, 3.8, 'p'); P(5, 2, 'w');
     R(5, 4, 1, 2, 'w'); R(9, 4, 1, 2, 'w'); P(5, 5, 'e'); P(9, 5, 'e'); P(4, 6, 'k'); P(10, 6, 'k'); P(7, 7, 'P');
@@ -5216,9 +5223,31 @@ function diveTick(p) {
 // Powers of the shop's treasure shelf (owner, Nov 2026: "all the expensive gear should have some cool power"). None of
 // them answers or skips math: they make running, jumping and collecting more fun. They work by themselves while worn.
 const wears = id => !!prog && (prog.equip.suit === id || prog.equip.band === id || prog.equip.trail === id || prog.equip.pet === id);
-function rainbowTick(p) {   // Rainbow suit: falling into a pit, a rainbow appears under Kai and carries him across (never at math crossings)
+function rainbowTick(p) {   // Rainbow suit: running off the edge of a pit, a rainbow arches over it and Kai zips across (owner, Nov 2026); falling in, one catches him. Never at math crossings
   if (L.water || L.boss || L.vault || L.room) return;
   const g = G.rbow, cx = p.x + p.w / 2;
+  if (g && g.arc && !g.fade) {   // zipping along the arch
+    g.t++;
+    const u = Math.min(1, g.t / g.dur), e = u * u * (3 - 2 * u);
+    p.x = g.sx + (g.ex - g.sx) * e - p.w / 2; p.y = GR * T - p.h - Math.sin(Math.PI * e) * g.h; p.vy = 0; p.onGround = false; p.face = g.dir;
+    if (g.t % 2 === 0) G.parts.push({ k: 'bit', x: p.x + p.w / 2, y: p.y + p.h - 4, vx: -g.dir, vy: 0.5, life: 22, col: RAINBOW[g.t % 6], s: 5 });
+    if (u >= 1) { p.y = GR * T - p.h; p.onGround = true; p.vx = g.dir * 3; p.squash = 6; g.fade = 40; }
+    return;
+  }
+  if (!g && (p.onGround || p.coyote > 0) && Math.abs(p.vx) > 1 && !G.cross && !G.swing && !G.raft && !G.climb) {   // at the edge of a pit, running at it
+    const dir = p.vx > 0 ? 1 : -1, c = Math.floor((cx + dir * (p.w / 2 + 4)) / T), here = Math.floor(cx / T);
+    if (!solid(c, GR) && solid(here, GR) && !noFlyHere({ x: c * T, w: 0 }) && !activeBridge()) {
+      let e = c; while (e > 0 && e < L.w - 1 && !solid(e + dir, GR)) e += dir;
+      const land = e + dir, wide = Math.abs(e - c) + 1;
+      if (wide <= 14 && solid(land, GR) && !solid(land, GR - 1) && !solid(land, GR - 2) && !noFlyHere({ x: (c + e) / 2 * T, w: 0 })) {
+        const sx = cx, ex = (land + 0.5) * T;
+        G.rbow = { arc: true, sx, ex, x0: Math.min(sx, ex), x1: Math.max(sx, ex), h: 1.4 * T + wide * 0.25 * T, dir, t: 0, dur: 16 + wide * 3 };
+        p.inv = Math.max(p.inv, 2); tone(523, 0.1, 'triangle', 0.035); tone(1047, 0.25, 'triangle', 0.035, 1568, 0.08);
+        if (!G.rbowTold) { G.rbowTold = true; floatText(cx + dir * 60, p.y - 40, 'Rainbow jump!', '#ff9ad5', 24); }
+        return;
+      }
+    }
+  }
   if (g && !g.fade) {
     g.t++;
     if (cx > g.x0 - 6 && cx < g.x1 + 6) {
@@ -5293,6 +5322,12 @@ function shopPowTick(p) {   // every frame of play: the powers that act on their
 }
 function drawRainbowBridge() {   // in front of the pit's water or lava (drawn after drawPits)
   const g = G && G.rbow; if (!g) return;
+  if (g.arc) {   // an arch from edge to edge
+    const a = Math.min(1, g.t / 6) * (g.fade ? g.fade / 40 : 1), mx = (g.sx + g.ex) / 2, top = GR * T - g.h * 2 + 10;
+    ctx.lineWidth = 6;
+    RAINBOW.forEach((col, i) => { ctx.strokeStyle = col; ctx.globalAlpha = a * 0.85; ctx.beginPath(); ctx.moveTo(g.sx, GR * T + 4 + i * 6 - 18); ctx.quadraticCurveTo(mx, top + i * 6, g.ex, GR * T + 4 + i * 6 - 18); ctx.stroke(); });
+    ctx.globalAlpha = 1; return;
+  }
   RAINBOW.forEach((col, i) => { ctx.fillStyle = col; ctx.globalAlpha = Math.min(1, g.t / 8) * 0.9 * (g.fade ? g.fade / 40 : 1); const y = GR * T - 2 + i * 5; ctx.beginPath(); ctx.moveTo(g.x0 - 10, y + 8); ctx.quadraticCurveTo((g.x0 + g.x1) / 2, y - 4, g.x1 + 10, y + 8); ctx.lineTo(g.x1 + 10, y + 13); ctx.quadraticCurveTo((g.x0 + g.x1) / 2, y + 1, g.x0 - 10, y + 13); ctx.fill(); });
   ctx.globalAlpha = 1;
 }
@@ -5302,7 +5337,7 @@ function drawShopPow() {   // the rainbow, falling stars, the fireball and the f
   if (G.fetch && PET_SPR[prog.equip.pet]) drawBaked(PET_SPR[prog.equip.pet], Math.floor(tick / 5) % 2 ? 'b' : 'a', G.fetch.back ? G.fetch.x > G.pet.x : G.fetch.c.x < G.fetch.x, { x: G.fetch.x - 10, y: G.fetch.y - 12, w: 20, h: 24 });
 }
 function hurt() {
-  if (P.inv > 0 || mode !== 'play' || hasPower('star') || G.swing || G.raft || G.dive || G.ride || G.down || G.groom || vanished() || (G.dol && G.dol.ph === 'ride') || (G.rr && G.rr.ph === 'ride') || (G.flame && G.dash > 0) || G.pound || G.charge > 0) return;   // (vanished: Mei's Ninja vanish; gear powers: Ground Pound, Horn Charge)
+  if (P.inv > 0 || mode !== 'play' || hasPower('star') || G.swing || G.raft || (G.rbow && G.rbow.arc && !G.rbow.fade) || G.dive || G.ride || G.down || G.groom || vanished() || (G.dol && G.dol.ph === 'ride') || (G.rr && G.rr.ph === 'ride') || (G.flame && G.dash > 0) || G.pound || G.charge > 0) return;   // (vanished: Mei's Ninja vanish; gear powers: Ground Pound, Horn Charge)
   if (prog.safe) {   // "Never get hurt" (Settings, per player): Kai blinks and hops back a little, no heart lost
     P.inv = 70; P.vy = -5; P.vx = -P.face * 3; sfx.bump();
     return;
