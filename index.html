@@ -615,7 +615,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 22, 2026 11:50 PM PT · Map: a real fantasy map (mountains, rivers, woods between the lands)</div>
+  <div class="build">Updated Nov 23, 2026 12:30 AM PT · Map: winding paths, story places, room for new lands</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -8066,7 +8066,7 @@ function openJournal() {
 // MAP_WOODS with stray trees at their edges; a lake; hills and grass); a ragged coast with islands. The dojo (Home)
 // sits in the Village; Kuro's route is the red dotted line; the road home turns gold once he is home; two misty
 // "Unknown lands" (MAP_FOG) are left for worlds still to come.
-const MAP_W = 250, MAP_H = 160, MAP_DOJO = [24, 138];
+const MAP_W = 250, MAP_H = 160, MAP_DOJO = [22, 144];
 const MAP_INK = '#4a3a2a';
 const MAP_GLYPH = {   // tiny pixel drawings; k ink, g light side, G shade side, w white, r red, y yellow, p pink, n green, N dark green, d dark, s sand
   mt: ['....k....', '...kgGk..', '..kggGGk.', '.kgggGGGk', 'kggggGGGGk'],
@@ -8090,8 +8090,35 @@ const MAP_GLYPH = {   // tiny pixel drawings; k ink, g light side, G shade side,
   rock: ['.kk.', 'kdDk'],
   nn: ['k...k', 'kk..k', 'k.k.k', 'k..kk', 'k...k'],
   dojo: ['....r....', '...rrr...', '.rrrrrrr.', '...kwk...', '.rrrrrrr.', 'rrrrrrrrr', '..kwkwk..', '..kkkkk..'],
+  tent: ['..k..', '.kqk.', 'kqqqk', 'kq.qk'],
+  ship: ['..k...', '.kwk..', '.kwwk.', 'kkkkkk', '.qqqq.'],
+  tower: ['.kyk.', '.kdk.', '.kdk.', 'kdddk', 'kdddk'],
+  falls: ['kwwk', 'kwwk', 'kwwk', 'wwww'],
+  lookout: ['.y.', 'kyk', '.q.', '.q.', 'qqq'],
+  kite: ['..r..', '.rrr.', 'rrrrr', '.rrr.', '..r..', '..k..', '...k.'],
+  sign: ['.qqqq', '.q...', 'qqqq.', '.q...', '.q...'],
+  sheep: ['.www.', 'wwwwk', '.k.k.'],
+  light: ['.y.', 'kyk', 'kwk', 'krk', 'kwk', 'krk', 'kkkk'],
+  bridge: ['qqqqqq', 'q....q'],
+  mine: ['.kkk.', 'kdddk', 'kdddk'],
 };
-const MAP_COL = { k: MAP_INK, g: '#b8a886', G: '#7a6a52', w: '#fbf7ea', r: '#c0392b', y: '#ffd23f', p: '#e88aae', n: '#5a8a4a', N: '#3f6a34', d: '#6a5e72', D: '#433a4c', s: '#d9b77a' };
+// Places on the map (owner, Nov 23 2026: "key locations that play into the story, and things we might add later").
+// w: the land it's in (hidden while that land is misty). Tap one for its line.
+const MAP_SPOTS = [
+  { x: 38, y: 106, g: 'tent', w: 0, name: 'Bandit Camp', text: 'Where Kage and his bandits hide in the bamboo.' },
+  { x: 170, y: 40, g: 'falls', w: 3, name: 'Frozen Falls', text: 'Yuki was trapped by the frozen waterfall.' },
+  { x: 206, y: 34, g: 'ship', w: 4, name: 'Sunken Ship', text: "Nami was lost in the old ship. The Octopus's treasure lies near it." },
+  { x: 220, y: 120, g: 'house', w: 5, name: "Suna's Cliff House", text: 'Suna lives up in the red rock cliffs.' },
+  { x: 140, y: 92, g: 'tower', w: 6, name: 'Moon Tower', text: 'The tallest tower of Kuro\'s castle.' },
+  { x: 46, y: 148, g: 'lookout', name: "Sensei's Lookout", text: 'Every night Sensei stood here with his lamp, watching the road for Kuro.' },
+  { x: 14, y: 94, g: 'kite', name: 'Kite Hill', text: 'Kai and Kuro flew their kites here when they were small.' },
+  { x: 58, y: 86, g: 'sign', name: 'The Crossroads', text: 'Here Kuro turned off the road home.' },
+  { x: 88, y: 112, g: 'bridge', name: 'Old Bridge', text: 'The only bridge over the Long River.' },
+  { x: 156, y: 70, g: 'sheep', name: 'Lamb Meadow', text: 'A shepherd once searched here for one lost lamb.' },
+  { x: 184, y: 100, g: 'light', name: 'Lighthouse', text: 'Its light shows ships the way home.' },
+  { x: 66, y: 38, g: 'mine', name: 'Old Mine', text: 'Nobody has gone in for a long time...' },
+];
+const MAP_COL = { q: '#8b5a2b', k: MAP_INK, g: '#b8a886', G: '#7a6a52', w: '#fbf7ea', r: '#c0392b', y: '#ffd23f', p: '#e88aae', n: '#5a8a4a', N: '#3f6a34', d: '#6a5e72', D: '#433a4c', s: '#d9b77a' };
 // The seven lands, in story order: [x, y, size], a faint wash, the symbols over it, the big one in the middle. 4 = the sea.
 const MAP_LAND = [
   { at: [56, 120, 27], tint: '#d6e0ae', g: ['tree', 'tree', 'house', 'tree', 'oak'], big: 'house' },
@@ -8102,7 +8129,7 @@ const MAP_LAND = [
   { at: [200, 132, 30], tint: '#efcc94', g: ['dune', 'cactus', 'dune', 'dune', 'arch'], big: 'arch' },
   { at: [128, 100, 17], tint: '#c4b8c4', g: ['rock', 'dark', 'rock'], big: 'castle' },
 ];
-const MAP_FOG = [[238, 14, 12], [128, 152, 10]];   // unknown lands: x, y, size
+const MAP_FOG = [[236, 18, 15, 13], [226, 80, 13, 9], [128, 160, 26, 8]];   // unknown lands (plain, for worlds still to come): x, y, width, height
 const MAP_RANGES = [   // [points, glyph, name, label spot]
   [[[58, 10], [60, 28], [66, 46], [78, 60], [96, 70]], 'mt', 'Grey Mountains', [76, 64]],
   [Array.from({ length: 13 }, (_, i) => { const a = Math.PI * (0.95 + i * 0.105); return [128 + Math.cos(a) * 30, 102 + Math.sin(a) * 25]; }), 'dark', 'Dark Mountains', [128, 70]],
@@ -8115,8 +8142,9 @@ const MAP_RIVERS = [   // [points, name, label spot]
 ];
 const MAP_WOODS = [[44, 84, 9, 'oak', 'Bamboo Wood'], [168, 96, 9, 'pine', 'Old Forest'], [112, 52, 7, 'oak', '']];   // x, y, size, tree, name
 const MAP_LAKE = [118, 36, 7, 4];
-const mapSea = (x, y) => (x > 188 + 7 * Math.sin(y / 9) + 3 * Math.sin(y / 3.3) + 2 * Math.sin(y * 1.7) && y < 100 + 5 * Math.sin(x / 6) && !(x > 226 + 3 * Math.sin(y / 2.5) && y < 26))
-  || (y > 150 + 3 * Math.sin(x / 5) + 2 * Math.sin(x * 1.3) && x > 66 && x < 176) || (x < 7 + 3 * Math.sin(y / 4) + 2 * Math.sin(y * 1.9) && y > 104 && y < 128);
+const mapFog = (x, y) => MAP_FOG.some(([fx, fy, a, b]) => ((x - fx) / a) ** 2 + ((y - fy) / b) ** 2 + 0.12 * Math.sin(x * 0.9 + y * 0.5) < 1);
+const mapSea = (x, y) => !mapFog(x, y) && ((x > 188 + 7 * Math.sin(y / 9) + 3 * Math.sin(y / 3.3) + 2 * Math.sin(y * 1.7) && y < 100 + 5 * Math.sin(x / 6) && !(x > 226 + 3 * Math.sin(y / 2.5) && y < 26))
+  || (y > 150 + 3 * Math.sin(x / 5) + 2 * Math.sin(x * 1.3) && x > 66 && x < 176) || (x < 7 + 3 * Math.sin(y / 4) + 2 * Math.sin(y * 1.9) && y > 104 && y < 128));
 function mapRand(seed) { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
 function mapGlyph(c, name, x, y) {
   const g = MAP_GLYPH[name]; x = Math.round(x - g[0].length / 2); y = Math.round(y - g.length);
@@ -8143,7 +8171,7 @@ function drawWorldMap(c, reached, home) {   // the 250 x 160 picture
     if (!s && (mapSea(x + 1, y) || mapSea(x, y + 1) || mapSea(x - 1, y) || mapSea(x, y - 1))) { c.fillStyle = MAP_INK; c.fillRect(x, y, 1, 1); }
     else if (s && !mapSea(x + 3, y) + !mapSea(x - 3, y) + !mapSea(x, y + 3) + !mapSea(x, y - 3) > 0 && !(!mapSea(x + 1, y) || !mapSea(x - 1, y) || !mapSea(x, y + 1) || !mapSea(x, y - 1)) && (x + y) % 2) { c.fillStyle = '#93b6b2'; c.fillRect(x, y, 1, 1); }
   }
-  for (const [ix, iy] of [[232, 70], [206, 92], [150, 156], [96, 156]]) for (let j = -2; j <= 2; j++) for (let i = -3; i <= 3; i++) if (i * i / 9 + j * j / 4 <= 1) { c.fillStyle = Math.abs(i) === 3 || Math.abs(j) === 2 ? MAP_INK : '#e8d5a6'; c.fillRect(ix + i, iy + j, 1, 1); }   // islands
+  for (const [ix, iy] of [[206, 94], [158, 154], [94, 155]]) for (let j = -2; j <= 2; j++) for (let i = -3; i <= 3; i++) if (i * i / 9 + j * j / 4 <= 1) { c.fillStyle = Math.abs(i) === 3 || Math.abs(j) === 2 ? MAP_INK : '#e8d5a6'; c.fillRect(ix + i, iy + j, 1, 1); }   // islands
   for (let y = 8; y < H - 4; y += 9) for (let x = 6; x < W - 4; x += 13) { const jx = x + (rnd() - 0.5) * 6, jy = y + (rnd() - 0.5) * 4; if (mapSea(jx, jy) && mapSea(jx + 5, jy) && mapSea(jx - 3, jy) && rnd() < 0.35) mapGlyph(c, 'wave', jx, jy); }
   { const [lx, ly, a, b] = MAP_LAKE; for (let j = -b; j <= b; j++) for (let i = -a; i <= a; i++) { const d = i * i / (a * a) + j * j / (b * b); if (d <= 1) { c.fillStyle = d > 0.7 ? '#7fa8b8' : '#bfd8d2'; c.fillRect(lx + i, ly + j, 1, 1); } } mark(lx, ly, 6); }
   for (const [pts] of MAP_RIVERS) {   // rivers wander from the hills to the sea
@@ -8151,6 +8179,7 @@ function drawWorldMap(c, reached, home) {   // the 250 x 160 picture
   }
   MAP_LAND.forEach((ld, w) => { if (ld.big) { mapGlyph(c, ld.big, ld.at[0], ld.at[1] - 3); mark(ld.at[0], ld.at[1] - 6, 6); } mark(ld.at[0], ld.at[1] + 6, 6); });   // (and room for the label)
   mark(MAP_DOJO[0], MAP_DOJO[1] - 3, 7); mark(16, 18, 12);
+  for (const sp of MAP_SPOTS) mark(sp.x, sp.y - 3, 5);
   for (const [pts, g] of MAP_RANGES) {   // mountain chains: two rows, back row first
     const spots = []; mapPath(pts, 5, (x, y) => { spots.push([x + (rnd() - 0.5) * 3, y - 3 + (rnd() - 0.5) * 2, g === 'dark' ? 'mtS' : 'mtS']); spots.push([x + (rnd() - 0.5) * 3, y + 2, g]); });
     spots.sort((a, b) => a[1] - b[1]).forEach(([x, y, gl]) => { if (free(x, y - 2, 1)) { mapGlyph(c, gl === 'mtS' && g === 'dark' ? 'dark' : gl, x, y); } });
@@ -8170,20 +8199,29 @@ function drawWorldMap(c, reached, home) {   // the 250 x 160 picture
   });
   for (let y = 8; y < H - 6; y += 8) for (let x = 8; x < W - 6; x += 11) {   // hills and grass on the open country
     const jx = x + (rnd() - 0.5) * 7, jy = y + (rnd() - 0.5) * 4;
-    if (MAP_LAND.some((ld, w) => mapIn(w, jx, jy) > -0.1) || !free(jx, jy - 1, 2) || rnd() < 0.45) continue;
+    if (MAP_LAND.some((ld, w) => mapIn(w, jx, jy) > -0.1) || mapFog(jx, jy) || mapFog(jx, jy + 4) || !free(jx, jy - 1, 2) || rnd() < 0.45) continue;
     mapGlyph(c, rnd() < 0.55 ? 'hill' : 'tuft', jx, jy); mark(jx, jy, 2);
   }
+  for (const sp of MAP_SPOTS) if (sp.w == null || reached(sp.w)) mapGlyph(c, sp.g, sp.x, sp.y);   // the places
   const mist = (x, y) => { const h = (((x * 73856093) ^ (y * 19349663)) >>> 0) % 10; if (h < 7) { c.fillStyle = h < 2 ? '#d6cfc0' : '#e6e0d2'; c.fillRect(x, y, 1, 1); } };
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {   // mist over lands not reached yet, and the unknown lands
     if (MAP_LAND.some((ld, w) => w !== 4 && !reached(w) && mapIn(w, x, y) > -0.08)) mist(x, y);
-    else if (MAP_FOG.some(([fx, fy, r]) => Math.hypot(x - fx, (y - fy) * 1.3) < r + 2 * Math.sin(x * 0.7 + y))) mist(x, y);
   }
   mapGlyph(c, 'dojo', MAP_DOJO[0], MAP_DOJO[1] - 1);
-  const mids = MAP_LAND.map(l => l.at), curve = (a, b, n, f) => { const mx = (a[0] + b[0]) / 2 + (b[1] - a[1]) * 0.15, my = (a[1] + b[1]) / 2 - (b[0] - a[0]) * 0.15;
-    for (let i = 0; i <= n; i++) { const t = i / n; f((1 - t) * (1 - t) * a[0] + 2 * t * (1 - t) * mx + t * t * b[0], (1 - t) * (1 - t) * a[1] + 2 * t * (1 - t) * my + t * t * b[1], i); } };
+  const mids = MAP_LAND.map(l => l.at);
+  const trail = (a, b, col, wide, seed) => {   // a solid path that winds a little (owner: solid, not dotted)
+    const mx = (a[0] + b[0]) / 2 + (b[1] - a[1]) * 0.12, my = (a[1] + b[1]) / 2 - (b[0] - a[0]) * 0.12, len = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.ceil(len * 2);
+    for (let i = 0; i <= n; i++) {
+      const t = i / n, x = (1 - t) * (1 - t) * a[0] + 2 * t * (1 - t) * mx + t * t * b[0], y = (1 - t) * (1 - t) * a[1] + 2 * t * (1 - t) * my + t * t * b[1];
+      const dx = 2 * (1 - t) * (mx - a[0]) + 2 * t * (b[0] - mx), dy = 2 * (1 - t) * (my - a[1]) + 2 * t * (b[1] - my), dl = Math.hypot(dx, dy) || 1;
+      const wob = Math.sin(t * Math.PI) * (Math.sin(t * len / 7 + seed) * 2.6 + Math.sin(t * len / 3 + seed * 2) * 0.8), X = x - dy / dl * wob, Y = y + dx / dl * wob;
+      if (Math.hypot(X - b[0], Y - b[1]) < 8 || Math.hypot(X - a[0], Y - a[1]) < 7) continue;
+      c.fillStyle = col; c.fillRect(Math.round(X), Math.round(Y), wide, wide);
+    }
+  };
   const stops = [MAP_DOJO, ...mids];
-  for (let i = 0; i < stops.length - 1; i++) curve(stops[i], stops[i + 1], 44, (x, y, j) => { if (j % 3 === 0 && Math.hypot(x - stops[i + 1][0], y - stops[i + 1][1]) > 9 && Math.hypot(x - stops[i][0], y - stops[i][1]) > 8) { c.fillStyle = '#a3241a'; c.fillRect(Math.round(x), Math.round(y), 2, 1); } });   // Kuro's route
-  curve(mids[6], MAP_DOJO, 60, (x, y, j) => { if (j % 2 === 0 && Math.hypot(x - mids[6][0], y - mids[6][1]) > 10 && Math.hypot(x - MAP_DOJO[0], y - MAP_DOJO[1]) > 8) { c.fillStyle = home ? '#e0a800' : 'rgba(160,130,60,.35)'; c.fillRect(Math.round(x), Math.round(y), 1, 1); } });   // the road home
+  for (let i = 0; i < stops.length - 1; i++) trail(stops[i], stops[i + 1], '#a3241a', 1, i * 1.7);   // Kuro's route
+  trail(mids[6], MAP_DOJO, home ? '#e0a800' : 'rgba(160,130,60,.45)', 1, 9);   // the road home
   const cx = 16, cy = 18; c.fillStyle = MAP_INK;   // a compass rose
   for (let i = -9; i <= 9; i++) { c.fillRect(cx + i, cy, 1, 1); c.fillRect(cx, cy + i, 1, 1); }
   for (let i = 1; i < 4; i++) c.fillRect(cx - i, cy - 9 + i * 2, 2 * i + 1, 1);
@@ -8209,14 +8247,17 @@ function openMap() {
     if (on) label(JOURNAL[w].why, x * 4, y * 4 + 54, 17, '#6b3a1a', true);
     if ((prog.journal || {})[w]) { const im = new Image(); im.onload = () => { c.imageSmoothingEnabled = false; c.drawImage(im, x * 4 + 40, y * 4 - 44, 26, 26); }; im.src = pixURL('book', 4); }
   });
+  for (const sp of MAP_SPOTS) if (sp.w == null || reached(sp.w)) label(sp.name, sp.x * 4, sp.y * 4 + 16, 14, '#4a3a2a', true);
   label('HOME', MAP_DOJO[0] * 4 + 4, MAP_DOJO[1] * 4 + 16, 22, '#7b1610');
-  for (const [x, y] of MAP_FOG) label('Unknown lands', x * 4, y * 4 + 6, 17, 'rgba(58,42,26,.55)', true);
+  for (const [x, y] of MAP_FOG) label('Unknown land', x * 4, Math.min(y * 4 + 6, 626), 17, 'rgba(58,42,26,.6)', true);
   const kc = document.createElement('canvas'); kc.width = 40; kc.height = 40; drawNinjaPreview(kc, { ...prog.equip, pet: null }, 2);   // Kai, where he is now
-  const [kx, ky] = home ? MAP_DOJO : MAP_LAND[here].at; c.drawImage(kc, kx * 4 + (home ? 30 : -84), Math.max(4, ky * 4 - 70), 56, 56);
+  const [kx, ky] = home ? MAP_DOJO : MAP_LAND[here].at; c.drawImage(kc, kx * 4 + (home ? -28 : -84), Math.max(4, ky * 4 - (home ? 96 : 70)), 56, 56);
   cv.onclick = e => {
     const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) * MAP_W / r.width, y = (e.clientY - r.top) * MAP_H / r.height, info = $('mapInfo');
     if (Math.hypot(MAP_DOJO[0] - x, MAP_DOJO[1] - y) < 12) { info.innerHTML = `<b>Home</b> · Sensei waits here for both his sons.${home ? ` <i>"${SENSEI_NOTE}"</i>` : ''}`; return; }
-    if (MAP_FOG.some(([fx, fy, rr]) => Math.hypot(x - fx, y - fy) < rr + 4)) { info.innerHTML = '<b>Unknown lands</b> · Nobody has been here yet.'; return; }
+    const sp = MAP_SPOTS.find(o => (o.w == null || reached(o.w)) && Math.hypot(o.x - x, o.y - 2 - y) < 6);
+    if (sp) { audio(); info.innerHTML = `<b>${sp.name}</b> · ${sp.text}`; return; }
+    if (mapFog(x, y)) { info.innerHTML = '<b>Unknown land</b> · Nobody has been here yet. Maybe someday!'; return; }
     let w = -1, bd = 1e9; MAP_LAND.forEach((ld, i) => { const d = Math.hypot(x - ld.at[0], y - ld.at[1]) / Math.max(18, ld.at[2] || 30); if (d < bd) { bd = d; w = i; } });
     if (bd > 1.4) return;
     audio();

@@ -66,7 +66,7 @@ After the ending, the journal shows underneath, in Sensei's hand: "My son, I nev
 
 ## The world map
 
-The road leaves the dojo (Home), goes round the seven lands in story order and comes back home (gold once Kuro is home). Kuro's footprints mark the road out. Fogged "?" lands are left for worlds still to come.
+The road leaves the dojo (Home), goes round the seven lands in story order and comes back home (gold once Kuro is home). Kuro's footprints mark the road out. Plain "Unknown land" areas are left for worlds still to come. Places on the map (tap for a line): Bandit Camp, Frozen Falls, Sunken Ship, Suna's Cliff House, Moon Tower; and, for the story later: **Sensei's Lookout** ("Every night Sensei stood here with his lamp, watching the road for Kuro."), **Kite Hill** ("Kai and Kuro flew their kites here when they were small."), **The Crossroads** ("Here Kuro turned off the road home."), **Old Bridge**, **Lamb Meadow** ("A shepherd once searched here for one lost lamb."), **Lighthouse** ("Its light shows ships the way home."), **Old Mine**.
 
 ## Lost friends (optional, one per world)
 
