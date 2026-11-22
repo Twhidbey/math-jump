@@ -615,7 +615,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 22, 2026 11:10 PM PT · Map: lands side by side with rivers, mountains and forests between</div>
+  <div class="build">Updated Nov 22, 2026 11:50 PM PT · Map: a real fantasy map (mountains, rivers, woods between the lands)</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -8058,24 +8058,25 @@ function openJournal() {
   }).join('') + (home && got[JOURNAL.length - 1] ? `<div class="jpage sensei"><div class="jw">Written underneath, in Sensei's hand</div><p>"${SENSEI_NOTE}"</p></div>` : '');
   showMsg("Kuro's journal", `<p><small>${pagesFound()} of ${JOURNAL.length} pages found</small></p><div class="jbook">${cards}</div>`, [{ label: 'Back', fn: toMenu, primary: true }]);
 }
-// The map (owner, Nov 22 2026: "like a map from Lord of the Rings, with regions, in pixel style"; then "regions should be
-// adjacent and don't need to be the same size, with natural things separating them: rivers, mountain ranges, oceans,
-// desert, forest"). Drawn at 250 x 160 and scaled up 4x so it stays pixel art. mapLayout() splits the land among the
-// worlds (a weighted Voronoi with wobbly edges: MAP_SEED); the Coral Sea is the ocean on the east. Each border between two
-// lands is a river, a mountain range or a forest (MAP_BORDER). The dojo (Home) sits in the Village's south-west; Kuro's
-// route is the red dotted line; the road home turns gold once he is home; "Unknown lands" (seed index 7+) are left for
-// worlds still to come.
-const MAP_W = 250, MAP_H = 160, MAP_DOJO = [24, 142];
-const MAP_SEED = [[58, 118, 1.15], [30, 58, 0.95], [86, 30, 0.85], [150, 30, 1.25], null, [200, 132, 1.2], [128, 98, 1.0], [100, 155, 0.55], [238, 12, 0.5]];   // [x, y, size]; 4 = the sea
+// The map (owner, Nov 22 2026: "like a map from Lord of the Rings, with regions, in pixel style"; then lands side by side
+// with natural borders; then "a little more natural, it can have no colour region between ... think fantasy map").
+// Drawn at 250 x 160 and scaled up 4x so it stays pixel art. Like a hand-drawn fantasy map: mostly plain parchment;
+// each world is a soft-edged land (MAP_LAND: centre, size, a faint wash, its own symbols); the open country between is
+// shaped by named features (MAP_RANGES mountain chains, shaded on the east side; MAP_RIVERS from the mountains to the sea;
+// MAP_WOODS with stray trees at their edges; a lake; hills and grass); a ragged coast with islands. The dojo (Home)
+// sits in the Village; Kuro's route is the red dotted line; the road home turns gold once he is home; two misty
+// "Unknown lands" (MAP_FOG) are left for worlds still to come.
+const MAP_W = 250, MAP_H = 160, MAP_DOJO = [24, 138];
 const MAP_INK = '#4a3a2a';
-const MAP_GLYPH = {   // tiny pixel drawings; k ink, g/G shade, w white, r red, y yellow, p pink, n green, d dark, s sand
-  mt: ['....k....', '...kgk...', '..kgggk..', '.kgggGgk.', 'kgggGGggk'],
-  snow: ['....k....', '...kwk...', '..kwwwk..', '.kwgwggk.', 'kggggGggk'],
-  dark: ['...k.....', '..kdk..k.', '.kdddkkdk', 'kddddddddk'],
-  volc: ['...r.r...', '....rr...', '...krrk..', '..kgrggk.', '.kgggrggk', 'kggggggggk'],
+const MAP_GLYPH = {   // tiny pixel drawings; k ink, g light side, G shade side, w white, r red, y yellow, p pink, n green, N dark green, d dark, s sand
+  mt: ['....k....', '...kgGk..', '..kggGGk.', '.kgggGGGk', 'kggggGGGGk'],
+  mtS: ['...k...', '..kgGk.', '.kggGGk', 'kgggGGGk'],
+  snow: ['....k....', '...kwwk..', '..kwwGGk.', '.kwggGGGk', 'kggggGGGGk'],
+  dark: ['....k....', '...kdDk..', '..kddDDk.', '.kdddDDDk', 'kddddDDDDk'],
+  volc: ['..r..r...', '...rr....', '...krrk..', '..kgrGGk.', '.kggrGGGk', 'kggggGGGGk'],
   tree: ['.ppp.', 'ppppp', '.ppp.', '..k..'],
-  pine: ['..n..', '.nnn.', '..n..', '.nnn.', 'nnnnn', '..k..'],
-  oak: ['.nnn.', 'nnnnn', '.nnn.', '..k..'],
+  pine: ['..n..', '.nNn.', '..n..', '.nnN.', 'nnnNN', '..k..'],
+  oak: ['.nnN.', 'nnnNN', '.nNN.', '..k..'],
   house: ['.rrr.', 'rrrrr', '.kwk.', '.kkk.'],
   stack: ['.g..', 'g.g.', '....', 'kk..', 'kk..', 'kk.k', 'kkkk'],
   gear: ['.k.k.', 'kkkkk', '.k.k.', 'kkkkk', '.k.k.'],
@@ -8084,92 +8085,105 @@ const MAP_GLYPH = {   // tiny pixel drawings; k ink, g/G shade, w white, r red, 
   cactus: ['.n.', 'nnn', '.n.', '.n.'],
   castle: ['k.k...k.k', 'kkk.k.kkk', 'kdk.k.kdk', 'kddkkkddk', 'kdddydddk', 'kdddddddk', 'kkkkkkkkk'],
   wave: ['.kk..', 'k..k.', '....k'],
-  isle: ['..nn..', '.nnnn.', 'ssssss'],
-  hill: ['.GG.', 'G..G'],
-  rock: ['.kk.', 'kddk'],
+  hill: ['.kk.', 'k..G'],
+  tuft: ['n.n', '.n.'],
+  rock: ['.kk.', 'kdDk'],
   nn: ['k...k', 'kk..k', 'k.k.k', 'k..kk', 'k...k'],
   dojo: ['....r....', '...rrr...', '.rrrrrrr.', '...kwk...', '.rrrrrrr.', 'rrrrrrrrr', '..kwkwk..', '..kkkkk..'],
 };
-const MAP_COL = { k: MAP_INK, g: '#9a8a70', G: '#7a6a52', w: '#fbf7ea', r: '#c0392b', y: '#ffd23f', p: '#e88aae', n: '#4f7f42', d: '#4a3e52', s: '#d9b77a' };
-const MAP_LAND = [   // per world: the symbols scattered over it, its wash, and the big one in the middle
-  { g: ['tree', 'tree', 'house', 'oak', 'hill'], tint: '#d3dea6', big: 'house' },
-  { g: ['mt', 'rock', 'volc', 'mt'], tint: '#dcae8e', big: 'volc' },
-  { g: ['stack', 'gear', 'rock', 'stack'], tint: '#cdc8ba', big: 'gear' },
-  { g: ['snow', 'snow', 'pine', 'snow'], tint: '#f1f0e8', big: 'snow' },
-  { g: ['wave', 'isle', 'wave', 'wave'], tint: null, big: 'isle' },
-  { g: ['dune', 'cactus', 'dune', 'arch'], tint: '#ecc488', big: 'arch' },
-  { g: ['dark', 'rock', 'dark'], tint: '#b4a8b4', big: 'castle' },
-  { g: ['hill'], tint: '#e2dccd', big: null }, { g: ['hill'], tint: '#e2dccd', big: null },
+const MAP_COL = { k: MAP_INK, g: '#b8a886', G: '#7a6a52', w: '#fbf7ea', r: '#c0392b', y: '#ffd23f', p: '#e88aae', n: '#5a8a4a', N: '#3f6a34', d: '#6a5e72', D: '#433a4c', s: '#d9b77a' };
+// The seven lands, in story order: [x, y, size], a faint wash, the symbols over it, the big one in the middle. 4 = the sea.
+const MAP_LAND = [
+  { at: [56, 120, 27], tint: '#d6e0ae', g: ['tree', 'tree', 'house', 'tree', 'oak'], big: 'house' },
+  { at: [30, 50, 21], tint: '#e2b796', g: ['mtS', 'volc', 'rock', 'mt'], big: 'volc' },
+  { at: [92, 24, 17], tint: '#d3cec0', g: ['stack', 'gear', 'stack'], big: 'gear' },
+  { at: [158, 26, 27], tint: '#f3f1ea', g: ['snow', 'pine', 'snow', 'snow'], big: 'snow' },
+  { at: [214, 52, 0], tint: null, g: [], big: null },
+  { at: [200, 132, 30], tint: '#efcc94', g: ['dune', 'cactus', 'dune', 'dune', 'arch'], big: 'arch' },
+  { at: [128, 100, 17], tint: '#c4b8c4', g: ['rock', 'dark', 'rock'], big: 'castle' },
 ];
-const MAP_BORDER = { '0-1': 'river', '0-6': 'river', '1-2': 'mt', '2-3': 'forest', '2-6': 'forest', '1-6': 'mt', '3-6': 'mt', '5-6': 'mt', '3-5': 'forest', '0-7': 'forest', '6-7': 'mt', '5-7': 'dunes', '1-0': 'river' };
-const mapSea = (x, y) => x > 180 + 6 * Math.sin(y / 8) + 4 * Math.sin(y / 3.1) && y < 100 + 5 * Math.sin(x / 6) && !(x > 222 + 3 * Math.sin(y / 2.5) && y < 24);
-const mapWob = (x, y) => Math.sin(x * 0.21 + y * 0.13) * 3 + Math.sin(x * 0.07 - y * 0.19) * 4 + Math.sin((x + y) * 0.33) * 1.5;
-let MAP_LAYOUT = null;
-function mapLayout() {   // who owns each pixel (-1 edge, 4 sea), each land's middle
-  if (MAP_LAYOUT) return MAP_LAYOUT;
-  const own = new Int8Array(MAP_W * MAP_H), sum = MAP_SEED.map(() => [0, 0, 0]);
-  for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
-    let best = 4, bd = 1e9;
-    if (!mapSea(x, y)) MAP_SEED.forEach((sd, i) => { if (!sd) return; const d = Math.hypot(x - sd[0], (y - sd[1]) * 1.25) / sd[2] + mapWob(x, y); if (d < bd) { bd = d; best = i; } });
-    own[y * MAP_W + x] = best; sum[best][0] += x; sum[best][1] += y; sum[best][2]++;
-  }
-  const mid = sum.map((s, i) => (s[2] ? [Math.round(s[0] / s[2]), Math.round(s[1] / s[2])] : [0, 0]));
-  mid[4] = [214, 54];   // (the sea's label sits in open water)
-  return (MAP_LAYOUT = { own, mid });
-}
+const MAP_FOG = [[238, 14, 12], [128, 152, 10]];   // unknown lands: x, y, size
+const MAP_RANGES = [   // [points, glyph, name, label spot]
+  [[[58, 10], [60, 28], [66, 46], [78, 60], [96, 70]], 'mt', 'Grey Mountains', [76, 64]],
+  [Array.from({ length: 13 }, (_, i) => { const a = Math.PI * (0.95 + i * 0.105); return [128 + Math.cos(a) * 30, 102 + Math.sin(a) * 25]; }), 'dark', 'Dark Mountains', [128, 70]],
+  [[[178, 64], [186, 82], [184, 104]], 'mtS', '', null],
+];
+const MAP_RIVERS = [   // [points, name, label spot]
+  [[[78, 62], [80, 76], [86, 92], [86, 108], [94, 124], [104, 140], [112, 150]], 'Long River', [74, 100]],
+  [[[150, 48], [158, 56], [170, 60], [180, 62], [190, 60]], '', null],
+  [[[40, 70], [44, 86], [36, 100], [24, 112], [8, 116]], '', null],
+];
+const MAP_WOODS = [[44, 84, 9, 'oak', 'Bamboo Wood'], [168, 96, 9, 'pine', 'Old Forest'], [112, 52, 7, 'oak', '']];   // x, y, size, tree, name
+const MAP_LAKE = [118, 36, 7, 4];
+const mapSea = (x, y) => (x > 188 + 7 * Math.sin(y / 9) + 3 * Math.sin(y / 3.3) + 2 * Math.sin(y * 1.7) && y < 100 + 5 * Math.sin(x / 6) && !(x > 226 + 3 * Math.sin(y / 2.5) && y < 26))
+  || (y > 150 + 3 * Math.sin(x / 5) + 2 * Math.sin(x * 1.3) && x > 66 && x < 176) || (x < 7 + 3 * Math.sin(y / 4) + 2 * Math.sin(y * 1.9) && y > 104 && y < 128);
 function mapRand(seed) { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
 function mapGlyph(c, name, x, y) {
   const g = MAP_GLYPH[name]; x = Math.round(x - g[0].length / 2); y = Math.round(y - g.length);
   g.forEach((row, j) => [...row].forEach((ch, i) => { if (ch !== '.') { c.fillStyle = MAP_COL[ch]; c.fillRect(x + i, y + j, 1, 1); } }));
 }
+function mapIn(w, x, y) {   // 0..1: how far inside land w (its edge wobbles), < 0 outside
+  const [cx, cy, R] = MAP_LAND[w].at; if (!R) return -1;
+  const dx = x - cx, dy = (y - cy) * 1.25, a = Math.atan2(dy, dx), rr = R * (1 + 0.16 * Math.sin(3 * a + w * 1.7) + 0.09 * Math.sin(5 * a + w * 2.9) + 0.05 * Math.sin(9 * a + w));
+  return 1 - Math.hypot(dx, dy) / rr;
+}
+const mapPath = (pts, step, f) => { for (let i = 0; i < pts.length - 1; i++) { const [a, b] = [pts[i], pts[i + 1]], n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / step); for (let j = 0; j < n; j++) f(a[0] + (b[0] - a[0]) * j / n, a[1] + (b[1] - a[1]) * j / n); } };
 function drawWorldMap(c, reached, home) {   // the 250 x 160 picture
-  const { own, mid } = mapLayout(), W = MAP_W, H = MAP_H, rnd = mapRand(7);
-  const at = (x, y) => (x < 0 || y < 0 || x >= W || y >= H ? -1 : own[Math.round(y) * W + Math.round(x)]);
-  const lit = i => i >= 7 || i === 4 ? true : reached(i);
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {   // parchment, the land washes, the sea
-    const o = own[y * W + x], n = rnd(), ld = MAP_LAND[o];
-    let col = n < 0.08 ? '#dcc48e' : n < 0.12 ? '#efe0b6' : '#e8d5a6';
-    if (o === 4) col = n < 0.06 ? '#a9c8c4' : '#bfd8d2';
-    else if (ld && ld.tint && n >= 0.12) col = ld.tint;
+  const W = MAP_W, H = MAP_H, rnd = mapRand(7), busy = new Uint8Array(W * H);   // busy: something drawn here already
+  const mark = (x, y, r) => { for (let j = -r; j <= r; j++) for (let i = -r; i <= r; i++) { const X = Math.round(x + i), Y = Math.round(y + j); if (X >= 0 && Y >= 0 && X < W && Y < H) busy[Y * W + X] = 1; } };
+  const free = (x, y, r) => { for (let j = -r; j <= r; j++) for (let i = -r; i <= r; i++) { const X = Math.round(x + i), Y = Math.round(y + j); if (X < 0 || Y < 0 || X >= W || Y >= H || busy[Y * W + X] || mapSea(X, Y)) return false; } return true; };
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {   // parchment, the lands' faint washes, the sea
+    const n = rnd(); let col = n < 0.07 ? '#dcc48e' : n < 0.11 ? '#efe0b6' : '#e8d5a6';
+    if (mapSea(x, y)) col = n < 0.05 ? '#a9c8c4' : '#bfd8d2';
+    else MAP_LAND.forEach((ld, w) => { const k = mapIn(w, x, y); if (ld.tint && k > 0 && n < 0.2 + k * 4) col = n < 0.07 ? col : ld.tint; });
     c.fillStyle = col; c.fillRect(x, y, 1, 1);
   }
-  const edge = [];   // the borders between lands
-  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
-    const o = own[y * W + x], r = own[y * W + x + 1], d = own[(y + 1) * W + x];
-    if ((o === 4) !== (r === 4) || (o === 4) !== (d === 4)) { c.fillStyle = MAP_INK; c.fillRect(x, y, 1, 1); continue; }   // the coast
-    if (o !== 4 && (r !== o || d !== o)) { const b = r !== o ? r : d; edge.push([x, y, `${Math.min(o, b)}-${Math.max(o, b)}`]); }
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {   // the coast: an inked line and a faint ripple out at sea
+    const s = mapSea(x, y);
+    if (!s && (mapSea(x + 1, y) || mapSea(x, y + 1) || mapSea(x - 1, y) || mapSea(x, y - 1))) { c.fillStyle = MAP_INK; c.fillRect(x, y, 1, 1); }
+    else if (s && !mapSea(x + 3, y) + !mapSea(x - 3, y) + !mapSea(x, y + 3) + !mapSea(x, y - 3) > 0 && !(!mapSea(x + 1, y) || !mapSea(x - 1, y) || !mapSea(x, y + 1) || !mapSea(x, y - 1)) && (x + y) % 2) { c.fillStyle = '#93b6b2'; c.fillRect(x, y, 1, 1); }
   }
-  let k = 0;
-  for (const [x, y, key] of edge) {   // each border is a river, a mountain range, a forest or dunes
-    const kind = MAP_BORDER[key] || 'hills';
-    if (kind === 'river') { c.fillStyle = '#6f9fb4'; c.fillRect(x, y, 2, 2); }
-    else if (++k % 6 === 0) mapGlyph(c, kind === 'mt' ? (key.includes('6') ? 'dark' : 'mt') : kind === 'forest' ? (key.includes('3') ? 'pine' : 'oak') : kind === 'dunes' ? 'dune' : 'hill', x + 1, y + 3);
+  for (const [ix, iy] of [[232, 70], [206, 92], [150, 156], [96, 156]]) for (let j = -2; j <= 2; j++) for (let i = -3; i <= 3; i++) if (i * i / 9 + j * j / 4 <= 1) { c.fillStyle = Math.abs(i) === 3 || Math.abs(j) === 2 ? MAP_INK : '#e8d5a6'; c.fillRect(ix + i, iy + j, 1, 1); }   // islands
+  for (let y = 8; y < H - 4; y += 9) for (let x = 6; x < W - 4; x += 13) { const jx = x + (rnd() - 0.5) * 6, jy = y + (rnd() - 0.5) * 4; if (mapSea(jx, jy) && mapSea(jx + 5, jy) && mapSea(jx - 3, jy) && rnd() < 0.35) mapGlyph(c, 'wave', jx, jy); }
+  { const [lx, ly, a, b] = MAP_LAKE; for (let j = -b; j <= b; j++) for (let i = -a; i <= a; i++) { const d = i * i / (a * a) + j * j / (b * b); if (d <= 1) { c.fillStyle = d > 0.7 ? '#7fa8b8' : '#bfd8d2'; c.fillRect(lx + i, ly + j, 1, 1); } } mark(lx, ly, 6); }
+  for (const [pts] of MAP_RIVERS) {   // rivers wander from the hills to the sea
+    let k = 0; mapPath(pts, 1, (x, y) => { const wob = Math.sin(k++ / 4) * 1.6; const X = Math.round(x + wob * 0.7), Y = Math.round(y); if (!mapSea(X, Y)) { c.fillStyle = '#6f9fb4'; c.fillRect(X, Y, 2, 1); c.fillStyle = '#4f7f94'; c.fillRect(X + 2, Y, 1, 1); mark(X, Y, 2); } });
   }
-  { let rx = 160, ry = 40; c.fillStyle = '#6f9fb4'; for (let i = 0; i < 120 && at(rx, ry) !== 4; i++) { c.fillRect(Math.round(rx), Math.round(ry), 2, 1); rx += 0.55; ry += 0.4 + 0.6 * Math.sin(i / 6); } }   // a river from the snow down to the sea
-  for (let y = 6; y < 100; y += 7) for (let x = 186; x < 248; x += 11) if (at(x - 4, y) === 4 && at(x + 4, y) === 4 && rnd() < 0.45) mapGlyph(c, 'wave', x + (y % 14 ? 5 : 0), y);
-  MAP_LAND.forEach((ld, w) => {   // symbols over each land (not on its border, not on its label)
-    const rr = mapRand(31 + w * 17), [mx, my] = mid[w];
-    let j = 0;
-    for (let y = 6; y < H - 4; y += 8) for (let x = 4; x < W - 4; x += 10) {
-      const jx = Math.round(x + (rr() - 0.5) * 6), jy = Math.round(y + (rr() - 0.5) * 4);
-      if (at(jx, jy) !== w || [[-5, 0], [5, 0], [0, -6], [0, 3], [-4, -4], [4, -4]].some(([a, b]) => at(jx + a, jy + b) !== w)) continue;
-      if (Math.abs(jx - mx) < 16 && Math.abs(jy - my) < 9) continue;
-      if (Math.hypot(jx - MAP_DOJO[0], jy - MAP_DOJO[1]) < 10 || (jx < 30 && jy < 30)) continue;
-      if (w === 4 && rr() < 0.5) continue;
-      mapGlyph(c, ld.g[j++ % ld.g.length], jx, jy + 2);
+  MAP_LAND.forEach((ld, w) => { if (ld.big) { mapGlyph(c, ld.big, ld.at[0], ld.at[1] - 3); mark(ld.at[0], ld.at[1] - 6, 6); } mark(ld.at[0], ld.at[1] + 6, 6); });   // (and room for the label)
+  mark(MAP_DOJO[0], MAP_DOJO[1] - 3, 7); mark(16, 18, 12);
+  for (const [pts, g] of MAP_RANGES) {   // mountain chains: two rows, back row first
+    const spots = []; mapPath(pts, 5, (x, y) => { spots.push([x + (rnd() - 0.5) * 3, y - 3 + (rnd() - 0.5) * 2, g === 'dark' ? 'mtS' : 'mtS']); spots.push([x + (rnd() - 0.5) * 3, y + 2, g]); });
+    spots.sort((a, b) => a[1] - b[1]).forEach(([x, y, gl]) => { if (free(x, y - 2, 1)) { mapGlyph(c, gl === 'mtS' && g === 'dark' ? 'dark' : gl, x, y); } });
+    mapPath(pts, 1, (x, y) => mark(x, y - 2, 3));
+  }
+  for (const [fx, fy, r, tree] of MAP_WOODS) {   // woods, with stray trees round the edge
+    const rr = mapRand(fx * 7 + fy);
+    for (let k = 0; k < r * r * 0.9; k++) { const a = rr() * 6.28, d = Math.sqrt(rr()) * r * (k < r * r * 0.7 ? 1 : 1.7), x = fx + Math.cos(a) * d, y = fy + Math.sin(a) * d * 0.8; if (free(x, y - 2, 1)) { mapGlyph(c, tree, x, y); mark(x, y - 2, 2); } }
+  }
+  MAP_LAND.forEach((ld, w) => {   // each land's own symbols
+    const rr = mapRand(31 + w * 17); let j = 0;
+    for (let y = 4; y < H; y += 7) for (let x = 4; x < W; x += 9) {
+      const jx = Math.round(x + (rr() - 0.5) * 5), jy = Math.round(y + (rr() - 0.5) * 3);
+      if (mapIn(w, jx, jy) < 0.18 || !free(jx, jy - 2, 2)) continue;
+      mapGlyph(c, ld.g[j++ % ld.g.length], jx, jy + 2); mark(jx, jy - 1, 3);
     }
-    if (ld.big) mapGlyph(c, ld.big, mx, my - 3);
   });
+  for (let y = 8; y < H - 6; y += 8) for (let x = 8; x < W - 6; x += 11) {   // hills and grass on the open country
+    const jx = x + (rnd() - 0.5) * 7, jy = y + (rnd() - 0.5) * 4;
+    if (MAP_LAND.some((ld, w) => mapIn(w, jx, jy) > -0.1) || !free(jx, jy - 1, 2) || rnd() < 0.45) continue;
+    mapGlyph(c, rnd() < 0.55 ? 'hill' : 'tuft', jx, jy); mark(jx, jy, 2);
+  }
+  const mist = (x, y) => { const h = (((x * 73856093) ^ (y * 19349663)) >>> 0) % 10; if (h < 7) { c.fillStyle = h < 2 ? '#d6cfc0' : '#e6e0d2'; c.fillRect(x, y, 1, 1); } };
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {   // mist over lands not reached yet, and the unknown lands
-    const o = own[y * W + x]; if (o < 0 || (o < 7 && lit(o))) continue;
-    const h = (((x * 73856093) ^ (y * 19349663)) >>> 0) % 10; if (h < 7 || o >= 7) { c.fillStyle = h < 2 ? '#d6cfc0' : '#e6e0d2'; c.fillRect(x, y, 1, 1); }
+    if (MAP_LAND.some((ld, w) => w !== 4 && !reached(w) && mapIn(w, x, y) > -0.08)) mist(x, y);
+    else if (MAP_FOG.some(([fx, fy, r]) => Math.hypot(x - fx, (y - fy) * 1.3) < r + 2 * Math.sin(x * 0.7 + y))) mist(x, y);
   }
   mapGlyph(c, 'dojo', MAP_DOJO[0], MAP_DOJO[1] - 1);
-  const curve = (a, b, n, f) => { const mx = (a[0] + b[0]) / 2 + (b[1] - a[1]) * 0.18, my = (a[1] + b[1]) / 2 - (b[0] - a[0]) * 0.18;
+  const mids = MAP_LAND.map(l => l.at), curve = (a, b, n, f) => { const mx = (a[0] + b[0]) / 2 + (b[1] - a[1]) * 0.15, my = (a[1] + b[1]) / 2 - (b[0] - a[0]) * 0.15;
     for (let i = 0; i <= n; i++) { const t = i / n; f((1 - t) * (1 - t) * a[0] + 2 * t * (1 - t) * mx + t * t * b[0], (1 - t) * (1 - t) * a[1] + 2 * t * (1 - t) * my + t * t * b[1], i); } };
-  const stops = [MAP_DOJO, ...mid.slice(0, 7)];
+  const stops = [MAP_DOJO, ...mids];
   for (let i = 0; i < stops.length - 1; i++) curve(stops[i], stops[i + 1], 44, (x, y, j) => { if (j % 3 === 0 && Math.hypot(x - stops[i + 1][0], y - stops[i + 1][1]) > 9 && Math.hypot(x - stops[i][0], y - stops[i][1]) > 8) { c.fillStyle = '#a3241a'; c.fillRect(Math.round(x), Math.round(y), 2, 1); } });   // Kuro's route
-  curve(mid[6], MAP_DOJO, 60, (x, y, j) => { if (j % 2 === 0 && Math.hypot(x - mid[6][0], y - mid[6][1]) > 10 && Math.hypot(x - MAP_DOJO[0], y - MAP_DOJO[1]) > 8) { c.fillStyle = home ? '#e0a800' : 'rgba(160,130,60,.35)'; c.fillRect(Math.round(x), Math.round(y), 1, 1); } });   // the road home
+  curve(mids[6], MAP_DOJO, 60, (x, y, j) => { if (j % 2 === 0 && Math.hypot(x - mids[6][0], y - mids[6][1]) > 10 && Math.hypot(x - MAP_DOJO[0], y - MAP_DOJO[1]) > 8) { c.fillStyle = home ? '#e0a800' : 'rgba(160,130,60,.35)'; c.fillRect(Math.round(x), Math.round(y), 1, 1); } });   // the road home
   const cx = 16, cy = 18; c.fillStyle = MAP_INK;   // a compass rose
   for (let i = -9; i <= 9; i++) { c.fillRect(cx + i, cy, 1, 1); c.fillRect(cx, cy + i, 1, 1); }
   for (let i = 1; i < 4; i++) c.fillRect(cx - i, cy - 9 + i * 2, 2 * i + 1, 1);
@@ -8180,28 +8194,31 @@ function openMap() {
   hide('menu');
   showMsg('The World', `<canvas id="mapCv" width="1000" height="640" class="mapcv"></canvas><div id="mapInfo" class="mapinfo">Tap a land.</div>`, [{ label: 'Back', fn: toMenu, primary: true }]);
   const cv = $('mapCv'), c = cv.getContext('2d'), open = unlockedCount(), home = !!prog.best[bossOf(WORLDS.length - 1)];
-  const here = STAGES[Math.min(open - 1, STAGES.length - 1)].w, reached = w => open > w * PER_WORLD, { own, mid } = mapLayout();
+  const here = STAGES[Math.min(open - 1, STAGES.length - 1)].w, reached = w => open > w * PER_WORLD;
   const small = document.createElement('canvas'); small.width = MAP_W; small.height = MAP_H;
   drawWorldMap(small.getContext('2d'), reached, home);
   c.imageSmoothingEnabled = false; c.drawImage(small, 0, 0, 1000, 640);
   const label = (txt, x, y, size, col, italic) => { c.font = `${italic ? 'italic ' : ''}${size}px ${italic ? 'Georgia, serif' : '"Lilita One", sans-serif'}`; c.textAlign = 'center';
     c.lineWidth = 5; c.strokeStyle = 'rgba(232,213,166,.9)'; c.strokeText(txt, x, y); c.fillStyle = col; c.fillText(txt, x, y); };
+  for (const [, , name, at] of MAP_RANGES) if (name) label(name, at[0] * 4, at[1] * 4, 16, '#5a4632', true);   // the features' names, small
+  for (const [, name, at] of MAP_RIVERS) if (name) label(name, at[0] * 4, at[1] * 4, 16, '#3f6f84', true);
+  for (const [x, y, , , name] of MAP_WOODS) if (name) label(name, x * 4, (y + 13) * 4, 16, '#3f6a34', true);
   WORLDS.forEach((W, w) => {
-    const [x, y] = mid[w], on = reached(w);
-    label(W.name.toUpperCase(), x * 4, y * 4 + 30, 22, on ? '#3a2a1a' : 'rgba(58,42,26,.45)');
-    if (on) label(JOURNAL[w].why, x * 4, y * 4 + 50, 17, '#6b3a1a', true);
+    const [x, y] = MAP_LAND[w].at, on = reached(w);
+    label(W.name.toUpperCase(), x * 4, y * 4 + 34, 24, on ? '#3a2a1a' : 'rgba(58,42,26,.45)');
+    if (on) label(JOURNAL[w].why, x * 4, y * 4 + 54, 17, '#6b3a1a', true);
     if ((prog.journal || {})[w]) { const im = new Image(); im.onload = () => { c.imageSmoothingEnabled = false; c.drawImage(im, x * 4 + 40, y * 4 - 44, 26, 26); }; im.src = pixURL('book', 4); }
   });
-  label('HOME', MAP_DOJO[0] * 4 + 4, MAP_DOJO[1] * 4 + 14, 22, '#7b1610');
-  for (let i = 7; i < MAP_SEED.length; i++) { const [x, y] = mid[i]; label('Unknown lands', x * 4, y * 4 + 6, 17, 'rgba(58,42,26,.55)', true); }
+  label('HOME', MAP_DOJO[0] * 4 + 4, MAP_DOJO[1] * 4 + 16, 22, '#7b1610');
+  for (const [x, y] of MAP_FOG) label('Unknown lands', x * 4, y * 4 + 6, 17, 'rgba(58,42,26,.55)', true);
   const kc = document.createElement('canvas'); kc.width = 40; kc.height = 40; drawNinjaPreview(kc, { ...prog.equip, pet: null }, 2);   // Kai, where he is now
-  const [kx, ky] = home ? MAP_DOJO : mid[here]; c.drawImage(kc, kx * 4 + (home ? 30 : -84), Math.max(4, ky * 4 - 70), 56, 56);
+  const [kx, ky] = home ? MAP_DOJO : MAP_LAND[here].at; c.drawImage(kc, kx * 4 + (home ? 30 : -84), Math.max(4, ky * 4 - 70), 56, 56);
   cv.onclick = e => {
-    const r = cv.getBoundingClientRect(), x = Math.floor((e.clientX - r.left) * MAP_W / r.width), y = Math.floor((e.clientY - r.top) * MAP_H / r.height), info = $('mapInfo');
+    const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) * MAP_W / r.width, y = (e.clientY - r.top) * MAP_H / r.height, info = $('mapInfo');
     if (Math.hypot(MAP_DOJO[0] - x, MAP_DOJO[1] - y) < 12) { info.innerHTML = `<b>Home</b> · Sensei waits here for both his sons.${home ? ` <i>"${SENSEI_NOTE}"</i>` : ''}`; return; }
-    const w = own[clamp(y, 0, MAP_H - 1) * MAP_W + clamp(x, 0, MAP_W - 1)];
-    if (w >= 7) { info.innerHTML = '<b>Unknown lands</b> · Nobody has been here yet.'; return; }
-    if (w < 0) return;
+    if (MAP_FOG.some(([fx, fy, rr]) => Math.hypot(x - fx, y - fy) < rr + 4)) { info.innerHTML = '<b>Unknown lands</b> · Nobody has been here yet.'; return; }
+    let w = -1, bd = 1e9; MAP_LAND.forEach((ld, i) => { const d = Math.hypot(x - ld.at[0], y - ld.at[1]) / Math.max(18, ld.at[2] || 30); if (d < bd) { bd = d; w = i; } });
+    if (bd > 1.4) return;
     audio();
     const W = WORLDS[w], p = JOURNAL[w], got = (prog.journal || {})[w], st = STAGES[pageStage(p)];
     if (!reached(w)) { info.innerHTML = `<b>${W.name}</b> · Not reached yet.`; return; }
