@@ -313,7 +313,7 @@
         if (act === 'remove' && confirm('Remove this player from the page? Their online backup is deleted too (their own device keeps its save). If they play again on a linked device, they come back.')) {
           delete data.kids[id]; delete limits[id]; render();
           fetch(url(`/kids/${id}`), { method: 'DELETE' }).catch(() => {}); fetch(url(`/limits/${id}`), { method: 'DELETE' }).catch(() => {});
-          fetch(url(`/saves/${id}`), { method: 'DELETE' }).catch(() => {}); fetch(url(`/detail/${id}`), { method: 'DELETE' }).catch(() => {});
+          fetch(url(`/saves/${id}`), { method: 'DELETE' }).catch(() => {}); fetch(url(`/time/${id}`), { method: 'DELETE' }).catch(() => {}); fetch(url(`/detail/${id}`), { method: 'DELETE' }).catch(() => {});
         }
       });
     });
