@@ -597,7 +597,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 22, 2026 5:05 PM PT · Wise owl levels 6 and 7: Shadow clone, Time freeze</div>
+  <div class="build">Updated Nov 22, 2026 6:10 PM PT · Players are backed up online</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -7780,7 +7780,7 @@ function updateAmbient() {
 function finishLevel() {
   if (typeof famLog === 'function') famLog(true);   // the parent page: what was played
   if (prog.owned.includes('pet-owl')) { const lv = owlLevel(); if (lv > (prog.owlLv || 1)) { prog.owlLv = lv; setTimeout(() => toastMsg(`${petImg('pet-owl')} Owl level up! Level ${lv}: ${OWL_POW[lv - 1]}`, 4200), 1200); } else if (!prog.owlLv) prog.owlLv = lv; }   // the Wise owl grows
-  if (typeof famPush === 'function') setTimeout(() => { famPush(); famPushDetail(); }, 500);   // the parent page: a fresh report after each level
+  if (typeof famPush === 'function') setTimeout(() => { famPush(); famPushDetail(); famSync(); }, 500);   // the parent page: a fresh report after each level
   mode = 'done'; checkUpdate(true);   // quietly look for a new version (loaded on the next tap)
   const i = G.idx, st = STAGES[i], W = WORLDS[st.w];
   const dots = G.mistakes === 0 ? 3 : G.mistakes <= 2 ? 2 : 1, sk = G.skill, pts = dots * sk.tier;
@@ -14417,6 +14417,12 @@ function showPlayers() {
   add.innerHTML = '<span class="pi">➕</span><span class="pn">Add player</span>';
   add.onclick = async () => { audio(); if (typeof famAsk === 'function' && !(await famAsk('add a player'))) return; editPlayer(null); };
   grid.appendChild(add);
+  if (famLinked()) {   // players backed up from other devices (cloud saves)
+    const cl = document.createElement('div'); cl.className = 'pcard add'; cl.tabIndex = 0;
+    cl.innerHTML = '<span class="pi">☁️</span><span class="pn">Saved players</span>';
+    cl.onclick = async () => { audio(); if (!(await famAsk('get a saved player'))) return; famRestoreList(true); };
+    grid.appendChild(cl);
+  }
   show('players');
 }
 function editPlayer(pl) {
@@ -14532,6 +14538,7 @@ function applyProg() {
 }
 function switchPlayer(id) {
   players.cur = id; savePlayers(); loadProg(id); applyProg();
+  if (typeof famSync === 'function') setTimeout(famSync, 500);
   hide('players'); toMenu();
   if (!prog.seenIntro) { prog.seenIntro = true; save(); hide('menu'); showStory(() => { hide('msg'); show('menu'); }); }
 }
@@ -14865,13 +14872,14 @@ setInterval(() => {   // once a second
   if (++famTick % 15 === 0) { for (const k of Object.keys(prog.time)) if (k < dayStr(new Date(Date.now() - 14 * 864e5))) delete prog.time[k]; save(); }
   if (!famCode) return;
   if (famTick % 60 === 0) famPush();
+  if (famTick % 60 === 30) famSync();
   if (famTick % 20 === 0) famPull();   // (often, so "Stop after this level" gets here quickly)
   const left = famLeft();
   if (left === 300 && playing && G && P) floatText(cam + VW / 2, P.y - 60, '5 minutes left today!', '#ffd23f', 24);
   if (left <= 0 && playing && G && P && !G.upTold) { G.upTold = true; floatText(cam + VW / 2, P.y - 60, famStopped() ? 'Last level! Finish this one.' : "Time's up! Finish this level.", '#ffd23f', 26); }
   if (left <= 0 && mode === 'menu' && !$('menu').classList.contains('hidden')) famTimeUp();
 }, 1000);
-document.addEventListener('visibilitychange', () => { if (!famCode) return; if (document.hidden) famPush(true); else { famPull().then(() => { if (famLeft() <= 0 && mode === 'menu') famTimeUp(); }); famPush(); } });
+document.addEventListener('visibilitychange', () => { if (!famCode) return; if (document.hidden) { famPush(true); famBackup(true); } else { famSync(); famPull().then(() => { if (famLeft() <= 0 && mode === 'menu') famTimeUp(); }); famPush(); } });
 async function famLinkNew() {   // link this device to a family (a new one, or another one)
   const c = (prompt('Grown-ups: type the family code from the parent page (math-jump/parent.html).') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (!c) return;
@@ -14880,7 +14888,12 @@ async function famLinkNew() {   // link this device to a family (a new one, or a
   if (!made) { alert("That family code wasn't found."); return; }
   famCode = c; prog.limit = null; save();
   try { localStorage.setItem(FAM_KEY, c); localStorage.removeItem(FAM_PIN_KEY); } catch (e) { /* no storage */ }
-  famPush(); famPushDetail(); await famPull(); famBtnSync(); alert('Linked! This game now reports to the parent page.');
+  famPush(); famPushDetail(); await famPull(); famBtnSync(); famBackupOthers(true); await famSync();
+  const more = await famCloudKids().catch(() => []);
+  if (more.length) { hide('settings'); showMsg('Linked!', `<p>This game now reports to the parent page and backs up every player.</p><p>${more.length === 1 ? 'One player is' : `${more.length} players are`} saved from another device.</p>`, [
+    { label: 'Get a saved player', fn: () => { hide('msg'); famRestoreList(false, more); }, primary: true },
+    { label: 'Not now', fn: () => { hide('msg'); show('settings'); }, alt: true }]); }
+  else alert('Linked! This game now reports to the parent page and backs up every player.');
 }
 async function famLink() {
   if (!famCode) { famLinkNew(); return; }
@@ -14903,7 +14916,119 @@ async function famLink() {
 function famBtnSync() { $('famBtn').textContent = famCode ? '👪 Parent page: linked' : '👪 Parent page'; }
 $('famBtn').onclick = () => { audio(); famLink(); };
 famBtnSync();
-if (famCode) { famPull().then(() => { if (famLeft() <= 0 && mode === 'menu') famTimeUp(); }); setTimeout(() => { famPush(); famPushDetail(); }, 3000); }
+if (famCode) { famPull().then(() => { if (famLeft() <= 0 && mode === 'menu') famTimeUp(); }); setTimeout(() => { famPush(); famPushDetail(); famSync(); famBackupOthers(); }, 3000); }
+// Cloud saves (owner, Nov 22 2026: "so it isn't only stored on the device"). On a linked device each player's whole save
+// is backed up to families/<code>/saves/<kidId> = { meta: {at, icon, grade, pts}, data: JSON text of prog }. No names:
+// the name lives in this device's player list; a restored player types it again. prog.syncAt is the `at` this device
+// last wrote or read, prog.syncSig a hash of the save as it was then; so "the cloud changed" = cloud at ≠ syncAt (no clock
+// trouble) and "this device changed" = hash ≠ syncSig. Both changed (one kid on two devices): famMerge keeps everything.
+function famLinked() { try { return !!famCode; } catch (e) { return false; } }   // (safe before famCode is set: the player screen can open at start-up)
+const SYNC_SKIP = new Set(['time', 'limit', 'syncAt', 'syncSig']);
+function famSig(d) { const t = JSON.stringify(d, (k, v) => (SYNC_SKIP.has(k) ? undefined : v)); let h = 5381; for (let i = 0; i < t.length; i++) h = (h * 33 + t.charCodeAt(i)) | 0; return String(h >>> 0); }
+const famUsed = d => !!(d && (((d.stats || {}).right || 0) > 0 || (d.bank || 0) > 0 || Object.keys(d.best || {}).length || Object.keys(d.facts || {}).length));   // (never-played players aren't backed up)
+const famPts = d => Object.values(d.best || {}).reduce((a, b) => a + (b.pts || 0), 0);
+function famMerge(a, b) {   // two saves of the same kid: the one with more right answers leads; the rest is added in
+  const right = d => ((d.stats || {}).right || 0);
+  const [base, oth] = right(b) > right(a) ? [b, a] : [a, b], o = JSON.parse(JSON.stringify(base));
+  const addIn = k => { o[k] = o[k] || {}; for (const [x, v] of Object.entries(oth[k] || {})) if (!o[k][x]) o[k][x] = v; };
+  ['golden', 'badges', 'friends', 'moves', 'seenWorld', 'trophies', 'mastery', 'raceBest', 'dojoRpm', 'win'].forEach(addIn);
+  o.best = o.best || {}; for (const [x, v] of Object.entries(oth.best || {})) if (!o.best[x] || (v.pts || 0) > (o.best[x].pts || 0)) o.best[x] = v;
+  o.owned = [...new Set([...(o.owned || []), ...(oth.owned || [])])];
+  o.facts = o.facts || {};
+  for (const [x, f] of Object.entries(oth.facts || {})) {
+    const g = o.facts[x]; if (!g) { o.facts[x] = f; continue; }
+    const n = Math.max((g.days || []).length, (f.days || []).length), days = [...new Set([...(g.days || []), ...(f.days || [])])].sort((p, q) => p - q).slice(-Math.max(1, n));
+    o.facts[x] = Object.assign({}, (f.last || 0) > (g.last || 0) ? f : g, { days });
+  }
+  o.stats = o.stats || {}; for (const [x, v] of Object.entries(oth.stats || {})) {
+    if (typeof v === 'number') o.stats[x] = Math.max(o.stats[x] || 0, v);
+    else if (v && typeof v === 'object') { o.stats[x] = o.stats[x] || {}; for (const [y, w] of Object.entries(v)) if (typeof w === 'number') o.stats[x][y] = Math.max(o.stats[x][y] || 0, w); else if (!(y in o.stats[x])) o.stats[x][y] = w; }
+  }
+  o.time = Object.assign({}, oth.time || {}); for (const [x, v] of Object.entries(base.time || {})) o.time[x] = Math.max(o.time[x] || 0, v);
+  const seen = new Set(), pl = [...(o.plog || []), ...(oth.plog || [])].filter(e => { const k = e.d + e.t + e.n; if (seen.has(k)) return false; seen.add(k); return true; });
+  o.plog = pl.sort((p, q) => (p.d + p.t < q.d + q.t ? -1 : 1)).slice(-120);
+  o.kidId = a.kidId; o.limit = a.limit;
+  return o;
+}
+function famPutSave(d, pl, keep) {   // write one player's save (d = its prog), and note the time for the parent page
+  if (!famCode || !d.kidId) return Promise.resolve(false);
+  const at = Date.now(); d.syncAt = at; d.syncSig = famSig(d);
+  const body = JSON.stringify({ meta: { at, icon: pl.icon || 'kai', grade: pl.grade || '', pts: famPts(d) }, data: JSON.stringify(d) });
+  const p = fetch(famUrl(`/saves/${d.kidId}`), { method: 'PUT', body, keepalive: !!keep && body.length < 60000 })
+    .then(r => { if (!r.ok) throw 0; fetch(famUrl(`/kids/${d.kidId}`), { method: 'PATCH', body: JSON.stringify({ backup: { '.sv': 'timestamp' } }) }).catch(() => {}); return true; }).catch(() => false);
+  return p;
+}
+function famBackup(keep) {   // the player playing now, if anything changed since the last backup
+  if (!famCode || !prog || famSig(prog) === prog.syncSig || !famUsed(prog)) return;
+  if (keep && !prog.syncAt) return;   // never synced yet: famSync reads the cloud copy first, so nothing gets overwritten
+  famKid(); famPutSave(prog, curPlayer(), keep); save();
+}
+let famSyncing = false;
+async function famSync() {   // read the cloud copy (another device may have played), merge, then back up
+  if (!famCode || famSyncing || !prog) return;
+  if (mode === 'play' || mode === 'race' || mode === 'pause' || mode === 'pad' || mode === 'work') return;   // never under a running level
+  famSyncing = true;
+  try {
+    const kid = famKid(), pid = players.cur;
+    const meta = await fetch(famUrl(`/saves/${kid}/meta`)).then(r => r.json());
+    if (meta && meta.at !== prog.syncAt && players.cur === pid && !(mode === 'play' || mode === 'race')) {
+      const txt = await fetch(famUrl(`/saves/${kid}/data`)).then(r => r.json());
+      const cloud = typeof txt === 'string' ? JSON.parse(txt) : null;
+      if (cloud && players.cur === pid && !(mode === 'play' || mode === 'race')) {
+        const both = !prog.syncAt || famSig(prog) !== prog.syncSig;   // played here too since the last sync (or never synced): keep both
+        const merged = both ? famMerge(prog, cloud) : Object.assign(JSON.parse(JSON.stringify(cloud)), { kidId: prog.kidId, limit: prog.limit, time: famMerge(prog, cloud).time });
+        for (const k of Object.keys(prog)) delete prog[k];
+        Object.assign(prog, merged); prog.syncAt = meta.at; prog.syncSig = both ? '' : famSig(prog);   // ('' = send the merge back)
+        save(); applyProg(); if (mode === 'menu' && !$('menu').classList.contains('hidden')) buildMenu();
+      }
+    }
+    if (!meta && prog.syncAt) prog.syncSig = '';   // the backup was removed (parent page): send it again
+    if (players.cur === pid) famBackup();
+  } catch (e) { /* offline: try again later */ }
+  famSyncing = false;
+}
+function famBackupOthers(force) {   // the other players on this device (once, when they've never been backed up)
+  if (!famCode) return;
+  for (const pl of players.list) {
+    if (pl.id === players.cur) continue;
+    let d = null; try { d = JSON.parse(localStorage.getItem(keyFor(pl.id))); } catch (e) { /* no storage */ }
+    if (!famUsed(d) || (d.syncAt && !force)) continue;
+    if (!d.kidId) d.kidId = Array.from({ length: 8 }, () => TEAM_ABC[R(0, TEAM_ABC.length - 1)]).join('');
+    famPutSave(d, pl).then(ok => { if (ok) try { localStorage.setItem(keyFor(pl.id), JSON.stringify(d)); } catch (e) { /* no storage */ } });
+  }
+}
+function famLocalKids() {
+  const s = new Set();
+  for (const pl of players.list) { if (pl.id === players.cur) { if (prog.kidId) s.add(prog.kidId); continue; } try { const d = JSON.parse(localStorage.getItem(keyFor(pl.id))); if (d && d.kidId) s.add(d.kidId); } catch (e) { /* no storage */ } }
+  return s;
+}
+async function famCloudKids() {   // saved players that aren't on this device: [{kid, meta}]
+  const ids = Object.keys((await fetch(famUrl('/saves') + '?shallow=true').then(r => r.json())) || {}), here = famLocalKids();
+  const out = await Promise.all(ids.filter(k => !here.has(k)).map(k => fetch(famUrl(`/saves/${k}/meta`)).then(r => r.json()).then(meta => (meta ? { kid: k, meta } : null)).catch(() => null)));
+  return out.filter(Boolean).sort((a, b) => b.meta.at - a.meta.at);
+}
+async function famRestoreList(fromPlayers, list) {
+  const back = () => { hide('msg'); if (fromPlayers) showPlayers(); else show('settings'); };
+  if (!list) { try { list = await famCloudKids(); } catch (e) { alert("Couldn't reach the saved players. Check the internet and try again."); return; } }
+  hide('players'); hide('settings'); hide('menu');
+  if (!list.length) { showMsg('Saved players', '<p>Every player is already on this device.</p><p>Players are saved after they play on a linked device.</p>', [{ label: 'OK', fn: back, primary: true }]); return; }
+  const when = t => { const d = Math.floor((Date.now() - t) / 864e5); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : `${d} days ago`; };
+  showMsg('Saved players', `<p>Tap one to play it on this device.</p><div class="playergrid" id="cloudGrid">${list.map((c, i) => `<div class="pcard" tabindex="0" data-ci="${i}"><span class="pi">${playerIcon(fixIcon(c.meta.icon))}</span><span class="pg">${GRADE[c.meta.grade] ? GRADE[c.meta.grade].name : ''}</span><span class="pg">${beltFor(+c.meta.pts || 0).name} belt · saved ${when(+c.meta.at || 0)}</span></div>`).join('')}</div>`, [{ label: 'Back', fn: back, alt: true }]);
+  document.querySelectorAll('#cloudGrid .pcard').forEach(el => { el.onclick = () => { audio(); famRestore(list[+el.dataset.ci]); }; });
+}
+async function famRestore(c) {
+  const name = (prompt("What's this player's name?") || '').trim().slice(0, 12);
+  if (!name) return;
+  let d = null; try { const txt = await fetch(famUrl(`/saves/${c.kid}/data`)).then(r => r.json()); d = typeof txt === 'string' ? JSON.parse(txt) : null; } catch (e) { d = null; }
+  if (!d) { alert("Couldn't get that player. Check the internet and try again."); return; }
+  if (famLocalKids().has(c.kid)) { alert('That player is already on this device.'); return; }
+  d.kidId = c.kid; d.syncAt = c.meta.at; d.syncSig = famSig(d); d.limit = null;
+  const id = 'p' + Date.now().toString(36);
+  players.list.push({ id, name, grade: GRADE[c.meta.grade] ? c.meta.grade : null, icon: fixIcon(c.meta.icon) });
+  try { localStorage.setItem(keyFor(id), JSON.stringify(d)); } catch (e) { /* no storage */ }
+  savePlayers(); hide('msg'); switchPlayer(id); toastMsg(`Welcome back, ${name}!`, 3000);
+  famPull();
+}
 function checkUpdate(later) {
   if (!/^https?:/.test(location.protocol) || (!later && mode !== 'menu')) return;
   const here = (document.querySelector('.build') || {}).textContent || '';

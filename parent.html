@@ -246,7 +246,7 @@
       <small>${t.now ? `Now: ${esc(t.now)}${t.wait ? ' (needs one more good day)' : ''}${t.lock ? ' (comes later)' : ''}` : 'Done!'}</small></div>`, trackBody(id, d && (d.tracks || []).find(x => x.n === t.n), facts))).join('');
     return `<div class="card" data-kid="${esc(id)}">
       <div class="kidhead">${pic ? `<img src="${pic}" alt="">` : ''}<div class="nm"><h2>${esc(name)}</h2>
-        <div class="muted"><span class="dot ${live ? 'on' : ''}"></span>${live ? (k.where ? `Playing now: ${esc(k.where)}` : 'In the game now') : k.seen ? `Last played ${ago(k.seen)}` : 'Not played yet'}</div></div>
+        <div class="muted"><span class="dot ${live ? 'on' : ''}"></span>${live ? (k.where ? `Playing now: ${esc(k.where)}` : 'In the game now') : k.seen ? `Last played ${ago(k.seen)}` : 'Not played yet'}${k.backup ? ` · Backed up ${ago(k.backup)}` : ''}</div></div>
         <button class="linkish" data-act="name">${st.names[id] ? 'Rename' : 'Name'}</button></div>
       <div class="row">${stopped ? `<span class="left out">Stopped: the game ends after this level</span><button class="btn small alt" data-act="go">Let them play</button>` : '<button class="btn small stop" data-act="stop">Stop after this level</button>'}</div>
       <h3>Play time</h3>
@@ -310,9 +310,10 @@
         if (act === 'go') { const v = { ...lm }; delete v.stop; put(v); }
         if (act === 'mins') put({ ...lm, on: true, mins: +b.dataset.n });
         if (act === 'extra') { const ex = lm.extra && lm.extra.day === dayStr() ? lm.extra.mins || 0 : 0; put({ ...lm, extra: { day: dayStr(), mins: ex + 15 } }); }
-        if (act === 'remove' && confirm('Remove this player from the page? (If they play again on a linked device, they come back.)')) {
+        if (act === 'remove' && confirm('Remove this player from the page? Their online backup is deleted too (their own device keeps its save). If they play again on a linked device, they come back.')) {
           delete data.kids[id]; delete limits[id]; render();
           fetch(url(`/kids/${id}`), { method: 'DELETE' }).catch(() => {}); fetch(url(`/limits/${id}`), { method: 'DELETE' }).catch(() => {});
+          fetch(url(`/saves/${id}`), { method: 'DELETE' }).catch(() => {}); fetch(url(`/detail/${id}`), { method: 'DELETE' }).catch(() => {});
         }
       });
     });
