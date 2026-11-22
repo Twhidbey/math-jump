@@ -597,7 +597,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 22, 2026 4:14 PM PT · The Wise owl grows with gold facts</div>
+  <div class="build">Updated Nov 22, 2026 5:05 PM PT · Wise owl levels 6 and 7: Shadow clone, Time freeze</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -3495,7 +3495,8 @@ function setStationQ(st, q) {
 // First-try answers build a streak that multiplies the points.
 function streakUp(x, y) {
   G.vanCool = 0; G.dolCool = 0; G.runCool = 0; G.gearCool = 0; G.jetFuel = JET_FUEL;
-  if (wears('suit-dragon')) dragonRoar();   // a right answer refills Ninja vanish, the dolphin and the gear button
+  if (wears('suit-dragon')) dragonRoar();
+  if (owl(7) && !G.freezeT && (G.owlCharge = Math.min(5, (G.owlCharge || 0) + 1)) === 5) floatText(x, y - 70, 'Time freeze ready!', '#bfefff', 20);   // the Wise owl's Time freeze charges   // a right answer refills Ninja vanish, the dolphin and the gear button
   G.streak++; G.bestStreak = Math.max(G.bestStreak, G.streak);
   stat('right'); if (G.streak > statOf('bestStreak')) prog.stats.bestStreak = G.streak;
   if (statOf('right') % 25 === 0 || G.streak === 10 || G.streak === 25 || G.streak === 50) statBadges();
@@ -5230,7 +5231,7 @@ const wears = id => !!prog && (prog.equip.suit === id || prog.equip.band === id 
 // with facts known by heart (gold in the Fact Book). Level 1 Owl eyes (an arrow to the golden gem nearby), 2 Gem catcher
 // (a small gem magnet), 3 Night sight (more light in dark levels), 4 Swoop (bops an enemy ahead now and then), 5 Owl
 // wings (hold jump to glide). Each level keeps the ones before.
-const OWL_AT = [0, 40, 100, 200, 350], OWL_POW = ['Owl eyes', 'Gem catcher', 'Night sight', 'Swoop', 'Owl wings'];
+const OWL_AT = [0, 40, 100, 200, 350, 500, 700], OWL_POW = ['Owl eyes', 'Gem catcher', 'Night sight', 'Swoop', 'Owl wings', 'Shadow clone', 'Time freeze'];   // (levels 6 and 7 added Nov 22: the owner picked the clone and time freeze)
 const goldFacts = () => Object.values((prog && prog.facts) || {}).filter(f => f.days && f.days.length >= 2 && !f.weak).length;
 function owlLevel() { const g = goldFacts(); let lv = 1; for (let i = 1; i < OWL_AT.length; i++) if (g >= OWL_AT[i]) lv = i + 1; return lv; }
 const owl = n => wears('pet-owl') && owlLevel() >= n;
@@ -5240,7 +5241,20 @@ function owlPowerText() {
   const more = next != null ? next - goldFacts() : 0;
   return `Wise owl · level ${lv}: ${OWL_POW[lv - 1]}${next != null ? ` (${more} more gold fact${more === 1 ? '' : 's'} to level ${lv + 1})` : ' (top level!)'}`;
 }
-function owlTick(p) {   // Swoop (level 4): now and then the owl swoops at an enemy ahead
+function owlTick(p) {   // Swoop (level 4), Shadow clone (6), Time freeze (7)
+  if (owl(6) && !G.rescue && !G.cross) {   // Shadow clone: a see-through Kai runs along above him, copies his jumps and grabs gems on its own path
+    const c = G.clone || (G.clone = { x: p.x, y: p.y - 2.6 * T, face: 1, air: false }), tx = p.x - (p.face || 1) * 10, ty = p.y - 2.6 * T;
+    c.x += (tx - c.x) * 0.25; c.y += (ty - c.y) * 0.25; c.face = p.face; c.air = !p.onGround; c.walk = Math.abs(p.vx) > 1;
+    for (const g of L.coins) if (!g.taken && !g.gold && g.x > c.x - 6 && g.x < c.x + p.w + 6 && g.y > c.y - 6 && g.y < c.y + p.h + 6) { g.taken = true; G.coins += g.v; G.score += 100 * g.v; gemSound(); flyGem(g.x, g.y, g.v); }
+  } else G.clone = null;
+  if (G.freezeT > 0 && --G.freezeT === 0) floatText(p.x + p.w / 2, p.y - 40, 'Time moves again!', '#bfefff', 20);
+  if (owl(7) && !G.freezeT && (G.owlCharge || 0) >= 5) {   // Time freeze: charged by 5 right answers, it goes off when an enemy comes near
+    const cx = p.x + p.w / 2;
+    if (L.enemies.some(e => !e.dead && !e.twinRaid && Math.abs(e.x + e.w / 2 - cx) < 5 * T && Math.abs(e.y - p.y) < 4 * T)) {
+      G.owlCharge = 0; G.freezeT = 240; shake(6, 3);
+      floatText(cx, p.y - 50, 'Time freeze!', '#bfefff', 30); tone(1568, 0.5, 'sine', 0.05, 392); tone(520, 0.3, 'sine', 0.04, 390, 0.2);
+    }
+  }
   const pet = G.pet; if (!pet || !owl(4)) return;
   const cx = p.x + p.w / 2, f = G.swoop;
   if (f) {
@@ -5252,6 +5266,18 @@ function owlTick(p) {   // Swoop (level 4): now and then the owl swoops at an en
     const e = L.enemies.find(e => !e.dead && !e.twinRaid && (e.x - cx) * (p.face || 1) > 0 && Math.abs(e.x - cx) < 5 * T && Math.abs(e.y - p.y) < 3 * T);
     if (e) { const near = Math.abs(pet.x - cx) < 150; G.swoop = { e, x: near ? pet.x : cx, y: near ? pet.y : p.y - 30, back: false }; G.swoopCd = 360; tone(520, 0.2, 'sine', 0.04, 390); tone(390, 0.25, 'sine', 0.04, null, 0.22); } else G.swoopCd = 30;
   }
+}
+function drawClone() {   // the Shadow clone: Kai at a third, with a soft purple glow
+  const c = G.clone; if (!c || !P) return;
+  glowAt(c.x + P.w / 2, c.y + P.h / 2, 34, 'rgba(160,120,255,.25)');
+  ctx.globalAlpha = 0.38; drawBaked(SPR, c.air ? 'jump' : c.walk && Math.floor(tick / 6) % 2 ? 'walkA' : 'stand', c.face < 0, { x: c.x, y: c.y, w: P.w, h: P.h }); ctx.globalAlpha = 1;
+}
+function drawFreeze() {   // Time freeze: the world goes cool and still (screen space)
+  if (!G || !(G.freezeT > 0)) return;
+  const a = Math.min(1, G.freezeT / 20, (240 - G.freezeT + 1) / 10);
+  ctx.fillStyle = `rgba(150,200,255,${0.18 * a})`; ctx.fillRect(0, 0, VW, VH);
+  ctx.strokeStyle = `rgba(230,245,255,${0.5 * a})`; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(VW - 60, 140, 22, 0, 7); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(VW - 60, 140); ctx.lineTo(VW - 60, 124); ctx.moveTo(VW - 60, 140); ctx.lineTo(VW - 60 + 12 * Math.sin(G.freezeT / 240 * 6.28), 140 - 12 * Math.cos(G.freezeT / 240 * 6.28)); ctx.stroke();
 }
 function drawOwlEyes() {   // Owl eyes (level 1): an arrow to the golden gem when it's near but off screen; a twinkle ring when on screen
   if (!owl(1) || L.boss || L.vault) return;
@@ -6988,7 +7014,7 @@ function updatePlayer() {
   if (G.dive) { diveTick(p); petTick(); return; }
   if (G.ride) { rideTick(p); petTick(); return; }   // the sea: carried through a current tunnel
   if (G.down) { tmDownTick(p); petTick(); return; }   // team run: out of hearts, floating in a rescue bubble   // the sea: swimming through the door that just opened
-  updateTwist();
+  if (!(G.freezeT > 0)) updateTwist();   // (and the level's hazards)
   updateFlavor();
   updateFriend();
   updateMini();
@@ -7873,7 +7899,7 @@ function update() {
   if (G.bossIn) bossInTick();   // the boss's entrance: nothing else moves
   else {
     if (G.hand && mode === 'play') updateHand();
-    if (mode === 'play') { updatePlayer(); updateEnemies(); }
+    if (mode === 'play') { updatePlayer(); if (!(G.freezeT > 0)) updateEnemies(); }   // (the Wise owl's Time freeze stops enemies)
     else if (mode === 'win') { updateWin(); updateEnemies(); }
     if (mode === 'play' || mode === 'win') { updateBoss(); if (L.boss) { updateArena(); updateOrbs(); updateShotsAndProjectiles(); } }
   }
@@ -12117,6 +12143,7 @@ function kidPic() {
   return sk && sk.tier === 1 ? picFor(q) : null;
 }
 function drawHUD() {
+  drawFreeze();   // (the Wise owl's Time freeze tint, under the HUD)
   const narrow = VW < 700, st = STAGES[G.idx], pic = kidPic(), picH = pic ? (narrow ? 46 : 56) : 0;
   if (L.twist && G.time < 300 && !L.vault && !G.rescue) hudIconText((TWIST_PIX[L.twist] || ['star'])[0], (TWIST_PIX[L.twist] || [])[1] || null, TWIST_HINT[L.twist], VW / 2, (narrow ? 92 : 10) + 104 + (pic ? picH + 6 : 0), narrow ? 15 : 19, '#ffd23f');
   for (let i = 0; i < G.maxHearts; i++) heart(30 + i * 36, 16, 13, i < G.hearts ? '#ff4d6d' : 'rgba(0,0,0,.35)');
@@ -12238,7 +12265,7 @@ function render() {
   drawRainbowBridge();   // (the Rainbow suit's bridge, over the pit)
   drawBoss();
   if (L.boss) { drawOrbs(); }
-  if (G) { drawTeamGhost(); drawTeamTwin(); drawDolphin(); drawRunner(); drawShopPow(); drawOwlEyes(); drawPet(); drawPlayer(); drawTeamFx(); drawGearFx(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
+  if (G) { drawTeamGhost(); drawTeamTwin(); drawDolphin(); drawRunner(); drawShopPow(); drawOwlEyes(); drawClone(); drawPet(); drawPlayer(); drawTeamFx(); drawGearFx(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
   if (L.twist && G) drawTwistFront();
   if (L.flavor && G) drawFlavorFront();
   if (L.water && !L.room) drawWaterFront();

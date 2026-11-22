@@ -93,3 +93,4 @@ Owner asked for a parent screen with its own link: how long each kid plays, a ti
 - **Rainbow jump and dragon pets (Nov 21, live):** the Rainbow suit now arches a rainbow over a pit when Kai runs off the edge and zips him across (owner chose automatic); the dragon pets got bat wings, horns, spikes, a snout and an arrow tail.
 - **Dragon pets redrawn (Nov 21, live):** owner didn't like the first redraw; picked the Japanese dragon (long, wavy, whiskers, mane) from three options, a bit bigger than other pets.
 - **Wise owl (Nov 22, live):** the Owl pet grows with gold facts, slowly (40 / 100 / 200 / 350): Owl eyes → Gem catcher → Night sight → Swoop → Owl wings. Shop shows its level; parent page too.
+- **Owl levels 6 and 7 (Nov 22, live):** Shadow clone (500 gold facts: a see-through Kai above him grabs gems) and Time freeze (700: 5 right answers charge it, then enemies and twists stop for 4 s when one comes near). Owner chose these as new top levels.

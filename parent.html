@@ -149,7 +149,7 @@
       <h3>Levels won (${(d.levels || []).length})</h3>${(d.levels || []).map(l => `<div class="lv" style="margin-left:0">${esc(l.n)} ${'●'.repeat(+l.dots || 0)}${'○'.repeat(Math.max(0, 3 - (+l.dots || 0)))}${l.gold ? ' · golden gem' : ''}</div>`).join('') || '<span class="muted">None yet</span>'}
       <h3>Almost there</h3>${(d.close || []).map(b => `<div class="lv" style="margin-left:0"><b>${esc(b.n)}</b>: ${+b.now} / ${+b.need} <span class="muted">· ${esc(b.t)}</span></div>`).join('') || '<span class="muted">Nothing close yet</span>'}
       <h3>Badges (${(d.badges || []).length})</h3><div class="chips">${(d.badges || []).map(b => `<span class="chip" style="cursor:default">${esc(b)}</span>`).join('') || '<span class="muted">None yet</span>'}</div>
-      ${d.owl ? `<h3>Wise owl</h3><div>Level ${+d.owl.lv} of 5 (${esc(d.owl.pow)}) · ${+d.owl.gold} facts known by heart${d.owl.next != null ? ` · ${+d.owl.next - +d.owl.gold} more to level ${+d.owl.lv + 1}` : ' · top level!'}</div>` : ''}
+      ${d.owl ? `<h3>Wise owl</h3><div>Level ${+d.owl.lv} of 7 (${esc(d.owl.pow)}) · ${+d.owl.gold} facts known by heart${d.owl.next != null ? ` · ${+d.owl.next - +d.owl.gold} more to level ${+d.owl.lv + 1}` : ' · top level!'}</div>` : ''}
       <h3>Lost friends rescued</h3><div>${(d.friends || []).map(esc).join(', ') || '<span class="muted">None yet</span>'}</div></div>`;
   }
 
