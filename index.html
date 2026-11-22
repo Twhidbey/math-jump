@@ -597,7 +597,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 21, 2026 3:50 PM PT · Japanese dragon pets</div>
+  <div class="build">Updated Nov 22, 2026 4:14 PM PT · The Wise owl grows with gold facts</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -2811,7 +2811,7 @@ const SHOP = [
   { id: 'pet-dragon-fire', slot: 'pet', name: 'Fire dragon', price: 5000, power: 'Fire breath' },
   { id: 'pet-dragon-gold', slot: 'pet', name: 'Golden dragon', price: 10000, power: 'Dragon rescue' },
   { id: 'pet-octo', slot: 'pet', name: 'Little octopus', price: 0, badge: 't8' },
-  { id: 'pet-owl', slot: 'pet', name: 'Owl', price: 0, badge: 't10' },
+  { id: 'pet-owl', slot: 'pet', name: 'Owl', price: 0, badge: 't10', get power() { return owlPowerText(); } },   // Wise owl: grows with gold facts
 ];
 // Trails: the bits Kai leaves when he runs. up: no gravity (they drift by vy).
 const TRAIL_LOOK = {
@@ -5226,6 +5226,44 @@ function diveTick(p) {
 // Powers of the shop's treasure shelf (owner, Nov 2026: "all the expensive gear should have some cool power"). None of
 // them answers or skips math: they make running, jumping and collecting more fun. They work by themselves while worn.
 const wears = id => !!prog && (prog.equip.suit === id || prog.equip.band === id || prog.equip.trail === id || prog.equip.pet === id);
+// The Wise owl (owner, Nov 2026: "a power that increases the more math you practice ... should go pretty slow"): it grows
+// with facts known by heart (gold in the Fact Book). Level 1 Owl eyes (an arrow to the golden gem nearby), 2 Gem catcher
+// (a small gem magnet), 3 Night sight (more light in dark levels), 4 Swoop (bops an enemy ahead now and then), 5 Owl
+// wings (hold jump to glide). Each level keeps the ones before.
+const OWL_AT = [0, 40, 100, 200, 350], OWL_POW = ['Owl eyes', 'Gem catcher', 'Night sight', 'Swoop', 'Owl wings'];
+const goldFacts = () => Object.values((prog && prog.facts) || {}).filter(f => f.days && f.days.length >= 2 && !f.weak).length;
+function owlLevel() { const g = goldFacts(); let lv = 1; for (let i = 1; i < OWL_AT.length; i++) if (g >= OWL_AT[i]) lv = i + 1; return lv; }
+const owl = n => wears('pet-owl') && owlLevel() >= n;
+function owlPowerText() {
+  if (!prog) return 'Wise owl';
+  const lv = owlLevel(), next = OWL_AT[lv];
+  const more = next != null ? next - goldFacts() : 0;
+  return `Wise owl · level ${lv}: ${OWL_POW[lv - 1]}${next != null ? ` (${more} more gold fact${more === 1 ? '' : 's'} to level ${lv + 1})` : ' (top level!)'}`;
+}
+function owlTick(p) {   // Swoop (level 4): now and then the owl swoops at an enemy ahead
+  const pet = G.pet; if (!pet || !owl(4)) return;
+  const cx = p.x + p.w / 2, f = G.swoop;
+  if (f) {
+    const e = f.e, tx = f.back ? pet.x : e.x + e.w / 2, ty = f.back ? pet.y : e.y + e.h / 2, dx = tx - f.x, dy = ty - f.y, d = Math.hypot(dx, dy) || 1;
+    f.x += dx / d * Math.min(10, d); f.y += dy / d * Math.min(10, d);
+    if (!f.back && (d < 14 || e.dead)) { if (!e.dead) { knockOut(e, 'Hoot!'); payGems(e.x + e.w / 2, e.y, 1); } f.back = true; }
+    else if (f.back && d < 12) G.swoop = null;
+  } else if ((G.swoopCd = (G.swoopCd || 0) - 1) <= 0) {
+    const e = L.enemies.find(e => !e.dead && !e.twinRaid && (e.x - cx) * (p.face || 1) > 0 && Math.abs(e.x - cx) < 5 * T && Math.abs(e.y - p.y) < 3 * T);
+    if (e) { const near = Math.abs(pet.x - cx) < 150; G.swoop = { e, x: near ? pet.x : cx, y: near ? pet.y : p.y - 30, back: false }; G.swoopCd = 360; tone(520, 0.2, 'sine', 0.04, 390); tone(390, 0.25, 'sine', 0.04, null, 0.22); } else G.swoopCd = 30;
+  }
+}
+function drawOwlEyes() {   // Owl eyes (level 1): an arrow to the golden gem when it's near but off screen; a twinkle ring when on screen
+  if (!owl(1) || L.boss || L.vault) return;
+  const g = L.coins.find(c => c.gold && !c.taken); if (!g) return;
+  const d = g.x - (P.x + P.w / 2);
+  if (Math.abs(d) > 16 * T) return;
+  if (!G.owlHoot) { G.owlHoot = true; tone(520, 0.2, 'sine', 0.04, 390); tone(390, 0.3, 'sine', 0.04, null, 0.22); if (G.pet) floatText(G.pet.x, G.pet.y - 20, 'Hoo! A golden gem!', '#ffd23f', 18); }
+  if (g.x > cam + 20 && g.x < cam + VW - 20) { ctx.strokeStyle = `rgba(255,214,90,${0.5 + 0.3 * Math.sin(tick * 0.15)})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(g.x, g.y, 24 + Math.sin(tick * 0.15) * 3, 0, 7); ctx.stroke(); return; }
+  const x = d > 0 ? cam + VW - 34 : cam + 34, y = clamp(g.y, 120, GR * T - 40), dir = d > 0 ? 1 : -1, b = Math.sin(tick * 0.15) * 4;
+  ctx.fillStyle = 'rgba(20,20,50,.6)'; ctx.beginPath(); ctx.arc(x, y, 20, 0, 7); ctx.fill();
+  poly([[x + dir * (14 + b), y], [x - dir * (6 - b), y - 11], [x - dir * (6 - b), y + 11]], '#ffd23f');
+}
 function rainbowTick(p) {   // Rainbow suit: running off the edge of a pit, a rainbow arches over it and Kai zips across (owner, Nov 2026); falling in, one catches him. Never at math crossings
   if (L.water || L.boss || L.vault || L.room) return;
   const g = G.rbow, cx = p.x + p.w / 2;
@@ -5337,6 +5375,7 @@ function drawRainbowBridge() {   // in front of the pit's water or lava (drawn a
 function drawShopPow() {   // the rainbow, falling stars, the fireball and the fetching dragon
   for (const st of G.stars || []) { glowAt(st.x, st.y, 22, 'rgba(255,246,200,.7)'); ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(st.x) - 3, Math.round(st.y) - 3, 6, 6); }
   if (G.fireB) { glowAt(G.fireB.x, G.fireB.y, 20, 'rgba(255,140,40,.8)'); ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(G.fireB.x, G.fireB.y, 6, 0, 7); ctx.fill(); }
+  if (G.swoop && PET_SPR[prog.equip.pet]) drawBaked(PET_SPR[prog.equip.pet], Math.floor(tick / 4) % 2 ? 'b' : 'a', G.swoop.back ? G.swoop.x > G.pet.x : G.swoop.e.x < G.swoop.x, { x: G.swoop.x - 10, y: G.swoop.y - 12, w: 20, h: 24 });
   if (G.fetch && PET_SPR[prog.equip.pet]) drawBaked(PET_SPR[prog.equip.pet], Math.floor(tick / 5) % 2 ? 'b' : 'a', G.fetch.back ? G.fetch.x > G.pet.x : G.fetch.c.x < G.fetch.x, { x: G.fetch.x - 10, y: G.fetch.y - 12, w: 20, h: 24 });
 }
 function hurt() {
@@ -6983,7 +7022,7 @@ function updatePlayer() {
   if (hasPower('speed') && p.onGround && Math.abs(p.vx) > 4 && tick % 3 === 0) burst(p.x + p.w / 2, p.y + p.h, '#ffffff', 2, 1);
   if (G.dash > 0 && Math.abs(p.vx) > 3) G.parts.push({ k: 'bit', x: p.x + p.w / 2 - p.face * 14, y: p.y + 8 + Math.random() * (p.h - 12), vx: -p.face * 3, vy: 0, life: 14, col: G.dash < 60 && tick % 8 < 4 ? '#ffffff' : '#7df9ff', s: 4 });   // wind trail
   if (hasPower('star') && tick % 3 === 0) G.parts.push({ k: 'bit', x: p.x + Math.random() * p.w, y: p.y + Math.random() * p.h, vx: 0, vy: -1, life: 20, col: ['#ff5a8a', '#ffd23f', '#7df9ff', '#3ae374'][R(0, 3)], s: 4 });
-  const mag = G.magT > 0 ? VW : hasPower('magnet') ? 200 : hasFriend('magnet') ? 110 : wears('band-galaxy') ? 85 : 0;   // (Galaxy headband: Star pull)   // Niko's magnet pulls from closer; the Magnet Gloves pull the whole screen
+  const mag = G.magT > 0 ? VW : hasPower('magnet') ? 200 : hasFriend('magnet') ? 110 : wears('band-galaxy') ? 85 : owl(2) ? 70 : 0;   // (Galaxy headband: Star pull)   // Niko's magnet pulls from closer; the Magnet Gloves pull the whole screen
   if (G.magT > 0) G.magT--;
   if (mag) for (const c of L.coins) if (!c.taken && !c.gold) { const dx = p.x + p.w / 2 - c.x, dy = p.y + p.h / 2 - c.y, d = Math.hypot(dx, dy); if (d < mag && (G.magT <= 0 || Math.abs(c.x - p.x) < VW * 0.75)) { const v = G.magT > 0 ? Math.max(6, d / 12) : 6; c.x += dx / d * Math.min(v, d); c.y += dy / d * Math.min(v, d); } }
 
@@ -7025,7 +7064,7 @@ function updatePlayer() {
         if (tick % 6 === 0) tone(90, 0.06, 'sawtooth', 0.02, 70);
       }
     }
-    if (keys.jump && p.vy > 2.2 && !G.climb && hasFriend('glide')) {   // Hana's fan: hold jump to float down
+    if (keys.jump && p.vy > 2.2 && !G.climb && (hasFriend('glide') || owl(5))) {   // (the Wise owl at level 5: Owl wings)   // Hana's fan: hold jump to float down
       p.vy = 2.2; if (tick % 5 === 0) G.parts.push({ k: 'bit', x: p.x + p.w / 2 + (Math.random() - 0.5) * 20, y: p.y - 4, vx: 0, vy: 0.5, life: 20, col: '#ff8fbf', s: 4 });
     }
   }
@@ -7080,6 +7119,7 @@ function updatePlayer() {
 
   if (wears('suit-rainbow')) rainbowTick(p); else G.rbow = null;
   shopPowTick(p);
+  if (!L.boss && !L.vault && mode === 'play') owlTick(p);
   if (stepsCatch(p)) return;
   if (swingCatch(p)) return;
   if (raftCatch(p)) return;
@@ -7713,6 +7753,7 @@ function updateAmbient() {
 
 function finishLevel() {
   if (typeof famLog === 'function') famLog(true);   // the parent page: what was played
+  if (prog.owned.includes('pet-owl')) { const lv = owlLevel(); if (lv > (prog.owlLv || 1)) { prog.owlLv = lv; setTimeout(() => toastMsg(`${petImg('pet-owl')} Owl level up! Level ${lv}: ${OWL_POW[lv - 1]}`, 4200), 1200); } else if (!prog.owlLv) prog.owlLv = lv; }   // the Wise owl grows
   if (typeof famPush === 'function') setTimeout(() => { famPush(); famPushDetail(); }, 500);   // the parent page: a fresh report after each level
   mode = 'done'; checkUpdate(true);   // quietly look for a new version (loaded on the next tap)
   const i = G.idx, st = STAGES[i], W = WORLDS[st.w];
@@ -8585,7 +8626,7 @@ function drawSeaDark() {
   d.fillStyle = g; d.fillRect(0, top, VW, VH - top);
   d.globalCompositeOperation = 'destination-out';
   const hole = (x, y, r) => { const h = d.createRadialGradient(x - cam, y, r * 0.3, x - cam, y, r); h.addColorStop(0, 'rgba(0,0,0,1)'); h.addColorStop(1, 'rgba(0,0,0,0)'); d.fillStyle = h; d.fillRect(x - cam - r, y - r, r * 2, r * 2); };
-  hole(P.x + P.w / 2, P.y + P.h / 2, flareR(gearOn('lantern') ? 360 : 150));   // the Paper Lantern lights a big circle
+  hole(P.x + P.w / 2, P.y + P.h / 2, flareR(gearOn('lantern') ? 360 : owl(3) ? 250 : 150));   // the Paper Lantern lights a big circle
   tmLights(hole);   // team run: the partner and the Shadow Twin show in the dark
   for (const f of L.lfish || []) hole(f.x || 0, f.y || 0, 120);
   if (L.angler && L.angler.on) hole(L.angler.x + L.angler.face * 30, L.angler.y - 26, anglerR() + L.angler.pulse * 2);
@@ -9224,7 +9265,7 @@ function drawDarkness() {
   d.globalCompositeOperation = 'destination-out';
   const hole = (x, y, r) => { const g = d.createRadialGradient(x - cam, y, r * 0.3, x - cam, y, r); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); d.fillStyle = g; d.fillRect(x - cam - r, y - r, r * 2, r * 2); };
   tmLights(hole);   // team run: the partner and the Shadow Twin show in the dark
-  hole(P.x + P.w / 2, P.y + P.h / 2, flareR(gearOn('lantern') ? 360 : 170) + Math.sin(tick * 0.1) * 4);   // the Paper Lantern lights a big circle
+  hole(P.x + P.w / 2, P.y + P.h / 2, flareR(gearOn('lantern') ? 360 : owl(3) ? 270 : 170) + Math.sin(tick * 0.1) * 4);   // the Paper Lantern lights a big circle
   for (const f of L.fx) if (f.k === 'crystal') hole(f.x, f.y, f.lit ? 190 : 46);
   for (const fd of L.squads || []) if (!fd.done) { fd.foods.forEach(f => hole(f.x, f.y, 44)); hole(fd.ax, GR * T - 40, 70); }   // animals and their food glow in the dark
   if (G.mbox) G.mbox.bubbles.forEach(b => hole(b.x, b.y, 40));
@@ -10679,7 +10720,7 @@ function drawProjectiles() {
 }
 
 function drawPet() {
-  const pt = G.pet; if (!pt || G.fetch) return;   // (fetching a gem: drawShopPow draws it)
+  const pt = G.pet; if (!pt || G.fetch || G.swoop) return;   // (fetching a gem: drawShopPow draws it)
   const m = pt.moodT > 0 ? pt.mood : null;
   let ox = 0, oy = 0, flip = P.face < 0;
   if (m === 'happy' || m === 'wow') oy = -Math.abs(Math.sin(pt.moodT * 0.25)) * 14;
@@ -12197,7 +12238,7 @@ function render() {
   drawRainbowBridge();   // (the Rainbow suit's bridge, over the pit)
   drawBoss();
   if (L.boss) { drawOrbs(); }
-  if (G) { drawTeamGhost(); drawTeamTwin(); drawDolphin(); drawRunner(); drawShopPow(); drawPet(); drawPlayer(); drawTeamFx(); drawGearFx(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
+  if (G) { drawTeamGhost(); drawTeamTwin(); drawDolphin(); drawRunner(); drawShopPow(); drawOwlEyes(); drawPet(); drawPlayer(); drawTeamFx(); drawGearFx(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
   if (L.twist && G) drawTwistFront();
   if (L.flavor && G) drawFlavorFront();
   if (L.water && !L.room) drawWaterFront();
@@ -14745,6 +14786,7 @@ function famDetail() {
   const levels = Object.entries(prog.best || {}).map(([i, b]) => { const st = STAGES[+i]; return st ? { n: st.boss ? WORLDS[st.w].boss.name : `${st.label} ${st.name}`, dots: b.dots || 0, gold: !!(prog.golden || {})[i] } : null; }).filter(Boolean);
   const close = BADGES.filter(b => !prog.badges[b.id] && b.prog).map(b => { const [now, need] = b.prog(); return { n: b.name, t: b.text, now, need }; }).filter(b => b.need > 0 && b.now > 0).sort((a, b) => b.now / b.need - a.now / a.need).slice(0, 6);
   return { tracks, facts, days, plog: prog.plog || [], levels, badges: BADGES.filter(b => prog.badges[b.id]).map(b => b.name), close,
+    owl: prog.owned.includes('pet-owl') ? { lv: owlLevel(), gold: goldFacts(), next: OWL_AT[owlLevel()] ?? null, pow: OWL_POW[owlLevel() - 1] } : null,
     friends: FRIENDS.filter(f => (prog.friends || {})[f.id]).map(f => f.name), gems: prog.bank || 0, golden: nKeys(prog.golden || {}), gates: (prog.stats || {}).gates || 0, v: 1 };
 }
 function famPushDetail(keep) {
