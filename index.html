@@ -615,7 +615,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 12:30 AM PT · Map: winding paths, story places, room for new lands</div>
+  <div class="build">Updated Nov 23, 2026 12:45 AM PT · Map: just the land names</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -8244,7 +8244,6 @@ function openMap() {
   WORLDS.forEach((W, w) => {
     const [x, y] = MAP_LAND[w].at, on = reached(w);
     label(W.name.toUpperCase(), x * 4, y * 4 + 34, 24, on ? '#3a2a1a' : 'rgba(58,42,26,.45)');
-    if (on) label(JOURNAL[w].why, x * 4, y * 4 + 54, 17, '#6b3a1a', true);
     if ((prog.journal || {})[w]) { const im = new Image(); im.onload = () => { c.imageSmoothingEnabled = false; c.drawImage(im, x * 4 + 40, y * 4 - 44, 26, 26); }; im.src = pixURL('book', 4); }
   });
   for (const sp of MAP_SPOTS) if (sp.w == null || reached(sp.w)) label(sp.name, sp.x * 4, sp.y * 4 + 16, 14, '#4a3a2a', true);
