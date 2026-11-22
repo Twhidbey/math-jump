@@ -54,6 +54,8 @@ Tile letters: `X` pattern-wall block, `Z` pattern-wall choice block, `#` ground,
 - **Golden gems:** one flaming golden gem per level, a little tricky (climb + full jump), not hidden.
 - Owner tried and rejected: answer bar only (no blocks), "blocks only, no buttons", stomping number critters, the zipline, full per-level background scenes, the busiest extras (bamboo in front of Kai, mirror beams, lightning, giant robot, wall of screens, ice-cave openings), oval stepping stones and the bounce cloud in pits.
 
+- **The shop is The Road Home** (owner, Nov 22 2026): everything ties to the story of bringing Kuro home; shelves per world, family keepsakes with a history, gospel hints never named. **No real dragons**: dragon pets are festival kites, the suit is a costume. See `docs/badges-gear.md`.
+
 - **Learning rules (from a math-education review, see `MATH_GOALS.md`):** a miss always shows the right answer (`Oops! 7 × 8 = 56`, gates and bosses; animals, boxes and stones already did). "Fast" comes from `fastFrames(skill, q, walk)`: 3 s for × ÷ (6 s walking/bonking), 5 s otherwise (10 s), also used by the Daily Dojo. Auto mode moves on when `skillProgress(k).ready` (90% learned AND half gold), not just `done`; the end-of-level card says "Come back tomorrow!" in between.
 
 ## Open requests / ideas

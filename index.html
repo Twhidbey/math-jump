@@ -500,6 +500,11 @@
   .item canvas { image-rendering: pixelated; }
   .item .nm { font-weight: 800; font-size: 14px; }
   .item .pr { font-size: 13px; opacity: .85; }
+  .item .istory { font-size: 12px; font-style: italic; opacity: .8; text-align: center; }
+  .item.keep { background: rgba(255,210,63,.1); box-shadow: inset 0 0 0 2px rgba(255,210,63,.35); }
+  .shelfh { grid-column: 1 / -1; font-weight: 800; font-size: 17px; margin-top: 8px; padding: 4px 8px; border-bottom: 2px solid rgba(255,255,255,.2); text-align: left; }
+  .shelfh.fog { opacity: .55; }
+  .shelfh small { font-weight: 400; font-size: 13px; }
   .item button { font: inherit; font-weight: 800; font-size: 13px; border: none; border-radius: 8px; padding: 6px 10px; cursor: pointer; background: #5b6bd6; color: #fff; }
   .item button.buy { background: #2ecc71; }
   .item button.locked { background: #555566; color: #ddd; }   /* a badge prize: looks locked, tap it to see how to win it */
@@ -597,7 +602,7 @@
   <div class="scrollrow" id="scrollRow"></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 22, 2026 6:10 PM PT · Players are backed up online</div>
+  <div class="build">Updated Nov 22, 2026 8:40 PM PT · The Road Home shop: family keepsakes, dragon kites</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -678,9 +683,9 @@
 
 <div id="shop" class="overlay hidden">
   <div class="card shopcard">
-    <h2>Dojo Shop</h2>
+    <h2>The Road Home</h2>
     <div class="shoptop"><canvas id="shopPreview" width="110" height="56"></canvas>
-      <div><div class="bankline"><span data-pixsm="gem"></span> <b id="bank">0</b> gems</div><div class="shophint">Collect gems in levels and races.</div></div></div>
+      <div><div class="bankline"><span data-pixsm="gem"></span> <b id="bank">0</b> gems</div><div class="shophint">Things from Kai's journey. Collect gems in levels and races.</div></div></div>
     <div class="buybox hidden" id="buyBox"></div>
     <div class="shopgrid" id="shopGrid"></div>
     <div class="row"><button class="btn alt" id="shopClose" type="button">Back</button></div>
@@ -2763,36 +2768,36 @@ const ENEMY_SPR = {
 
 // ---------------------------------------------------------------- dojo shop items
 const SHOP = [
-  { id: 'band-red', slot: 'band', name: 'Red headband', price: 0, col: ['#e63946', '#a91d2b'] },
-  { id: 'band-blue', slot: 'band', name: 'Blue headband', price: 40, col: ['#3a86ff', '#1d4fa8'] },
-  { id: 'band-pink', slot: 'band', name: 'Pink headband', price: 55, col: ['#ff6fb5', '#c43d84'] },
-  { id: 'band-gold', slot: 'band', name: 'Gold headband', price: 90, col: ['#ffd23f', '#c99a1a'] },
+  { id: 'band-red', w: 0, story: "Kai's first headband, from Sensei.", slot: 'band', name: 'Red headband', price: 0, col: ['#e63946', '#a91d2b'] },
+  { id: 'band-blue', w: 0, story: "Blue like the village river.", slot: 'band', name: 'Blue headband', price: 40, col: ['#3a86ff', '#1d4fa8'] },
+  { id: 'band-pink', w: 0, story: "Pink like the cherry blossoms.", slot: 'band', name: 'Pink headband', price: 55, col: ['#ff6fb5', '#c43d84'] },
+  { id: 'band-gold', w: 2, story: "Polished in the robot factory.", slot: 'band', name: 'Gold headband', price: 90, col: ['#ffd23f', '#c99a1a'] },
   // Badge prizes (can't be bought): the times tables (t2..t10) and Times-Table Master. anim = headband colours it cycles through.
   { id: 'band-bolt', slot: 'band', name: 'Lightning headband', price: 0, col: ['#ffd23f', '#c99a1a'], badge: 't3', anim: [['#ffd23f', '#c99a1a'], ['#fffbe0', '#ffe066']] },
   { id: 'band-mint', slot: 'band', name: 'Mint headband', price: 0, col: ['#3fe0b0', '#1f9a78'], badge: 'as-add10' },
   { id: 'band-royal', slot: 'band', name: 'Royal headband', price: 0, col: ['#9b59d6', '#6b2fa3'], badge: 'as-sub20' },
   { id: 'band-rainbow', slot: 'band', name: 'Rainbow headband', price: 0, col: ['#e63946', '#a91d2b'], badge: 't9', anim: [['#e63946', '#a91d2b'], ['#ff8c1a', '#c45f00'], ['#ffd23f', '#c99a1a'], ['#3fbf6a', '#2a8a4a'], ['#3a86ff', '#1d4fa8'], ['#9b59d6', '#6b2fa3']] },
   // The treasure shelf (owner, Nov 15 2026: a kid had 29,000 gems and nothing to spend them on): pricey, showy things.
-  { id: 'band-flame', slot: 'band', name: 'Flame headband', price: 600, power: 'Warm-up dash', col: ['#ff3b1f', '#a91d2b'], anim: [['#ff3b1f', '#a91d2b'], ['#ff8c1a', '#c45f00'], ['#ffd23f', '#c99a1a'], ['#ff8c1a', '#c45f00']] },
-  { id: 'band-ice', slot: 'band', name: 'Ice headband', price: 600, power: 'Freeze nearby enemies', col: ['#7fd6ff', '#3a8fc4'], anim: [['#7fd6ff', '#3a8fc4'], ['#ffffff', '#bfefff']] },
-  { id: 'band-galaxy', slot: 'band', name: 'Galaxy headband', price: 1200, power: 'Star pull: gems float to you', col: ['#9b59d6', '#4b2a8a'], anim: [['#9b59d6', '#4b2a8a'], ['#3a86ff', '#1d4fa8'], ['#ff6fb5', '#c43d84'], ['#3fe0b0', '#1f9a78']] },
-  { id: 'suit-navy', slot: 'suit', name: 'Navy suit', price: 0, col: ['#2c3a6b', '#5a72c2'] },
-  { id: 'suit-black', slot: 'suit', name: 'Midnight suit', price: 70, col: ['#1c1a24', '#3d3a52'] },
-  { id: 'suit-green', slot: 'suit', name: 'Forest suit', price: 85, col: ['#1f6b3a', '#3fa35f'] },
-  { id: 'suit-red', slot: 'suit', name: 'Crimson suit', price: 105, col: ['#8b1e2b', '#c43a4b'] },
+  { id: 'band-flame', w: 1, story: "It glows like a warm fire.", slot: 'band', name: 'Flame headband', price: 600, power: 'Warm-up dash', col: ['#ff3b1f', '#a91d2b'], anim: [['#ff3b1f', '#a91d2b'], ['#ff8c1a', '#c45f00'], ['#ffd23f', '#c99a1a'], ['#ff8c1a', '#c45f00']] },
+  { id: 'band-ice', w: 3, story: "Cold as the frozen peaks.", slot: 'band', name: 'Ice headband', price: 600, power: 'Freeze nearby enemies', col: ['#7fd6ff', '#3a8fc4'], anim: [['#7fd6ff', '#3a8fc4'], ['#ffffff', '#bfefff']] },
+  { id: 'band-galaxy', w: 6, story: "Stars seen from the Moon Tower.", slot: 'band', name: 'Galaxy headband', price: 1200, power: 'Star pull: gems float to you', col: ['#9b59d6', '#4b2a8a'], anim: [['#9b59d6', '#4b2a8a'], ['#3a86ff', '#1d4fa8'], ['#ff6fb5', '#c43d84'], ['#3fe0b0', '#1f9a78']] },
+  { id: 'suit-navy', w: 0, story: "Every ninja starts here.", slot: 'suit', name: 'Navy suit', price: 0, col: ['#2c3a6b', '#5a72c2'] },
+  { id: 'suit-black', w: 2, story: "For sneaking past the factory lights.", slot: 'suit', name: 'Midnight suit', price: 70, col: ['#1c1a24', '#3d3a52'] },
+  { id: 'suit-green', w: 0, story: "For running through the bamboo.", slot: 'suit', name: 'Forest suit', price: 85, col: ['#1f6b3a', '#3fa35f'] },
+  { id: 'suit-red', w: 1, story: "Red like the volcano.", slot: 'suit', name: 'Crimson suit', price: 105, col: ['#8b1e2b', '#c43a4b'] },
   { id: 'suit-gold', slot: 'suit', name: 'Golden suit', price: 0, col: ['#d9a21e', '#ffd86b'], badge: 'golden-all' },
-  { id: 'suit-white', slot: 'suit', name: 'Snow suit', price: 135, col: ['#c9d2de', '#f4f7fb'] },
+  { id: 'suit-white', w: 3, story: "Warm in the snow.", slot: 'suit', name: 'Snow suit', price: 135, col: ['#c9d2de', '#f4f7fb'] },
   { id: 'suit-sunset', slot: 'suit', name: 'Sunset suit', price: 0, col: ['#d8642a', '#ffb36b'], badge: 'as-sub10' },
   { id: 'suit-ocean', slot: 'suit', name: 'Ocean suit', price: 0, col: ['#0f6f7a', '#36c6c0'], badge: 't5' },
   { id: 'suit-lava', slot: 'suit', name: 'Lava suit', price: 0, col: ['#2a1416', '#ff6a1a'], badge: 't7', fx: 'ember' },
   { id: 'suit-diamond', slot: 'suit', name: 'Diamond suit', price: 0, col: ['#6fbfe0', '#e8fbff'], badge: 't-all', fx: 'sparkle' },
-  { id: 'suit-shadow', slot: 'suit', name: 'Shadow suit', price: 1500, power: 'Shadow shield', col: ['#14101c', '#6a45a8'], fx: 'shadow' },
-  { id: 'suit-galaxy', slot: 'suit', name: 'Galaxy suit', price: 3000, power: 'Moon jump', col: ['#1a1a4a', '#7a5ae0'], fx: 'star' },
-  { id: 'suit-dragon', slot: 'suit', name: 'Dragon suit', price: 5000, power: 'Dragon roar', col: ['#a01818', '#ffd23f'], fx: 'ember' },
-  { id: 'suit-rainbow', slot: 'suit', name: 'Rainbow suit', price: 8000, power: 'Rainbow bridge', col: ['#c43a4b', '#ff9aa5'], fx: 'rainbow', anim: [['#c43a4b', '#ff9aa5'], ['#d8642a', '#ffb36b'], ['#c99a1a', '#ffe08a'], ['#1f8a4a', '#7bd36a'], ['#1d4fa8', '#7fb0ff'], ['#6b2fa3', '#c9a0f0']] },
-  { id: 'suit-legend', slot: 'suit', name: 'Legend suit', price: 15000, col: ['#f4f7fb', '#ffd23f'], fx: 'gold', power: 'Double jump' },   // (the treasure shelf's powers: see wears() / shopPowTick) (owner): jump again in the air
-  { id: 'trail-spark', slot: 'trail', name: 'Sparkle trail', price: 120 },
-  { id: 'trail-fire', slot: 'trail', name: 'Flame trail', price: 180 },
+  { id: 'suit-shadow', w: 6, story: "Kuro's old shadow suit. Now it protects.", slot: 'suit', name: 'Shadow suit', price: 1500, power: 'Shadow shield', col: ['#14101c', '#6a45a8'], fx: 'shadow' },
+  { id: 'suit-galaxy', w: 6, story: "Night sky over the castle.", slot: 'suit', name: 'Galaxy suit', price: 3000, power: 'Moon jump', col: ['#1a1a4a', '#7a5ae0'], fx: 'star' },
+  { id: 'suit-dragon', w: 0, story: "A dragon costume from the village festival. RAWR!", slot: 'suit', name: 'Dragon costume', price: 5000, power: 'Dragon roar', col: ['#a01818', '#ffd23f'], fx: 'ember' },
+  { id: 'suit-rainbow', w: 5, story: "Rainbows over the red rock arches.", slot: 'suit', name: 'Rainbow suit', price: 8000, power: 'Rainbow bridge', col: ['#c43a4b', '#ff9aa5'], fx: 'rainbow', anim: [['#c43a4b', '#ff9aa5'], ['#d8642a', '#ffb36b'], ['#c99a1a', '#ffe08a'], ['#1f8a4a', '#7bd36a'], ['#1d4fa8', '#7fb0ff'], ['#6b2fa3', '#c9a0f0']] },
+  { id: 'suit-legend', w: 7, story: "For a hero who came home.", slot: 'suit', name: 'Legend suit', price: 15000, col: ['#f4f7fb', '#ffd23f'], fx: 'gold', power: 'Double jump' },   // (the treasure shelf's powers: see wears() / shopPowTick) (owner): jump again in the air
+  { id: 'trail-spark', w: 0, story: "Sparks from the village lanterns.", slot: 'trail', name: 'Sparkle trail', price: 120 },
+  { id: 'trail-fire', w: 1, story: "Flames from the lava falls.", slot: 'trail', name: 'Flame trail', price: 180 },
   { id: 'trail-star', slot: 'trail', name: 'Star trail', price: 0, badge: 'as-add5' },
   { id: 'trail-heart', slot: 'trail', name: 'Heart trail', price: 0, badge: 'as-make10' },
   { id: 'trail-leaf', slot: 'trail', name: 'Leaf trail', price: 0, badge: 'as-add20' },
@@ -2800,18 +2805,32 @@ const SHOP = [
   { id: 'trail-petal', slot: 'trail', name: 'Petal trail', price: 0, badge: 't2' },
   { id: 'trail-bubble', slot: 'trail', name: 'Bubble trail', price: 0, badge: 't4' },
   { id: 'trail-snow', slot: 'trail', name: 'Snowflake trail', price: 0, badge: 't6' },
-  { id: 'trail-bolt', slot: 'trail', name: 'Lightning trail', price: 1000, power: 'Lightning feet' },
-  { id: 'trail-gold', slot: 'trail', name: 'Gold dust trail', price: 2000, power: 'Lucky dust' },
-  { id: 'trail-galaxy', slot: 'trail', name: 'Galaxy trail', price: 2500, power: 'Shooting stars' },
-  { id: 'trail-dragon', slot: 'trail', name: 'Dragon fire trail', price: 4000, power: 'Fire trail' },
-  { id: 'pet-wolf', slot: 'pet', name: 'Wolf pup', price: 5 },
-  { id: 'pet-fox', slot: 'pet', name: 'Kitsune pup', price: 225 },
-  { id: 'pet-dragon', slot: 'pet', name: 'Baby dragon', price: 330 },
-  { id: 'pet-dragon-shadow', slot: 'pet', name: 'Shadow dragon', price: 3500, power: 'Gem fetch' },
-  { id: 'pet-dragon-fire', slot: 'pet', name: 'Fire dragon', price: 5000, power: 'Fire breath' },
-  { id: 'pet-dragon-gold', slot: 'pet', name: 'Golden dragon', price: 10000, power: 'Dragon rescue' },
+  { id: 'trail-bolt', w: 2, story: "Lightning from the factory.", slot: 'trail', name: 'Lightning trail', price: 1000, power: 'Lightning feet' },
+  { id: 'trail-gold', w: 4, story: "Gold dust from a sunken ship.", slot: 'trail', name: 'Gold dust trail', price: 2000, power: 'Lucky dust' },
+  { id: 'trail-galaxy', w: 6, story: "Shooting stars over the castle.", slot: 'trail', name: 'Galaxy trail', price: 2500, power: 'Shooting stars' },
+  { id: 'trail-dragon', w: 1, story: "Festival fireworks. They only bop the bad guys.", slot: 'trail', name: 'Firework trail', price: 4000, power: 'Fire trail' },
+  { id: 'pet-wolf', w: 0, story: "A pup who followed Kai home.", slot: 'pet', name: 'Wolf pup', price: 5 },
+  { id: 'pet-fox', w: 0, story: "A little fox from the shrine.", slot: 'pet', name: 'Kitsune pup', price: 225 },
+  { id: 'pet-dragon', w: 0, story: "A dragon kite from the village festival. Hold on to the string!", slot: 'pet', name: 'Dragon kite', price: 330 },
+  { id: 'pet-dragon-shadow', w: 6, story: "Kuro's old kite. Kai kept it for him.", slot: 'pet', name: 'Shadow dragon kite', price: 3500, power: 'Gem fetch' },
+  { id: 'pet-dragon-fire', w: 1, story: "A red kite that sparkles like the volcano.", slot: 'pet', name: 'Fire dragon kite', price: 5000, power: 'Sparkler: shoots sparks at enemies' },
+  { id: 'pet-dragon-gold', w: 7, story: "Sensei flew this kite with both his boys.", slot: 'pet', name: 'Golden dragon kite', price: 10000, power: 'Kite rescue: saves your last heart' },
   { id: 'pet-octo', slot: 'pet', name: 'Little octopus', price: 0, badge: 't8' },
   { id: 'pet-owl', slot: 'pet', name: 'Owl', price: 0, badge: 't10', get power() { return owlPowerText(); } },   // Wise owl: grows with gold facts
+  // The Road Home (owner, Nov 22 2026: tie the shop to the story and the two brothers; family things with a history;
+  // quiet hints of grace). gift: one keepsake at a time (prog.equip.gift). boss: needs that world's boss won over first.
+  { id: 'band-sensei', w: 0, boss: true, story: 'Sensei tied it on Kuro first. Then on Kai.', slot: 'band', name: "Sensei's headband", price: 400, power: 'Blessing: an extra heart', col: ['#f4f4f4', '#c9d2de'] },
+  { id: 'gift-swords', w: 0, boss: true, story: 'Kuro carved these for little Kai. They practiced every morning.', slot: 'gift', name: 'Wooden swords', price: 1000, power: 'Practice partner: a right answer knocks out a nearby enemy', pix: 'swords' },
+  { id: 'gift-stone', w: 1, boss: true, story: 'Once a heart of stone. Now it is soft.', slot: 'gift', name: 'Stone heart', price: 1500, power: 'Earth stomp: big landings knock enemies flat', pix: 'stoneheart' },
+  { id: 'gift-bot', w: 2, boss: true, story: 'A little robot who got to rest. Now he helps.', slot: 'gift', name: 'Gear buddy', price: 2000, power: '5 in a row: he brings a heart', pix: 'bot' },
+  { id: 'gift-scarf', w: 3, boss: true, story: 'The Snowman knitted it. Nobody should be alone.', slot: 'gift', name: "Snowman's scarf", price: 2500, power: 'Never alone: a snow friend picks up gems you miss', pix: 'scarf' },
+  { id: 'gift-pearl', w: 4, boss: true, story: 'A small gift, shared, becomes plenty.', slot: 'gift', name: 'Sharing pearl', price: 3000, power: 'Share: every 4th gem, a fish brings one more', pix: 'pearl' },
+  { id: 'gift-stinger', w: 5, boss: true, story: 'The Scorpion put it down. Forgive, and forgive again.', slot: 'gift', name: 'Fallen stinger', price: 4000, power: 'Forgive: enemies that bump you turn friendly', pix: 'stinger' },
+  { id: 'gift-lamp', w: 6, story: 'Every night Sensei lit it, watching the road for Kuro.', slot: 'gift', name: "Sensei's lamp", price: 3500, power: 'Waiting light: big light in dark places', pix: 'lamp' },
+  { id: 'gift-sandals', w: 7, story: 'New shoes for tired feet, after the long road home.', slot: 'gift', name: 'Family sandals', price: 5000, power: 'Sure feet: no slipping on ice or sinking in sand', pix: 'sandals' },
+  { id: 'gift-ring', w: 7, story: 'The family ring. You belong here.', slot: 'gift', name: 'Family ring', price: 6000, power: 'Belong: +1 gem for every right answer', pix: 'ring' },
+  { id: 'gift-robe', w: 7, story: 'The best robe, for a son who came home.', slot: 'gift', name: "Father's robe", price: 8000, power: 'Welcome home: a heart back at every gate', pix: 'robe' },
+  { id: 'gift-cloak', w: 7, story: "Kuro's cloak. He was lost, and now he is found.", slot: 'gift', name: "Brother's cloak", price: 10000, power: 'Big brother: Kuro runs with you and catches you if you fall', pix: 'cloak' },
 ];
 // Trails: the bits Kai leaves when he runs. up: no gravity (they drift by vy).
 const TRAIL_LOOK = {
@@ -2841,6 +2860,16 @@ const SUIT_FX = {
 const FLY_PETS = ['pet-dragon', 'pet-owl', 'pet-dragon-shadow', 'pet-dragon-fire', 'pet-dragon-gold'];
 let SPR_ANIM = null;   // an animated headband: one baked Kai per colour (startStage)
 const ITEM = Object.fromEntries(SHOP.map(i => [i.id, i]));
+// The Road Home: one shelf per world in story order, then Home (after the ending), then Sensei's prizes (math badges).
+const SHELF_HOME = 7;
+const shelfOf = it => (it.badge ? 'prize' : it.w ?? 0);
+function shelfOpen(w) { if (w === 'prize') return true; if (w === SHELF_HOME) return !!prog.best[bossOf(WORLDS.length - 1)]; return unlockedCount() > w * PER_WORLD; }
+function giftLock(it) {   // why this item can't be bought yet ('' = it can)
+  const w = shelfOf(it); if (w === 'prize') return '';
+  if (!shelfOpen(w)) return w === SHELF_HOME ? 'Bring Kuro home first' : `Reach ${WORLDS[w].name}`;
+  if (it.boss && !prog.best[bossOf(w)]) return `Win over ${WORLDS[w].boss.name}`;
+  return '';
+}
 // The hero's colours: the equipped headband and suit, and the belt that matches the current rank.
 function heroPal(equip = prog.equip) {
   const band = ITEM[equip.band].col, suit = ITEM[equip.suit].col;
@@ -3332,7 +3361,7 @@ const curPlayer = () => players.list.find(x => x.id === players.cur) || players.
 function savePlayers() { try { localStorage.setItem(PLAYERS_KEY, JSON.stringify(players)); } catch (e) { /* no storage */ } }
 const freshProg = () => ({ best: {}, skill: 'add10', ride: 'panda', track: 'cherry', mastery: {}, easy: null, allOpen: false, seenIntro: false, seenWorld: {}, bank: 0, music: true, layout: 7, auto: true, facts: {}, win: {}, trophies: {}, daily: { last: 0, streak: 0, best: 0 },
   badges: {}, golden: {}, friends: {}, moves: {}, dojoRpm: {}, stats: { bridges: 0, gems: 0 },
-  owned: ['band-red', 'suit-navy'], equip: { band: 'band-red', suit: 'suit-navy', trail: null, pet: null }, raceBest: {} });
+  owned: ['band-red', 'suit-navy'], equip: { band: 'band-red', suit: 'suit-navy', trail: null, pet: null, gift: null }, raceBest: {} });
 let prog;
 function loadProg(id) {
   prog = freshProg();
@@ -3436,6 +3465,7 @@ function shake(frames, amp) { if (!G) return; G.shakeAmp = G.shake > 0 ? Math.ma
 function gemSound() {
   G.chain = tick - G.lastGem < 45 ? G.chain + 1 : 0; G.lastGem = tick;
   if (P && wears('trail-gold') && (G.goldN = (G.goldN || 0) + 1) % 4 === 0) { G.coins += 1; floatText(P.x + P.w / 2, P.y - 34, '+1 lucky!', '#ffd23f', 18); }   // Gold dust trail: Lucky dust
+  if (P && wears('gift-pearl') && (G.pearlN = (G.pearlN || 0) + 1) % 4 === 0) { G.coins += 1; floatText(P.x + P.w / 2, P.y - 34, '+1 shared!', '#bfefff', 18); (G.fishes = G.fishes || []).push({ x: P.x + P.w / 2 - 70 * (P.face || 1), y: P.y - 10, t: 0, d: P.face || 1 }); }   // Sharing pearl: a little fish brings one more
   const f = 880 * Math.pow(1.06, Math.min(G.chain, 12));
   echoTone(f, 0.07, 'triangle', 0.06); echoTone(f * 1.335, 0.2, 'triangle', 0.06, null, 0.07);
 }
@@ -3498,6 +3528,7 @@ function streakUp(x, y) {
   if (wears('suit-dragon')) dragonRoar();
   if (owl(7) && !G.freezeT && (G.owlCharge = Math.min(5, (G.owlCharge || 0) + 1)) === 5) floatText(x, y - 70, 'Time freeze ready!', '#bfefff', 20);   // the Wise owl's Time freeze charges   // a right answer refills Ninja vanish, the dolphin and the gear button
   G.streak++; G.bestStreak = Math.max(G.bestStreak, G.streak);
+  giftStreak(x, y);   // the Road Home keepsakes that answer to right answers
   stat('right'); if (G.streak > statOf('bestStreak')) prog.stats.bestStreak = G.streak;
   if (statOf('right') % 25 === 0 || G.streak === 10 || G.streak === 25 || G.streak === 50) statBadges();
   G.score += 500 * Math.min(G.streak, 5);
@@ -5226,7 +5257,7 @@ function diveTick(p) {
 }
 // Powers of the shop's treasure shelf (owner, Nov 2026: "all the expensive gear should have some cool power"). None of
 // them answers or skips math: they make running, jumping and collecting more fun. They work by themselves while worn.
-const wears = id => !!prog && (prog.equip.suit === id || prog.equip.band === id || prog.equip.trail === id || prog.equip.pet === id);
+const wears = id => !!prog && (prog.equip.suit === id || prog.equip.band === id || prog.equip.trail === id || prog.equip.pet === id || prog.equip.gift === id);
 // The Wise owl (owner, Nov 2026: "a power that increases the more math you practice ... should go pretty slow"): it grows
 // with facts known by heart (gold in the Fact Book). Level 1 Owl eyes (an arrow to the golden gem nearby), 2 Gem catcher
 // (a small gem magnet), 3 Night sight (more light in dark levels), 4 Swoop (bops an enemy ahead now and then), 5 Owl
@@ -5343,6 +5374,7 @@ function dragonRoar() {   // Dragon suit: every right answer, a roar knocks out 
   if (n) { shake(8, 4); tone(90, 0.5, 'sawtooth', 0.06, 45); floatText(P.x + P.w / 2, P.y - 40, 'ROAR!', '#ff8c1a', 30); }
 }
 function shopPowTick(p) {   // every frame of play: the powers that act on their own
+  if (mode === 'play') giftTick(p);
   if (L.boss || L.vault || mode !== 'play') return;
   const cx = p.x + p.w / 2;
   if (wears('trail-dragon')) {   // Fire trail: enemies that run into it get bopped
@@ -5398,6 +5430,79 @@ function drawRainbowBridge() {   // in front of the pit's water or lava (drawn a
   RAINBOW.forEach((col, i) => { ctx.fillStyle = col; ctx.globalAlpha = Math.min(1, g.t / 8) * 0.9 * (g.fade ? g.fade / 40 : 1); const y = GR * T - 2 + i * 5; ctx.beginPath(); ctx.moveTo(g.x0 - 10, y + 8); ctx.quadraticCurveTo((g.x0 + g.x1) / 2, y - 4, g.x1 + 10, y + 8); ctx.lineTo(g.x1 + 10, y + 13); ctx.quadraticCurveTo((g.x0 + g.x1) / 2, y + 1, g.x0 - 10, y + 13); ctx.fill(); });
   ctx.globalAlpha = 1;
 }
+// The Road Home keepsakes (prog.equip.gift; owner, Nov 22 2026). Three walk with Kai on his own path a few steps
+// behind (G.hist): the Gear buddy, the snow friend (Snowman's scarf) and Kuro (Brother's cloak).
+let KURO_SPR = null;
+const followAt = n => { const h = G.hist || []; return h[Math.max(0, h.length - 1 - n)]; };
+function giftTick(p) {
+  (G.hist = G.hist || []).push({ x: p.x, y: p.y, f: p.face, air: !p.onGround, walk: Math.abs(p.vx) > 0.5 });
+  if (G.hist.length > 40) G.hist.shift();
+  if (wears('gift-stone') && !L.boss) {   // Stone heart: Earth stomp after a big fall
+    if (!p.onGround) G.airTop = Math.min(G.airTop ?? p.y, p.y);   // (the highest point of this jump or fall)
+    else {
+      if (G.airTop != null && p.y - G.airTop > 4.5 * T) {   // a drop of more than 4½ tiles
+        const cx = p.x + p.w / 2, fy = p.y + p.h; shake(10, 5); tone(70, 0.3, 'square', 0.06, 40);
+        burst(cx - 18, fy - 4, '#9aa7b8', 8, 3); burst(cx + 18, fy - 4, '#9aa7b8', 8, 3); (G.gfx = G.gfx || []).push({ k: 'wave', x: cx, y: fy, t: 0, life: 24 });
+        let n = 0; for (const e of L.enemies) if (!e.dead && !e.twinRaid && !e.forgiven && Math.abs(e.x + e.w / 2 - cx) < 4 * T && Math.abs(e.y + e.h - fy) < 1.5 * T) { knockOut(e, 'Stomp!'); n++; }
+        floatText(cx, p.y - 30, n ? 'Earth stomp!' : 'STOMP!', '#c9d2de', 24);
+      }
+      G.airTop = null;
+    }
+  }
+  if (wears('gift-scarf') && !L.boss) {   // Snowman's scarf: the snow friend picks up gems Kai just missed
+    const f = followAt(24);
+    if (f) for (const c of L.coins) if (!c.taken && !c.gold && Math.abs(c.x - (f.x + 12)) < 44 && c.y > f.y - 70 && c.y < f.y + 60) { c.taken = true; G.coins += c.v; G.score += 100 * c.v; gemSound(); flyGem(c.x, c.y, c.v); }
+  }
+  if (G.fishes) G.fishes = G.fishes.filter(fi => ++fi.t < 40);
+}
+function giftStreak(x, y) {   // a right answer
+  if (wears('gift-ring')) payGems(x, y, 1);   // Family ring: Belong
+  if (wears('gift-bot') && G.streak % 5 === 0) {   // Gear buddy: every 5 in a row he brings a heart
+    if (G.hearts < G.maxHearts) { G.hearts++; floatText(P.x + P.w / 2, P.y - 50, 'Gear buddy: +1 heart!', '#7df9ff', 22); } else { G.coins += 10; floatText(P.x + P.w / 2, P.y - 50, 'Gear buddy: +10', '#7df9ff', 22); }
+  }
+  if (wears('gift-swords') && P && !L.boss) {   // Wooden swords: Practice partner
+    let best = null, bd = 5 * T;
+    for (const e of L.enemies) { if (e.dead || e.twinRaid || e.forgiven) continue; const d = Math.hypot(e.x + e.w / 2 - (P.x + P.w / 2), e.y - P.y); if (d < bd) { bd = d; best = e; } }
+    if (best) knockOut(best, 'Hi-yah!');
+  }
+}
+function forgive(e) {   // Fallen stinger: the first 3 enemies that bump Kai in a level are forgiven and walk away friendly
+  if (!wears('gift-stinger') || e.twin || L.boss || (G.forgN || 0) >= 3 || P.inv > 0 || mode !== 'play') return false;
+  G.forgN = (G.forgN || 0) + 1; e.forgiven = 100; e.vx = (e.x < P.x ? -1 : 1) * 1.2; P.inv = 40; sfx.correct();
+  floatText(e.x + e.w / 2, e.y - 24, 'I forgive you!', '#ff9cc4', 22);
+  return true;
+}
+function drawGifts() {
+  if (!P || !G.hist) return;
+  if (wears('gift-cloak')) {   // Kuro runs with his little brother
+    const f = followAt(34); if (f) {
+      if (!KURO_SPR) KURO_SPR = bakeNinja({ r: '#e63946', R: '#a91d2b', n: '#1c1a24', N: '#3d3a52', b: '#1c1a24' });
+      drawBaked(KURO_SPR, f.air ? 'jump' : f.walk && Math.floor(tick / 6) % 2 ? 'walkA' : 'stand', f.f < 0, { x: f.x, y: f.y, w: P.w, h: P.h });
+    }
+  }
+  if (wears('gift-scarf')) {   // a little snow friend in a red scarf
+    const f = followAt(24); if (f) {
+      const x = f.x + 12, y = f.y + P.h, b = f.walk ? Math.abs(Math.sin(tick * 0.3)) * 2 : 0;
+      ctx.fillStyle = '#f4f7fb'; ctx.beginPath(); ctx.arc(x, y - 8 - b, 9, 0, 7); ctx.fill(); ctx.beginPath(); ctx.arc(x, y - 22 - b, 7, 0, 7); ctx.fill();
+      ctx.fillStyle = '#e63946'; ctx.fillRect(x - 7, y - 17 - b, 14, 3); ctx.fillRect(x + (f.f < 0 ? 3 : -6), y - 15 - b, 3, 6);
+      ctx.fillStyle = '#26262e'; ctx.fillRect(x - 3, y - 24 - b, 2, 2); ctx.fillRect(x + 2, y - 24 - b, 2, 2); ctx.fillStyle = '#ff8a3c'; ctx.fillRect(x + (f.f < 0 ? -5 : 1), y - 22 - b, 4, 2);
+    }
+  }
+  if (wears('gift-bot')) {   // the Gear buddy hops along
+    const f = followAt(14); if (f) {
+      ctx.save(); ctx.translate(f.x + 4, f.y + P.h); ctx.scale(1.6, 1.6); ctx.translate(-(f.x + 4), -(f.y + P.h));   // (a bit bigger)
+      const x = f.x + 4, y = f.y + P.h - 16 - (f.walk ? Math.abs(Math.sin(tick * 0.35)) * 4 : 0);
+      ctx.fillStyle = '#9aa7b8'; ctx.fillRect(x, y, 14, 12); ctx.fillRect(x + 6, y - 4, 2, 4); ctx.fillStyle = '#7df9ff'; ctx.fillRect(x + 6, y - 6, 2, 2);
+      ctx.fillRect(x + 3, y + 3, 2, 2); ctx.fillRect(x + 9, y + 3, 2, 2); ctx.fillStyle = '#3a3a4a'; ctx.fillRect(x + 2, y + 12, 3, 4); ctx.fillRect(x + 9, y + 12, 3, 4); ctx.restore();
+    }
+  }
+  for (const fi of G.fishes || []) {   // Sharing pearl: a little fish swims up with the extra gem
+    const k = fi.t / 40, x = fi.x + fi.d * 70 * k, y = fi.y - Math.sin(k * Math.PI) * 30;
+    ctx.globalAlpha = 1 - k * 0.6; ctx.fillStyle = '#ff8a3c'; ctx.beginPath(); ctx.ellipse(x, y, 8, 5, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x - fi.d * 7, y); ctx.lineTo(x - fi.d * 13, y - 5); ctx.lineTo(x - fi.d * 13, y + 5); ctx.fill();
+    ctx.fillStyle = '#7df9ff'; ctx.fillRect(x + fi.d * 6 - 2, y - 10, 5, 5); ctx.globalAlpha = 1;
+  }
+}
 function drawShopPow() {   // the rainbow, falling stars, the fireball and the fetching dragon
   for (const st of G.stars || []) { glowAt(st.x, st.y, 22, 'rgba(255,246,200,.7)'); ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(st.x) - 3, Math.round(st.y) - 3, 6, 6); }
   if (G.fireB) { glowAt(G.fireB.x, G.fireB.y, 20, 'rgba(255,140,40,.8)'); ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(G.fireB.x, G.fireB.y, 6, 0, 7); ctx.fill(); }
@@ -5427,7 +5532,7 @@ function hurt() {
   }
   if (G.hearts <= 1 && wears('pet-dragon-gold') && !G.goldSaved) {   // Golden dragon: once per level, it saves the last heart
     G.goldSaved = true; P.inv = 120; P.vy = -9; sfx.win();
-    burst(P.x + P.w / 2, P.y + P.h / 2, '#ffd23f', 20, 5); floatText(P.x + P.w / 2, P.y - 30, 'Golden dragon to the rescue!', '#ffd23f', 24);
+    burst(P.x + P.w / 2, P.y + P.h / 2, '#ffd23f', 20, 5); floatText(P.x + P.w / 2, P.y - 30, 'Golden kite to the rescue!', '#ffd23f', 24);
     return;
   }
   G.hearts--; sfx.hurt(); shake(10, 5); petSay('hurt'); G.hit = true;
@@ -5440,7 +5545,8 @@ function fell() {
   const b = activeBridge(), first = b && !b.fell;
   if (b) b.fell = true;
   if (prog.easy || prog.safe || first) sfx.bump();
-  else if (G.hearts <= 1 && wears('pet-dragon-gold') && !G.goldSaved) { G.goldSaved = true; sfx.win(); floatText(P.x + P.w / 2, GR * T - 3 * T, 'Golden dragon to the rescue!', '#ffd23f', 24); }
+  else if (wears('gift-cloak') && !G.kuroUsed) { G.kuroUsed = true; sfx.win(); floatText(P.x + P.w / 2, GR * T - 3 * T, 'Got you, little brother!', '#ffd23f', 24); }   // Brother's cloak: Kuro catches him
+  else if (G.hearts <= 1 && wears('pet-dragon-gold') && !G.goldSaved) { G.goldSaved = true; sfx.win(); floatText(P.x + P.w / 2, GR * T - 3 * T, 'Golden kite to the rescue!', '#ffd23f', 24); }
   else { G.hearts--; G.hit = true; sfx.hurt(); if (G.hearts <= 0) { gameOver(); return; } }
   dropCarry();   // stones he was carrying go back to their spots (owner asked)
   P.x = G.checkpoint; P.y = GR * T - P.h; P.vx = P.vy = 0; P.inv = 100;
@@ -6878,7 +6984,7 @@ function updateTwist() {
     }
     if (f.k === 'sand') {
       const cx = p.x + p.w / 2;
-      if (p.onGround && cx > f.x && cx < f.x + f.w && p.y + p.h > GR * T - 4) {
+      if (p.onGround && !wears('gift-sandals') && cx > f.x && cx < f.x + f.w && p.y + p.h > GR * T - 4) {   // (Family sandals: Sure feet)
         G.sandIn = 6;
         if (Math.abs(p.vx) > 0.2 && tick % 10 === 0) G.parts.push({ k: 'bit', x: cx, y: GR * T - 4, vx: -p.vx * 0.3, vy: -1.5, life: 20, col: '#f2c48a', s: 4 });
       }
@@ -7035,7 +7141,7 @@ function updatePlayer() {
     G.leftHeldIn = keys.left;
     p.vx = 0; keys.jump = false; updateRoom(); petTick(); return;
   }
-  const onIce = p.onGround && L.map[Math.floor((p.y + p.h + 2) / T)]?.[Math.floor((p.x + p.w / 2) / T)] === 'I';
+  const onIce = p.onGround && !wears('gift-sandals') && L.map[Math.floor((p.y + p.h + 2) / T)]?.[Math.floor((p.x + p.w / 2) / T)] === 'I';
   const wet = inWater(p);   // the sea: swimming
   const acc = wet ? 0.3 : onIce ? 0.18 : p.onGround ? 0.55 : 0.38;
   if (keys.left && !keys.right) { p.vx -= acc; p.face = -1; }
@@ -7215,6 +7321,7 @@ function updateEnemies() {
     if (e.dead) continue;
     if (Math.abs(e.x - P.x) > VW * 1.2) continue;   // sleep until nearby
     e.t++;
+    if (e.forgiven) { e.x += e.vx; if (--e.forgiven <= 0) e.dead = 'gone'; continue; }   // Fallen stinger: forgiven, it walks away
     if (e.kind === 'blob') {
       // Lava blobs leap out of the pit, then sink back and wait.
       if (!e.up) { if (e.t > e.delay) { e.up = true; e.vy = -12.5; } }
@@ -7234,7 +7341,7 @@ function updateEnemies() {
         if (fiery()) { e.dead = 'flip'; e.vy = -3; G.score += 200; sfx.stomp(); burst(e.x + e.w / 2, e.y + e.h / 2, '#ff6a00', 10); floatText(e.x + e.w / 2, e.y, '+200'); }
         else if (P.vy > 0.5 && P.y + P.h - e.y < 16) {   // dove down onto it
           e.dead = 'squash'; e.t = 0; P.vy = -4; G.score += 200; sfx.stomp(); burst(e.x + e.w / 2, e.y + e.h / 2, '#e8f8ff', 8, 2); floatText(e.x + e.w / 2, e.y, '+200');
-        } else hurt();
+        } else if (!forgive(e)) hurt();
       }
       continue;
     }
@@ -7260,7 +7367,7 @@ function updateEnemies() {
         if (e.kind === 'robot') burst(e.x + 15, e.y + 10, '#c8d3de', 8);
         if (e.kind === 'rock') burst(e.x + 17, e.y + 10, '#7d706a', 8);
       } else if (e.twin) { if (P.inv <= 0) { P.vx = (P.x < e.x ? -1 : 1) * 6; P.vy = Math.min(P.vy, -4); P.inv = 30; sfx.bump(); } }   // the showdown twin only pushes Kai back (the battle is for fun)
-      else hurt();
+      else if (!forgive(e)) hurt();
     }
   }
 }
@@ -7585,6 +7692,7 @@ function updateShotsAndProjectiles() {
 // Gates don't just lift: Japan's paper screens slide open in a shower of petals, lava rock crumbles,
 // the factory's force field shorts out, ice shatters, and the castle's shadow wall turns into doves.
 function openGate(st) {
+  if (G && P && wears('gift-robe') && G.hearts < G.maxHearts) { G.hearts++; floatText(P.x + P.w / 2, P.y - 50, 'Welcome home! +1 heart', '#ff9cc4', 22); }   // Father's robe
   if (G && !st.counted) { st.counted = true; stat('gates'); statBadges(); }   // badges: gates opened
   const ls = MOVES.filter(m => prog.moves[m.name]);   // Kai shows off a move he has learned
   if (ls.length && G) G.flourish = { pose: ls[R(0, ls.length - 1)].steps[2].pose, t: 30 };
@@ -8652,7 +8760,7 @@ function drawSeaDark() {
   d.fillStyle = g; d.fillRect(0, top, VW, VH - top);
   d.globalCompositeOperation = 'destination-out';
   const hole = (x, y, r) => { const h = d.createRadialGradient(x - cam, y, r * 0.3, x - cam, y, r); h.addColorStop(0, 'rgba(0,0,0,1)'); h.addColorStop(1, 'rgba(0,0,0,0)'); d.fillStyle = h; d.fillRect(x - cam - r, y - r, r * 2, r * 2); };
-  hole(P.x + P.w / 2, P.y + P.h / 2, flareR(gearOn('lantern') ? 360 : owl(3) ? 250 : 150));   // the Paper Lantern lights a big circle
+  hole(P.x + P.w / 2, P.y + P.h / 2, flareR(gearOn('lantern') ? 360 : owl(3) || wears('gift-lamp') ? 250 : 150));   // the Paper Lantern lights a big circle
   tmLights(hole);   // team run: the partner and the Shadow Twin show in the dark
   for (const f of L.lfish || []) hole(f.x || 0, f.y || 0, 120);
   if (L.angler && L.angler.on) hole(L.angler.x + L.angler.face * 30, L.angler.y - 26, anglerR() + L.angler.pulse * 2);
@@ -9291,7 +9399,7 @@ function drawDarkness() {
   d.globalCompositeOperation = 'destination-out';
   const hole = (x, y, r) => { const g = d.createRadialGradient(x - cam, y, r * 0.3, x - cam, y, r); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); d.fillStyle = g; d.fillRect(x - cam - r, y - r, r * 2, r * 2); };
   tmLights(hole);   // team run: the partner and the Shadow Twin show in the dark
-  hole(P.x + P.w / 2, P.y + P.h / 2, flareR(gearOn('lantern') ? 360 : owl(3) ? 270 : 170) + Math.sin(tick * 0.1) * 4);   // the Paper Lantern lights a big circle
+  hole(P.x + P.w / 2, P.y + P.h / 2, flareR(gearOn('lantern') ? 360 : owl(3) || wears('gift-lamp') ? 270 : 170) + Math.sin(tick * 0.1) * 4);   // the Paper Lantern lights a big circle
   for (const f of L.fx) if (f.k === 'crystal') hole(f.x, f.y, f.lit ? 190 : 46);
   for (const fd of L.squads || []) if (!fd.done) { fd.foods.forEach(f => hole(f.x, f.y, 44)); hole(fd.ax, GR * T - 40, 70); }   // animals and their food glow in the dark
   if (G.mbox) G.mbox.bubbles.forEach(b => hole(b.x, b.y, 40));
@@ -10753,6 +10861,10 @@ function drawPet() {
   else if (m === 'sad' || m === 'hurt') ox = Math.sin(pt.moodT * 1.3) * 3;
   else if (m === 'dance') { oy = -Math.abs(Math.sin(pt.moodT * 0.3)) * 16; flip = Math.floor(pt.moodT / 10) % 2 === 0; }
   const grow = prog.daily.last >= today() - 1 ? 1 + Math.min(prog.daily.streak, 10) * 0.04 : 1;   // the pet grows with the Daily Dojo streak
+  if (/^pet-dragon/.test(prog.equip.pet)) {   // the dragons are festival kites (owner: real dragons don't exist): a string to Kai's hand
+    ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(P.x + P.w / 2 + P.face * 8, P.y + 22);
+    ctx.quadraticCurveTo((pt.x + P.x + P.w / 2) / 2, Math.max(pt.y + 12, P.y + 22) + 14, pt.x + ox, pt.y + 12 + oy); ctx.stroke();
+  }
   ctx.save(); ctx.translate(pt.x, pt.y + 24 + oy); ctx.scale(grow, grow); ctx.translate(-pt.x, -(pt.y + 24 + oy));
   drawBaked(PET_SPR[prog.equip.pet], Math.floor(tick / 10) % 2 ? 'b' : 'a', flip, { x: pt.x - 10 + ox, y: pt.y + oy, w: 20, h: 24 });
   ctx.restore();
@@ -12260,12 +12372,12 @@ function render() {
     if (tick % 2 === 0) G.parts.push({ k: 'bit', x: c.x + (Math.random() - 0.5) * 26, y: c.y + 10, vx: (Math.random() - 0.5) * 0.6, vy: -1.6 - Math.random() * 1.2, life: 30, col: ['#ff6a00', '#ffb300', '#ffd23f', '#ff3d00'][R(0, 3)], s: 7 });
   }
   for (const c of L.coins) if ((!c.taken || (c.fly && c.fly.t > 0)) && c.x > cam - 20 && c.x < cam + VW + 20) drawGem(c.x, c.y + Math.sin(tick * 0.08 + c.x) * 3, c.v, tick * 0.08 + c.x);
-  for (const e of L.enemies) drawEnemy(e);
+  for (const e of L.enemies) { if (e.forgiven) { ctx.globalAlpha = Math.min(1, e.forgiven / 40); drawEnemy(e); ctx.globalAlpha = 1; heart(e.x + e.w / 2, e.y - 14 - (100 - e.forgiven) * 0.2, 8, '#ff5a8a'); } else drawEnemy(e); }
   drawPits(c0, c1);   // after enemies, so lava blobs rise out of the lava
   drawRainbowBridge();   // (the Rainbow suit's bridge, over the pit)
   drawBoss();
   if (L.boss) { drawOrbs(); }
-  if (G) { drawTeamGhost(); drawTeamTwin(); drawDolphin(); drawRunner(); drawShopPow(); drawOwlEyes(); drawClone(); drawPet(); drawPlayer(); drawTeamFx(); drawGearFx(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
+  if (G) { drawTeamGhost(); drawTeamTwin(); drawDolphin(); drawRunner(); drawShopPow(); drawOwlEyes(); drawClone(); drawGifts(); drawPet(); drawPlayer(); drawTeamFx(); drawGearFx(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
   if (L.twist && G) drawTwistFront();
   if (L.flavor && G) drawFlavorFront();
   if (L.water && !L.room) drawWaterFront();
@@ -12364,7 +12476,7 @@ function startStage(i) {
   LAYOUT = null;
   LEVEL_MIX = null; FOCUS = false;
   P = { x: 1.5 * T, y: GR * T - 44, w: 24, h: 44, vx: 0, vy: 0, onGround: false, face: 1, inv: 0, anim: 0, coyote: 0, jbuf: 0, throwT: 0 };
-  const hearts = prog.easy ? 5 : 3;
+  const hearts = (prog.easy ? 5 : 3) + (wears('band-sensei') ? 1 : 0);   // Sensei's headband: Blessing
   G = { idx: i, skill: L.skill, hearts, maxHearts: hearts, coins: 0, score: 0, shake: 0, shakeAmp: 0, freeze: 0, slow: 0, flash: 0, flyers: [], pulse: 0, chain: 0, lastGem: -99, mistakes: 0, streak: 0, bestStreak: 0, solved: 0, fastN: 0, lightN: 0, missed: [], practice: new Map(), power: null, powerN: 0, carry: null, saved: null,
     pet: prog.equip.pet ? { x: P.x, y: P.y, mood: null, moodT: 0 } : null, glide: 0, alarm: 0, climb: false, hidden: false, bubble: null, tip: null, mbox: null, dash: 0, cross: null, wrongRun: 0, tipSoon: !!(plan && plan.mode === 'back'), byTrack: plan ? {} : null, checkpoint: 1.5 * T, time: 0, parts: [], shots: [], bumps: new Map(), winT: 0 };
   SPR = bakeNinja(heroPal());   // equipped headband and suit, plus the belt you've earned
@@ -12596,6 +12708,7 @@ function drawItemPreview(cv, it) {
   if (it.slot === 'band' || it.slot === 'suit') {
     const set = bake(makeFrames(16, 16, { ...KAI_PAL, ...heroPal({ ...prog.equip, [it.slot]: it.id }) }, drawKai, 1), ['stand'], 3);
     c.drawImage(set.stand[0], (cv.width - 48) / 2, cv.height - 48);
+  } else if (it.slot === 'gift') { const im = new Image(); im.onload = () => { c.imageSmoothingEnabled = false; c.drawImage(im, (cv.width - 44) / 2, (cv.height - 44) / 2, 44, 44); }; im.src = pixURL(it.pix);
   } else if (it.slot === 'pet') { const im = PET_SPR[it.id].a[0], k = Math.min(1, (cv.width - 6) / im.width, (cv.height - 6) / im.height); c.drawImage(im, (cv.width - im.width * k) / 2, cv.height - 4 - im.height * k, im.width * k, im.height * k); }
   else {
     const cols = (TRAIL_LOOK[it.id] || TRAIL_LOOK['trail-spark']).cols;
@@ -12616,20 +12729,33 @@ function renderShop() {
   $('bank').textContent = prog.bank;
   drawNinjaPreview($('shopPreview'), prog.equip, 3);
   const grid = $('shopGrid'); grid.innerHTML = '';
-  for (const it of SHOP) {
-    const owned = prog.owned.includes(it.id), on = prog.equip[it.slot] === it.id;
-    const el = document.createElement('div'); el.className = 'item';
-    el.innerHTML = `<canvas width="90" height="54"></canvas><div class="nm">${it.name}</div>${it.power ? `<div class="ipow">Power: ${it.power}</div>` : ''}<div class="pr">${owned ? 'Owned' : `${gemSm()} ${it.price}`}</div><button type="button"></button>`;
+  // The Road Home (owner, Nov 22 2026): one shelf per world in story order, Home after the ending, then Sensei's prizes.
+  const SHELVES = [...WORLDS.map((W, w) => [w, `${w + 1} · ${W.name}`]), [SHELF_HOME, 'Home · the family treasures'], ['prize', "Sensei's prizes · for learning math"]];
+  for (const [w, title] of SHELVES) {
+    const items = SHOP.filter(it => shelfOf(it) === w), open = shelfOpen(w);
+    if (!items.length) continue;
+    const h = document.createElement('div'); h.className = 'shelfh' + (open ? '' : ' fog');
+    h.innerHTML = `${title}${open ? '' : ` <small>${pixSm('lock')} ${w === SHELF_HOME ? 'Bring Kuro home to open' : 'Reach this world to open'}</small>`}`;
+    grid.appendChild(h);
+    for (const it of items) shopItem(grid, it);
+  }
+}
+function shopItem(grid, it) {
+  {
+    const owned = prog.owned.includes(it.id), on = prog.equip[it.slot] === it.id, lock = owned ? '' : giftLock(it);
+    const el = document.createElement('div'); el.className = 'item' + (it.slot === 'gift' ? ' keep' : '');
+    el.innerHTML = `<canvas width="90" height="54"></canvas><div class="nm">${it.name}</div>${it.story ? `<div class="istory">${it.story}</div>` : ''}${it.power ? `<div class="ipow">Power: ${it.power}</div>` : ''}<div class="pr">${owned ? 'Owned' : `${gemSm()} ${it.price}`}</div><button type="button"></button>`;
     drawItemPreview(el.querySelector('canvas'), it);
     const b = el.querySelector('button');
+    if (lock) { b.innerHTML = `${pixSm('lock')} ${lock}`; b.className = 'locked'; b.disabled = true; grid.appendChild(el); return; }
     if (it.badge && !prog.badges[it.badge] && !owned) {   // a badge prize: the card stays small; tapping the badge button shows how close and how to win it (owner, Nov 2026)
       const bd = BADGE[it.badge];
       b.innerHTML = `${pixSm('lock')} Badge: ${bd.name}`; b.className = 'locked'; el.querySelector('.pr').textContent = bd.text;
       b.onclick = () => { audio(); badgeHow(bd); };
-      grid.appendChild(el); continue;
+      grid.appendChild(el); return;
     }
-    else if (on) { b.textContent = it.slot === 'trail' || it.slot === 'pet' ? 'Take off' : 'Wearing'; b.disabled = !(it.slot === 'trail' || it.slot === 'pet'); }
-    else if (owned) b.textContent = 'Wear';
+    else if (on) { const off = it.slot === 'trail' || it.slot === 'pet' || it.slot === 'gift'; b.textContent = off ? (it.slot === 'gift' ? 'Put away' : 'Take off') : 'Wearing'; b.disabled = !off; }
+    else if (owned) b.textContent = it.slot === 'gift' ? 'Carry' : 'Wear';
     else if (prog.bank >= it.price) { b.textContent = 'Buy'; b.className = 'buy'; }
     else { b.textContent = `Need ${it.price - prog.bank} more`; b.disabled = true; }
     b.onclick = () => {
@@ -12739,6 +12865,17 @@ $('autoBtn').onclick = () => { audio(); prog.auto = !prog.auto; save(); renderSk
 // 12×12 pixel pictures (with the same dark outline as the game's sprites) instead of emoji.
 const PIX_COL = { w: '#f4f4f4', d: '#3a3a4a', r: '#e63946', y: '#ffd23f', Y: '#c9961a', b: '#5b6bd6', g: '#9aa7b8', G: '#2f8a4a', p: '#ff9cc4', P: '#ffd6e8', o: '#c9a24f', W: '#fff6c8', q: '#8b5a2b', c: '#7df9ff', L: '#7cc85a', n: '#ff8a3c', k: '#26262e', s: '#f2c79a', S: '#c98f5c' };
 const PIX = {
+  swords: ['o..........o', '.o........o', '..o......o', '...o....o', '....o..o', '.....oo', '.....oo', '....o..o', '..qqq..qqq', '...q....q', '..q......q', '.q........q'],
+  stoneheart: ['.ggg...ggg', 'ggggg.ggggg', 'ggpppgpppgg', 'ggpppppppgg', '.ggpppppgg', '..ggpppgg', '...ggpgg', '....ggg', '.....g'],
+  bot: ['.....c', '.....g', '..ggggggg', '..gcggcgg', '..ggggggg', '..ggdddgg', '..ggggggg', '...g...g', '..gg...gg'],
+  scarf: ['..rrrrrrrr', '.rwrrwrrwrr', '.rr......rr', '.rr......rw', '..........rr', '..........wr', '..........rr', '.........r.r'],
+  pearl: ['....wwww', '...wcwwww', '...wwwwww', '....wwww', 'pppppppppppp', '.pPpPpPpPpP', '..pppppppp', '....pppp'],
+  stinger: ['....nnnn', '...n....n', '..n......n', '..n.......d', '..n.......dd', '...n', '....nn', '......nnnn', '..........nn'],
+  lamp: ['.....dd', '....dddd', '...rrrrrr', '..rrryyrrr', '..rryyyyrr', '..rryWWyrr', '..rryyyyrr', '..rrryyrrr', '...rrrrrr', '....dddd', '.....yy'],
+  sandals: ['..o....o', '..oo...oo', '.qooq.qooq', '.qqqq.qqqq', '.qqqq.qqqq', '.qqqq.qqqq', '..qq...qq'],
+  ring: ['.....r', '....rrr', '...yyyyy', '..yy...yy', '.yy.....yy', '.y.......y', '.yy.....yy', '..yy...yy', '...yyyyy'],
+  robe: ['...yyyyyy', '..ryrrrryr', '.rrryrryrrr', 'rrrrryyrrrrr', 'rr.rryyrr.rr', 'r..rryyrr..r', '...rryyrr', '...rryyrr', '..rrryyrrr', '..yyyyyyyy'],
+  cloak: ['....kkkk', '...kkkkkk', '...kkrrkk', '..kkkrrkkk', '..kkrrrrkk', '.kkkrrrrkkk', '.kkrrrrrrkk', 'kkkrrrrrrkkk', 'kkrrrrrrrrkk', 'kkkkkkkkkkkk'],
   race: ['qdddwwwddd', 'qdddwwwddd', 'qwwwdddwww', 'qwwwdddwww', 'qdddwwwddd', 'qdddwwwddd', 'q', 'q', 'q', 'q', 'q', 'qq'],
   pagoda: ['.....yy', '....rrrr', '..rrrrrrrr', '.r..wwww..r', '....wddw', '...rrrrrr', '.rrrrrrrrrr', 'r..wwwwww..r', '...wdwwdw', '...wdwwdw', '...wwwwww', '.GGGGGGGGGG'],
   book: ['', '.bbbbb.bbbbb', '.bwwwwbwwwwb', '.bwddwbwddwb', '.bwwwwbwwwwb', '.bwddwbwddwb', '.bwwwwbwwwwb', '.bwddwbwddwb', '.bwwwwbwwwwb', '.bbbbbbbbbbb', '......b'],
