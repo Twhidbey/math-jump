@@ -17,3 +17,7 @@ Part of the code notes; `CLAUDE.md` has the index. Search `index.html` for the n
 ## Scroll row (home screen)
 
 `#scrollRow` filled in `buildMenu`: one `.scrl` per world, `pixImg('scroll')` once `prog.best[bossOf(w)]`; tap opens that boss's story page (the Shogun's opens The Castle Falls) via `storyBook`
+
+## Kuro's journal and the world map (owner, Nov 22 2026)
+
+Why Kuro went to each world (popularity, anger about past hurts, control, needing no one, riches, revenge, the throne) is in `JOURNAL` (`why`, `text`; above `storyPages`), the `WORLDS[].intro` lines, and one added line per boss in `runOutro` (timings pushed later). Pages: `placePage(i)` in `startStage` puts `L.page` 40 px above the gem nearest 55% of the level in each world's middle level (castle: also Shadow Walls for the last page); `pageTick` (from `shopPowTick`) picks it up into `prog.journal[j]` with `G.pageGot`; `drawPage` (after the coins); `journalHTML` on the level's end card. Home screen `.maprow`: **World map** (`openMap`: a 1000 × 640 canvas, `MAP_AT`, `MAP_DOJO`, `MAP_FOG` for future worlds, `MAP_ICON`; tap a land for its line, its page and Go there) and **Kuro's journal** (`openJournal`, `SENSEI_NOTE` once the castle boss is won and the last page found). A new world needs a `JOURNAL` entry, a `MAP_AT` spot (take a fog spot) and a `MAP_ICON`.

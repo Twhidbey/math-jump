@@ -16,7 +16,7 @@ The detail lives in `docs/`, one file per area. **Open the file for the area you
 
 | Notes file | What it covers | Names to start from |
 |---|---|---|
-| `docs/story.md` | Story text and pages (`STORY.md` is the source: keep in sync), animated story pictures, Read to me, the scroll row | `STORY`, `ENDING`, `SCENES`, `runScenes`, `readAloud`, `storyBook` |
+| `docs/story.md` | Story text and pages (`STORY.md` is the source: keep in sync), animated story pictures, Read to me, the scroll row | `STORY`, `ENDING`, `SCENES`, `runScenes`, `readAloud`, `storyBook`, `JOURNAL`, `openMap` |
 | `docs/levels.md` | The 7 worlds and 28 stages, `slotOf` indexing, the level builder, twists, flavours, backgrounds, ? boxes, physics, draw order, HUD text, home screen | `WORLDS`, `STAGES`, `slotOf`, `buildLevel`, `TWISTS`, `FLAVORS`, `updatePlayer`, `render`, `buildMenu` |
 | `docs/sea.md` | The Coral Sea (swimming, depth gates, clams, deep sea, octopus boss, current tunnel, sea twists) and fractions | `seaBuild`, `swimY`, `seaDoors`, `drawSeaDark`, `isFrac` |
 | `docs/math.md` | Skills, grade tracks, Easier math, test-out, fact tracking / Fact Book / Daily Dojo, kindergarten help, Never get hurt, Sensei's tricks and Work it out | `SKILLS`, `GRADE_TRACKS`, `planStage`, `noteFact`, `makeEasier`, `trickInfo`, `kidPic` |
