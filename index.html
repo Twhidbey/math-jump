@@ -20,6 +20,7 @@
     font-family: Nunito, "Trebuchet MS", system-ui, sans-serif; font-weight: 600;
     touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent; }
+  #wrap { transition: background-color .6s; }
   #wrap { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
   #stage { position: relative; width: min(100vw, calc(100vh * 16 / 9)); aspect-ratio: 16 / 9; }
   #game { width: 100%; height: 100%; display: block; }
@@ -433,6 +434,17 @@
   .howto { text-align: left; display: grid; gap: 8px; font-size: 16px; margin: 6px 0 14px; }
   .howto div { display: grid; grid-template-columns: 34px 1fr; gap: 8px; align-items: start; }
   .howto span { font-size: 24px; line-height: 1.1; }
+  #badgeInfo { position: sticky; top: -1px; z-index: 2; background: #22224a; display: flex; gap: 10px; align-items: center; text-align: left; min-height: 104px; padding: 8px 4px; border-bottom: 2px solid rgba(255,255,255,.12); }
+  #badgeInfo .bi { flex: 0 0 64px; text-align: center; } #badgeInfo .bitx { flex: 1; min-width: 0; } #badgeInfo .bn { font: 18px "Lilita One", "Trebuchet MS", sans-serif; color: #ffd23f; } #badgeInfo .bt { font-size: 13px; opacity: .85; margin: 2px 0 4px; }
+  #badgeInfo .bfoot { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; } #badgeInfo .ttbtns { margin-top: 6px; display: flex; gap: 6px; } #badgeInfo .ttbtns .btn { font-size: 15px; padding: 6px 12px; }
+  .bstgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 6px; margin: 4px 0 6px; }
+  .bstgrid.nextup { grid-template-columns: repeat(3, 62px); justify-content: center; gap: 10px; }
+  .bst { position: relative; height: 62px; border: 2px solid transparent; border-radius: 10px; background: rgba(255,255,255,.06); padding: 4px; display: grid; place-items: center; cursor: pointer; color: #fff; }
+  .bst > img, .bst > .pix { width: 40px; height: 40px; image-rendering: pixelated; } .bst .tnum { transform: scale(.8); }
+  .bst:not(.on) > img, .bst:not(.on) > .pix, .bst:not(.on) > .tnum { filter: grayscale(1); opacity: .38; }
+  .bst.on { background: rgba(255,210,63,.14); } .bst.sel { border-color: #7df9ff; }
+  .bst .ttbar { position: absolute; left: 8px; right: 8px; bottom: 4px; height: 4px; background: rgba(255,255,255,.18); border-radius: 2px; overflow: hidden; } .bst .ttbar i { display: block; height: 100%; background: #ffd23f; }
+  #badges h3.bsec { margin: 10px 0 2px; font-size: 16px; text-align: left; }
   .badgegrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 12px 0 14px; }
   @media (min-width: 640px) { .badgegrid { grid-template-columns: repeat(4, 1fr); } }   /* always even: the wide (2-column) cards pair up */
   .badge { background: rgba(255,255,255,.05); border-radius: 12px; padding: 10px 8px; opacity: .55; }
@@ -664,7 +676,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Back button always in view in the Badge Book and other long screens</div>
+  <div class="build">Updated Nov 23, 2026 · Badge Book is a small sticker page; lost friends are on the World map</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -774,7 +786,8 @@
   <div class="card shopcard">
     <h2>Badge Book</h2>
     <div class="shophint" id="badgeCount"></div>
-    <div class="badgegrid" id="badgeGrid"></div>
+    <div id="badgeInfo"></div>
+    <div id="badgeGrid"></div>
     <div class="row"><button class="btn alt" id="factBtn" type="button"><span data-pixsm="book"></span> Fact Book</button><button class="btn alt" id="badgesClose" type="button">Back</button></div>
   </div>
 </div>
@@ -4035,24 +4048,42 @@ function award(id) {
 function statBadges() {
   for (const b of BADGES) if (b.prog && !prog.badges[b.id]) { const [now, need] = b.prog(); if (need > 0 && now >= need) award(b.id); }
 }
+// The Badge Book is a sticker page (owner, Nov 23 2026: "less intimidating and large"; picked from three options): every
+// badge is one small picture tile (earned = in colour, the rest dim, a thin bar if it has been started); all the words
+// are on one card at the top for the tile that was tapped (name, what to do, bar, prize, and Practice / Pick a level for
+// the fact tiles). Three "next up" tiles lead the page. The lost friends moved to the World map.
+let badgeSel = null;
+const badgeRatio = b => { if (prog.badges[b.id]) return 1; let pr; try { pr = b.prog ? b.prog() : null; } catch (e) { pr = null; } return pr && pr[1] > 0 ? Math.min(0.999, pr[0] / pr[1]) : 0; };
+function badgeInfo(id) {
+  const b = BADGE[id], el = $('badgeInfo'); if (!b || !el) return;
+  badgeSel = id;
+  const on = !!prog.badges[b.id]; let pr = null; try { pr = b.prog ? b.prog() : null; } catch (e) { pr = null; }
+  const prize = b.prize && ITEM[b.prize] ? `<img class="bpz${on ? '' : ' dark'}" src="${prizeSrc(b.prize)}" alt="" title="${ITEM[b.prize].name}">` : '';
+  const extra = b.title ? `<span class="btitle">Title: ${b.title}</span>` : b.gems ? `<span class="bgems">+${b.gems} ${gemSm()}</span>` : '';
+  const btns = b.set && !on && FACT_SETS[b.set].btns() ? `<div class="ttbtns"><button type="button" class="btn" id="biPractice">Practice</button><button type="button" class="btn alt" id="biPlay">Pick a level</button></div>` : '';
+  el.innerHTML = `<div class="bi">${badgeImg(b)}</div><div class="bitx"><div class="bn">${b.name}${on ? ' ★' : ''}</div><div class="bt">${b.text || ''}</div>
+    <div class="bfoot">${!on && pr && pr[1] > 0 ? `<div class="bfill">${barHTML(pr[0], pr[1])}</div>` : ''}${prize}${extra}</div>${btns}</div>`;
+  if ($('biPractice')) { $('biPractice').onclick = () => { audio(); hide('badges'); startPractice(b.id); }; $('biPlay').onclick = () => { audio(); playTable(b.id); }; }
+  $('badges').querySelectorAll('[data-b]').forEach(t => t.classList.toggle('sel', t.dataset.b === id));
+}
 function openBadges() {
   hide('menu'); statBadges();
   const got = BADGES.filter(b => prog.badges[b.id]).length, titles = TITLES();
-  $('badgeCount').innerHTML = `${got} of ${BADGES.length} badges · ${pixImg('gem', 'pix sm', { c: '#ffd23f', b: '#e8452c', w: '#fff6c8' })} ${nKeys(prog.golden)} of ${GOLD_N} golden gems
-    ${titles.length ? `<div class="titlerow">Your title: ${['', ...titles].map(t => `<button type="button" class="tchip${(prog.title || '') === t ? ' on' : ''}" data-title="${t}">${t || 'None'}</button>`).join('')}</div>` : ''}
-    <div class="friendrow">${FRIENDS.map(f => (prog.friends || {})[f.id] ? `<span><span class="pair">${kidImg(f.id)}${toolImg(f.way)}</span><small><b>${f.name}</b> ${f.pname} · ${RESCUE_TOOL[f.way].short}</small></span>`
-      : `<span><i class="kidq">?</i><small>Lost in ${(STAGES.find(x => x.w === f.w && x.k === f.k && !x.boss) || WORLDS[f.w]).name}</small></span>`).join('')}</div>`;
-  $('badgeCount').querySelectorAll('[data-title]').forEach(el => { el.onclick = () => { audio(); prog.title = el.dataset.title || null; save(); openBadges(); }; });
-  // Times tables clump into one card and each bronze/silver/gold set into one card (owner: the book felt repetitive).
-  const card = b => (b.sec === 'tier' ? (b.tier === 1 ? tierCard(b.grp) : '') : b.set ? (BADGES.find(x => x.set === b.set) === b ? setCard(b.set) : '') : badgeCard(b));
-  $('badgeGrid').innerHTML = BADGE_SECS.map(([sec, name]) => {
-    const list = BADGES.filter(b => b.sec === sec), n = list.filter(b => prog.badges[b.id]).length;
-    return `<h3 class="bsec">${name} <small>${n} / ${list.length}</small></h3>${list.map(card).join('')}`;
-  }).join('');
-  $('badgeGrid').querySelectorAll('[data-tt]').forEach(el => { el.onclick = () => { audio(); ttInfo(el.dataset.tt); }; });
-  for (const set in FACT_SETS) ttInfo(null, set);
+  $('badgeCount').innerHTML = `${got} / ${BADGES.length} · ${pixImg('gem', 'pix sm', { c: '#ffd23f', b: '#e8452c', w: '#fff6c8' })} ${nKeys(prog.golden)} / ${GOLD_N}`;
+  const tile = b => { const on = !!prog.badges[b.id], r = on ? 0 : badgeRatio(b); return `<button type="button" class="bst${on ? ' on' : ''}" data-b="${b.id}">${badgeImg(b)}${r > 0 ? `<i class="ttbar"><i style="width:${Math.round(r * 100)}%"></i></i>` : ''}</button>`; };
+  const open = BADGES.filter(b => !prog.badges[b.id]), next = [...open].sort((a, b) => badgeRatio(b) - badgeRatio(a)).slice(0, 3);
+  $('badgeGrid').innerHTML = (next.length ? `<h3 class="bsec">Next up</h3><div class="bstgrid nextup">${next.map(tile).join('')}</div>` : '')
+    + BADGE_SECS.map(([sec, name]) => { const list = BADGES.filter(b => b.sec === sec), n = list.filter(b => prog.badges[b.id]).length; return `<h3 class="bsec">${name} <small>${n} / ${list.length}</small></h3><div class="bstgrid">${list.map(tile).join('')}</div>`; }).join('')
+    + (titles.length ? `<div class="titlerow">Your title: ${['', ...titles].map(t => `<button type="button" class="tchip${(prog.title || '') === t ? ' on' : ''}" data-title="${t}">${t || 'None'}</button>`).join('')}</div>` : '');
+  $('badgeGrid').querySelectorAll('[data-title]').forEach(el => { el.onclick = () => { audio(); prog.title = el.dataset.title || null; save(); openBadges(); }; });
+  $('badgeGrid').querySelectorAll('[data-b]').forEach(el => { el.onclick = () => { audio(); badgeInfo(el.dataset.b); }; });
   show('badges');
+  badgeInfo(badgeSel && BADGE[badgeSel] ? badgeSel : (next[0] || BADGES[0]).id);
 }
+// The lost friends, on the World map only (owner, Nov 23 2026: one place for them): found ones with their rescue tool, the
+// others as "?" with the level they are lost in.
+const friendsRowHTML = () => `<div class="friendrow">${FRIENDS.map(f => (prog.friends || {})[f.id] ? `<span><span class="pair">${kidImg(f.id)}${toolImg(f.way)}</span><small><b>${f.name}</b></small></span>`
+  : `<span><i class="kidq">?</i><small>${(STAGES.find(x => x.w === f.w && x.k === f.k && !x.boss) || WORLDS[f.w]).name}</small></span>`).join('')}</div>`;
 const TIER_NAME = ['', 'Bronze', 'Silver', 'Gold'];
 const barHTML = (now, need) => `<div class="bbar"><i style="width:${Math.min(100, Math.round(now / need * 100))}%"></i></div><div class="bp">${Math.min(now, need)} / ${need}</div>`;
 // One card per badge, all the same shape: picture, name, text, then one bottom line (bar and a small prize picture).
@@ -8129,6 +8160,7 @@ const BOSS_CARD = {
 
 // The lost friends who are home wait with Sensei on the last page.
 function friendsHomeHTML() {
+  return '';   // (owner, Nov 23 2026: the lost friends are listed in one place only, the World map; on the walk home they stand by the road)
   const got = FRIENDS.filter(f => (prog.friends || {})[f.id]); if (!got.length) return '';
   return `<div class="friendrow">${got.map(f => `<span>${kidImg(f.id)}<small>${f.name}</small></span>`).join('')}</div>
     <p>${got.length === FRIENDS.length ? 'Every one came home!' : `${got.map(f => f.name).join(', ')} came home too!`}</p>`;
@@ -8499,7 +8531,7 @@ function drawWorldMap(c, reached, home) {   // the 250 x 160 picture
 }
 function openMap() {
   hide('menu');
-  showMsg('The World', `<canvas id="mapCv" width="1000" height="640" class="mapcv"></canvas><div id="mapInfo" class="mapinfo">Tap a land.</div>`, [{ label: 'Back', fn: toMenu, primary: true }]);
+  showMsg('The World', `<canvas id="mapCv" width="1000" height="640" class="mapcv"></canvas><div id="mapInfo" class="mapinfo">Tap a land.</div>${friendsRowHTML()}`, [{ label: 'Back', fn: toMenu, primary: true }]);
   const cv = $('mapCv'), c = cv.getContext('2d'), open = unlockedCount(), home = !!prog.best[bossOf(WORLDS.length - 1)];
   const here = STAGES[Math.min(open - 1, STAGES.length - 1)].w, reached = w => open > w * PER_WORLD;
   const small = document.createElement('canvas'); small.width = MAP_W; small.height = MAP_H;
@@ -16049,7 +16081,7 @@ document.querySelectorAll('.tbtn').forEach(el => {
 // ---------------------------------------------------------------- main loop
 let last = performance.now(), acc = 0;
 const STEP = 1000 / 60;
-let bandCol = '', bandKey = '', bandAt = 0, bandCv = null;
+let bandCol = '', bandKey = '', bandAt = 0, bandAgain = 0, bandCv = null;
 function frame(now) {
   acc += Math.min(100, now - last); last = now;
   document.body.classList.toggle('canleave', canLeaveDrill());   // the lesson's Leave button
@@ -16077,9 +16109,9 @@ function frame(now) {
   // pixel is copied to a tiny canvas of its own and read there, so the game's canvas is never read.)
   if (document.body.classList.contains('portrait')) {
     const key = (mode === 'menu' && !G ? 'menu' : G ? G.idx + '|' + (L && L.room ? 'r' : '') + (L && L.vault ? 'v' : '') : '') + '|' + VW;
-    if (key !== bandKey) { bandKey = key; bandAt = tick + 40; }
+    if (key !== bandKey) { bandKey = key; bandAt = tick + 12; bandAgain = tick + 150; }   // soon after the change, and once more when any fade-in is over
     if (bandAt && tick >= bandAt) {
-      bandAt = 0;
+      bandAt = bandAgain > tick ? bandAgain : 0; bandAgain = 0;
       try {
         if (!bandCv) { bandCv = document.createElement('canvas'); bandCv.width = bandCv.height = 1; }
         const o = bandCv.getContext('2d', { willReadFrequently: true }); o.drawImage(cv, 6, VH - 3, 1, 1, 0, 0, 1, 1);

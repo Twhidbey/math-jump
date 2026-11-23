@@ -79,7 +79,7 @@ The 21 letters are in `SENSEI_LETTERS` in `index.html` (keep in sync): from "Kai
 
 ## Lost friends (optional, one per world)
 
-Little students from Sensei's dojo: **Hana** (Japan), **Tomo** (Lava), **Niko** (Robot), **Yuki** (Snow), **Nami** (Sea), **Suna** (Desert, in a straw hat) and **Mei** with her lamb (Castle). Lines: "Help!" (near the secret), "Help me, Kai!", "Thank you, Kai!", "See you at the dojo!". The Welcome Home page shows the ones found: "Hana, Tomo came home too!" or, with all seven, "Every one came home!" (Mei going after her one lost lamb is a quiet nod to the lost sheep.)
+Little students from Sensei's dojo: **Hana** (Japan), **Tomo** (Lava), **Niko** (Robot), **Yuki** (Snow), **Nami** (Sea), **Suna** (Desert, in a straw hat) and **Mei** with her lamb (Castle). Lines: "Help!" (near the secret), "Help me, Kai!", "Thank you, Kai!", "See you at the dojo!". They are listed under the World map (found ones with their rescue tool, the others as "?" with the level they are lost in), and the ones found stand by the road on the walk home. (Mei going after her one lost lamb is a quiet nod to the lost sheep.)
 
 ## Home screen
 

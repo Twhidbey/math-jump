@@ -82,3 +82,7 @@ Plan in three steps (owner said go; built one at a time). **Step 1 (built Nov 23
 
 **Back row always in view (owner, Nov 23 2026: "can I get out of the Badge Book without scrolling all the way down"):** CSS `.overlay > .card > .row:last-child` is sticky at the bottom of the screen, so the Back / Done row of every long screen (Badge Book, shop, Gear Pack, skills, players, settings, Fact Book) stays visible while the list scrolls behind it.
 
+## Badge Book = a sticker page (owner, Nov 23 2026: "less intimidating and large"; picked option A of three)
+
+`openBadges` no longer builds cards (`badgeCard`, `tierCard`, `setCard`, `ttInfo` are left in the file but unused by it). Every badge is one small tile (`.bst`, `data-b`): in colour when earned, grey and faint otherwise, with a thin bar if started (`badgeRatio`). The page: a short count line, **Next up** (the 3 unearned badges with the highest ratio), then the three sections as tile grids, then the title chips. All words are on one sticky card at the top (`#badgeInfo`, `badgeInfo(id)`, `badgeSel`): picture, name, what to do, bar, prize / gems / title, and for fact-set tiles **Practice** and **Pick a level**. About 1,300 px tall on a phone (was about 3,900). **The lost friends** are no longer in the Badge Book or on the Welcome Home card: they are listed in one place, under the World map (`friendsRowHTML` in `openMap`): found ones with their rescue tool, the others as "?" with the level's name. (On the walk home they still stand by the road.)
+
