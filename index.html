@@ -392,7 +392,9 @@
     border-radius: 999px; padding: 8px 18px; cursor: pointer; }
   .mathchip .tier, .mathline .tier { color: #d35400; letter-spacing: 1px; }
   .mathline .tier { color: #ffd23f; }
-  .iconrow { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; width: min(720px, 100%); margin: 6px 0 4px; }
+  .titlebar { position: relative; width: min(720px, 100%); text-align: center; }
+  .cogbtn { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; padding: 4px; border: 0; border-radius: 10px; background: rgba(255,255,255,.08); cursor: pointer; opacity: .8; } .cogbtn .pix { width: 28px; height: 28px; image-rendering: pixelated; }
+  .iconrow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; width: min(720px, 100%); margin: 6px 0 4px; }
   .ibtn { font: inherit; font-weight: 800; font-size: 13px; color: #fff; background: rgba(255,255,255,.1); border: none; border-radius: 14px;
     padding: 8px 2px; cursor: pointer; display: grid; justify-items: center; gap: 2px; }
   .ibtn span { font-size: 26px; line-height: 1; }
@@ -655,7 +657,7 @@
 </div>
 
 <div id="menu" class="overlay">
-  <h1>MATH NINJA</h1>
+  <div class="titlebar"><h1>MATH NINJA</h1><button class="cogbtn" id="settingsBtn" type="button" aria-label="Settings"><span data-pix="gear"></span></button></div>
   <div class="hudpanel">
   <button class="playbtn" id="playBtn" type="button"></button>
   <div class="homebar">
@@ -665,18 +667,19 @@
     <div class="rank" id="rank"></div>
   </div>
   <div class="iconrow">
-    <button class="ibtn" id="raceBtn" type="button"><span data-pix="race"></span>Race</button>
+    <button class="ibtn" id="teamBtn" type="button"><span data-pix="shuriken"></span>Team</button>
     <button class="ibtn" id="shopBtn" type="button"><span data-pix="pagoda"></span>Shop <b id="bankMenu">0</b><span data-pixsm="gem"></span></button>
     <button class="ibtn" id="badgeBtn" type="button"><span data-pix="medal"></span>Badges <b id="badgeMenu"></b></button>
     <button class="ibtn" id="packBtn" type="button"><span data-pix="chest"></span>Gear <b id="packMenu"></b></button>
-    <button class="ibtn" id="teamBtn" type="button"><span data-pix="shuriken"></span>Team</button>
-    <button class="ibtn" id="settingsBtn" type="button"><span data-pix="gear"></span>Settings</button>
+    <button class="ibtn" id="storyBtn" type="button"><span data-pix="scroll"></span>Story</button>
   </div>
-  <div class="scrollrow" id="scrollRow"></div>
-  <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
+  <!-- (owner, Nov 23 2026: fewer buttons on the home screen) the scrolls, the map and the journal are on the Story page now; these stay in the page, hidden, because the game still fills and uses them -->
+  <div class="scrollrow hidden" id="scrollRow"></div>
+  <div class="maprow hidden"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Badge Book is a small sticker page; lost friends are on the World map</div>
+  <div class="maprow"><button class="ibtn" id="raceBtn" type="button"><span data-pix="race"></span>Race</button></div>
+  <div class="build">Updated Nov 23, 2026 · Simpler home screen: one Story button, Settings is the cog, Race is below the levels</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -8531,7 +8534,11 @@ function drawWorldMap(c, reached, home) {   // the 250 x 160 picture
 }
 function openMap() {
   hide('menu');
-  showMsg('The World', `<canvas id="mapCv" width="1000" height="640" class="mapcv"></canvas><div id="mapInfo" class="mapinfo">Tap a land.</div>${friendsRowHTML()}`, [{ label: 'Back', fn: toMenu, primary: true }]);
+  // The Story page (owner, Nov 23 2026: one Story button on the home screen): the map, the lost friends, the scrolls won
+  // so far (tap one to reread that part), and the way to Kuro's journal.
+  showMsg('Story', `<canvas id="mapCv" width="1000" height="640" class="mapcv"></canvas><div id="mapInfo" class="mapinfo">Tap a land.</div>${friendsRowHTML()}<div class="scrollrow" id="storyScrolls"></div>`,
+    [{ label: 'Back', fn: toMenu, primary: true }, { label: `Kuro's journal ${pagesFound()}/${JOURNAL.length}`, fn: () => { hide('msg'); openJournal(); }, alt: true }]);
+  [...$('scrollRow').children].forEach(orig => { const b = orig.cloneNode(true); if (!orig.disabled) b.onclick = () => { hide('msg'); orig.click(); }; $('storyScrolls').appendChild(b); });
   const cv = $('mapCv'), c = cv.getContext('2d'), open = unlockedCount(), home = !!prog.best[bossOf(WORLDS.length - 1)];
   const here = STAGES[Math.min(open - 1, STAGES.length - 1)].w, reached = w => open > w * PER_WORLD;
   const small = document.createElement('canvas'); small.width = MAP_W; small.height = MAP_H;
@@ -15966,6 +15973,7 @@ $('roadCv').onclick = e => {   // tap a thing on the stall: its card
 $('shopClose').onclick = () => { hide('shop'); buildMenu(); show('menu'); };
 $('badgeBtn').onclick = () => { audio(); openBadges(); };
 $('mapBtn').onclick = () => { audio(); openMap(); };
+$('storyBtn').onclick = () => { audio(); openMap(); };
 $('journalBtn').onclick = () => { audio(); openJournal(); };
 $('packBtn').onclick = () => { audio(); openPack(); };
 $('packClose').onclick = () => { hide('pack'); buildMenu(); show('menu'); };
