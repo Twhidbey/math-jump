@@ -651,7 +651,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · New app icon: Kai leaping over the rooftops under the moon</div>
+  <div class="build">Updated Nov 23, 2026 · New app icon (Kai over the rooftops); worlds stay healed, brothers' memories</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -8435,7 +8435,7 @@ function placeHelp(i) {
   const st = STAGES[i], hs = st && !st.boss && !L.boss && !L.vault && HELP_SPOTS[L.world.key]; if (!hs || st.k !== hs.k) return;
   const flat = c => { for (let d = -3; d <= 3; d++) { const cc = c + d; if (cc < 3 || cc > L.w - 3 || L.map[GR][cc] !== '#') return false; for (let r = GR - 6; r < GR; r++) if (L.map[r][cc] !== '.') return false; } return true; };
   const spans = [], add = (a, b = a, m = 6) => { if (a != null && !isNaN(a) && !isNaN(b)) spans.push([Math.min(a, b) - m, Math.max(a, b) + m]); };   // keep clear of everything else in the level
-  (L.marks || []).forEach(m => add(m.c)); if (L.note) add(L.note.x / T); if (L.kuro) add(L.kuro.x / T); if (L.gearChest) add(L.gearChest.x / T); if (L.friend) add(L.friend.c);
+  (L.marks || []).forEach(m => add(m.c)); if (L.note) add(L.note.x / T); if (L.kuro) add(L.kuro.x / T); if (L.mem) add(L.mem.x / T); if (L.gearChest) add(L.gearChest.x / T); if (L.friend) add(L.friend.c);
   (L.stations || []).forEach(z => add(z.gate[0])); (L.doors || []).forEach(d => add(d.c));
   (L.squads || []).forEach(q => { add(q.ax / T); (q.foods || []).forEach(f => add(f.x / T)); });
   (L.steps || []).forEach(z => add(z.c0, z.c0 + z.w)); (L.bridges || []).forEach(z => add(z.c0, z.c0 + z.w)); (L.swings || []).forEach(w => add(w.s, w.e)); (L.rafts || []).forEach(r => add(r.c0, r.c1)); (L.walls || []).forEach(o => add(o.c0 != null ? o.c0 : o.c));
@@ -8559,7 +8559,7 @@ function drawHelp() {   // (drawStory) world space, behind Kai
 }
 function helpHeart(X, Y, a) { ctx.globalAlpha = a; ctx.fillStyle = '#ff4d6d'; ctx.fillRect(X, Y, 4, 4); ctx.fillRect(X + 6, Y, 4, 4); ctx.fillRect(X, Y + 3, 10, 4); ctx.fillRect(X + 2, Y + 7, 6, 2); ctx.fillRect(X + 4, Y + 9, 2, 2); ctx.globalAlpha = 1; }
 function placeStory(i) {   // (startStage)
-  placeHelp(i);
+  L.help = null; L.mem = null;
   L.marks = []; L.note = null; L.kuro = null; G.helper = null; G.pengs = 0; G.feastFish = 0;
   const st = STAGES[i]; if (!st || st.boss || L.boss || L.vault) return;
   const kind = MARK_KIND[L.world.key];
@@ -8567,18 +8567,24 @@ function placeStory(i) {   // (startStage)
     const c = groundCol(s.gate[0] - 3); if (c < 0 || L.marks.some(m => Math.abs(m.c - c) < 3)) continue;
     L.marks.push({ kind, c, x: c * T + T / 2, y: GR * T, fixed: 0, t: 0 });
   }
-  if (!L.water) {
+  // Healed worlds (owner, Nov 23 2026): once this world's boss is won over, what Kuro spoiled here is already put right.
+  if (prog.best[bossOf(st.w)]) L.marks.forEach((m, n) => { m.healed = true; m.fixed = 2; m.t = 999; m.n = n; });
+  const home = !!prog.best[bossOf(WORLDS.length - 1)];   // Kuro is home: no more notes from him, no glimpse of him running off
+  // A memory (first level of each world): the two brothers when they were small, glowing faintly where Kuro stops to look.
+  const mc = st.k === 0 ? groundCol(Math.round(L.w * 0.78) + 3) : -1; if (mc > 0) L.mem = { x: mc * T + T / 2, kind: L.world.key };
+  if (!L.water && !home) {
     const nc = [0.25, 0.3, 0.2, 0.35].map(f => groundCol(Math.round(L.w * f))).find(c => c > 0 && !L.marks.some(m => Math.abs(m.c - c) < 3)); if (nc) L.note = { x: nc * T + T / 2, text: st.k === 2 ? 'Turn back, little brother! –K' : KURO_NOTE[L.world.key] };
-    const kc = groundCol(Math.round(L.w * 0.78)); if (kc > 0) L.kuro = { x: kc * T, y: GR * T - 44, ph: 0, t: 0 };
+    const kc = L.mem ? groundCol(Math.round(L.mem.x / T) - 3) : groundCol(Math.round(L.w * 0.78)); if (kc > 0) L.kuro = { x: kc * T, y: GR * T - 44, ph: 0, t: 0, mem: !!L.mem, waver: L.world.key === 'castle' };
   }
   const can = HELPERS.map((k, w) => (k && w < st.w && prog.best[bossOf(w)] ? k : null)).filter(Boolean);
   if (can.length) G.helper = { kind: can[i % can.length], done: false, show: null };
+  placeHelp(i);
 }
 function fixMark(x) {   // a right answer: put right the nearest thing Kuro spoiled
   if (!L.marks || !P) return;
   let m = null, bd = 9 * T;
   for (const k of L.marks) { const d = Math.abs(k.x - (P.x + P.w / 2)); if (!k.fixed && d < bd) { bd = d; m = k; } }
-  if (!m) return;
+  if (!m) { for (const k of L.marks) { const d = Math.abs(k.x - (P.x + P.w / 2)); if (k.healed && d < bd) { bd = d; m = k; } } if (m) m.cheer = 50; return; }   // a healed world: they cheer
   m.fixed = 1; m.t = 0; sfx.correct();
   if (m.kind === 'penguin') G.pengs++;
   if (m.kind === 'chest') { G.feastFish += 2; for (let k = 0; k < 6; k++) G.parts.push({ k: 'bit', x: m.x, y: m.y - 20, vx: (Math.random() - 0.5) * 3, vy: -2 - Math.random() * 2, life: 40, col: ['#3ae374', '#3a86ff', '#ff4d6d'][k % 3], s: 4 }); }
@@ -8587,8 +8593,12 @@ function storyTick(p) {   // (shopPowTick) the marks' animations, the note, Kuro
   for (const m of L.marks || []) if (m.fixed) m.t++;
   helpTick(p);
   const k = L.kuro;
-  if (k && !k.ph && P.x > k.x - 8 * T) { k.ph = 1; k.t = 0; }
-  if (k && k.ph === 1 && ++k.t > 50) { k.ph = 2; k.t = 0; }
+  for (const m of L.marks || []) if (m.cheer > 0) m.cheer--;
+  if (k && !k.ph && P.x > k.x - (k.mem ? 11 : 8) * T) { k.ph = 1; k.t = 0; k.hold = (k.mem ? 90 : 50) + (k.waver ? 70 : 0); }
+  if (k && k.ph === 1) {   // he looks at the memory, sees Kai (in his castle he takes a step toward him), then runs
+    k.t++; if (k.waver && k.t > k.hold - 60 && k.t < k.hold - 15) k.x -= 0.5;
+    if (k.t > k.hold) { k.ph = 2; k.t = 0; }
+  }
   if (k && k.ph === 2) { k.x += 6; if (++k.t > 70) k.ph = 3; }
   const h = G.helper; if (!h) return;
   if (h.show && ++h.show.t > 110) h.show = null;
@@ -8609,11 +8619,57 @@ function helperCatch() {   // (fell) the Golem lifts Kai out of a pit
   h.done = true; h.show = { x: P.x + P.w / 2, y: GR * T, t: 0, say: 'Up you come, little ninja!' }; sfx.win();
   return true;
 }
+// What a healed world shows where Kuro's mark was: village children, cool springs, resting robots, penguins in pairs,
+// open chests with fish, calm scorpions by a flower, lit street lamps. They cheer at a right answer nearby (m.cheer).
+function drawHealed(m) {
+  const x = m.x, y = m.y, hop = m.cheer > 0 ? Math.abs(Math.sin(m.cheer * 0.25)) * 7 : 0;
+  if (m.kind === 'bandit') pixRows(HELP_ART[m.cheer > 0 ? 'kidUp' : 'kid'], { ...HELP_PAL, r: ['#3a86ff', '#e63946', '#3ae374', '#ffb627', '#9b59b6'][m.n % 5] }, x - 12, y - 33 - hop, 3);
+  else if (m.kind === 'vent') {
+    ctx.fillStyle = '#3d3431'; ctx.fillRect(x - 14, y - 8, 28, 8); ctx.fillStyle = '#3a86ff'; ctx.fillRect(x - 8, y - 9, 16, 3);
+    for (let k = 0; k < 4; k++) { const ph = (tick * 0.5 + k * 14) % 56, a = 1 - ph / 56; ctx.fillStyle = `rgba(150,210,255,${a})`; ctx.beginPath(); ctx.arc(x + Math.sin(ph / 6 + k) * 4, y - 12 - ph * (0.7 + hop * 0.1), 3, 0, 7); ctx.fill(); }
+    for (const dx of [-24, 22, 30]) { ctx.fillStyle = '#3ae374'; ctx.fillRect(x + dx, y - 8, 2, 8); ctx.fillStyle = dx > 25 ? '#ffd23f' : '#ff9cc4'; ctx.fillRect(x + dx - 2, y - 12, 6, 5); }   // something grows by the water
+  } else if (m.kind === 'robot') pixRows(HELP_ART.robot, { g: '#9aa7b8', G: '#6c7a89', e: tick % 140 < 6 ? '#2a2a3a' : '#7df9ff', a: m.cheer > 0 && tick % 10 < 5 ? '#ff3355' : '#3ae374' }, x - 12, y - 30 - hop, 3);
+  else if (m.kind === 'penguin' || m.kind === 'scorpion') {
+    for (const s of m.kind === 'penguin' ? [-1, 1] : [1]) { const e = walkerFor(m.kind, 0, 0); e.x = x - e.w / 2 + (m.kind === 'penguin' ? s * 15 : 0); e.y = y - e.h - hop; e.onGround = true; e.vx = -s; e.t = 0; drawEnemy(e); }   // never alone now
+    if (m.kind === 'scorpion') { ctx.fillStyle = '#3ae374'; ctx.fillRect(x + 28, y - 9, 2, 9); ctx.fillStyle = '#ff6b81'; ctx.fillRect(x + 26, y - 13, 6, 5); }
+    if (m.cheer > 0) heart(x, y - 52 - (50 - m.cheer) * 0.3, 8, '#ff5a8a');
+  } else if (m.kind === 'chest') {
+    ctx.fillStyle = '#8b5a2b'; ctx.fillRect(x - 16, y - 18, 32, 18); ctx.fillStyle = '#c9a24f'; ctx.fillRect(x - 16, y - 12, 32, 3); ctx.fillStyle = '#6b4423'; ctx.fillRect(x - 17, y - 40, 34, 6);
+    for (let k = 0; k < 3; k++) { const a = tick * 0.03 + k * 2.1; pixRows(HELP_ART.fish, { o: ['#ff8a3c', '#3fe0b0', '#ff9cc4'][k], k: '#16121f' }, x + Math.cos(a) * 34 - 9, y - 50 - hop + Math.sin(a * 1.4) * 12, 3, Math.sin(a) > 0); }
+  } else if (m.kind === 'banner') {
+    ctx.fillStyle = '#3a2a20'; ctx.fillRect(x - 2, y - 56, 4, 56); ctx.fillRect(x - 9, y - 58, 18, 3); ctx.fillStyle = '#16121f'; ctx.fillRect(x - 8, y - 76, 16, 18); ctx.fillStyle = '#ffd87a'; ctx.fillRect(x - 6, y - 74, 12, 14);
+    glowAt(x, y - 66, 70 + Math.sin(tick * 0.1 + m.n) * 4 + hop * 3, 'rgba(255,216,122,.35)');
+  }
+}
+// A memory of the two brothers when they were small (no words): Kuro a head taller, a soft warm light round them.
+let MEM_SPR = null;
+function drawMemory() {
+  const me = L.mem; if (!me || me.x < cam - 5 * T || me.x > cam + VW + 5 * T) return;
+  const k = L.kuro, a = (k ? (k.ph === 3 ? 0 : k.ph === 2 ? Math.max(0, 1 - k.t / 60) : 1) : 1) * (0.72 + Math.sin(tick * 0.05) * 0.08); if (a <= 0) return;
+  if (!MEM_SPR) MEM_SPR = bakeNinja({}); if (!KURO_SPR) KURO_SPR = bakeNinja({ r: '#e63946', R: '#a91d2b', n: '#1c1a24', N: '#3d3a52', b: '#1c1a24' });
+  const kind = me.kind, x = 0, g = 0;
+  ctx.save(); ctx.globalAlpha = a; ctx.translate(me.x, GR * T); ctx.scale(1.35, 1.35); glowAt(0, -30, 80, 'rgba(255,232,170,.55)');   // (drawn round 0,0, a little bigger)
+  const boy = (set, dx, dy, sc, flip, pose) => { ctx.save(); ctx.translate(x + dx, g + dy); ctx.scale(sc, sc); drawBaked(set, pose || 'stand', flip, { x: -12, y: -44, w: 24, h: 44 }); ctx.restore(); };
+  const R = (c, dx, dy, w, h) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x + dx), Math.round(g + dy), w, h); };
+  const bob = Math.sin(tick * 0.08) * 2;
+  if (kind === 'lava') { boy(KURO_SPR, 0, 0, 0.8, false, Math.floor(tick / 10) % 2 ? 'walkA' : 'stand'); boy(MEM_SPR, -8, -22 + bob * 0.3, 0.6, false); }   // a ride on his big brother's back
+  else {
+    boy(KURO_SPR, -16, 0, 0.8, false); boy(MEM_SPR, 16, 0, 0.6, true, kind === 'japan' ? 'jump' : 'stand');
+    if (kind === 'japan') { R('#8bc34a', -6, -62 + bob, 12, 3); R('#ffd23f', -1, -62 + bob, 3, 3); R('#d8a679', -1, -59 + bob, 2, 10); }   // the bamboo dragonfly, spinning up
+    else if (kind === 'robot') { R('#4cc9f0', -6, -9, 10, 9); R('#ffd23f', -1, -18, 10, 9); R('#ff6b81', -5, -27, 10, 9); }   // a tower of blocks
+    else if (kind === 'snow') { R('#ffffff', -8, -14, 16, 14); R('#ffffff', -6, -25, 12, 11); R('#16121f', -3, -21, 2, 2); R('#16121f', 2, -21, 2, 2); R('#ff8c1a', -1, -18, 4, 2); }   // a snowman
+    else if (kind === 'sea') { R('#fff6e0', -3, -22 + bob * 0.5, 7, 6); R('#ffd0e0', -1, -20 + bob * 0.5, 3, 2); }   // here, this shell is for you
+    else if (kind === 'desert') { R('#c9a063', -3, -24, 7, 9); R('#8a6a3a', -1, -27, 3, 3); }   // a drink of water, shared
+    else if (kind === 'castle') { R('#3a2a20', -3, -30, 2, 8); R('#ffd87a', -6, -22, 8, 9); glowAt(-2, -18, 30, 'rgba(255,216,122,.6)'); }   // the big one carries the light
+  }
+  ctx.restore();
+}
 function drawStory() {   // world space, before Kai
-  drawHelp();
+  drawHelp(); drawMemory();
   for (const m of L.marks || []) {
     if (m.x < cam - 80 || m.x > cam + VW + 80) continue;
     const x = m.x, y = m.y, t = m.t, f = m.fixed;
+    if (m.healed) { drawHealed(m); continue; }
     if (m.kind === 'bandit' || m.kind === 'robot' || m.kind === 'scorpion' || m.kind === 'penguin') {
       if (m.kind === 'penguin' && f) continue;   // (it walks with Kai now)
       const kind = m.kind === 'bandit' ? 'ninja' : m.kind, e = walkerFor(kind, 0, 0);
@@ -8651,9 +8707,10 @@ function drawStory() {   // world space, before Kai
   if (k && (k.ph === 1 || k.ph === 2)) {   // Kuro, just ahead, then gone
     if (!KURO_SPR) KURO_SPR = bakeNinja({ r: '#e63946', R: '#a91d2b', n: '#1c1a24', N: '#3d3a52', b: '#1c1a24' });
     ctx.globalAlpha = k.ph === 2 ? Math.max(0, 1 - k.t / 60) : 1;
-    drawBaked(KURO_SPR, k.ph === 2 && Math.floor(tick / 5) % 2 ? 'walkA' : 'stand', k.ph === 1, { x: k.x, y: k.y, w: 24, h: 44 });
+    const walk = k.ph === 2 || (k.waver && k.t > k.hold - 60 && k.t < k.hold - 15);
+    drawBaked(KURO_SPR, walk && Math.floor(tick / 5) % 2 ? 'walkA' : 'stand', k.ph === 1 && !(k.mem && k.t < 45), { x: k.x, y: k.y, w: 24, h: 44 });
     ctx.globalAlpha = 1;
-    if (k.ph === 1 && k.t > 10) drawSay(k.x + 12, k.y - 4, 'Go home, Kai!');
+    if (k.ph === 1 && k.t > 10 && !k.mem && !k.waver) drawSay(k.x + 12, k.y - 4, 'Go home, Kai!');
   }
   if (G.feast) drawFeast();
 }
