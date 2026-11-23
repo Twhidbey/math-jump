@@ -405,7 +405,14 @@
   .scrl .pix { width: 30px; height: 30px; image-rendering: pixelated; }
   .ibtn b { color: #ffd23f; }
   .ibtn:hover { background: rgba(255,255,255,.18); }
-  .setlist { display: grid; gap: 8px; margin: 10px 0 14px; }
+  .setlist { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 12px; }   /* (owner: the list was long: two columns, grown-up things tucked away) */
+  .setlist .btn { margin: 0; font-size: 15px; padding: 10px 6px; }
+  .grownups { margin: 0 0 12px; text-align: center; }
+  .grownups summary { cursor: pointer; font-weight: 800; opacity: .7; padding: 4px; list-style: none; }
+  .grownups summary::-webkit-details-marker { display: none; }
+  .grownups summary::before { content: '▸ '; }
+  .grownups[open] summary::before { content: '▾ '; }
+  .setlist .btn.danger { color: #ffb3b3; }
   .tabs { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 10px 0 6px; }
   .tabs button { font: inherit; font-weight: 800; font-size: 15px; border: none; border-radius: 999px; padding: 6px 14px; cursor: pointer;
     background: rgba(255,255,255,.1); color: #fff; }
@@ -652,7 +659,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · The ending is a walk home; ghost demos only for the trickiest things</div>
+  <div class="build">Updated Nov 23, 2026 · A tidier Settings page</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -663,14 +670,18 @@
       <button class="btn alt" id="musicBtn" type="button">🎵 Music on</button>
       <button class="btn alt" id="easyBtn" type="button">🐣 Easy mode: off</button>
       <button class="btn alt" id="safeBtn" type="button">🛡️ Never get hurt: off</button>
-      <button class="btn alt" id="unlockBtn" type="button">🔓 Unlock all levels</button>
       <button class="btn alt" id="playersBtn" type="button">👥 Players</button>
-      <button class="btn alt" id="famBtn" type="button">👪 Parent page</button>
       <button class="btn alt" id="storyBtn" type="button">📖 Read the story</button>
-      <button class="btn alt" id="helpBtn" type="button">❓ How to play</button>
-      <button class="btn alt" id="demoBtn" type="button">👻 Show me again</button>
-      <button class="btn alt" id="resetBtn" type="button">↺ Reset progress</button>
     </div>
+    <details class="grownups"><summary>Grown-ups</summary>
+      <div class="setlist">
+        <button class="btn alt" id="famBtn" type="button">👪 Parent page</button>
+        <button class="btn alt" id="unlockBtn" type="button">🔓 Unlock all levels</button>
+        <button class="btn alt" id="helpBtn" type="button">❓ How to play</button>
+        <button class="btn alt" id="demoBtn" type="button">👻 Show me again</button>
+        <button class="btn alt danger" id="resetBtn" type="button">↺ Reset progress</button>
+      </div>
+    </details>
     <div class="row"><button class="btn" id="settingsClose" type="button">Done</button></div>
   </div>
 </div>
