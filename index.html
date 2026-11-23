@@ -39,6 +39,7 @@
   .rank { display: flex; align-items: center; gap: 10px; justify-content: center; flex-wrap: wrap;
     background: rgba(255,255,255,.08); border-radius: 12px; padding: 8px 14px; margin: 6px 0; font-size: 16px; }
   .rank b { color: #ffd23f; }
+  .chipbelt { width: 30px !important; height: 9px !important; vertical-align: middle; margin: 0 2px; }
   .belt { display: inline-block; width: 64px; height: 12px; border-radius: 3px; border: 2px solid rgba(0,0,0,.55);
     vertical-align: middle; position: relative; box-shadow: 0 0 0 1px rgba(255,255,255,.35); }
   .belt::after { content: ''; position: absolute; left: 50%; top: -5px; width: 12px; height: 18px; margin-left: -8px;
@@ -385,9 +386,9 @@
   .z-castle .node:disabled:not(.boss) { background: #a678ff !important; } .node.boss:disabled { background: #6a1a2a !important; }
   .node.boss:disabled .bossimg { filter: brightness(0) opacity(.75); }
   .node .boss-lock { position: absolute; right: -6px; bottom: -6px; width: 26px !important; height: 26px !important; }
-  .homebar { display: grid; grid-template-columns: auto 1fr auto auto; grid-template-areas: "player rank rank rank" "skill skill race dojo"; gap: 8px; align-items: center; margin: 4px 0 2px; width: min(720px, 100%); }
+  .homebar { display: grid; grid-template-columns: auto 1fr auto auto; grid-template-areas: "player rank race dojo"; gap: 8px; align-items: center; margin: 4px 0 2px; width: min(720px, 100%); }
   #playerChip { grid-area: player; justify-self: start; } #skillChip { grid-area: skill; } #dojoBtn { grid-area: dojo; } #raceBtn { grid-area: race; } .racechip { background: #3a4a8a; border-bottom-color: #26325e; }   /* (owner, Nov 23 2026: Race looked lost under the levels) a small pill beside Daily Dojo */ .homebar .rank { grid-area: rank; justify-self: end; margin: 0; }
-  @media (max-width: 560px) { .homebar { grid-template-columns: 1fr auto auto; grid-template-areas: "player race dojo" "skill skill skill" "rank rank rank"; } #playerChip { white-space: nowrap; } .homebar .dojobtn { font-size: 15px; padding: 6px 9px; white-space: nowrap; } .homebar .rank { justify-self: center; } }
+  @media (max-width: 560px) { .homebar #playerChip { max-width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; } .homebar { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "player race dojo" "rank rank rank"; } .chipbelt { width: 16px !important; } .homebar { gap: 5px; } .homebar #playerChip { font-size: 15px; padding-left: 7px; padding-right: 7px; } .homebar .dojobtn { font-size: 14px; padding: 6px 7px; } #playerChip { white-space: nowrap; } .homebar .dojobtn { font-size: 15px; padding: 6px 9px; white-space: nowrap; } .homebar .rank { justify-self: center; } }
   .mathchip { font: inherit; font-weight: 800; font-size: 18px; color: #3a2200; background: #ffd23f; border: none; border-bottom: 4px solid #b8860b;
     border-radius: 999px; padding: 8px 18px; cursor: pointer; }
   .mathchip .tier, .mathline .tier { color: #d35400; letter-spacing: 1px; }
@@ -662,7 +663,7 @@
   <button class="playbtn" id="playBtn" type="button"></button>
   <div class="homebar">
     <button class="pchip" id="playerChip" type="button"></button>
-    <button class="mathchip" id="skillChip" type="button"></button>
+    <button class="mathchip hidden" id="skillChip" type="button"></button>
     <button class="dojobtn racechip" id="raceBtn" type="button"><span data-pixsm="race"></span> Race</button>
     <button class="dojobtn" id="dojoBtn" type="button"></button>
     <div class="rank" id="rank"></div>
@@ -672,14 +673,14 @@
     <button class="ibtn" id="shopBtn" type="button"><span data-pix="pagoda"></span>Shop <b id="bankMenu">0</b><span data-pixsm="gem"></span></button>
     <button class="ibtn" id="badgeBtn" type="button"><span data-pix="medal"></span>Badges <b id="badgeMenu"></b></button>
     <button class="ibtn" id="packBtn" type="button"><span data-pix="chest"></span>Gear <b id="packMenu"></b></button>
-    <button class="ibtn" id="storyBtn" type="button"><span data-pix="scroll"></span>Story</button>
+    <button class="ibtn" id="storyHomeBtn" type="button"><span data-pix="scroll"></span>Story</button>
   </div>
   <!-- (owner, Nov 23 2026: fewer buttons on the home screen) the scrolls, the map and the journal are on the Story page now; these stay in the page, hidden, because the game still fills and uses them -->
   <div class="scrollrow hidden" id="scrollRow"></div>
   <div class="maprow hidden"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Race is a small button beside Daily Dojo</div>
+  <div class="build">Updated Nov 23, 2026 · Home screen: math level is in Settings, the belt is on the player chip</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -695,6 +696,7 @@
     </div>
     <details class="grownups"><summary>Grown-ups</summary>
       <div class="setlist">
+        <button class="btn alt" id="mathBtn" type="button">Math level</button>
         <button class="btn alt" id="famBtn" type="button">👪 Parent page</button>
         <button class="btn alt" id="unlockBtn" type="button">🔓 Unlock all levels</button>
         <button class="btn alt" id="helpBtn" type="button">❓ How to play</button>
@@ -13612,8 +13614,10 @@ function buildMenu() {
   KAI_STRIPES = stripesNow();   // (Kai's belt stripes on the home screen too)
   const pts = totalPoints(), b = beltFor(pts), k = curSkill();
   if (prog.title && !TITLES().includes(prog.title)) prog.title = null;
-  $('rank').innerHTML = `${beltHTML(b)} <span><b>${b.name} Belt</b> · ${pts} pts</span>${prog.title ? `<span class="ptitle">${prog.title}</span>` : ''}`;
-  const me = curPlayer(); $('playerChip').innerHTML = `${playerIcon(me.icon, 'picon sm')} `; $('playerChip').append(`${me.name} ▾`);
+  // (owner, Nov 23 2026) no belt line any more: the belt is a small colour bar on the player's chip (Kai also wears it);
+  // the line under the chips is only there when the player has picked a title.
+  $('rank').innerHTML = prog.title ? `<span class="ptitle">${prog.title}</span>` : ''; $('rank').classList.toggle('hidden', !prog.title);
+  const me = curPlayer(); $('playerChip').innerHTML = `${playerIcon(me.icon, 'picon sm')} `; $('playerChip').append(`${me.name} `); $('playerChip').insertAdjacentHTML('beforeend', `<span class="belt chipbelt" style="background:${b.col}" title="${b.name} Belt"></span> ▾`);
   const pr = skillProgress(k);
   $('skillChip').innerHTML = `${pixImg('compass', 'pix sm')} ${k.name} <span class="tier">${stars(k.tier)}</span> <span class="dots">${pr.learned}/${pr.n}</span> ✎`;
   const dl = prog.daily, live = dl.last >= today() - 1 ? dl.streak : 0;
@@ -14091,6 +14095,7 @@ $('safeBtn').onclick = () => setSafe(!prog.safe);
 $('unlockBtn').onclick = () => setAllOpen(!prog.allOpen);
 $('storyBtn').onclick = () => { hide('settings'); storyBook(0); };
 $('skillChip').onclick = () => { audio(); openSkills(toMenu); };
+$('mathBtn').onclick = () => { audio(); hide('settings'); openSkills(toMenu); };   // (the math chip left the home screen: kids don't change it; grown-ups find it here)
 $('autoBtn').onclick = () => { audio(); prog.auto = !prog.auto; save(); renderSkills(); };
 
 // ---------------------------------------------------------------- pixel icons for the menus
@@ -15973,7 +15978,7 @@ $('roadCv').onclick = e => {   // tap a thing on the stall: its card
 $('shopClose').onclick = () => { hide('shop'); buildMenu(); show('menu'); };
 $('badgeBtn').onclick = () => { audio(); openBadges(); };
 $('mapBtn').onclick = () => { audio(); openMap(); };
-$('storyBtn').onclick = () => { audio(); openMap(); };
+$('storyHomeBtn').onclick = () => { audio(); openMap(); };
 $('journalBtn').onclick = () => { audio(); openJournal(); };
 $('packBtn').onclick = () => { audio(); openPack(); };
 $('packClose').onclick = () => { hide('pack'); buildMenu(); show('menu'); };
