@@ -72,6 +72,10 @@ The road leaves the dojo (Home), goes round the seven lands in story order and c
 
 Right answers put right what Kuro spoiled: Village bandits drop their Kuro signs ("Friends!"), Volcano vents cool to springs ("Cool water!"), Factory robots are unchained ("Free!"), lone penguins join Kai ("Come along!"), Sea chests open and fish carry the gems off ("Share!"), Desert scorpions calm down ("Peace!"), Castle banners fall ("Down it comes!"). Kuro's notes on signposts: Village "My new friends like ME best! –K", Volcano "Leave me alone! –K", Factory "Everything here obeys me. –K", Snow "I don't need anyone. Go home! –K", Desert "They'll be sorry! –K", Castle "Bow to the king! –K"; third levels "Turn back, little brother! –K". Near the end of a level Kai glimpses Kuro: "Go home, Kai!" and he runs off. Bosses Kai won over help in later worlds: Golem "Up you come, little ninja!", Mega-Bot "REST WELL, KAI!", Snowman "I got him, Kai!", Octopus "Here, Kai! I share now!", Scorpion "I sting for you now!". Sea levels end with a fish feast: "A fish feast! Everyone shares."
 
+## Letters from Sensei (one after each day's Daily Dojo)
+
+The 21 letters are in `SENSEI_LETTERS` in `index.html` (keep in sync): from "Kai, I am proud of you. Not for the scrolls. Just because you are my son." through "You can't earn my love, Kai. You already have it.", "Your brother's room is ready. It always has been." to "Every day you come here, my heart is glad." Lanterns on the map: one for each day Kai trains, like Sensei keeping the light on.
+
 ## Lost friends (optional, one per world)
 
 Little students from Sensei's dojo: **Hana** (Japan), **Tomo** (Lava), **Niko** (Robot), **Yuki** (Snow), **Nami** (Sea), **Suna** (Desert, in a straw hat) and **Mei** with her lamb (Castle). Lines: "Help!" (near the secret), "Help me, Kai!", "Thank you, Kai!", "See you at the dojo!". The Welcome Home page shows the ones found: "Hana, Tomo came home too!" or, with all five, "Every one came home!" (Mei going after her one lost lamb is a quiet nod to the lost sheep.)

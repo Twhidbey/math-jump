@@ -29,3 +29,9 @@ Entrance `drawTrainIntro` (drawn last in `drawHUD`): `room.intro` counts down fr
 ## Old secret puzzle rooms (unused now, code kept)
 
 `roomAnswer`, `drawRoom`, `drawRoomBg` (backgrounds still used by training rooms), `balanceQ`, `magicSquare`, `machine`, `openChest`, `spillGems`
+
+## Coming back (owner, Nov 23 2026: rewards that bring kids back to the dojo and training rooms)
+
+- **Lanterns** (`prog.lanterns`, `dojoGifts` in `finishDojo`, first round of the day): one lantern per day of Daily Dojo, shown as a row of 7 on the end card (`lanternRowHTML`, the new one glows in) and as little lights along the road out of Home on the world map (`drawWorldMap`, up to 70). Every 7th: Sensei's gift, 100 gems through the treasure chest (`prog.chest`).
+- **Letters from Sensei** (`SENSEI_LETTERS`, 21, `prog.letters`): the first round each day opens the next letter on the end card (`letterHTML`); all received letters are in the Journal (`openJournal`, "Letters from Sensei"). Early ones encourage; later ones are about Kuro and the father waiting (the lamp, his soup, his room ready, "You can't earn my love").
+- **Belt stripes** (`prog.stripes = { belt, n }`, `addStripe` in `trainFinish`): a training room done again (move already learned) with no misses adds a gold stripe to Kai's belt, up to 4; a new belt starts with none (`stripesNow`). Drawn in `drawKai` (`KAI_STRIPES`, set before baking in `startStage` and `buildMenu`); a glow on the belt (`drawStripeFx`) and "Stripe n of 4!" on the room's result line.
