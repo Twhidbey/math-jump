@@ -651,7 +651,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · New app icon (Kai over the rooftops); worlds stay healed, brothers' memories</div>
+  <div class="build">Updated Nov 23, 2026 · Ghost demos only for the trickiest things</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -8741,7 +8741,13 @@ function drawFeast() {
 // stones or a number-stone bridge), play stops for a few seconds while a see-through ghost Kai runs ahead and does it
 // once. Each feature shows once per player (prog.demos); Settings > "Show me again" clears them. A tap or key skips it.
 // demoPath(spot) turns the feature's own layout into waypoints: { x, y, how: 'run' | 'jump' | 'climb' | 'fly', h, hold, carry }.
+// (owner, Nov 23 2026: the ghost looked like Kai splitting in two; "turn them off except for very special things":
+// only the features kids can't work out by trying keep their demo.)
+const DEMO_KEEP = new Set(['bridge', 'tw-walljump', 'tw-kite', 'tw-sneak']);
 function demoSpots() {   // (startStage) where this level's features start
+  return demoAll().filter(sp => DEMO_KEEP.has(sp.key));
+}
+function demoAll() {
   const out = [];
   if (L.twistAt != null && L.twist) out.push({ key: 'tw-' + L.twist, c: L.twistAt });
   for (const sw of L.swings || []) if (!sw.lift) { out.push({ key: 'swing', c: sw.s, sw }); break; }

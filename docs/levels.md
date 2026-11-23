@@ -58,6 +58,6 @@ Each world shares one base background (the original look); levels add one small 
 
 `drawCarriedScroll` (drawn right after Kai in `render`, so the house never covers the scroll he carries home); `drawGoal` only draws it while it waits on its holder
 
-## Ghost Kai demos (owner, Nov 23 2026: show, don't tell)
+## Ghost Kai demos (owner, Nov 23 2026: show, don't tell; later the same day: only for very special things, `DEMO_KEEP`: the number-stone bridge, wall jumps, the koi kite, hiding in barrels)
 
 The first time a player meets a level feature, play waits while a see-through Kai does it once (`demoSpots` in `startStage`: the first twist (`L.twistAt`, set in `twistChunk`), swing, stepping stones, number-stone bridge; `demoPath` turns each one's layout into waypoints; `demoCheck` starts it 6 tiles before; `demoTick` replaces `updatePlayer` while `G.demo`; the camera follows the ghost and eases back (`G.camBack`); `drawDemo`). A tap or key skips it. Seen ones go in `prog.demos`; Settings > Show me again (`demoBtn`) clears them. No demo for rocks / chase / avalanche (they come at Kai) or the sea's twists yet. A new twist needs a `demoPath` case.
