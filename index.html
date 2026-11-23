@@ -648,7 +648,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Home treasures wrapped until the end; helping spots in every world</div>
+  <div class="build">Updated Nov 23, 2026 · Home stall: paper doors and a warm light until the end</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -13651,6 +13651,15 @@ function drawStallScene(c, s, ox) {   // one stall, its keeper and its goods, of
     if (owned) { c.fillStyle = '#3ae374'; c.fillRect(x + w - 10, y, 8, 8); }
     if (!ox) roadHits.push({ x, y, w, h, id: it.id });
   });
+  else if (s.look === 'home') {   // Home before the ending: paper doors slid shut, a warm light inside (owner: not boarded up)
+    const g = c.createRadialGradient((x0 + x1) / 2, 190, 10, (x0 + x1) / 2, 190, 170); g.addColorStop(0, 'rgba(255,214,140,.55)'); g.addColorStop(1, 'rgba(255,214,140,0)'); c.fillStyle = g; c.fillRect(x0 - 60, 80, x1 - x0 + 120, gy - 80);
+    const pw = (x1 - x0 - 40) / 4;
+    for (let k = 0; k < 4; k++) {
+      const px = x0 + 20 + k * pw; c.fillStyle = '#f6ecd2'; c.fillRect(px + 2, 132, pw - 4, 94); c.fillStyle = 'rgba(255,200,120,.35)'; c.fillRect(px + 2, 132, pw - 4, 94);
+      c.fillStyle = '#6b4423'; c.fillRect(px, 130, pw, 4); c.fillRect(px, 224, pw, 4); c.fillRect(px, 130, 3, 98); c.fillRect(px + pw - 3, 130, 3, 98);
+      for (let j = 1; j < 3; j++) c.fillRect(px + j * pw / 3, 134, 2, 90); for (let j = 1; j < 4; j++) c.fillRect(px + 3, 132 + j * 24, pw - 6, 2);
+    }
+  }
   else {   // not reached yet: boarded up
     c.fillStyle = '#6b4423'; for (let k = 0; k < 4; k++) { c.save(); c.translate((x0 + x1) / 2, 180 + k * 26); c.rotate((k % 2 ? 1 : -1) * 0.08); c.fillRect(-(x1 - x0) / 2 - 10, -9, x1 - x0 + 20, 18); c.restore(); }
   }

@@ -110,3 +110,4 @@ Owner asked for a parent screen with its own link: how long each kid plays, a ti
 - **Helping spots in every world (Nov 23, live):** owner said go on the other five: cold hut and fire pit (Obsidian Caves, Fire Cape), robot's bolts (Gear Works, Magnet Gloves), snowed-in door (Frosty Slopes, Ram Horn Hood), fish in a rock cave (Coral Reef, Trident), child and street lamp (Lantern Roofs, Lantern). The gear plan's three steps are all built; waiting for the owner's and kids' reactions. The Kuro lines and gold lines are still my drafts.
 
 - **Home treasures stay wrapped (Nov 23, live):** before the ending, the Home stall's items show as "A family treasure" (chest picture, no name, story or preview; lock says "Later") so they don't give the ending away; `giftLock` says "Finish the story" instead of "Bring Kuro home first".
+- **Home stall before the ending (Nov 23, live):** paper sliding doors and a warm light inside instead of boards (owner).
