@@ -524,6 +524,16 @@
   .item .nm { font-weight: 800; font-size: 14px; }
   .item .pr { font-size: 13px; opacity: .85; }
   .item { position: relative; }
+  .roadcv { width: 100%; max-width: 760px; display: block; margin: 8px auto 0; border-radius: 12px; image-rendering: pixelated; cursor: pointer; }
+  .roadnav { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 8px 0 0; }
+  .roadnav .btn { padding: 6px 16px; }
+  .roaddots { display: flex; gap: 6px; }
+  .roaddots i { width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,.3); cursor: pointer; }
+  .roaddots i.on { background: #ffd23f; }
+  .roaddots i.shut { background: rgba(255,255,255,.1); }
+  .stallname { margin: 6px 0 0; }
+  .item.flash { animation: iflash 1s ease-out; }
+  @keyframes iflash { 0% { box-shadow: 0 0 0 4px #ffd23f; } 100% { box-shadow: 0 0 0 0 rgba(255,210,63,0); } }
   .item .iplay { position: absolute; top: 6px; right: 6px; width: 30px; height: 30px; border-radius: 50%; padding: 0; background: rgba(255,210,63,.9); color: #3a2200; font-size: 14px; }
   .item canvas { max-width: 100%; }
   .item .istory { font-size: 12px; font-style: italic; opacity: .8; text-align: center; }
@@ -629,7 +639,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Dojo lanterns, letters from Sensei, belt stripes</div>
+  <div class="build">Updated Nov 23, 2026 · The shop is a market road with a stall in every world</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -712,8 +722,10 @@
 <div id="shop" class="overlay hidden">
   <div class="card shopcard">
     <h2>The Road Home</h2>
-    <div class="shoptop"><canvas id="shopPreview" width="110" height="56"></canvas>
-      <div><div class="bankline"><span data-pixsm="gem"></span> <b id="bank">0</b> gems</div><div class="shophint">Things from Kai's journey. Collect gems in levels and races.</div></div></div>
+    <div class="bankline"><span data-pixsm="gem"></span> <b id="bank">0</b> gems</div>
+    <canvas id="roadCv" class="roadcv" width="960" height="330"></canvas>
+    <div class="roadnav"><button type="button" class="btn alt" id="roadPrev">◀</button><div id="roadDots" class="roaddots"></div><button type="button" class="btn alt" id="roadNext">▶</button></div>
+    <h3 id="stallName" class="stallname"></h3>
     <div class="buybox hidden" id="buyBox"></div>
     <div class="shopgrid" id="shopGrid"></div>
     <div class="row"><button class="btn alt" id="shopClose" type="button">Back</button></div>
@@ -13383,6 +13395,105 @@ function playShopDemo(cv, it) {
   };
   frame();
 }
+// The Road Home as a market road (owner, Nov 23 2026: "themed for each level and look like a shop, think big picture";
+// chose the market road). Kai walks along the road home past one stall per world, then Home and Sensei's prize shelf.
+// Each stall is built from its world's own backdrop (worldScene) and colours; its keeper is someone Kai helped there
+// (a lost friend, or the boss he won over), so the spot is empty until then. A world not reached yet has its stall
+// boarded up. The cards for that stall's things sit under the picture (shopItem: ▶ preview, the change-counting buy).
+const STALLS = [
+  { w: 0, keep: 'hana', kind: 'kid', look: 'village', name: 'Japan Village' },
+  { w: 1, keep: 'golem', kind: 'boss', look: 'forge', name: 'Lava Volcano' },
+  { w: 2, keep: 'bot', kind: 'boss', look: 'workshop', name: 'Robot Factory' },
+  { w: 3, keep: 'yeti', kind: 'boss', look: 'lodge', name: 'Frozen Peaks' },
+  { w: 4, keep: 'octo', kind: 'boss', look: 'reef', name: 'Coral Sea' },
+  { w: 5, keep: 'scorpion', kind: 'boss', look: 'tent', name: 'Red Rock Desert' },
+  { w: 6, keep: 'mei', kind: 'kid', look: 'night', name: 'Night Castle' },
+  { w: SHELF_HOME, keep: 'sensei', kind: 'sensei', look: 'home', name: 'Home' },
+  { w: 'prize', keep: 'sensei', kind: 'sensei', look: 'prize', name: "Sensei's prizes" },
+];
+let stallI = null, roadAnim = null, roadHits = [];
+const ROAD_BG = {};
+function roadBg(s) {   // the stall's backdrop picture (home and the prize shelf: the village at dusk)
+  const w = typeof s.w === 'number' && s.w < WORLDS.length ? s.w : 0;
+  if (!ROAD_BG[w]) { const im = new Image(); im.onload = () => drawRoad(); im.src = worldScene(w); ROAD_BG[w] = im; }
+  return ROAD_BG[w];
+}
+const stallOpen = s => shelfOpen(s.w);
+function keeperHere(s) {
+  if (s.kind === 'sensei') return true;
+  if (s.kind === 'kid') return !!(prog.friends || {})[s.keep];
+  return !!prog.best[bossOf(s.w)];
+}
+const ITEM_PIC = {};
+function itemPic(it) {   // a small picture of the item for the stall's shelf
+  if (!ITEM_PIC[it.id]) { const c = document.createElement('canvas'); c.width = 90; c.height = 54; drawItemPreview(c, it); if (it.slot === 'gift') setTimeout(drawRoad, 120); ITEM_PIC[it.id] = c; }
+  return ITEM_PIC[it.id];
+}
+function drawStallScene(c, s, ox) {   // one stall, its keeper and its goods, offset ox (for walking between stalls)
+  const W = typeof s.w === 'number' && s.w < WORLDS.length ? WORLDS[s.w] : WORLDS[0], open = stallOpen(s), gy = 288, x0 = 400 + ox, x1 = 720 + ox;
+  const bg = roadBg(s); if (bg.complete && bg.naturalWidth) c.drawImage(bg, ox, 0, 960, 330); else { c.fillStyle = W.skies[0][0]; c.fillRect(ox, 0, 960, 330); }
+  if (s.look === 'home' || s.look === 'prize') { c.fillStyle = 'rgba(40,20,60,.35)'; c.fillRect(ox, 0, 960, 330); }
+  const post = W.stair[1], wood = W.stair[0], trim = W.stair[2] || '#fff', cloth = s.look === 'home' || s.look === 'prize' ? '#c0392b' : W.gate[0];
+  const items = SHOP.filter(it => shelfOf(it) === s.w);
+  if (open && keeperHere(s)) {   // the keeper, behind the counter
+    const kx = (x0 + x1) / 2 + 40;
+    if (s.kind === 'boss') drawBaked(BOSS_SPR[s.keep], Math.floor(Date.now() / 600) % 2 ? 'b' : 'a', true, { x: kx - 50, y: gy - 150, w: 100, h: 110 });
+    else if (s.kind === 'kid') drawBaked(kidSpr(s.keep), 'stand', true, { x: kx - 12, y: gy - 100, w: 24, h: 44 });
+    else drawBaked(SENSEI_SPR, 'a', true, { x: kx - 20, y: gy - 120, w: 40, h: 60 });
+  }
+  c.fillStyle = post; c.fillRect(x0 + 8, 112, 12, gy - 112); c.fillRect(x1 - 20, 112, 12, gy - 112);   // posts
+  c.fillStyle = post; c.fillRect(x0 + 20, 172, x1 - x0 - 40, 8);   // the back shelf
+  c.fillStyle = wood; c.fillRect(x0, 226, x1 - x0, gy - 226); c.fillStyle = trim; c.fillRect(x0, 226, x1 - x0, 6); c.fillStyle = post; c.fillRect(x0, gy - 6, x1 - x0, 6);   // the counter
+  if (s.look === 'tent') { c.fillStyle = cloth; c.beginPath(); c.moveTo(x0 - 20, 124); c.lineTo((x0 + x1) / 2, 60); c.lineTo(x1 + 20, 124); c.fill(); c.fillStyle = 'rgba(0,0,0,.15)'; c.beginPath(); c.moveTo((x0 + x1) / 2, 60); c.lineTo(x1 + 20, 124); c.lineTo((x0 + x1) / 2, 124); c.fill(); }
+  else if (s.look === 'home') { c.fillStyle = '#7b1610'; c.beginPath(); c.moveTo(x0 - 30, 128); c.lineTo(x0 + 30, 78); c.lineTo(x1 - 30, 78); c.lineTo(x1 + 30, 128); c.fill(); c.fillStyle = '#ffd23f'; c.fillRect(x0 - 30, 124, x1 - x0 + 60, 5); }
+  else {   // a striped awning with a scalloped edge
+    for (let i = 0; i < 8; i++) { c.fillStyle = i % 2 ? '#f4e7c6' : cloth; c.fillRect(x0 - 16 + i * (x1 - x0 + 32) / 8, 92, (x1 - x0 + 32) / 8 + 1, 30); c.beginPath(); c.arc(x0 - 16 + (i + 0.5) * (x1 - x0 + 32) / 8, 122, (x1 - x0 + 32) / 16, 0, Math.PI); c.fill(); }
+    if (s.look === 'lodge') { c.fillStyle = '#fbf7ea'; for (let i = 0; i < 9; i++) { c.beginPath(); c.arc(x0 - 16 + i * 44, 92, 14, Math.PI, 0); c.fill(); } }
+  }
+  if (s.look === 'village' || s.look === 'night' || s.look === 'home') for (const lx of [x0 + 14, x1 - 14]) { c.fillStyle = '#555'; c.fillRect(lx - 1, 130, 2, 12); c.fillStyle = s.look === 'night' ? '#b388ff' : '#e63946'; c.beginPath(); c.ellipse(lx, 156, 10, 14, 0, 0, 7); c.fill(); c.fillStyle = 'rgba(255,220,120,.5)'; c.fillRect(lx - 3, 150, 6, 10); }
+  if (s.look === 'forge') { c.fillStyle = '#2a2a30'; c.fillRect(x0 - 70, gy - 34, 56, 14); c.fillRect(x0 - 56, gy - 20, 28, 20); const g = c.createRadialGradient(x0 + 40, gy - 30, 4, x0 + 40, gy - 30, 70); g.addColorStop(0, 'rgba(255,120,30,.45)'); g.addColorStop(1, 'rgba(255,120,30,0)'); c.fillStyle = g; c.fillRect(x0 - 40, gy - 100, 160, 100); }
+  if (s.look === 'workshop') for (const [gx, r] of [[x0 + 60, 14], [x1 - 60, 10]]) { c.fillStyle = '#9aa7b8'; c.beginPath(); c.arc(gx, 107, r, 0, 7); c.fill(); c.fillStyle = cloth; c.beginPath(); c.arc(gx, 107, r / 2.5, 0, 7); c.fill(); }
+  if (s.look === 'reef') { c.fillStyle = 'rgba(220,245,255,.5)'; for (let i = 0; i < 7; i++) { c.beginPath(); c.arc(x0 + 30 + i * 46, 60 - (i % 3) * 18, 4 + (i % 2) * 3, 0, 7); c.fill(); } c.fillStyle = '#3a8a4a'; for (const sx of [x0 - 30, x1 + 24]) for (let k = 0; k < 5; k++) c.fillRect(sx + (k % 2) * 6, gy - 20 - k * 20, 6, 22); }
+  if (s.look === 'prize') { const im = new Image(); im.src = pixURL('medal', 4); if (im.complete) c.drawImage(im, (x0 + x1) / 2 - 24, 40, 48, 48); }
+  roadHits = ox ? roadHits : [];
+  if (open) items.slice(0, 12).forEach((it, k) => {   // the goods: 6 on the back shelf, 6 on the counter
+    const row = k < 6 ? 0 : 1, i = k % 6, w = 50, h = 30, x = x0 + 24 + i * ((x1 - x0 - 48) / 6) + 2, y = row ? 194 : 140;
+    const owned = prog.owned.includes(it.id), locked = !owned && (giftLock(it) || (it.badge && !prog.badges[it.badge]));
+    c.globalAlpha = locked ? 0.4 : 1; c.drawImage(itemPic(it), x, y, w, h); c.globalAlpha = 1;
+    if (owned) { c.fillStyle = '#3ae374'; c.fillRect(x + w - 10, y, 8, 8); }
+    if (!ox) roadHits.push({ x, y, w, h, id: it.id });
+  });
+  else {   // not reached yet: boarded up
+    c.fillStyle = '#6b4423'; for (let k = 0; k < 4; k++) { c.save(); c.translate((x0 + x1) / 2, 180 + k * 26); c.rotate((k % 2 ? 1 : -1) * 0.08); c.fillRect(-(x1 - x0) / 2 - 10, -9, x1 - x0 + 20, 18); c.restore(); }
+  }
+}
+function drawRoad(walk) {   // the whole picture: the stall (or two, while walking) and Kai with his gear on
+  const cv = $('roadCv'); if (!cv || stallI == null) return;
+  const c = cv.getContext('2d'), keep = ctx; ctx = c; c.imageSmoothingEnabled = false;
+  try {
+    if (walk) { drawStallScene(c, STALLS[walk.from], -walk.k * walk.dir * 960); drawStallScene(c, STALLS[stallI], (1 - walk.k) * walk.dir * 960); }
+    else drawStallScene(c, STALLS[stallI], 0);
+    KAI_STRIPES = stripesNow();
+    const spr = bakeNinja(heroPal()), fr = walk ? (Math.floor(walk.k * 12) % 2 ? 'walkA' : 'stand') : 'stand';
+    drawBaked(spr, fr, walk ? walk.dir < 0 : false, { x: 300, y: 288 - 44, w: 24, h: 44 });
+    if (prog.equip.pet && PET_SPR[prog.equip.pet]) drawBaked(PET_SPR[prog.equip.pet], fr === 'walkA' ? 'b' : 'a', false, { x: 262, y: FLY_PETS.includes(prog.equip.pet) ? 200 : 264, w: 20, h: 24 });
+  } finally { ctx = keep; }
+}
+function walkTo(i) {
+  if (i < 0 || i >= STALLS.length || i === stallI || roadAnim) return;
+  const from = stallI, dir = i > from ? 1 : -1; stallI = i; let k = 0;
+  roadAnim = true; renderStallCards();
+  const step = () => { k = Math.min(1, k + 1 / 28); drawRoad({ from, k, dir }); if (k < 1) requestAnimationFrame(step); else { roadAnim = null; drawRoad(); } };
+  step();
+}
+function renderStallCards() {
+  const s = STALLS[stallI], grid = $('shopGrid'); grid.innerHTML = '';
+  $('stallName').textContent = s.name;
+  $('roadPrev').disabled = stallI === 0; $('roadNext').disabled = stallI === STALLS.length - 1;
+  $('roadDots').innerHTML = STALLS.map((t, i) => `<i class="${i === stallI ? 'on' : ''}${stallOpen(t) ? '' : ' shut'}" data-i="${i}"></i>`).join('');
+  $('roadDots').querySelectorAll('i').forEach(d => { d.onclick = () => { audio(); walkTo(+d.dataset.i); }; });
+  for (const it of SHOP.filter(x => shelfOf(x) === s.w)) shopItem(grid, it);
+}
 function openShop() { hide('menu'); hide('buyBox'); renderShop(); show('shop'); }
 // A badge prize in the shop: how close the kid is, and Practice / Pick a level for a math badge (else: see the badge).
 function badgeHow(bd) {
@@ -13395,23 +13506,13 @@ function badgeHow(bd) {
 }
 function renderShop() {
   $('bank').textContent = prog.bank;
-  drawNinjaPreview($('shopPreview'), prog.equip, 3);
-  const grid = $('shopGrid'); grid.innerHTML = '';
-  // The Road Home (owner, Nov 22 2026): one shelf per world in story order, Home after the ending, then Sensei's prizes.
-  const SHELVES = [...WORLDS.map((W, w) => [w, `${w + 1} · ${W.name}`]), [SHELF_HOME, 'Home · the family treasures'], ['prize', "Sensei's prizes · for learning math"]];
-  for (const [w, title] of SHELVES) {
-    const items = SHOP.filter(it => shelfOf(it) === w), open = shelfOpen(w);
-    if (!items.length) continue;
-    const h = document.createElement('div'); h.className = 'shelfh' + (open ? '' : ' fog');
-    h.innerHTML = `${title}${open ? '' : ` <small>${pixSm('lock')} ${w === SHELF_HOME ? 'Bring Kuro home to open' : 'Reach this world to open'}</small>`}`;
-    grid.appendChild(h);
-    for (const it of items) shopItem(grid, it);
-  }
+  if (stallI == null) { const open = unlockedCount(); stallI = Math.min(6, STAGES[Math.min(open - 1, STAGES.length - 1)].w); }   // start at the newest world's stall
+  renderStallCards(); drawRoad();
 }
 function shopItem(grid, it) {
   {
     const owned = prog.owned.includes(it.id), on = prog.equip[it.slot] === it.id, lock = owned ? '' : giftLock(it);
-    const el = document.createElement('div'); el.className = 'item' + (it.slot === 'gift' ? ' keep' : '');
+    const el = document.createElement('div'); el.className = 'item' + (it.slot === 'gift' ? ' keep' : ''); el.dataset.id = it.id;
     el.innerHTML = `<canvas width="90" height="54"></canvas><div class="nm">${it.name}</div>${it.story ? `<div class="istory">${it.story}</div>` : ''}${DEMO_OF[it.id] ? '<button type="button" class="iplay" aria-label="See it">▶</button>' : ''}<div class="pr">${owned ? 'Owned' : `${gemSm()} ${it.price}`}</div><button type="button"></button>`;
     drawItemPreview(el.querySelector('canvas'), it);
     const pb = el.querySelector('.iplay'); if (pb) pb.onclick = e => { e.stopPropagation(); audio(); playShopDemo(el.querySelector('canvas'), it); };
@@ -15387,6 +15488,14 @@ $('pauseBtn').onclick = togglePause;
 $('leaveBtn').onclick = leaveDrill;
 $('shopBtn').onclick = () => { audio(); openShop(); };
 $('raceBtn').onclick = () => { audio(); showRaceSetup(); };
+$('roadPrev').onclick = () => { audio(); walkTo(stallI - 1); };
+$('roadNext').onclick = () => { audio(); walkTo(stallI + 1); };
+$('roadCv').onclick = e => {   // tap a thing on the stall: its card
+  const cv = $('roadCv'), r = cv.getBoundingClientRect(), x = (e.clientX - r.left) * cv.width / r.width, y = (e.clientY - r.top) * cv.height / r.height;
+  const h = roadHits.find(o => x >= o.x && x <= o.x + o.w && y >= o.y && y <= o.y + o.h); if (!h) return;
+  audio(); const el = [...document.querySelectorAll('#shopGrid .item')].find(d => d.dataset.id === h.id);
+  if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+};
 $('shopClose').onclick = () => { hide('shop'); buildMenu(); show('menu'); };
 $('badgeBtn').onclick = () => { audio(); openBadges(); };
 $('mapBtn').onclick = () => { audio(); openMap(); };
