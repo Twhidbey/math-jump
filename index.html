@@ -512,6 +512,9 @@
   .item canvas { image-rendering: pixelated; }
   .item .nm { font-weight: 800; font-size: 14px; }
   .item .pr { font-size: 13px; opacity: .85; }
+  .item { position: relative; }
+  .item .iplay { position: absolute; top: 6px; right: 6px; width: 30px; height: 30px; border-radius: 50%; padding: 0; background: rgba(255,210,63,.9); color: #3a2200; font-size: 14px; }
+  .item canvas { max-width: 100%; }
   .item .istory { font-size: 12px; font-style: italic; opacity: .8; text-align: center; }
   .item.keep { background: rgba(255,210,63,.1); box-shadow: inset 0 0 0 2px rgba(255,210,63,.35); }
   .shelfh { grid-column: 1 / -1; font-weight: 800; font-size: 17px; margin-top: 8px; padding: 4px 8px; border-bottom: 2px solid rgba(255,255,255,.2); text-align: left; }
@@ -615,7 +618,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Calmer and cleaner: fewer words, a picture after a miss, softer gems</div>
+  <div class="build">Updated Nov 23, 2026 · Ghost Kai shows new things; ▶ previews in the shop</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -631,6 +634,7 @@
       <button class="btn alt" id="famBtn" type="button">👪 Parent page</button>
       <button class="btn alt" id="storyBtn" type="button">📖 Read the story</button>
       <button class="btn alt" id="helpBtn" type="button">❓ How to play</button>
+      <button class="btn alt" id="demoBtn" type="button">👻 Show me again</button>
       <button class="btn alt" id="resetBtn" type="button">↺ Reset progress</button>
     </div>
     <div class="row"><button class="btn" id="settingsClose" type="button">Done</button></div>
@@ -2155,6 +2159,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
   // The level's own feature, placed every couple of gates.
   function twistChunk() {
     const fx = (o) => L.fx.push(o);
+    if (L.twistAt == null) L.twistAt = L.w;   // (where the first one starts: the ghost demo shows it)
     switch (twist) {
       case 'kite': {   // a koi kite before a trail of sky gems
         const s = flat(4); fx({ k: 'kite', x: (s + 2) * T, y: GR * T - 2.4 * T });
@@ -2193,7 +2198,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
         const s = flat(9);
         for (let r = GR - 10; r <= GR - 3; r++) { map[r][s + 2] = 'S'; map[r][s + 6] = 'S'; }
         for (let r = GR - 9; r <= GR - 5; r += 2) { coin(s + 4, r); }
-        coin(s + 4, GR - 11, 10); fx({ k: 'hint', x: (s + 4.5) * T, y: GR * T - 2 * T, txt: 'Wall jump ⇧' });
+        coin(s + 4, GR - 11, 10);   // (no 'Wall jump' label: the ghost Kai shows it)
         break;
       }
       case 'ice': {   // a frozen pond of slippery ice with gems to slide through
@@ -8423,6 +8428,81 @@ function drawFeast() {
     ctx.fillStyle = '#16121f'; ctx.fillRect(fx + d * 4 - 1, fy - 2, 2, 2);
   }
 }
+// Show, don't tell (owner, Nov 23 2026: "just have Kai do it ... to show it"; "just level-specific features"): the first
+// time a player meets a level feature (a twist like the koi kite, wall jumps, ladders, quicksand; a swing, stepping
+// stones or a number-stone bridge), play stops for a few seconds while a see-through ghost Kai runs ahead and does it
+// once. Each feature shows once per player (prog.demos); Settings > "Show me again" clears them. A tap or key skips it.
+// demoPath(spot) turns the feature's own layout into waypoints: { x, y, how: 'run' | 'jump' | 'climb' | 'fly', h, hold, carry }.
+function demoSpots() {   // (startStage) where this level's features start
+  const out = [];
+  if (L.twistAt != null && L.twist) out.push({ key: 'tw-' + L.twist, c: L.twistAt });
+  for (const sw of L.swings || []) if (!sw.lift) { out.push({ key: 'swing', c: sw.s, sw }); break; }
+  for (const st of L.steps || []) { out.push({ key: 'steps', c: st.c0 - 5, st }); break; }
+  for (const b of L.bridges || []) { out.push({ key: 'bridge', c: b.signC, b }); break; }
+  return out;
+}
+function demoPath(sp) {
+  const gy = GR * T - 44, X = c => c * T, k = sp.key, s = sp.c, run = (c, o = {}) => ({ x: X(c), y: gy, how: 'run', ...o }), jump = (c, y, h = 2 * T, o = {}) => ({ x: X(c), y, how: 'jump', h, ...o });
+  switch (k) {
+    case 'tw-kite': return [run(s + 1.5), jump(s + 2, gy - 1.6 * T, T), { x: X(s + 8), y: gy - 5 * T, how: 'fly' }, { x: X(s + 14), y: gy - 4 * T, how: 'fly' }];
+    case 'tw-spring': return [run(s + 1.7), jump(s + 8.5, gy, 7.5 * T)];
+    case 'tw-koi': { const pw = (L.def && prog.easy) ? 4 : 6, p = s + 2; return [run(p - 0.6), jump(p + pw / 2 - 0.3, gy - 4, 2 * T), jump(p + pw + 0.6, gy, 2 * T)]; }
+    case 'tw-dark': return [run(s + 2.6), jump(s + 3, gy, 2.4 * T, { hold: 15 }), run(s + 6)];
+    case 'tw-gears': { const p = s + 2; return [run(p - 0.4), jump(p + 2.5, gy - 1.9 * T, 1.5 * T, { hold: 20 }), jump(p + 7.6, gy, 1.5 * T)]; }
+    case 'tw-conveyor': return [run(s + 4.6), { ...run(s + 4.6), hold: 30 }, run(s + 12)];
+    case 'tw-lasers': return [run(s + 2.4), { ...run(s + 2.4), hold: 25 }, run(s + 6.4), { ...run(s + 6.4), hold: 25 }, run(s + 10)];
+    case 'tw-walljump': return [run(s + 4), jump(s + 3.05, gy - 3 * T, 1.5 * T), jump(s + 5.3, gy - 5 * T, 1.2 * T), jump(s + 3.05, gy - 7 * T, 1.2 * T), jump(s + 5.3, gy - 9 * T, 1.2 * T), jump(s + 4.2, gy - 10.5 * T, 1.2 * T)];
+    case 'tw-ice': return [run(s + 11, { fast: true })];
+    case 'tw-icicles': return [run(s + 10, { fast: true })];
+    case 'tw-ladders': return [run(s + 2), { x: X(s + 2), y: (GR - 11) * T - 10, how: 'climb' }, jump(s + 4.5, (GR - 9) * T - 44, T)];
+    case 'tw-crumble': return [run(s + 1.4), jump(s + 2.5, (GR - 3) * T - 44, 1.5 * T), jump(s + 5.5, (GR - 5) * T - 44, 1.5 * T), jump(s + 8.5, (GR - 7) * T - 44, 1.5 * T), jump(s + 12, gy, 1.5 * T)];
+    case 'tw-devil': return [run(s + 4), { x: X(s + 4), y: gy - 6 * T, how: 'fly' }, { x: X(s + 8), y: gy - 6.5 * T, how: 'fly' }, jump(s + 10, gy, T)];
+    case 'tw-quicksand': { const out = [run(s + 1.6)]; for (let c = s + 3.6; c < s + 12; c += 2) out.push(jump(c, gy, 1.4 * T)); return out; }
+    case 'tw-sneak': return [run(s + 5), { ...run(s + 5), hold: 40, hide: true }, run(s + 9), { ...run(s + 9), hold: 40, hide: true }, run(s + 14)];
+    case 'swing': { const sw = sp.sw, top = gy - 3 * T; return [run(sw.l0 - 1.5), jump(sw.l0 + 0.6, top, 1.5 * T), jump(sw.pm + 1, top, -1.5 * T, { swing: true }), jump(sw.l1 + 1, top, -1.5 * T, { swing: true }), jump(sw.l1 + 3.5, gy, T)]; }
+    case 'steps': { const st = sp.st, out = [run(st.c0 - 0.6)]; for (let c = st.c0 + 1.5; c < st.c0 + st.w; c += 3) out.push(jump(c, gy, 1.6 * T, { stone: true })); out.push(jump(st.c0 + st.w + 0.8, gy, 1.6 * T)); return out; }
+    case 'bridge': { const b = sp.b, c = b.stones[0] ? b.stones[0].c : b.signC + 4; return [run(c + 0.1), jump(c + 0.1, gy - 1.6 * T, 0, { hold: 6 }), jump(c + 0.1, gy, 0, { carry: true }), run(b.altarC - 0.6, { carry: true }), { ...run(b.altarC - 0.6), hold: 30, drop: true }]; }
+  }
+  return null;
+}
+function demoCheck() {   // (update, while playing) start a demo when Kai comes up to a feature he hasn't seen
+  if (G.demo || !G.demoSpots || !G.demoSpots.length || L.boss || L.vault || (team && team.run) || G.rescue) return;
+  const seen = prog.demos || {};
+  for (const sp of G.demoSpots) {
+    if (seen[sp.key] || sp.done) continue;
+    const x0 = sp.c * T; if (P.x < x0 - 6 * T || P.x > x0 + T) continue;
+    sp.done = true; const pts = demoPath(sp); if (!pts) continue;
+    G.demo = { key: sp.key, pts, i: 0, x: P.x, y: P.y, x0: P.x, y0: P.y, t: 0, hold: 0, carry: false, stones: [], fade: 0 };
+    P.vx = 0; keys.left = keys.right = keys.jump = false; return;
+  }
+}
+function demoTick() {   // the ghost runs its path; Kai waits
+  const d = G.demo; d.t++;
+  if (d.fade) { if (++d.fade > 30) { (prog.demos = prog.demos || {})[d.key] = true; save(); G.demo = null; G.camBack = 40; } return; }
+  if (d.t > 20 && (keys.jumpPressed || keys.left || keys.right)) { keys.jumpPressed = false; d.fade = 1; return; }   // skip
+  if (d.hold > 0) { d.hold--; return; }
+  const p = d.pts[d.i]; if (!p) { d.fade = 1; return; }
+  if (!d.seg) { const dist = Math.hypot(p.x - d.x, p.y - d.y); d.seg = { x0: d.x, y0: d.y, n: Math.max(p.how === 'jump' ? 26 : 8, Math.round(dist / (p.how === 'run' ? (p.fast ? 6 : 4.2) : p.how === 'climb' ? 2.6 : p.how === 'fly' ? 3.2 : 5))), k: 0 }; d.face = p.x >= d.x ? 1 : -1; }
+  const sg = d.seg, f = ++sg.k / sg.n;
+  d.x = sg.x0 + (p.x - sg.x0) * f; d.y = sg.y0 + (p.y - sg.y0) * f;
+  if (p.how === 'jump') d.y -= (p.h || 0) * 4 * f * (1 - f);
+  d.air = p.how === 'jump' || p.how === 'fly'; d.climb = p.how === 'climb'; d.hide = !!p.hide && d.hold > 0;
+  if (p.carry) d.carry = true;
+  if (sg.k >= sg.n) {
+    d.seg = null; d.i++; d.hold = p.hold || 0; d.hide = !!p.hide;
+    if (p.stone) d.stones.push({ x: p.x, y: GR * T });
+    if (p.drop) d.carry = false;
+  }
+}
+function drawDemo() {   // the ghost Kai (world space)
+  const d = G.demo; if (!d) return;
+  const a = (d.fade ? 1 - d.fade / 30 : Math.min(1, d.t / 15)) * (d.hide ? 0.25 : 0.6);
+  for (const s of d.stones) { ctx.globalAlpha = a * 0.7; ctx.fillStyle = '#cfd6e4'; rrect(s.x - 18, s.y - 10, 36, 14, 4); ctx.fill(); }   // ghost stepping stones
+  ctx.globalAlpha = a; glowAt(d.x + 12, d.y + 22, 34, 'rgba(255,255,255,.35)');
+  drawBaked(SPR, d.air ? 'jump' : d.climb ? 'stand' : Math.floor(d.t / 6) % 2 && d.seg ? 'walkA' : 'stand', d.face < 0, { x: d.x, y: d.y, w: 24, h: 44 });
+  if (d.carry) { ctx.fillStyle = '#cfd6e4'; rrect(d.x - 2, d.y - 20, 28, 16, 4); ctx.fill(); }   // a number stone held up
+  ctx.globalAlpha = 1;
+}
 function storyPages() {
   const pages = [['The Stolen Scrolls', `${sceneHTML('opening')}<p>${STORY}</p>`]];
   WORLDS.forEach((W, w) => {
@@ -8450,7 +8530,8 @@ function update() {
   if (G.bossIn) bossInTick();   // the boss's entrance: nothing else moves
   else {
     if (G.hand && mode === 'play') updateHand();
-    if (mode === 'play') { updatePlayer(); missPicTick(); if (!(G.freezeT > 0)) updateEnemies(); }   // (the Wise owl's Time freeze stops enemies)
+    if (mode === 'play' && G.demo) demoTick();   // a ghost Kai shows a new feature; everything else waits
+    else if (mode === 'play') { demoCheck(); updatePlayer(); missPicTick(); if (!(G.freezeT > 0)) updateEnemies(); }   // (the Wise owl's Time freeze stops enemies)
     else if (mode === 'win') { updateWin(); updateEnemies(); }
     if (mode === 'play' || mode === 'win') { updateBoss(); if (L.boss) { updateArena(); updateOrbs(); updateShotsAndProjectiles(); } }
   }
@@ -8473,7 +8554,8 @@ function update() {
   for (const f of G.flyers) { f.t += 1 / 28; if (f.t >= 1) G.pulse = 8; }
   G.flyers = G.flyers.filter(f => f.t < 1);
   if (G.pulse > 0) G.pulse--;
-  cam = clamp(P.x + P.w / 2 - VW * 0.4, 0, Math.max(0, L.w * T - VW));
+  const camTo = clamp((G.demo ? G.demo.x + 12 : P.x + P.w / 2) - VW * 0.4, 0, Math.max(0, L.w * T - VW));
+  if (G.demo || G.camBack > 0) { cam += (camTo - cam) * 0.1; if (!G.demo) G.camBack--; } else cam = camTo;
 }
 
 
@@ -10695,7 +10777,7 @@ function drawSigns() {
     } else { ctx.fillStyle = '#6e4627'; ctx.fillRect(x + w / 2 - 4, y + h, 8, GR * T - y - h); }
     ctx.fillStyle = '#5e3a1c'; rrect(x - 3, y - 3, w + 6, h + 6, 6); ctx.fill();
     ctx.fillStyle = st.solved ? '#c8f7d4' : '#f6e1b5'; rrect(x, y, w, h, 5); ctx.fill();
-    const txt = st.solved ? qSolved(st.q) : st === currentStation() && gateNear(st) ? '?' : '';   // (owner: show each problem once, in the top box)
+    const txt = st.solved ? qSolved(st.q) : '?';   // (owner: show each problem once, in the top box)
     let size = 21; ctx.font = `${size}px "Lilita One", "Trebuchet MS", sans-serif`;
     while (ctx.measureText(txt).width > w - 10 && size > 12) { size--; ctx.font = `${size}px "Lilita One", "Trebuchet MS", sans-serif`; }
     ctx.fillStyle = '#3a2200'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -12821,7 +12903,7 @@ function render() {
   drawRainbowBridge();   // (the Rainbow suit's bridge, over the pit)
   drawBoss();
   if (L.boss) { drawOrbs(); }
-  if (G) { drawTeamGhost(); drawTeamTwin(); drawDolphin(); drawRunner(); drawShopPow(); drawOwlEyes(); drawClone(); drawGifts(); drawHelpers(); drawPet(); drawPlayer(); drawTeamFx(); drawGearFx(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
+  if (G) { drawTeamGhost(); drawTeamTwin(); drawDolphin(); drawRunner(); drawShopPow(); drawOwlEyes(); drawClone(); drawGifts(); drawHelpers(); drawDemo(); drawPet(); drawPlayer(); drawTeamFx(); drawGearFx(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
   if (L.twist && G) drawTwistFront();
   if (L.flavor && G) drawFlavorFront();
   if (L.water && !L.room) drawWaterFront();
@@ -12924,6 +13006,7 @@ function startStage(i) {
   G = { idx: i, skill: L.skill, hearts, maxHearts: hearts, coins: 0, score: 0, shake: 0, shakeAmp: 0, freeze: 0, slow: 0, flash: 0, flyers: [], pulse: 0, chain: 0, lastGem: -99, mistakes: 0, streak: 0, bestStreak: 0, solved: 0, fastN: 0, lightN: 0, missed: [], practice: new Map(), power: null, powerN: 0, carry: null, saved: null,
     pet: prog.equip.pet ? { x: P.x, y: P.y, mood: null, moodT: 0 } : null, glide: 0, alarm: 0, climb: false, hidden: false, bubble: null, tip: null, mbox: null, dash: 0, cross: null, wrongRun: 0, tipSoon: !!(plan && plan.mode === 'back'), byTrack: plan ? {} : null, checkpoint: 1.5 * T, time: 0, parts: [], shots: [], bumps: new Map(), winT: 0 };
   placePage(i);   // Kuro's journal page, in each world's middle level
+  G.demoSpots = demoSpots();   // the level's features a ghost Kai shows the first time
   placeStory(i);   // what Kuro spoiled in this world, his note, a glimpse of him, a boss friend who helps
   SPR = bakeNinja(heroPal());   // equipped headband and suit, plus the belt you've earned
   const bandIt = ITEM[prog.equip.band], suitIt = ITEM[prog.equip.suit];   // an animated suit (Rainbow) wins over an animated headband
@@ -13162,6 +13245,94 @@ function drawItemPreview(cv, it) {
     for (let i = 0; i < 18; i++) { c.fillStyle = cols[i % cols.length]; c.fillRect(8 + i * 4, cv.height - 10 - Math.abs(Math.sin(i * 1.3)) * 30, 5, 5); }
   }
 }
+// The shop's ▶ (owner, Nov 23 2026: no "Power: ..." sentences; "a play button in the shop is fine"): a few seconds of Kai
+// using the item, drawn on the card (160 x 96). DEMO_OF: which little scene each item plays.
+const DEMO_OF = {
+  'band-flame': 'dash', 'band-ice': 'freeze', 'band-galaxy': 'gems', 'band-sensei': 'heart',
+  'suit-shadow': 'shield', 'suit-galaxy': 'moon', 'suit-dragon': 'roar', 'suit-rainbow': 'rainbow', 'suit-legend': 'jump2',
+  'trail-bolt': 'dash', 'trail-gold': 'gems', 'trail-galaxy': 'stars', 'trail-dragon': 'fire',
+  'pet-dragon-shadow': 'fetch', 'pet-dragon-fire': 'spark', 'pet-dragon-gold': 'heart', 'pet-owl': 'gems',
+  'gift-swords': 'slash', 'gift-stone': 'stomp', 'gift-bot': 'heart', 'gift-scarf': 'gems', 'gift-pearl': 'gems', 'gift-stinger': 'forgive',
+  'gift-lamp': 'light', 'gift-sandals': 'ice', 'gift-ring': 'gems', 'gift-robe': 'heart', 'gift-cloak': 'kuro',
+};
+let shopDemoOn = null;
+function playShopDemo(cv, it) {
+  if (shopDemoOn) shopDemoOn.stop = true;
+  const kind = DEMO_OF[it.id]; if (!kind) return;
+  const eq = it.slot === 'band' || it.slot === 'suit' ? { ...prog.equip, [it.slot]: it.id } : prog.equip;
+  const spr = bakeNinja(heroPal(eq)), enemy = ENEMY_SPR.ninja, c2 = cv.getContext('2d'), W = 160, H = 96, gy = 86;
+  cv.width = W; cv.height = H;
+  const run = { stop: false, t: 0 }; shopDemoOn = run;
+  const kai = (x, y, fr = 'stand', flip = false, a = 1) => { ctx.globalAlpha = a; drawBaked(spr, fr, flip, { x, y: y - 44, w: 24, h: 44 }); ctx.globalAlpha = 1; };
+  const foe = (x, fr, flip, rot = 0, a = 1) => { ctx.save(); ctx.globalAlpha = a; ctx.translate(x + 12, gy - 22); ctx.rotate(rot); ctx.translate(-x - 12, -(gy - 22)); drawBaked(enemy, fr, flip, { x, y: gy - 44, w: 24, h: 44 }); ctx.restore(); };
+  const ground = (gap) => { ctx.fillStyle = '#3a4a6a'; ctx.fillRect(0, gy, W, H - gy); if (gap) { ctx.fillStyle = '#1a2238'; ctx.fillRect(gap[0], gy, gap[1] - gap[0], H - gy); } };
+  const pet = (x, y) => { const ps = PET_SPR[it.id]; if (ps) drawBaked(ps, Math.floor(run.t / 10) % 2 ? 'b' : 'a', false, { x: x - 10, y, w: 20, h: 24 }); };
+  const frame = () => {
+    if (run.stop || !cv.isConnected) return;
+    const t = run.t++ % 150, keep = ctx; ctx = c2;
+    try {
+      ctx.clearRect(0, 0, W, H); ctx.fillStyle = kind === 'light' ? '#0b0f22' : '#1f2a48'; ctx.fillRect(0, 0, W, H);
+      const walk = Math.floor(t / 6) % 2 ? 'walkA' : 'stand';
+      switch (kind) {
+        case 'jump2': { ground(); const y = t < 30 ? gy - Math.sin(t / 30 * Math.PI / 2) * 40 : t < 70 ? gy - 40 - Math.sin((t - 30) / 40 * Math.PI) * 34 + (t - 30) : gy; if (t > 28 && t < 40) glowAt(40, gy - 40, 16, 'rgba(255,210,63,.8)'); kai(30, Math.min(gy, y), t < 75 ? 'jump' : 'stand'); break; }
+        case 'moon': { ground(); const f = Math.min(1, t / 110), y = gy - Math.sin(f * Math.PI) * 60; kai(20 + f * 100, y, f < 1 ? 'jump' : 'stand'); for (let k = 0; k < 4; k++) { ctx.fillStyle = '#fff'; ctx.fillRect((k * 41 + t) % W, 10 + k * 9, 2, 2); } break; }
+        case 'dash': { ground(); const x = (t * 3.2) % (W + 40) - 30; for (let k = 1; k < 5; k++) { ctx.fillStyle = `rgba(255,210,63,${0.5 - k * 0.1})`; ctx.fillRect(x - k * 10, gy - 30 + k * 3, 10, 3); } kai(x, gy, walk); break; }
+        case 'roar': case 'slash': case 'fire': case 'spark': case 'stars': case 'stomp': {   // an enemy comes; the power bops it
+          ground(); const hit = 60, ex = t < hit ? 150 - t * 1.2 : 150 - hit * 1.2, kx = kind === 'fire' ? Math.min(20 + t * 1.4, 70) : 30;
+          let ky = gy; if (kind === 'stomp') { ky = t < 40 ? gy - 50 : t < 52 ? gy - 50 + (t - 40) * 4.2 : gy; ctx.fillStyle = '#5a6a8a'; ctx.fillRect(10, gy - 50, 40, 6); }
+          kai(kx, ky, kind === 'stomp' && t < 52 ? 'jump' : 'stand');
+          if (kind === 'roar' && t > 44 && t < 70) for (let k = 0; k < 3; k++) { ctx.strokeStyle = `rgba(255,140,26,${1 - (t - 44) / 26})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(kx + 12, gy - 24, (t - 44) * 2 + k * 8, -0.8, 0.8); ctx.stroke(); }
+          if (kind === 'slash' && t > 50 && t < 64) { ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(kx + 26, gy - 24, 16, -1.2, 1.2); ctx.stroke(); }
+          if (kind === 'fire') for (let k = 0; k < 6; k++) { const fx = kx - 6 - k * 8; if (fx > 0) { ctx.fillStyle = ['#ff3b1f', '#ff8c1a', '#ffd23f'][k % 3]; ctx.fillRect(fx, gy - 6 - (t + k * 5) % 8, 5, 5); } }
+          if (kind === 'spark' && t > 36 && t < hit) { const f = (t - 36) / 24; pet(kx + 24, gy - 70); ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(kx + 30 + f * (ex - kx - 20), gy - 60 + f * 40, 4, 0, 7); ctx.fill(); } else if (kind === 'spark') pet(kx + 24, gy - 70);
+          if (kind === 'stars' && t > 30 && t < hit) { ctx.fillStyle = '#fff'; ctx.fillRect(ex + 10 - (hit - t), gy - 60 + (t - 30) * 1.4, 4, 4); }
+          if (kind === 'stomp' && t >= 52 && t < 70) { ctx.strokeStyle = `rgba(220,220,240,${1 - (t - 52) / 18})`; ctx.beginPath(); ctx.ellipse(kx + 12, gy, (t - 52) * 4, 5, 0, 0, 7); ctx.stroke(); }
+          if (t < hit) foe(ex, walk, true); else if (t < hit + 50) foe(ex + (t - hit) * 1.5, 'jump', true, (t - hit) * 0.25, 1 - (t - hit) / 50);
+          break;
+        }
+        case 'shield': case 'forgive': {
+          ground(); const hit = 60, ex = t < hit ? 150 - t * 1.5 : 150 - hit * 1.5;
+          kai(40, gy);
+          if (kind === 'shield' && t > hit - 4 && t < hit + 20) { ctx.strokeStyle = '#b388ff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(52, gy - 22, 26, 0, 7); ctx.stroke(); }
+          if (t < hit) foe(ex, walk, true);
+          else if (kind === 'shield') foe(ex + (t - hit) * 2, 'jump', false, 0, Math.max(0, 1 - (t - hit) / 40));
+          else { foe(ex + (t - hit) * 1.2, walk, false, 0, Math.max(0, 1 - (t - hit) / 70)); if (t < hit + 60) heart(ex + 12, gy - 54 - (t - hit) * 0.4, 7, '#ff5a8a'); }
+          break;
+        }
+        case 'freeze': { ground(); const near = 150 - t * 1.2 < 90, ex = near ? 90 - (t - 50) * 0.25 : 150 - t * 1.2; kai(30, gy); foe(Math.max(60, ex), walk, true); if (near) { ctx.fillStyle = 'rgba(191,239,255,.35)'; ctx.fillRect(Math.max(60, ex) - 4, gy - 48, 32, 50); ctx.fillStyle = '#e8fbff'; ctx.fillRect(Math.max(60, ex) + (t % 20), gy - 50 + (t * 3) % 40, 3, 3); } break; }
+        case 'gems': case 'fetch': {
+          ground(); kai(30, gy); if (it.slot === 'pet') pet(70, gy - 70);
+          for (let k = 0; k < 4; k++) { const gx = 80 + k * 20, gyy = gy - 20 - (k % 2) * 22, f = Math.max(0, Math.min(1, (t - 30 - k * 12) / 25)); if (f < 1) drawGem(gx + (42 - gx) * f, gyy + (gy - 30 - gyy) * f, 1, t * 0.1); }
+          if (it.id === 'gift-pearl' && t > 60 && t < 120) { ctx.fillStyle = '#ff8a3c'; ctx.beginPath(); ctx.ellipse(150 - (t - 60) * 1.6, gy - 40, 7, 4, 0, 0, 7); ctx.fill(); drawGem(150 - (t - 60) * 1.6, gy - 50, 1, 0); }
+          if (it.id === 'gift-scarf') { ctx.fillStyle = '#f4f7fb'; ctx.beginPath(); ctx.arc(10, gy - 8, 7, 0, 7); ctx.arc(10, gy - 19, 5, 0, 7); ctx.fill(); ctx.fillStyle = '#e63946'; ctx.fillRect(5, gy - 15, 10, 2); }
+          break;
+        }
+        case 'heart': {
+          ground(); kai(40, gy); if (it.slot === 'pet') pet(80, gy - 70);
+          for (let k = 0; k < 3; k++) heart(16 + k * 20, 12, 7, k < 2 || t > 70 ? '#ff4d6d' : 'rgba(255,255,255,.2)');
+          if (t > 20 && t <= 70) { const f = (t - 20) / 50; heart(52 + (56 - 52) * f - f * 0, gy - 50 - f * (gy - 62), 7, '#ff4d6d'); }
+          if (it.id === 'gift-bot') { ctx.fillStyle = '#9aa7b8'; ctx.fillRect(74, gy - 14, 14, 12); ctx.fillStyle = '#7df9ff'; ctx.fillRect(77, gy - 11, 2, 2); ctx.fillRect(83, gy - 11, 2, 2); }
+          break;
+        }
+        case 'rainbow': {
+          ground([70, 116]); const f = Math.min(1, t / 100), x = 10 + f * 130, cols = ['#ff4d6d', '#ff8c1a', '#ffd23f', '#3ae374', '#3a86ff', '#9b59d6'];
+          if (t > 30) cols.forEach((c, k) => { ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(93, gy, 30 - k * 2, Math.PI, 0); ctx.stroke(); });
+          const y = x > 62 && x < 124 ? gy - Math.sin((x - 62) / 62 * Math.PI) * 30 : gy; kai(x, y, x > 62 && x < 124 ? 'jump' : walk); break;
+        }
+        case 'kuro': {
+          ground([70, 110]); if (!KURO_SPR) KURO_SPR = bakeNinja({ r: '#e63946', R: '#a91d2b', n: '#1c1a24', N: '#3d3a52', b: '#1c1a24' });
+          const kx = Math.min(80, 20 + t * 1.2), ky = t < 60 ? gy : t < 75 ? gy + (t - 60) * 2 : t < 105 ? gy + 30 - (t - 75) * 1.6 : gy;
+          ctx.globalAlpha = 1; drawBaked(KURO_SPR, t > 70 && t < 105 ? 'jump' : walk, false, { x: Math.min(kx - 26, 54) + (t > 75 ? 6 : 0), y: gy - 44, w: 24, h: 44 });
+          kai(t > 105 ? 112 : kx, Math.min(ky, gy + 30), t > 58 && t < 105 ? 'jump' : walk); break;
+        }
+        case 'light': { ground(); kai(60, gy); const g = ctx.createRadialGradient(72, gy - 24, 10, 72, gy - 24, 60); g.addColorStop(0, 'rgba(255,230,160,.0)'); g.addColorStop(1, 'rgba(0,0,0,.85)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.fillStyle = '#ffd23f'; ctx.fillRect(84, gy - 38, 5, 7); break; }
+        case 'ice': { ctx.fillStyle = '#bfefff'; ctx.fillRect(0, gy, W, H - gy); ctx.fillStyle = '#e8fbff'; for (let k = 0; k < W; k += 20) ctx.fillRect(k + 4, gy + 2, 8, 2); const x = Math.min(100, 10 + t * 1.6); kai(x, gy, x < 100 ? walk : 'stand'); break; }
+      }
+    } finally { ctx = keep; }
+    if (run.t < 300) requestAnimationFrame(frame); else drawItemPreview(cv, it);
+  };
+  frame();
+}
 function openShop() { hide('menu'); hide('buyBox'); renderShop(); show('shop'); }
 // A badge prize in the shop: how close the kid is, and Practice / Pick a level for a math badge (else: see the badge).
 function badgeHow(bd) {
@@ -13191,9 +13362,10 @@ function shopItem(grid, it) {
   {
     const owned = prog.owned.includes(it.id), on = prog.equip[it.slot] === it.id, lock = owned ? '' : giftLock(it);
     const el = document.createElement('div'); el.className = 'item' + (it.slot === 'gift' ? ' keep' : '');
-    el.innerHTML = `<canvas width="90" height="54"></canvas><div class="nm">${it.name}</div>${it.story ? `<div class="istory">${it.story}</div>` : ''}${it.power ? `<div class="ipow">Power: ${it.power}</div>` : ''}<div class="pr">${owned ? 'Owned' : `${gemSm()} ${it.price}`}</div><button type="button"></button>`;
+    el.innerHTML = `<canvas width="90" height="54"></canvas><div class="nm">${it.name}</div>${it.story ? `<div class="istory">${it.story}</div>` : ''}${DEMO_OF[it.id] ? '<button type="button" class="iplay" aria-label="See it">▶</button>' : ''}<div class="pr">${owned ? 'Owned' : `${gemSm()} ${it.price}`}</div><button type="button"></button>`;
     drawItemPreview(el.querySelector('canvas'), it);
-    const b = el.querySelector('button');
+    const pb = el.querySelector('.iplay'); if (pb) pb.onclick = e => { e.stopPropagation(); audio(); playShopDemo(el.querySelector('canvas'), it); };
+    const b = el.querySelector('button:not(.iplay)');
     if (lock) { b.innerHTML = `${pixSm('lock')} ${lock}`; b.className = 'locked'; b.disabled = true; grid.appendChild(el); return; }
     if (it.badge && !prog.badges[it.badge] && !owned) {   // a badge prize: the card stays small; tapping the badge button shows how close and how to win it (owner, Nov 2026)
       const bd = BADGE[it.badge];
@@ -15133,6 +15305,7 @@ $('raceMathBtn').onclick = () => { hide('raceSetup'); openSkills(showRaceSetup);
 $('settingsBtn').onclick = () => { audio(); hide('menu'); show('settings'); };
 $('settingsClose').onclick = () => { hide('settings'); buildMenu(); show('menu'); };
 $('helpBtn').onclick = () => { audio(); hide('settings'); showHowTo(); };   // (How to play lives in Settings now)
+$('demoBtn').onclick = () => { audio(); prog.demos = {}; save(); $('demoBtn').textContent = '👻 Will show again'; };   // the ghost Kai demos play again
 $('resetBtn').onclick = () => {
   if (confirm(`Reset ${curPlayer().name}'s belts, points and unlocked levels?`)) { prog.best = {}; prog.mastery = {}; prog.seenWorld = {}; setAllOpen(false); }
 };
