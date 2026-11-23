@@ -15,7 +15,7 @@ This file is the one source for the story. Every bit of story text in `index.htm
 
 | Page | Text | Pictures (captions) |
 |---|---|---|
-| Opening ("The Stolen Scrolls") | Kuro is Kai's big brother. He took the seven Math Scrolls and ran away. He put on a mask. Now he is the **Shadow Shogun**. Sensei says: *"Bring the scrolls home, Kai. And bring your brother home too."* | Kuro took the Math Scrolls. · Now he is the Shadow Shogun. · "Bring your brother home, Kai." |
+| Opening ("The Stolen Scrolls") | Kuro is Kai's big brother. He felt left out. He took the seven Math Scrolls and ran away. He put on a mask. Now he is the **Shadow Shogun**. Sensei says: *"Bring the scrolls home, Kai. And bring your brother home too."* | Kuro felt left out. (Sensei hugs little Kai; Kuro watches from the dark doorway, then walks out.) · Kuro took the Math Scrolls. · Now he is the Shadow Shogun. · "Bring your brother home, Kai." |
 | World 1: Japan Village | Kuro came here to be popular. Bandits are in the bamboo forest. Be brave! | Bandits ran into the bamboo. · Kage leads the bandits. |
 | Kage (win card) | Kage runs away. You got the Scroll of Adding! | "Take my hand?" · "Never!" · Kage runs away. |
 | World 2: Lava Volcano | Kuro came here angry about old hurts. The Golem is angry too. Be kind to him. | The Golem is angry. · "Be kind to him." |
@@ -44,7 +44,7 @@ This file is the one source for the story. Every bit of story text in `index.htm
   - Snowman: Kai "Nobody should be alone." Snowman "You're not running away?" ♥ "A friend!"
   - Octopus: Kai gives him one of his own gems: "Here. This gem is for you." Octopus "For me? Nobody ever gave me anything!" ♥ then "Here! Everyone gets a piece!" (he lets go of his whole hoard; little fish take the pieces home) During the fight each hit makes him drop one piece.
   - Scorpion: Kai "I forgive you." Scorpion "But... I stung you!" then "Then I will put my stinger down." ♥ (forgiveness: he stung first, and Kai forgives him anyway).
-  - Shogun: "Why... why didn't you finish me?" Kai "Look out!" (the beam falls, then the ending pages).
+  - Shogun: no words. He looks at the held-out hand and takes a slow step toward it. Kai "Look out!" (the beam falls, then the ending pages).
 
 ## Why Kuro went to each world (owner, Nov 22 2026)
 
@@ -89,3 +89,8 @@ The scroll row under the buttons has one slot per world; beating a boss fills it
 - **Red Bandit:** one of Kage's bandits.
 - **Shadow Rider:** the Shogun's scout ("He tried to stop you the whole way").
 - **Gray Wolf:** a wild wolf who just loves to race.
+
+## Kuro's glimpse, world by world (no words after the volcano)
+
+Village and Volcano: he stands his ground ("Go home, Kai!") and runs. Factory and Snow: he lingers before he goes, saying nothing. Desert: he runs, then stops and looks back. Castle: he takes a step toward Kai before he runs; in Shadow Walls he lets the last journal page fall where he stood ("I want to go home. But Father could never want me back."), right on Kai's path. In each world's first level he is found looking at a memory of the two of them.
+

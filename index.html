@@ -660,7 +660,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Walk home: the hug under the gate at sunrise</div>
+  <div class="build">Updated Nov 23, 2026 · Kuro's story: why he left, and how he changes world by world</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -936,7 +936,7 @@ const mk = (a, op, b, ans) => ({ a, op, b, ans, text: `${a} ${op} ${b}` });
 
 // ---------------------------------------------------------------- story & worlds
 // The story, kept very short so kids can read it (STORY.md is the source). Kuro is Kai's brother from page one.
-const STORY = `Kuro is Kai's big brother. He took the seven Math Scrolls and ran away.
+const STORY = `Kuro is Kai's big brother. He felt left out. He took the seven Math Scrolls and ran away.
   <br><br>He put on a mask. Now he is the <b>Shadow Shogun</b>.
   <br><br>Sensei says: <i>"Bring the scrolls home, Kai. And bring your brother home too."</i>`;
 const MORNING = `Kuro cries. <i>"Why did you save me?"</i>
@@ -7719,7 +7719,7 @@ function runOutro(b) {
     if (t === 370) { o.done = true; b.friendly = true; dropPrize(b, (P.x + cx) / 2); }
   } else if (k === 'shogun') {
     if (t % 8 === 0 && t < 330) { shake(4, 2); L.proj.push({ k: 'rock', x: R(40, L.w * T - 40), y: -20, vx: 0, vy: 2, g: 0.3, r: 8, deco: true }); }
-    if (t === 30) say('boss', "Why... why didn't you finish me?", 120);
+    if (t > 40 && t < 130) b.x += Math.sign(P.x - b.x) * 0.3;   // (story review, Nov 23 2026: "finish me" was harsh and said "why" twice) no words: he takes a slow step toward the held-out hand
     if (t === 160) { say('kai', 'Look out!', 60); o.beam = { x: cx - 50, y: -120, vy: 0 }; }
     if (o.beam && t < 230) { o.beam.vy += 0.15; o.beam.y += o.beam.vy; P.face = 1; P.x += (cx - 70 - P.x) * 0.12; }
     if (t === 205) { b.x = Math.min(b.x + 70, L.w * T - b.w - 6); burst(cx, b.y + b.h / 2, '#ffffff', 10, 4); }   // Kai pushes him clear
@@ -8279,15 +8279,15 @@ function placePage(i) {   // (startStage) the journal page for this level, at th
   L.page = { j, x: c.x, y: c.y - 40, taken: false };
 }
 function pageTick(p) {
-  const pg = L.page; if (!pg || pg.taken) return;
+  const pg = L.page; if (!pg || pg.taken || (pg.drop && L.kuro && L.kuro.ph < 2)) return;
   if (Math.abs(p.x + p.w / 2 - pg.x) < 26 && pg.y > p.y - 30 && pg.y < p.y + p.h + 14) {
     pg.taken = true; (prog.journal = prog.journal || {})[pg.j] = true; save(); G.pageGot = pg.j;
     sfx.win(); burst(pg.x, pg.y, '#fff6c8', 14, 3); floatText(pg.x, pg.y - 20, "A page from Kuro's journal!", '#fff6c8', 22);
   }
 }
 function drawPage() {
-  const pg = L.page; if (!pg || pg.taken || pg.x < cam - 30 || pg.x > cam + VW + 30) return;
-  const x = pg.x, y = pg.y + Math.sin(tick * 0.06) * 4;
+  const pg = L.page; if (!pg || pg.taken || pg.x < cam - 30 || pg.x > cam + VW + 30 || (pg.drop && L.kuro && L.kuro.ph < 2)) return;
+  const x = pg.x, y = pg.y + (pg.drop ? 0 : Math.sin(tick * 0.06) * 4);
   glowAt(x, y, 30, 'rgba(255,246,200,.55)');
   ctx.save(); ctx.translate(x, y); ctx.rotate(Math.sin(tick * 0.04) * 0.12);
   ctx.fillStyle = '#f4e7c6'; ctx.fillRect(-10, -13, 20, 26); ctx.fillStyle = '#d8c79a'; ctx.fillRect(6, -13, 4, 4);
@@ -8689,6 +8689,14 @@ function drawHelp() {   // (drawStory) world space, behind Kai
   }
 }
 function helpHeart(X, Y, a) { ctx.globalAlpha = a; ctx.fillStyle = '#ff4d6d'; ctx.fillRect(X, Y, 4, 4); ctx.fillRect(X + 6, Y, 4, 4); ctx.fillRect(X, Y + 3, 10, 4); ctx.fillRect(X + 2, Y + 7, 6, 2); ctx.fillRect(X + 4, Y + 9, 2, 2); ctx.globalAlpha = 1; }
+function openCol(c0) {   // a column of plain open ground near c0 (searching forward first), clear of every crossing and gate; -1 if none
+  const spans = [], add = (a, b) => spans.push([a - 3, b + 3]);
+  (L.swings || []).forEach(w => add(w.s, w.e)); (L.steps || []).forEach(z => add(z.c0, z.c0 + z.w)); (L.bridges || []).forEach(z => add(z.c0, z.c0 + z.w)); (L.rafts || []).forEach(r => add(r.c0, r.c1));
+  (L.stations || []).forEach(z => add(z.gate[0], z.gate[1] || z.gate[0])); (L.doors || []).forEach(d => add(d.c, d.c));
+  const ok = c => c > 3 && c < L.w - 12 && !spans.some(([a, b]) => c >= a && c <= b) && [-1, 0, 1, 2].every(d => SOLID.has(L.map[GR][c + d]) && L.map[GR - 1][c + d] === '.' && L.map[GR - 2][c + d] === '.');
+  for (let d = 0; d < 60; d++) { if (ok(c0 + d)) return c0 + d; if (d && d < 25 && ok(c0 - d)) return c0 - d; }
+  return -1;
+}
 function placeStory(i) {   // (startStage)
   L.help = null; L.mem = null;
   L.marks = []; L.note = null; L.kuro = null; G.helper = null; G.pengs = 0; G.feastFish = 0;
@@ -8702,10 +8710,12 @@ function placeStory(i) {   // (startStage)
   if (prog.best[bossOf(st.w)]) L.marks.forEach((m, n) => { m.healed = true; m.fixed = 2; m.t = 999; m.n = n; });
   const home = !!prog.best[bossOf(WORLDS.length - 1)];   // Kuro is home: no more notes from him, no glimpse of him running off
   // A memory (first level of each world): the two brothers when they were small, glowing faintly where Kuro stops to look.
-  const mc = st.k === 0 ? groundCol(Math.round(L.w * 0.78) + 3) : -1; if (mc > 0) L.mem = { x: mc * T + T / 2, kind: L.world.key };
+  const mc = st.k === 0 ? (L.water ? groundCol(Math.round(L.w * 0.78) + 3) : openCol(Math.round(L.w * 0.78) + 3)) : -1; if (mc > 0) L.mem = { x: mc * T + T / 2, kind: L.world.key };
   if (!L.water && !home) {
     const nc = [0.25, 0.3, 0.2, 0.35].map(f => groundCol(Math.round(L.w * f))).find(c => c > 0 && !L.marks.some(m => Math.abs(m.c - c) < 3)); if (nc) L.note = { x: nc * T + T / 2, text: st.k === 2 ? 'Turn back, little brother! –K' : KURO_NOTE[L.world.key] };
-    const kc = L.mem ? groundCol(Math.round(L.mem.x / T) - 3) : groundCol(Math.round(L.w * 0.78)); if (kc > 0) L.kuro = { x: kc * T, y: GR * T - 44, ph: 0, t: 0, mem: !!L.mem, waver: L.world.key === 'castle' };
+    const kc = L.mem ? groundCol(Math.round(L.mem.x / T) - 3) : openCol(Math.round(L.w * 0.78));   // (clear of the swing: he used to stand inside some crossings, where the story is paused)
+    if (kc > 0) L.kuro = { x: kc * T, y: GR * T - 44, ph: 0, t: 0, mem: !!L.mem, waver: L.world.key === 'castle', arc: st.w <= 1 ? 0 : st.w <= 3 ? 1 : 2 };   // his arc: 0 defiant ("Go home, Kai!"), 1 he lingers, 2 he looks back as he goes; in his castle he wavers
+    if (L.page && JOURNAL[L.page.j].last && L.kuro) Object.assign(L.page, { x: L.kuro.x + 12, y: GR * T - 20, drop: true });   // the last page: he lets it fall where he stood, right on Kai's path
   }
   const can = HELPERS.map((k, w) => (k && w < st.w && prog.best[bossOf(w)] ? k : null)).filter(Boolean);
   if (can.length) G.helper = { kind: can[i % can.length], done: false, show: null };
@@ -8725,12 +8735,12 @@ function storyTick(p) {   // (shopPowTick) the marks' animations, the note, Kuro
   helpTick(p);
   const k = L.kuro;
   for (const m of L.marks || []) if (m.cheer > 0) m.cheer--;
-  if (k && !k.ph && P.x > k.x - (k.mem ? 11 : 8) * T) { k.ph = 1; k.t = 0; k.hold = (k.mem ? 90 : 50) + (k.waver ? 70 : 0); }
+  if (k && !k.ph && P.x > k.x - (k.mem ? 11 : 8) * T) { k.ph = 1; k.t = 0; k.hold = (k.mem ? 90 : 50) + (k.waver ? 70 : 0) + (k.arc === 1 ? 45 : 0); }
   if (k && k.ph === 1) {   // he looks at the memory, sees Kai (in his castle he takes a step toward him), then runs
     k.t++; if (k.waver && k.t > k.hold - 60 && k.t < k.hold - 15) k.x -= 0.5;
     if (k.t > k.hold) { k.ph = 2; k.t = 0; }
   }
-  if (k && k.ph === 2) { k.x += 6; if (++k.t > 70) k.ph = 3; }
+  if (k && k.ph === 2) { const look = k.arc === 2 && !k.waver && k.t >= 20 && k.t < 65; if (!look) k.x += 6; k.look = look; if (++k.t > (k.arc === 2 && !k.waver ? 115 : 70)) k.ph = 3; }
   const h = G.helper; if (!h) return;
   if (h.show && ++h.show.t > 110) h.show = null;
   if (h.done) return;
@@ -8837,11 +8847,11 @@ function drawStory() {   // world space, before Kai
   const k = L.kuro;
   if (k && (k.ph === 1 || k.ph === 2)) {   // Kuro, just ahead, then gone
     if (!KURO_SPR) KURO_SPR = bakeNinja({ r: '#e63946', R: '#a91d2b', n: '#1c1a24', N: '#3d3a52', b: '#1c1a24' });
-    ctx.globalAlpha = k.ph === 2 ? Math.max(0, 1 - k.t / 60) : 1;
-    const walk = k.ph === 2 || (k.waver && k.t > k.hold - 60 && k.t < k.hold - 15);
-    drawBaked(KURO_SPR, walk && Math.floor(tick / 5) % 2 ? 'walkA' : 'stand', k.ph === 1 && !(k.mem && k.t < 45), { x: k.x, y: k.y, w: 24, h: 44 });
+    ctx.globalAlpha = k.ph === 2 ? Math.max(0, Math.min(1, (k.arc === 2 && !k.waver ? 115 - k.t : 60 - k.t) / 45)) : 1;
+    const walk = (k.ph === 2 && !k.look) || (k.waver && k.t > k.hold - 60 && k.t < k.hold - 15);
+    drawBaked(KURO_SPR, walk && Math.floor(tick / 5) % 2 ? 'walkA' : 'stand', k.look || (k.ph === 1 && !(k.mem && k.t < 45)), { x: k.x, y: k.y, w: 24, h: 44 });
     ctx.globalAlpha = 1;
-    if (k.ph === 1 && k.t > 10 && !k.mem && !k.waver) drawSay(k.x + 12, k.y - 4, 'Go home, Kai!');
+    if (k.ph === 1 && k.t > 10 && !k.mem && !k.waver && k.arc === 0) drawSay(k.x + 12, k.y - 4, 'Go home, Kai!');
   }
   if (G.feast) drawFeast();
 }
@@ -14346,6 +14356,18 @@ function scroll(c, x, y) {   // 9 × 5
 
 const SCENES = {
   opening: [
+    // (story review, Nov 23 2026: why Kuro left was only on an optional journal page) Sensei hugs little Kai in the warm
+    // dojo; Kuro stands apart in the doorway's shadow, looking on. Then he turns and walks out.
+    { cap: 'Kuro felt left out.', draw(c, t, p) {
+      dot(c, 0, 0, SW, SH, '#f1e0c5'); for (let x = 0; x < SW; x += 24) dot(c, x, 0, 2, 84, '#d9c4a0');
+      dot(c, 0, 84, SW, 24, '#b0794a'); dot(c, 0, 84, SW, 2, '#8a5a34');
+      dot(c, 0, 0, 44, 84, '#2a2040'); c.globalAlpha = 0.35; dot(c, 44, 0, 14, 108, '#2a2040'); c.globalAlpha = 1;   // the dark doorway
+      c.globalAlpha = 0.5; disc(c, 138, 70, 34, '#fff1b8'); c.globalAlpha = 1;   // warm light round father and son
+      senseiFig(c, 146, 96, true); sPut(c, scSpr.kai().stand[0], 132, 96);
+      if (t % 2.4 < 1.2) { dot(c, 137, 62, 2, 2, '#ff5a8a'); dot(c, 141, 62, 2, 2, '#ff5a8a'); dot(c, 137, 64, 6, 2, '#ff5a8a'); dot(c, 139, 66, 2, 2, '#ff5a8a'); }   // a little heart
+      const out = Math.max(0, p - 0.62) * 150, kx = 34 - out;   // Kuro watches, then goes
+      c.globalAlpha = 0.85; if (kx > -14) sPut(c, scSpr.kuro()[out > 0 && walkF(t) ? 'b' : 'a'][out > 0 ? 0 : 1], kx, 96); c.globalAlpha = 1;
+    } },
     { cap: 'Kuro took the Math Scrolls.', draw(c, t, p) {
       dot(c, 0, 0, SW, SH, '#141a3a');
       for (let x = 0; x < SW; x += 12) dot(c, x, 0, 1, 84, '#0d1230');

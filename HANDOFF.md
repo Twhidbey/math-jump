@@ -119,4 +119,5 @@ Owner asked for a parent screen with its own link: how long each kid plays, a ti
 - **2 done (live): upright phones** get a taller, bigger picture (view 432 to 540 wide by screen height), the band below takes the ground's colour, and story-card buttons stay on screen. See the end of `docs/levels.md`. Checked in emulation at 390x780, 390x664, 375x553, 844x390; not on a real phone.
 - **3 done (live): calmer gates** (no "?" signpost, one padlock, the animal's problem shows once). See the end of `docs/crossings.md`.
 - **4 done (live): the walk-home hug** is under the gate with a slow zoom, a sunrise behind it and golden added light.
+- **5 done (live): Kuro's arc**: an opening picture "Kuro felt left out." (my draft words), his glimpse changes world by world, the last journal page falls on Kai's path in Shadow Walls, the Shogun's "finish me" line is gone; also fixed Kuro standing inside swing crossings. See the end of `docs/story.md` and `STORY.md`.
 
