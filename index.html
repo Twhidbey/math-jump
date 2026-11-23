@@ -648,7 +648,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Help with your gear: a stuck kite in Koi Pond, a lost lamb on Hoodoo Trail</div>
+  <div class="build">Updated Nov 23, 2026 · Someone to help with your gear in every world</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -8412,13 +8412,36 @@ function groundCol(c) {   // a column near c with ground under it and room above
 // thing (gems, once). It stays helped for good (prog.helped[world key]); without the piece nothing happens.
 // Village (Koi Pond): a child's kite is stuck in the bamboo, the Bamboo Dragonfly knocks it free.
 // Desert (Hoodoo Trail): a lamb is stuck on a rock, the Lasso lowers it to its mother.
-const HELP_SPOTS = { japan: { id: 'boomerang', k: 2, kind: 'kite', fx: 'boom', h: 4.4 }, desert: { id: 'lasso', k: 1, kind: 'lamb', fx: 'lasso', h: 3.2 } };
+// Volcano (Obsidian Caves): a cold hut, a Flame Dash past the fire pit lights it. Factory (Gear Works): a little robot
+// has lost its bolts, the Magnet Gloves bring them back. Snow (Frosty Slopes): a snowed-in door, the Ram Charge clears
+// it. Sea (Coral Reef): fish shut in a rock cave, the Trident's blast frees them. Castle (Lantern Roofs): a child
+// alone in the dark, the Lantern's flash lights the street lamp and the child runs home.
+const HELP_SPOTS = { japan: { id: 'boomerang', k: 2, kind: 'kite', fx: 'boom', h: 4.4 }, desert: { id: 'lasso', k: 1, kind: 'lamb', fx: 'lasso', h: 3.2 },
+  lava: { id: 'cape', k: 2, kind: 'fire', h: 0.3 }, robot: { id: 'gloves', k: 0, kind: 'bolts', h: 0.5 }, snow: { id: 'viking', k: 0, kind: 'drift', h: 0.5 },
+  sea: { id: 'trident', k: 0, kind: 'fish', h: 0.6 }, castle: { id: 'lantern', k: 0, kind: 'lamp', h: 1.6 } };
+function helpTick(p) {   // (storyTick) the powers that aren't thrown: used at the spot, they help
+  const h = L.help; if (!h) return;
+  if (h.done) { if (h.t < 999) h.t++; return; }
+  if (!gearOn(h.id)) return;
+  const d = Math.abs(p.x + p.w / 2 - h.tx), low = p.y > h.y - 4 * T;
+  if (h.kind === 'fire' ? G.flame && G.dash > 0 && d < 1.5 * T && low : h.kind === 'bolts' ? G.magT > 0 && d < 8 * T : h.kind === 'drift' ? G.charge > 0 && d < T * 1.2 && low
+    : h.kind === 'lamp' ? G.flare > FLARE_T - 10 && d < 8 * T : h.kind === 'fish' ? (G.gfx || []).some(f => f.k === 'jet' && Math.abs(f.x - h.tx) < 56 && Math.abs(f.y - h.ty) < 130) : false) helpDone();
+}
 function placeHelp(i) {
   L.help = null;
-  const st = STAGES[i], hs = st && !st.boss && !L.boss && !L.vault && !L.water && HELP_SPOTS[L.world.key]; if (!hs || st.k !== hs.k) return;
+  const st = STAGES[i], hs = st && !st.boss && !L.boss && !L.vault && HELP_SPOTS[L.world.key]; if (!hs || st.k !== hs.k) return;
   const flat = c => { for (let d = -3; d <= 3; d++) { const cc = c + d; if (cc < 3 || cc > L.w - 3 || L.map[GR][cc] !== '#') return false; for (let r = GR - 6; r < GR; r++) if (L.map[r][cc] !== '.') return false; } return true; };
-  const busy = c => (L.marks || []).some(m => Math.abs(m.c - c) < 5) || (L.note && Math.abs(L.note.x / T - c) < 5) || (L.stations || []).some(s => Math.abs(s.gate[0] - c) < 6);
-  let c = -1; for (const f of [0.62, 0.56, 0.68, 0.5, 0.74, 0.44]) { const c0 = Math.round(L.w * f); for (let d = 0; d < 14 && c < 0; d++) for (const cc of [c0 + d, c0 - d]) if (c < 0 && flat(cc) && !busy(cc)) c = cc; if (c >= 0) break; }
+  const spans = [], add = (a, b = a, m = 6) => { if (a != null && !isNaN(a) && !isNaN(b)) spans.push([Math.min(a, b) - m, Math.max(a, b) + m]); };   // keep clear of everything else in the level
+  (L.marks || []).forEach(m => add(m.c)); if (L.note) add(L.note.x / T); if (L.kuro) add(L.kuro.x / T); if (L.gearChest) add(L.gearChest.x / T); if (L.friend) add(L.friend.c);
+  (L.stations || []).forEach(z => add(z.gate[0])); (L.doors || []).forEach(d => add(d.c));
+  (L.squads || []).forEach(q => { add(q.ax / T); (q.foods || []).forEach(f => add(f.x / T)); });
+  (L.steps || []).forEach(z => add(z.c0, z.c0 + z.w)); (L.bridges || []).forEach(z => add(z.c0, z.c0 + z.w)); (L.swings || []).forEach(w => add(w.s, w.e)); (L.rafts || []).forEach(r => add(r.c0, r.c1)); (L.walls || []).forEach(o => add(o.c0 != null ? o.c0 : o.c));
+  (L.counts || []).forEach(ct => add(ct.xs[0] / T, ct.xs[ct.xs.length - 1] / T)); (L.currents || []).forEach(cu => add(cu.c0, cu.c0 + 15)); (L.clams || []).forEach(o => add(o.x / T)); (L.leaps || []).forEach(o => add(o.c)); (L.vents || []).forEach(o => add(o.x / T));
+  const hard = spans.length; (L.fl || []).forEach(o => add(o.x / T, o.x / T, 2));
+  let c = -1;
+  for (const lim of [spans.length, hard]) { const busy = cc => spans.slice(0, lim).some(([a, b]) => cc >= a && cc <= b);
+    for (const f of [0.62, 0.56, 0.68, 0.5, 0.74, 0.44, 0.8, 0.38]) { const c0 = Math.round(L.w * f); for (let d = 0; d < 12 && c < 0; d++) for (const cc of [c0 + d, c0 - d]) if (c < 0 && flat(cc) && !busy(cc)) c = cc; if (c >= 0) break; }
+    if (c >= 0) break; }
   if (c < 0) return;
   const done = !!(prog.helped || {})[L.world.key];
   L.help = { ...hs, c, x: c * T + T / 2, y: GR * T, tx: c * T + T / 2 + T, ty: GR * T - hs.h * T, done, t: done ? 999 : 0 };
@@ -8444,39 +8467,94 @@ const HELP_ART = {
   kidUp: ['s.hhhh.s', 's.hhhh.s', 'rhsssshr', 'r.sksk.r', '.rssssr.', '..rrrr..', '..rrrr..', '..rrrr..', '..rrrr..', '..bbbb..', '..s..s..'],
   kite: ['..r..', '.rrr.', 'rryrr', '.rrr.', '..r..'],
   sheep: ['.wwwww..', 'wwwwwwkk', 'wwwwwwkk', 'wwwwww..', '.k...k..'],
+  kidSit: ['..hhhh..', '.hhhhhh.', '.hssssh.', '..sksk..', '.rssssr.', 'rrrrrrrr', 'rsbbbbsr', '.bb..bb.'],
+  robot: ['...a....', '...g....', '.gggggg.', '.gegeg..', '.gggggg.', '..gGGg..', 'gggggggg', 'g.gGGg.g', '..g..g..', '.gg..gg.'],
+  fish: ['.ooo.o', 'okoooo', '.ooo.o'],
 };
 const HELP_PAL = { h: '#2a2030', s: '#f2c9a0', k: '#16121f', r: '#3a86ff', b: '#2a2a44', y: '#ffd23f', w: '#f4f1e8' };
+function drawHut(x, g, W, lit, open) {   // a plain little house in the world's own bricks (x = its left edge), 60 wide
+  ctx.fillStyle = W[1]; ctx.fillRect(x, g - 40, 60, 40); ctx.fillStyle = W[0]; ctx.fillRect(x + 3, g - 37, 54, 37);
+  ctx.fillStyle = W[1]; ctx.fillRect(x - 8, g - 46, 76, 8); ctx.fillRect(x, g - 54, 60, 8); ctx.fillRect(x + 12, g - 60, 36, 6);
+  ctx.fillStyle = open ? '#3a2a20' : W[1]; ctx.fillRect(x + 8, g - 26, 16, 26); if (open) { ctx.fillStyle = '#ffd87a'; ctx.fillRect(x + 11, g - 23, 10, 23); }
+  ctx.fillStyle = '#16121f'; ctx.fillRect(x + 34, g - 28, 16, 14); ctx.fillStyle = lit ? '#ffd87a' : '#2a2438'; ctx.fillRect(x + 36, g - 26, 12, 10);
+  if (lit) glowAt(x + 42, g - 21, 34, 'rgba(255,216,122,.35)');
+}
 function drawHelp() {   // (drawStory) world space, behind Kai
-  const h = L.help; if (!h || h.x < cam - 6 * T || h.x > cam + VW + 6 * T) return;
-  const g = h.y, t = h.t, u = h.done ? Math.min(1, t / 50) : 0, near = !h.done && P && Math.abs(P.x - h.x) < 9 * T;
+  const h = L.help; if (!h || h.x < cam - 8 * T || h.x > cam + VW + 8 * T) return;
+  const g = h.y, t = h.t, D = h.done, u = D ? Math.min(1, t / 50) : 0, near = !D && P && Math.abs(P.x - h.x) < 9 * T, W = L.world;
+  const px = h.x - T - 6;   // where the one who needs help stands
+  let bx = px + 12, by = g - 44;   // the picture bubble sits over them
+  const kid = (art, x, y, col) => pixRows(HELP_ART[art], { ...HELP_PAL, r: col }, x, y, 3);
+  const cheer = D && t < 140, hop = cheer ? Math.abs(Math.sin(t * 0.2)) * 8 : 0;
   if (h.kind === 'kite') {
-    const W = L.world.pipe;   // a clump of bamboo in the world's own greens
-    [[-8, 4.6], [6, 5.1], [20, 4.2]].forEach(([dx, hh]) => { const bx = h.tx + dx - 10, top = g - hh * T; ctx.fillStyle = W[1]; ctx.fillRect(bx, top, 9, g - top); ctx.fillStyle = W[0]; ctx.fillRect(bx + 2, top, 5, g - top); ctx.fillStyle = W[1]; for (let y = g - 30; y > top; y -= 34) ctx.fillRect(bx, y, 9, 3); ctx.fillStyle = W[0]; ctx.fillRect(bx - 12, top + 6, 14, 4); ctx.fillRect(bx + 8, top + 16, 14, 4); });
-    const kx0 = h.tx, ky0 = h.ty, hx = h.x - T - 6 + 20, hy = g - 30;   // the child's raised hand
-    const fly = Math.max(0, Math.min(1, (t - 50) / 60)), bob = h.done && t > 110 ? Math.sin(tick * 0.06) * 6 : 0;
-    const kx = h.done ? kx0 + (hx - 20 - kx0) * u - fly * 40 + bob * 0.6 : kx0 + Math.sin(tick * 0.1) * 1.5, ky = h.done ? ky0 + (hy - 10 - ky0) * u - fly * 96 + bob : ky0;
-    if (h.done) { ctx.strokeStyle = '#f4f1e8'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(hx, hy); ctx.quadraticCurveTo((hx + kx) / 2, (hy + ky) / 2 + 12, kx, ky + 8); ctx.stroke(); }
+    const B = W.pipe;   // a clump of bamboo in the world's own greens
+    [[-8, 4.6], [6, 5.1], [20, 4.2]].forEach(([dx, hh]) => { const x = h.tx + dx - 10, top = g - hh * T; ctx.fillStyle = B[1]; ctx.fillRect(x, top, 9, g - top); ctx.fillStyle = B[0]; ctx.fillRect(x + 2, top, 5, g - top); ctx.fillStyle = B[1]; for (let y = g - 30; y > top; y -= 34) ctx.fillRect(x, y, 9, 3); ctx.fillStyle = B[0]; ctx.fillRect(x - 12, top + 6, 14, 4); ctx.fillRect(x + 8, top + 16, 14, 4); });
+    const kx0 = h.tx, ky0 = h.ty, hx = px + 22, hy = g - 32;   // the child's raised hand
+    const fly = Math.max(0, Math.min(1, (t - 50) / 60)), bob = D && t > 110 ? Math.sin(tick * 0.06) * 6 : 0;
+    const kx = D ? kx0 + (hx - 20 - kx0) * u - fly * 40 + bob * 0.6 : kx0 + Math.sin(tick * 0.1) * 1.5, ky = D ? ky0 + (hy - 10 - ky0) * u - fly * 96 + bob : ky0;
+    if (D) { ctx.strokeStyle = '#f4f1e8'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(hx, hy); ctx.quadraticCurveTo((hx + kx) / 2, (hy + ky) / 2 + 12, kx, ky + 8); ctx.stroke(); }
     else { ctx.fillStyle = '#f4f1e8'; ctx.fillRect(kx - 1, ky + 8, 2, 26); }   // its string dangles
     pixRows(HELP_ART.kite, { r: '#e63946', y: '#ffd23f' }, kx - 10, ky - 10, 4);
-    const hop = h.done && t < 140 ? Math.abs(Math.sin(t * 0.2)) * 8 : 0;
-    pixRows(h.done ? HELP_ART.kidUp : HELP_ART.kid, HELP_PAL, h.x - T - 6, g - 33 - hop, 3);
-  } else {
-    const W = L.world.brick, rx = h.tx - 26, top = h.ty + 12;   // a spire of the world's red rock
-    ctx.fillStyle = W[1]; ctx.fillRect(rx + 8, top + 8, 36, g - top - 8); ctx.fillRect(rx, top, 52, 12); ctx.fillStyle = W[0]; ctx.fillRect(rx + 12, top + 12, 24, g - top - 12); ctx.fillRect(rx + 3, top + 2, 44, 6);
-    ctx.fillStyle = W[1]; for (let y = top + 30; y < g - 8; y += 26) ctx.fillRect(rx + 12, y, 24, 3);
-    const mx = h.x - T - 30;   // the mother waits below, looking up
-    pixRows(HELP_ART.sheep, HELP_PAL, mx, g - 20, 4);
-    const lx = h.done ? h.tx - 9 + (mx + 40 - (h.tx - 9)) * u : h.tx - 9 + (tick % 90 < 8 ? 1 : 0), ly = h.done ? top - 15 + (g - 15 - (top - 15)) * u : top - 15;
-    if (h.done && t < 50) { ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(lx + 9, ly + 7, 14, 0, Math.PI * 2); ctx.stroke(); }   // the loop round it
-    pixRows(HELP_ART.sheep, HELP_PAL, lx, ly, 3, h.done);
-    if (h.done && t > 50 && t < 170) { const a = Math.min(1, (170 - t) / 30); ctx.globalAlpha = a; ctx.fillStyle = '#ff4d6d'; const X = mx + 30, Y = g - 40 - (t - 50) * 0.25; ctx.fillRect(X, Y, 4, 4); ctx.fillRect(X + 6, Y, 4, 4); ctx.fillRect(X, Y + 3, 10, 4); ctx.fillRect(X + 2, Y + 7, 6, 2); ctx.fillRect(X + 4, Y + 9, 2, 2); ctx.globalAlpha = 1; }
+    kid(D ? 'kidUp' : 'kid', px, g - 33 - hop, '#3a86ff');
+  } else if (h.kind === 'lamb') {
+    const B = W.brick, rx = h.tx - 26, top = h.ty + 12;   // a spire of the world's red rock
+    ctx.fillStyle = B[1]; ctx.fillRect(rx + 8, top + 8, 36, g - top - 8); ctx.fillRect(rx, top, 52, 12); ctx.fillStyle = B[0]; ctx.fillRect(rx + 12, top + 12, 24, g - top - 12); ctx.fillRect(rx + 3, top + 2, 44, 6);
+    ctx.fillStyle = B[1]; for (let y = top + 30; y < g - 8; y += 26) ctx.fillRect(rx + 12, y, 24, 3);
+    const mx = px - 24;   // the mother waits below, looking up
+    pixRows(HELP_ART.sheep, HELP_PAL, mx, g - 20, 4); bx = mx + 16; by = g - 30;
+    const lx = D ? h.tx - 9 + (mx + 40 - (h.tx - 9)) * u : h.tx - 9 + (tick % 90 < 8 ? 1 : 0), ly = D ? top - 15 + (g - 15 - (top - 15)) * u : top - 15;
+    if (D && t < 50) { ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(lx + 9, ly + 7, 14, 0, Math.PI * 2); ctx.stroke(); }   // the loop round it
+    pixRows(HELP_ART.sheep, HELP_PAL, lx, ly, 3, D);
+    if (D && t > 50 && t < 170) helpHeart(mx + 30, g - 40 - (t - 50) * 0.25, Math.min(1, (170 - t) / 30));
+  } else if (h.kind === 'fire') {
+    drawHut(px - 70, g, W.brick, D, false);
+    const fx = h.tx;   // the fire pit: stones and logs, cold until the Flame Dash goes by
+    ctx.fillStyle = '#5a5762'; ctx.fillRect(fx - 20, g - 6, 8, 6); ctx.fillRect(fx + 12, g - 6, 8, 6); ctx.fillStyle = '#6b4423'; ctx.fillRect(fx - 14, g - 8, 28, 5); ctx.fillStyle = '#4a2e16'; ctx.fillRect(fx - 9, g - 12, 18, 5);
+    if (D) { glowAt(fx, g - 18, 70 + Math.sin(tick * 0.2) * 5, 'rgba(255,150,40,.4)'); for (let k = 0; k < 4; k++) { const fh = 10 + ((tick >> 2) + k * 3) % 4 * 5; ctx.fillStyle = k % 2 ? '#ffd23f' : '#ff8c1a'; ctx.fillRect(fx - 10 + k * 5, g - 12 - fh, 5, fh); } }
+    kid(cheer ? 'kidUp' : D ? 'kid' : 'kidSit', px + (D || tick % 8 < 4 ? 0 : 1), g - (D ? 33 : 24) - hop, '#c96a3a');   // shivering
+  } else if (h.kind === 'bolts') {
+    const on = D && t > 40, ry = g - 30 - (on && t < 160 ? Math.abs(Math.sin(t * 0.2)) * 8 : 0) + (on ? 0 : 4);
+    pixRows(HELP_ART.robot, { g: '#9aa7b8', G: '#6c7a89', e: on ? '#7df9ff' : '#2a2a3a', a: on && tick % 30 < 15 ? '#ff3355' : '#5a2a3a' }, px - 4, ry - 10, 4);
+    [-80, -34, 22, 70, 120].forEach((dx, k) => {   // its bolts lie about; the magnet brings them home
+      const v = D ? Math.min(1, Math.max(0, (t - k * 5) / 30)) : 0; if (v >= 1) return;
+      const x0 = h.tx + dx, x = x0 + (px + 12 - x0) * v, y = g - 7 - Math.sin(v * Math.PI) * 50 - v * 12;
+      ctx.fillStyle = '#16121f'; ctx.fillRect(x - 6, y - 3, 12, 11); ctx.fillStyle = '#e8eef5'; ctx.fillRect(x - 5, y - 2, 10, 9); ctx.fillStyle = '#6c7a89'; ctx.fillRect(x - 2, y + 1, 4, 3);
+    });
+    by = g - 40;
+  } else if (h.kind === 'drift') {
+    const hx = h.tx - 30; drawHut(hx, g, W.brick, D, D);
+    if (!D && tick % 120 < 90) { ctx.fillStyle = '#f2c9a0'; ctx.fillRect(hx + 38, g - 24, 8, 6); ctx.fillStyle = '#16121f'; ctx.fillRect(hx + 39, g - 22, 2, 2); ctx.fillRect(hx + 43, g - 22, 2, 2); }   // a face at the window
+    ctx.fillStyle = '#ffffff';   // the drift over the door: blown aside by the charge
+    if (!D) { ctx.fillRect(hx - 22, g - 12, 66, 12); ctx.fillRect(hx - 12, g - 24, 48, 12); ctx.fillRect(hx - 2, g - 34, 32, 10); ctx.fillStyle = '#dbe9f6'; ctx.fillRect(hx - 12, g - 14, 20, 3); ctx.fillRect(hx + 6, g - 26, 18, 3); }
+    else { ctx.fillRect(hx - 40, g - 8, 22, 8); ctx.fillRect(hx + 62, g - 10, 26, 10); }
+    if (D) { const out = Math.min(1, t / 40); kid(cheer ? 'kidUp' : 'kid', hx + 4 - out * 34, g - 33 - hop, '#3a86ff'); }
+    bx = h.tx; by = g - 70;
+  } else if (h.kind === 'fish') {
+    const B = W.brick, cx = h.tx;   // a rock cave on the sea floor, its mouth shut with stones
+    ctx.fillStyle = B[1]; ctx.fillRect(cx - 34, g - 34, 76, 34); ctx.fillRect(cx - 24, g - 46, 56, 12); ctx.fillStyle = B[0]; ctx.fillRect(cx - 28, g - 32, 64, 10); ctx.fillRect(cx - 18, g - 43, 44, 8);
+    ctx.fillStyle = '#0b1420'; ctx.fillRect(cx - 34, g - 24, 30, 24);
+    if (!D) { ctx.fillStyle = '#ffffff'; [[-26, -16], [-14, -10]].forEach(([dx, dy]) => { if ((tick + dx * 7) % 110 > 8) { ctx.fillRect(cx + dx, g + dy, 3, 3); ctx.fillRect(cx + dx + 6, g + dy, 3, 3); } }); }   // eyes in the dark
+    [[-44, -14, 16], [-32, -28, 14], [-30, -12, 14]].forEach(([dx, dy, sz], k) => { const x = cx + dx - u * (26 + k * 10), y = g + dy + u * (-dy - sz); ctx.fillStyle = '#7d7a86'; ctx.fillRect(x, y, sz, sz); ctx.fillStyle = '#5a5762'; ctx.fillRect(x, y + sz - 4, sz, 4); });
+    if (D) for (let k = 0; k < 4; k++) {   // the fish swim out and stay to play
+      const v = Math.min(1, Math.max(0, (t - k * 8) / 50)), a = tick * 0.03 + k * 1.6, x = cx - 24 - v * 40 + (v >= 1 ? Math.cos(a) * 44 : 0), y = g - 14 - v * 70 + (v >= 1 ? Math.sin(a * 1.3) * 18 : 0);
+      pixRows(HELP_ART.fish, { o: ['#ff8c1a', '#ffd23f', '#ff6b81', '#7df9ff'][k], k: '#16121f' }, x, y, 3, v >= 1 && Math.sin(a) > 0);
+    }
+    bx = cx; by = g - 56;
+  } else if (h.kind === 'lamp') {
+    drawHut(h.tx + 50, g, W.brick, D && t > 150, D && t > 60 && t < 170);
+    const lx = h.tx;   // a street lamp on a post, dark until the Lantern flashes
+    ctx.fillStyle = '#3a2a20'; ctx.fillRect(lx - 2, g - 56, 4, 56); ctx.fillRect(lx - 9, g - 58, 18, 3); ctx.fillStyle = '#16121f'; ctx.fillRect(lx - 8, g - 76, 16, 18);
+    ctx.fillStyle = D ? '#ffd87a' : '#4a2a30'; ctx.fillRect(lx - 6, g - 74, 12, 14); if (D) glowAt(lx, g - 66, 80 + Math.sin(tick * 0.1) * 4, 'rgba(255,216,122,.4)');
+    if (!D) kid('kidSit', px, g - 24, '#9b59b6');
+    else if (t < 160) { const v = Math.max(0, (t - 30) / 130); kid(t < 30 ? 'kidUp' : 'kid', px + (h.tx + 56 - px) * v, g - 33 - (t < 30 ? hop : Math.abs(Math.sin(t * 0.3)) * 3), '#9b59b6'); }   // runs home
   }
   if (near) {   // a picture of the piece that can help
-    const cv = gearImg(h.id, 3), bx = h.x - T - 6 + 9, by = g - 78 + Math.sin(tick * 0.08) * 2, w = Math.max(30, cv.width + 12), hh = cv.height + 12;
+    const cv = gearImg(h.id, 3), w = Math.max(30, cv.width + 12), hh = cv.height + 12; by += Math.sin(tick * 0.08) * 2;
     ctx.fillStyle = '#ffffff'; ctx.fillRect(bx - w / 2, by - hh, w, hh); ctx.fillRect(bx - 3, by, 6, 4); ctx.fillStyle = '#16121f'; ctx.fillRect(bx - w / 2, by - hh - 2, w, 2); ctx.fillRect(bx - w / 2 - 2, by - hh, 2, hh); ctx.fillRect(bx + w / 2, by - hh, 2, hh); ctx.fillRect(bx - w / 2, by, w, 2);
     ctx.drawImage(cv, Math.round(bx - cv.width / 2), Math.round(by - hh + 6));
   }
 }
+function helpHeart(X, Y, a) { ctx.globalAlpha = a; ctx.fillStyle = '#ff4d6d'; ctx.fillRect(X, Y, 4, 4); ctx.fillRect(X + 6, Y, 4, 4); ctx.fillRect(X, Y + 3, 10, 4); ctx.fillRect(X + 2, Y + 7, 6, 2); ctx.fillRect(X + 4, Y + 9, 2, 2); ctx.globalAlpha = 1; }
 function placeStory(i) {   // (startStage)
   placeHelp(i);
   L.marks = []; L.note = null; L.kuro = null; G.helper = null; G.pengs = 0; G.feastFish = 0;
@@ -8504,7 +8582,7 @@ function fixMark(x) {   // a right answer: put right the nearest thing Kuro spoi
 }
 function storyTick(p) {   // (shopPowTick) the marks' animations, the note, Kuro, the helpers
   for (const m of L.marks || []) if (m.fixed) m.t++;
-  if (L.help && L.help.done && L.help.t < 999) L.help.t++;
+  helpTick(p);
   const k = L.kuro;
   if (k && !k.ph && P.x > k.x - 8 * T) { k.ph = 1; k.t = 0; }
   if (k && k.ph === 1 && ++k.t > 50) { k.ph = 2; k.t = 0; }
@@ -10093,6 +10171,7 @@ function drawDarkness() {
   d.globalCompositeOperation = 'source-over'; d.clearRect(0, 0, VW, VH); d.fillStyle = 'rgba(6,2,10,.93)'; d.fillRect(0, 0, VW, VH);
   d.globalCompositeOperation = 'destination-out';
   const hole = (x, y, r) => { const g = d.createRadialGradient(x - cam, y, r * 0.3, x - cam, y, r); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); d.fillStyle = g; d.fillRect(x - cam - r, y - r, r * 2, r * 2); };
+  if (L.help) hole(L.help.x, L.help.y - 30, L.help.done ? 230 : 70);   // someone who needs help shows in the dark; their fire lights the cave
   tmLights(hole);   // team run: the partner and the Shadow Twin show in the dark
   hole(P.x + P.w / 2, P.y + P.h / 2, flareR(gearOn('lantern') ? 360 : owl(3) || wears('gift-lamp') ? 270 : 170) + Math.sin(tick * 0.1) * 4);   // the Paper Lantern lights a big circle
   for (const f of L.fx) if (f.k === 'crystal') hole(f.x, f.y, f.lit ? 190 : 46);
