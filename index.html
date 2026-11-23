@@ -445,10 +445,11 @@
   .bstgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 6px; margin: 4px 0 6px; }
   .bstgrid.nextup { grid-template-columns: repeat(3, 62px); justify-content: center; gap: 10px; }
   .bst { position: relative; height: 62px; border: 2px solid transparent; border-radius: 10px; background: rgba(255,255,255,.06); padding: 4px; display: grid; place-items: center; cursor: pointer; color: #fff; }
-  .bst > img, .bst > .pix { width: 40px; height: 40px; image-rendering: pixelated; } .bst .tnum { transform: scale(.8); }
-  .bst:not(.on) > img, .bst:not(.on) > .pix, .bst:not(.on) > .tnum { filter: grayscale(1); opacity: .38; }
+  .bst > img, .bst > .pix { width: 44px; height: 44px; image-rendering: pixelated; } .bst .tnum { transform: scale(.92); }
+  .bst:not(.on) > img, .bst:not(.on) > .pix, .bst:not(.on) > .tnum { filter: saturate(.5) brightness(.8); opacity: .45; }   /* not earned yet: its own colours, faded (was a grey blob) */
   .tpips { position: absolute; top: 4px; right: 4px; display: flex; gap: 2px; } .tpips b { width: 6px; height: 6px; background: #cd7f32; } .tpips.t2 b { background: #dfe6ee; } .tpips.t3 b { background: #ffd23f; }   /* bronze / silver / gold of the same badge: one, two, three squares */
-  .bst.on { background: rgba(255,210,63,.14); } .bst.sel { border-color: #7df9ff; }
+  .bst.on { background: radial-gradient(circle at 50% 35%, rgba(255,226,120,.32), rgba(255,210,63,.1) 70%); border-color: rgba(255,210,63,.55); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+  .bst.on > img, .bst.on > .pix { filter: drop-shadow(0 2px 0 rgba(0,0,0,.35)); } .bst.sel { border-color: #7df9ff; }
   .bst .ttbar { position: absolute; left: 8px; right: 8px; bottom: 4px; height: 4px; background: rgba(255,255,255,.18); border-radius: 2px; overflow: hidden; } .bst .ttbar i { display: block; height: 100%; background: #ffd23f; }
   #badges h3.bsec { margin: 10px 0 2px; font-size: 16px; text-align: left; }
   .badgegrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 12px 0 14px; }
@@ -504,6 +505,9 @@
   .bsec { grid-column: 1 / -1; margin: 10px 0 0; text-align: left; font-size: 18px; } .bsec small { opacity: .7; font-size: 14px; }
   .tnum { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 8px; background: #2a2050; border: 3px solid #ffd23f;
     color: #ffd23f; font: 26px "Lilita One", "Trebuchet MS", sans-serif; box-sizing: border-box; } .tnum i { font-style: normal; font-size: .6em; }
+  .tnum { border-color: var(--c, #ffd23f); color: var(--c, #ffd23f); background: #1c1638; line-height: 1; overflow: hidden; white-space: nowrap; box-shadow: inset 0 -4px 0 rgba(0,0,0,.25), inset 0 2px 0 rgba(255,255,255,.12); }
+  .tnum.l3 { font-size: 20px; } .tnum.l4 { font-size: 16px; } .tnum.mk { flex-direction: column; font-size: 19px; } .tnum.mk small { font-size: 10px; letter-spacing: .3px; margin-bottom: 1px; }
+  .tnum.sm.l3 { font-size: 10px; } .tnum.sm.l4 { font-size: 8px; } .tnum.sm.mk { font-size: 10px; } .tnum.sm.mk small { display: none; }
   .tnum.sm { width: 24px; height: 24px; font-size: 13px; border-width: 2px; border-radius: 5px; vertical-align: middle; }
   .titlerow { margin: 8px 0 2px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; }
   .tchip { border: 2px solid rgba(255,255,255,.35); background: rgba(255,255,255,.08); color: #fff; border-radius: 999px; padding: 3px 10px; font: 14px "Lilita One", "Trebuchet MS", sans-serif; }
@@ -690,7 +694,7 @@
   <div class="maprow hidden"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Story badges; every shop prize has its story</div>
+  <div class="build">Updated Nov 23, 2026 · Badge tiles: colourful stickers, words that fit</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -4040,7 +4044,12 @@ const FACT_SETS = {
 };
 const BADGE_SECS = [['math', 'Math'], ['tier', 'Keep going'], ['adv', 'Adventures']];
 const TITLES = () => BADGES.filter(b => b.title && prog.badges[b.id]).map(b => b.title);
-const badgeImg = (b, cls = 'pix big') => (b.set === 'addsub' ? `<span class="tnum${cls.includes('sm') ? ' sm' : ''}">${b.tile.replace(' to ', '')}</span>` : b.num ? `<span class="tnum${cls.includes('sm') ? ' sm' : ''}">${b.num}${youngTables() ? '' : '<i>×</i>'}</span>` : pixImg(b.pix, cls, b.swap || null));
+// A badge's picture. The number tiles (adding / taking-away sets, times tables) are little stickers, each its own colour
+// (owner, Nov 23 2026: "make the tiny logos more cool, and no overlapping words"): the text is sized to fit the tile, and
+// "Make 10" is two short lines.
+const tnumHTML = (txt, hue, sm, sub) => { const mk = /^Make/.test(txt), len = txt.length + (sub ? 1 : 0); return `<span class="tnum${sm ? ' sm' : ''}${mk ? ' mk' : len >= 4 ? ' l4' : len === 3 ? ' l3' : ''}" style="--c:hsl(${hue},88%,64%)">${mk ? `<small>Make</small>${txt.replace(/^Make\s*/, '')}` : txt}${sub || ''}</span>`; };
+const badgeImg = (b, cls = 'pix big') => (b.set === 'addsub' ? tnumHTML(b.tile.replace(' to ', ''), 20 + BADGES.filter(x => x.set === 'addsub').indexOf(b) * 52, cls.includes('sm'))
+  : b.num ? tnumHTML(String(b.num), (b.num - 2) * 38 + 5, cls.includes('sm'), youngTables() ? '' : '<i>×</i>') : pixImg(b.pix, cls, b.swap || null));
 // Toasts wait their turn, so two badges at once both show.
 let toastTimer = null; const toastQ = [];
 function toastMsg(html, ms = 3200) {
