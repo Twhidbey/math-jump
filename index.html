@@ -690,7 +690,7 @@
   <div class="maprow hidden"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · The shop shows small picture tiles, one card at a time</div>
+  <div class="build">Updated Nov 23, 2026 · Story badges; every shop prize has its story</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -2927,10 +2927,10 @@ const SHOP = [
   { id: 'band-pink', w: 0, story: "Pink like the cherry blossoms.", slot: 'band', name: 'Pink headband', price: 55, col: ['#ff6fb5', '#c43d84'] },
   { id: 'band-gold', w: 2, story: "Polished in the robot factory.", slot: 'band', name: 'Gold headband', price: 90, col: ['#ffd23f', '#c99a1a'] },
   // Badge prizes (can't be bought): the times tables (t2..t10) and Times-Table Master. anim = headband colours it cycles through.
-  { id: 'band-bolt', slot: 'band', name: 'Lightning headband', price: 0, col: ['#ffd23f', '#c99a1a'], badge: 't3', anim: [['#ffd23f', '#c99a1a'], ['#fffbe0', '#ffe066']] },
-  { id: 'band-mint', slot: 'band', name: 'Mint headband', price: 0, col: ['#3fe0b0', '#1f9a78'], badge: 'as-add10' },
-  { id: 'band-royal', slot: 'band', name: 'Royal headband', price: 0, col: ['#9b59d6', '#6b2fa3'], badge: 'as-sub20' },
-  { id: 'band-rainbow', slot: 'band', name: 'Rainbow headband', price: 0, col: ['#e63946', '#a91d2b'], badge: 't9', anim: [['#e63946', '#a91d2b'], ['#ff8c1a', '#c45f00'], ['#ffd23f', '#c99a1a'], ['#3fbf6a', '#2a8a4a'], ['#3a86ff', '#1d4fa8'], ['#9b59d6', '#6b2fa3']] },
+  { id: 'band-bolt', slot: 'band', name: 'Lightning headband', story: 'Sensei tied it on the day Kai knew his 3s.', price: 0, col: ['#ffd23f', '#c99a1a'], badge: 't3', anim: [['#ffd23f', '#c99a1a'], ['#fffbe0', '#ffe066']] },
+  { id: 'band-mint', slot: 'band', name: 'Mint headband', story: 'Sensei tied it on when Kai could add to 10.', price: 0, col: ['#3fe0b0', '#1f9a78'], badge: 'as-add10' },
+  { id: 'band-royal', slot: 'band', name: 'Royal headband', story: 'For taking away to 20. Sensei bowed first.', price: 0, col: ['#9b59d6', '#6b2fa3'], badge: 'as-sub20' },
+  { id: 'band-rainbow', slot: 'band', name: 'Rainbow headband', story: 'Every colour, for every 9 Kai knows.', price: 0, col: ['#e63946', '#a91d2b'], badge: 't9', anim: [['#e63946', '#a91d2b'], ['#ff8c1a', '#c45f00'], ['#ffd23f', '#c99a1a'], ['#3fbf6a', '#2a8a4a'], ['#3a86ff', '#1d4fa8'], ['#9b59d6', '#6b2fa3']] },
   // The treasure shelf (owner, Nov 15 2026: a kid had 29,000 gems and nothing to spend them on): pricey, showy things.
   { id: 'band-flame', w: 1, story: "It glows like a warm fire.", slot: 'band', name: 'Flame headband', price: 600, power: 'Warm-up dash', col: ['#ff3b1f', '#a91d2b'], anim: [['#ff3b1f', '#a91d2b'], ['#ff8c1a', '#c45f00'], ['#ffd23f', '#c99a1a'], ['#ff8c1a', '#c45f00']] },
   { id: 'band-ice', w: 3, story: "Cold as the frozen peaks.", slot: 'band', name: 'Ice headband', price: 600, power: 'Freeze nearby enemies', col: ['#7fd6ff', '#3a8fc4'], anim: [['#7fd6ff', '#3a8fc4'], ['#ffffff', '#bfefff']] },
@@ -2939,12 +2939,12 @@ const SHOP = [
   { id: 'suit-black', w: 2, story: "For sneaking past the factory lights.", slot: 'suit', name: 'Midnight suit', price: 70, col: ['#1c1a24', '#3d3a52'] },
   { id: 'suit-green', w: 0, story: "For running through the bamboo.", slot: 'suit', name: 'Forest suit', price: 85, col: ['#1f6b3a', '#3fa35f'] },
   { id: 'suit-red', w: 1, story: "Red like the volcano.", slot: 'suit', name: 'Crimson suit', price: 105, col: ['#8b1e2b', '#c43a4b'] },
-  { id: 'suit-gold', slot: 'suit', name: 'Golden suit', price: 0, col: ['#d9a21e', '#ffd86b'], badge: 'golden-all' },
+  { id: 'suit-gold', slot: 'suit', name: 'Golden suit', story: 'Sewn with a thread from every golden gem.', price: 0, col: ['#d9a21e', '#ffd86b'], badge: 'golden-all' },
   { id: 'suit-white', w: 3, story: "Warm in the snow.", slot: 'suit', name: 'Snow suit', price: 135, col: ['#c9d2de', '#f4f7fb'] },
-  { id: 'suit-sunset', slot: 'suit', name: 'Sunset suit', price: 0, col: ['#d8642a', '#ffb36b'], badge: 'as-sub10' },
-  { id: 'suit-ocean', slot: 'suit', name: 'Ocean suit', price: 0, col: ['#0f6f7a', '#36c6c0'], badge: 't5' },
-  { id: 'suit-lava', slot: 'suit', name: 'Lava suit', price: 0, col: ['#2a1416', '#ff6a1a'], badge: 't7', fx: 'ember' },
-  { id: 'suit-diamond', slot: 'suit', name: 'Diamond suit', price: 0, col: ['#6fbfe0', '#e8fbff'], badge: 't-all', fx: 'sparkle' },
+  { id: 'suit-sunset', slot: 'suit', name: 'Sunset suit', story: 'The colour of the sky when practice was done.', price: 0, col: ['#d8642a', '#ffb36b'], badge: 'as-sub10' },
+  { id: 'suit-ocean', slot: 'suit', name: 'Ocean suit', story: 'Sensei dyed it blue the day Kai knew his 5s.', price: 0, col: ['#0f6f7a', '#36c6c0'], badge: 't5' },
+  { id: 'suit-lava', slot: 'suit', name: 'Lava suit', story: 'Warm as the forge. For knowing the 7s.', price: 0, col: ['#2a1416', '#ff6a1a'], badge: 't7', fx: 'ember' },
+  { id: 'suit-diamond', slot: 'suit', name: 'Diamond suit', story: 'Sensei\'s finest work. For every table, known by heart.', price: 0, col: ['#6fbfe0', '#e8fbff'], badge: 't-all', fx: 'sparkle' },
   { id: 'suit-shadow', w: 6, story: "Kuro's old shadow suit. Now it protects.", slot: 'suit', name: 'Shadow suit', price: 1500, power: 'Shadow shield', col: ['#14101c', '#6a45a8'], fx: 'shadow' },
   { id: 'suit-galaxy', w: 6, story: "Night sky over the castle.", slot: 'suit', name: 'Galaxy suit', price: 3000, power: 'Moon jump', col: ['#1a1a4a', '#7a5ae0'], fx: 'star' },
   { id: 'suit-dragon', w: 0, story: "A dragon costume from the village festival. RAWR!", slot: 'suit', name: 'Dragon costume', price: 5000, power: 'Dragon roar', col: ['#a01818', '#ffd23f'], fx: 'ember' },
@@ -2952,13 +2952,13 @@ const SHOP = [
   { id: 'suit-legend', w: 7, story: "For a hero who came home.", slot: 'suit', name: 'Legend suit', price: 15000, col: ['#f4f7fb', '#ffd23f'], fx: 'gold', power: 'Double jump' },   // (the treasure shelf's powers: see wears() / shopPowTick) (owner): jump again in the air
   { id: 'trail-spark', w: 0, story: "Sparks from the village lanterns.", slot: 'trail', name: 'Sparkle trail', price: 120 },
   { id: 'trail-fire', w: 1, story: "Flames from the lava falls.", slot: 'trail', name: 'Flame trail', price: 180 },
-  { id: 'trail-star', slot: 'trail', name: 'Star trail', price: 0, badge: 'as-add5' },
-  { id: 'trail-heart', slot: 'trail', name: 'Heart trail', price: 0, badge: 'as-make10' },
-  { id: 'trail-leaf', slot: 'trail', name: 'Leaf trail', price: 0, badge: 'as-add20' },
-  { id: 'trail-rainbow', slot: 'trail', name: 'Rainbow trail', price: 0, badge: 'as-all' },
-  { id: 'trail-petal', slot: 'trail', name: 'Petal trail', price: 0, badge: 't2' },
-  { id: 'trail-bubble', slot: 'trail', name: 'Bubble trail', price: 0, badge: 't4' },
-  { id: 'trail-snow', slot: 'trail', name: 'Snowflake trail', price: 0, badge: 't6' },
+  { id: 'trail-star', slot: 'trail', name: 'Star trail', story: 'Sensei says: small steps make stars.', price: 0, badge: 'as-add5' },
+  { id: 'trail-heart', slot: 'trail', name: 'Heart trail', story: 'For making 10. Two parts that belong together.', price: 0, badge: 'as-make10' },
+  { id: 'trail-leaf', slot: 'trail', name: 'Leaf trail', story: 'Leaves from the dojo garden follow Kai.', price: 0, badge: 'as-add20' },
+  { id: 'trail-rainbow', slot: 'trail', name: 'Rainbow trail', story: 'Sensei says: after the hard work, the colours.', price: 0, badge: 'as-all' },
+  { id: 'trail-petal', slot: 'trail', name: 'Petal trail', story: 'Petals from the tree the brothers climbed.', price: 0, badge: 't2' },
+  { id: 'trail-bubble', slot: 'trail', name: 'Bubble trail', story: 'Bubbles from the dojo wash tub. Kuro blew the biggest.', price: 0, badge: 't4' },
+  { id: 'trail-snow', slot: 'trail', name: 'Snowflake trail', story: 'Snow from the first winter Kai trained outside.', price: 0, badge: 't6' },
   { id: 'trail-bolt', w: 2, story: "Lightning from the factory.", slot: 'trail', name: 'Lightning trail', price: 1000, power: 'Lightning feet' },
   { id: 'trail-gold', w: 4, story: "Gold dust from a sunken ship.", slot: 'trail', name: 'Gold dust trail', price: 2000, power: 'Lucky dust' },
   { id: 'trail-galaxy', w: 6, story: "Shooting stars over the castle.", slot: 'trail', name: 'Galaxy trail', price: 2500, power: 'Shooting stars' },
@@ -2969,8 +2969,8 @@ const SHOP = [
   { id: 'pet-dragon-shadow', w: 6, story: "Kuro's old kite. Kai kept it for him.", slot: 'pet', name: 'Shadow dragon kite', price: 3500, power: 'Gem fetch' },
   { id: 'pet-dragon-fire', w: 1, story: "A red kite that sparkles like the volcano.", slot: 'pet', name: 'Fire dragon kite', price: 5000, power: 'Sparkler: shoots sparks at enemies' },
   { id: 'pet-dragon-gold', w: 7, story: "Sensei flew this kite with both his boys.", slot: 'pet', name: 'Golden dragon kite', price: 10000, power: 'Kite rescue: saves your last heart' },
-  { id: 'pet-octo', slot: 'pet', name: 'Little octopus', price: 0, badge: 't8' },
-  { id: 'pet-owl', slot: 'pet', name: 'Owl', price: 0, badge: 't10', get power() { return owlPowerText(); } },   // Wise owl: grows with gold facts
+  { id: 'pet-octo', slot: 'pet', name: 'Little octopus', story: 'He followed Kai home from the sea.', price: 0, badge: 't8' },
+  { id: 'pet-owl', slot: 'pet', name: 'Owl', story: 'She has watched over the dojo for years.', price: 0, badge: 't10', get power() { return owlPowerText(); } },   // Wise owl: grows with gold facts
   // The Road Home (owner, Nov 22 2026: tie the shop to the story and the two brothers; family things with a history;
   // quiet hints of grace). gift: one keepsake at a time (prog.equip.gift). boss: needs that world's boss won over first.
   { id: 'band-sensei', w: 0, boss: true, story: 'Sensei tied it on Kuro first. Then on Kai.', slot: 'band', name: "Sensei's headband", price: 400, power: 'Blessing: an extra heart', col: ['#f4f4f4', '#c9d2de'] },
@@ -3998,8 +3998,8 @@ const BADGES = [
   ...tierBadges(n => `Get ${n} answers in a row.`, 'flame', () => statOf('bestStreak'), [['streak10', 'On Fire', 10], ['streak25', 'Blazing', 25], ['streak50', 'Unstoppable', 50, 'Unstoppable']]),
   ...tierBadges(n => (n === 1 ? 'Finish a level with no wrong answers.' : `Finish ${n} levels with no wrong answers.`), 'shuriken', () => statOf('perfect'), [['perfect', 'Perfect!', 1], ['perfect5', 'Flawless', 5], ['perfect20', 'Perfect Ninja', 20, 'Perfect Ninja']]),
   // adventures
-  { id: 'first-gate', pix: 'lock', sec: 'adv', name: 'First Gate', text: 'Open your first math gate.' },
-  { id: 'power', pix: 'fist', sec: 'adv', name: 'Powered Up', text: 'Earn a streak power-up.' },
+  { id: 'first-gate', old: true, pix: 'lock', sec: 'adv', name: 'First Gate', text: 'Open your first math gate.' },
+  { id: 'power', old: true, pix: 'fist', sec: 'adv', name: 'Powered Up', text: 'Earn a streak power-up.' },
   { id: 'light10', pix: 'bolt', swap: { y: '#7df9ff' }, sec: 'adv', name: 'Lightning Fast', text: 'Get 10 Lightning bonuses (answer before you reach the gate).', prog: () => [statOf('light'), 10], gems: 50 },
   { id: 'bridge', pix: 'bridge', sec: 'adv', name: 'Bridge Builder', text: 'Build a number-stone bridge.' },
   { id: 'bridge10', pix: 'hammer', sec: 'adv', name: 'Master Builder', text: 'Build 10 bridges.', prog: () => [statOf('bridges'), 10] },
@@ -4008,7 +4008,7 @@ const BADGES = [
   { id: 'walls5-fib', pix: 'fibstep', sec: 'adv', name: 'Stair Climber', text: 'Finish 5 Fibonacci Stairs walls.', prog: () => [(prog.stats.walls || {}).fib || 0, 5], gems: 50 },
   { id: 'walls5-prime', pix: 'target', sec: 'adv', name: 'Prime Hunter', text: 'Find all the primes in 5 Prime Walls.', prog: () => [(prog.stats.walls || {}).prime || 0, 5], gems: 50 },
   { id: 'fed15', pix: 'fish', sec: 'adv', name: 'Animal Friend', text: 'Feed all 15 hungry animals.', prog: () => [nKeys(prog.stats.fed), 15], gems: 50 },
-  { id: 'dojo7', pix: 'calendar', sec: 'adv', name: 'Dedicated', text: 'Do the Daily Dojo 7 days in a row.', prog: () => [Math.max(prog.daily.best || 0, prog.daily.streak || 0), 7] },
+  { id: 'dojo7', pix: 'lamp', sec: 'adv', name: 'Seven Lanterns', text: 'Do the Daily Dojo 7 days in a row: a lantern for each day.', prog: () => [Math.max(prog.daily.best || 0, prog.daily.streak || 0), 7] },
   { id: 'vault', pix: 'gi', sec: 'adv', name: 'Sensei\'s Student', text: 'Learn a move in a training room.' },
   { id: 'moves-all', pix: 'dragon', sec: 'adv', name: 'Master\'s Student', text: `Learn all ${MOVES.length} moves from Sensei.`, prog: () => [nKeys(prog.moves), MOVES.length] },
   { id: 'golden', pix: 'gem', swap: { c: '#ffd23f', b: '#e8452c', w: '#fff6c8' }, sec: 'adv', name: 'Golden Gem', text: 'Grab a flaming golden gem.' },
@@ -4016,11 +4016,18 @@ const BADGES = [
   { id: 'boss-nohit', pix: 'shield', sec: 'adv', name: 'Untouchable', text: 'Beat a boss without getting hit.' },
   { id: 'boss-all', pix: 'scroll', sec: 'adv', name: 'Scroll Keeper', text: 'Win back all seven scrolls.' },
   { id: 'race-win', pix: 'trophy', sec: 'adv', name: 'Champion Rider', text: 'Win a race.' },
-  { id: 'race-perfect', pix: 'horse', sec: 'adv', name: 'Perfect Ride', text: 'Get every gate right in a race.' },
-  { id: 'roads', pix: 'race', sec: 'adv', name: 'Every Road', text: 'Win a race on every track.', prog: () => [nKeys(prog.stats.roads), 6], gems: 50 },
-  { id: 'shopper', pix: 'bag', sec: 'adv', name: 'Shopper', text: 'Buy something in the Dojo Shop.' },
-  { id: 'gems500', pix: 'chestopen', sec: 'adv', name: 'Gem Collector', text: 'Collect 500 gems in total.', prog: () => [statOf('gems'), 500] },
+  { id: 'race-perfect', old: true, pix: 'horse', sec: 'adv', name: 'Perfect Ride', text: 'Get every gate right in a race.' },
+  { id: 'roads', old: true, pix: 'race', sec: 'adv', name: 'Every Road', text: 'Win a race on every track.', prog: () => [nKeys(prog.stats.roads), 6], gems: 50 },
+  { id: 'shopper', old: true, pix: 'bag', sec: 'adv', name: 'Shopper', text: 'Buy something in the Dojo Shop.' },
+  { id: 'gems500', old: true, pix: 'chestopen', sec: 'adv', name: 'Gem Collector', text: 'Collect 500 gems in total.', prog: () => [statOf('gems'), 500] },
   { id: 'black-belt', pix: 'belt', swap: { b: '#26262e' }, sec: 'adv', name: 'Black Belt', text: 'Reach the Black Belt rank.' },
+  // Story badges (owner, Nov 23 2026: tie the badges to the story; the general ones marked `old` are being phased out:
+  // kept by the kids who earned them, never shown or given to anyone else).
+  { id: 'helped-all', pix: 'kite', sec: 'adv', name: 'Helping Hands', text: 'Help someone with your gear in every world.', prog: () => [nKeys(prog.helped || {}), WORLDS.length], gems: 50 },
+  { id: 'memories', pix: 'blossom', sec: 'adv', name: 'Two Brothers', text: 'Find the memory of Kai and Kuro in every world.', prog: () => [nKeys(prog.mems || {}), WORLDS.length], gems: 50 },
+  { id: 'journal-all', pix: 'book', sec: 'adv', name: "Kuro's Journal", text: "Find every page of Kuro's journal.", prog: () => [pagesFound(), JOURNAL.length], gems: 50 },
+  { id: 'made-new', pix: 'ring', sec: 'adv', name: 'Made New', text: 'Polish three pieces of gear until they are gold.', prog: () => [Object.values(prog.gearShine || {}).filter(v => v >= 2).length, 3], gems: 50 },
+  { id: 'walk-home', pix: 'sandals', sec: 'adv', name: 'Welcome Home', text: 'Walk home with your brother.', prog: () => [prog.walked ? 1 : 0, 1] },
   { id: 'friends', pix: 'house', sec: 'adv', name: 'Every One Matters', text: 'Find all the lost friends and bring them home.', prog: () => [FRIENDS.filter(f => (prog.friends || {})[f.id]).length, FRIENDS.length] },
 ];
 for (const b of BADGES) if (b.sk && !b.prog) b.prog = () => factGoal(b);   // fact-set tiles count gold facts
@@ -4047,7 +4054,7 @@ function toastNext() {
 }
 function award(id) {
   if (prog.badges[id]) return;
-  const b = BADGE[id]; if (!b) return;
+  const b = BADGE[id]; if (!b || b.old) return;   // (a phased-out badge is not given any more)
   prog.badges[id] = true;
   if (b.gems) {   // paid now, shown as a treasure chest on the next end card (chestHTML)
     prog.bank += b.gems; prog.stats.gems += b.gems;
@@ -4061,8 +4068,9 @@ function award(id) {
 }
 // Every badge with a goal (prog) is checked here: after right answers, at the end of a level / race / dojo, and when the
 // Badge Book opens (so badges earned before this update show up too).
+const liveBadges = () => BADGES.filter(b => !b.old || prog.badges[b.id]);   // the badges that count: every current one, and a phased-out one only for a kid who has it
 function statBadges() {
-  for (const b of BADGES) if (b.prog && !prog.badges[b.id]) { const [now, need] = b.prog(); if (need > 0 && now >= need) award(b.id); }
+  for (const b of BADGES) if (b.prog && !b.old && !prog.badges[b.id]) { const [now, need] = b.prog(); if (need > 0 && now >= need) award(b.id); }
 }
 // The Badge Book is a sticker page (owner, Nov 23 2026: "less intimidating and large"; picked from three options): every
 // badge is one small picture tile (earned = in colour, the rest dim, a thin bar if it has been started); all the words
@@ -4084,17 +4092,17 @@ function badgeInfo(id) {
 }
 function openBadges() {
   hide('menu'); statBadges();
-  const got = BADGES.filter(b => prog.badges[b.id]).length, titles = TITLES();
-  $('badgeCount').innerHTML = `${got} / ${BADGES.length} · ${pixImg('gem', 'pix sm', { c: '#ffd23f', b: '#e8452c', w: '#fff6c8' })} ${nKeys(prog.golden)} / ${GOLD_N}`;
+  const LIVE = liveBadges(), got = LIVE.filter(b => prog.badges[b.id]).length, titles = TITLES();
+  $('badgeCount').innerHTML = `${got} / ${LIVE.length} · ${pixImg('gem', 'pix sm', { c: '#ffd23f', b: '#e8452c', w: '#fff6c8' })} ${nKeys(prog.golden)} / ${GOLD_N}`;
   const tile = b => { const on = !!prog.badges[b.id], r = on ? 0 : badgeRatio(b); return `<button type="button" class="bst${on ? ' on' : ''}" data-b="${b.id}">${badgeImg(b)}${b.tier ? `<i class="tpips t${b.tier}">${'<b></b>'.repeat(b.tier)}</i>` : ''}${r > 0 ? `<i class="ttbar"><i style="width:${Math.round(r * 100)}%"></i></i>` : ''}</button>`; };
-  const open = BADGES.filter(b => !prog.badges[b.id]), next = [...open].sort((a, b) => badgeRatio(b) - badgeRatio(a)).slice(0, 3);
+  const open = LIVE.filter(b => !prog.badges[b.id]), next = [...open].sort((a, b) => badgeRatio(b) - badgeRatio(a)).slice(0, 3);
   $('badgeGrid').innerHTML = (next.length ? `<h3 class="bsec">Next up</h3><div class="bstgrid nextup">${next.map(tile).join('')}</div>` : '')
-    + BADGE_SECS.map(([sec, name]) => { const list = BADGES.filter(b => b.sec === sec), n = list.filter(b => prog.badges[b.id]).length; return `<h3 class="bsec">${name} <small>${n} / ${list.length}</small></h3><div class="bstgrid">${list.map(tile).join('')}</div>`; }).join('')
+    + BADGE_SECS.map(([sec, name]) => { const list = LIVE.filter(b => b.sec === sec), n = list.filter(b => prog.badges[b.id]).length; return `<h3 class="bsec">${name} <small>${n} / ${list.length}</small></h3><div class="bstgrid">${list.map(tile).join('')}</div>`; }).join('')
     + (titles.length ? `<div class="titlerow">Your title: ${['', ...titles].map(t => `<button type="button" class="tchip${(prog.title || '') === t ? ' on' : ''}" data-title="${t}">${t || 'None'}</button>`).join('')}</div>` : '');
   $('badgeGrid').querySelectorAll('[data-title]').forEach(el => { el.onclick = () => { audio(); prog.title = el.dataset.title || null; save(); openBadges(); }; });
   $('badgeGrid').querySelectorAll('[data-b]').forEach(el => { el.onclick = () => { audio(); badgeInfo(el.dataset.b); }; });
   show('badges');
-  badgeInfo(badgeSel && BADGE[badgeSel] ? badgeSel : (next[0] || BADGES[0]).id);
+  badgeInfo(badgeSel && LIVE.some(b => b.id === badgeSel) ? badgeSel : (next[0] || LIVE[0]).id);
 }
 // The lost friends, on the World map only (owner, Nov 23 2026: one place for them): found ones with their rescue tool, the
 // others as "?" with the level they are lost in.
@@ -8099,7 +8107,7 @@ function updateAmbient() {
 // The one thing closest to being won: a badge, the next belt, or the owl's next level. A picture, its name, a bar.
 function nextGoalHTML() {
   const c = [];
-  for (const b of BADGES) { if (prog.badges[b.id] || !b.prog) continue; let pr; try { pr = b.prog(); } catch (e) { continue; } const [now, need] = pr || []; if (need > 0 && now > 0 && now < need) c.push({ r: now / need, now, need, name: b.name, img: pixImg(b.pix || 'star', 'pix sm') }); }
+  for (const b of BADGES) { if (prog.badges[b.id] || !b.prog || b.old) continue; let pr; try { pr = b.prog(); } catch (e) { continue; } const [now, need] = pr || []; if (need > 0 && now > 0 && now < need) c.push({ r: now / need, now, need, name: b.name, img: pixImg(b.pix || 'star', 'pix sm') }); }
   const bt = currentBelt(), nb = BELTS[bt.idx + 1], pts = totalPoints();
   if (nb && pts > bt.need) c.push({ r: (pts - bt.need) / (nb.need - bt.need) * 0.999, now: pts - bt.need, need: nb.need - bt.need, name: `${nb.name} Belt`, img: beltHTML(nb) });
   if (prog.owned.includes('pet-owl')) { const lv = owlLevel(), a = OWL_AT[lv - 1], n = OWL_AT[lv], g = goldFacts(); if (n && g > a) c.push({ r: (g - a) / (n - a) * 0.999, now: g - a, need: n - a, name: `Owl: ${OWL_POW[lv]}`, img: petImg('pet-owl') }); }
@@ -8213,7 +8221,7 @@ function startWalk() {
   mode = 'walk'; document.body.classList.add('walking');
   if (typeof playMusic === 'function') playMusic('menu');
 }
-function endWalk() { const was = WH.was; WH = null; mode = was; document.body.classList.remove('walking'); showHome(); }
+function endWalk() { prog.walked = true; save(); statBadges(); const was = WH.was; WH = null; mode = was; document.body.classList.remove('walking'); showHome(); }
 function walkTick() {
   const w = WH; w.t++; w.pt++;
   const fast = keys.right || keys.jump || w.hold, v = fast ? 4.2 : 2.2, stop = w.dojo - 236;   // Kuro stops just outside the gate; they meet their father under it
@@ -8795,6 +8803,7 @@ function fixMark(x) {   // a right answer: put right the nearest thing Kuro spoi
   if (m.kind === 'chest') { G.feastFish += 2; for (let k = 0; k < 6; k++) G.parts.push({ k: 'bit', x: m.x, y: m.y - 20, vx: (Math.random() - 0.5) * 3, vy: -2 - Math.random() * 2, life: 40, col: ['#3ae374', '#3a86ff', '#ff4d6d'][k % 3], s: 4 }); }
 }
 function storyTick(p) {   // (shopPowTick) the marks' animations, the note, Kuro, the helpers
+  if (L.mem && !(prog.mems || {})[L.mem.kind] && Math.abs(p.x + p.w / 2 - L.mem.x) < 5 * T) { prog.mems = { ...(prog.mems || {}), [L.mem.kind]: true }; save(); statBadges(); }   // a memory seen (the Two Brothers badge)
   for (const m of L.marks || []) if (m.fixed) m.t++;
   helpTick(p);
   const k = L.kuro;
@@ -13644,7 +13653,7 @@ function buildMenu() {
     if (won) b.onclick = () => { audio(); const at = storyPages().findIndex(([t]) => t === (BOSS_CARD[W.boss.kind] ? W.boss.name : 'The Castle Falls')); if (at >= 0) storyBook(at); };
     sr.appendChild(b);
   });
-  $('badgeMenu').textContent = `${BADGES.filter(x => prog.badges[x.id]).length}/${BADGES.length}`;
+  $('badgeMenu').textContent = `${liveBadges().filter(x => prog.badges[x.id]).length}/${liveBadges().length}`;
   $('journalMenu').textContent = `${pagesFound()}/${JOURNAL.length}`;
   $('packMenu').textContent = `${(prog.gearOwned || []).length}/${Object.keys(GEAR).length}${prog.newPack ? ' ★' : ''}`;
   countUp($('bankMenu'), prog.bank);
