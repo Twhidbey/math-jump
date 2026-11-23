@@ -615,7 +615,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Story in the levels: put right what Kuro spoiled, Kuro ahead, friends help, fish feast</div>
+  <div class="build">Updated Nov 23, 2026 · Calmer and cleaner: fewer words, a picture after a miss, softer gems</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -3479,8 +3479,8 @@ function gemSound() {
   G.chain = tick - G.lastGem < 45 ? G.chain + 1 : 0; G.lastGem = tick;
   if (P && wears('trail-gold') && (G.goldN = (G.goldN || 0) + 1) % 4 === 0) { G.coins += 1; floatText(P.x + P.w / 2, P.y - 34, '+1 lucky!', '#ffd23f', 18); }   // Gold dust trail: Lucky dust
   if (P && wears('gift-pearl') && (G.pearlN = (G.pearlN || 0) + 1) % 4 === 0) { G.coins += 1; floatText(P.x + P.w / 2, P.y - 34, '+1 shared!', '#bfefff', 18); (G.fishes = G.fishes || []).push({ x: P.x + P.w / 2 - 70 * (P.face || 1), y: P.y - 10, t: 0, d: P.face || 1 }); }   // Sharing pearl: a little fish brings one more
-  const f = 880 * Math.pow(1.06, Math.min(G.chain, 12));
-  echoTone(f, 0.07, 'triangle', 0.06); echoTone(f * 1.335, 0.2, 'triangle', 0.06, null, 0.07);
+  const f = 880 * Math.pow(1.03, Math.min(G.chain, 8));
+  echoTone(f, 0.12, 'sine', 0.022);   // one soft note (owner: less binging and bonging)
 }
 function flyGem(x, y, v, wait = 0) { G.flyers.push({ x: x - cam, y, v, t: -wait }); }
 // Right answers pay real gems: each one pops out where the answer was and flies into the gem counter.
@@ -3496,7 +3496,18 @@ function confetti(x, y) {
   for (let i = 0; i < 40; i++) G.parts.push({ k: 'bit', x, y, vx: (Math.random() - 0.5) * 10, vy: -Math.random() * 9 - 3, life: 70, col: cols[i % 5], s: 5 });
 }
 // Longer messages stay up longer (about 1 second plus a bit per letter) and rise slowly so kids can read them.
-function floatText(x, y, txt, col = '#fff', size = 22) { const life = Math.min(220, 60 + String(txt).length * 4); G.parts.push({ k: 'text', x, y, vx: 0, vy: -0.6, life, txt, col, size }); }
+// Show, don't tell (owner, Nov 23 2026: "is there a need to say what things do? Better to show. Clean, elegant, not
+// cluttered with flashing"): short shouts ("POW!", "Gate open!"), score and gem counts ("+200", "+1 lucky!", "Lightning! +3"),
+// streak counts and power names are dropped; the math (Oops! 7 × 8 = 56), story lines and how-to-use-a-button tips stay.
+const SAY_KEEP = new Set(['Help!', 'I forgive you!', 'Grr! Now fight me!', 'Ha ha!', "We're back!", 'Thanks, partner!', 'Wait for your partner!', 'Together!', 'Hi!']);
+function quietText(t) {
+  t = String(t);
+  if (G && G.missPic && G.missPic.t > 130 && /^Oops!/.test(t)) return true;   // (the picture shows the right answer)
+  if (SAY_KEEP.has(t) || t.includes('=')) return false;
+  if (/^[+−-]\d|^\+|in a row|^Power up|^Power faded|\+\d+( \w+)?!?$/.test(t)) return true;
+  return t.length <= 18 && !/\d/.test(t) && /[!.]$/.test(t);
+}
+function floatText(x, y, txt, col = '#fff', size = 22) { if (quietText(txt)) return; const life = Math.min(220, 60 + String(txt).length * 4); G.parts.push({ k: 'text', x, y, vx: 0, vy: -0.6, life, txt, col, size }); }
 // ?-blocks hold a blue gem worth 5.
 function coinPop(c, r, v = 5) {
   G.parts.push({ k: 'coin', x: c * T + T / 2, y: r * T, vx: 0, vy: -9, life: 30, v });
@@ -3548,7 +3559,7 @@ function streakUp(x, y) {
   G.score += 500 * Math.min(G.streak, 5);
   if (G.streak % 3 === 0 && !L.boss) startDash(x, y);
   if (G.streak >= 2) floatText(x, y - 48, `${G.streak} in a row!`, '#ffb627', 22 + Math.min(G.streak, 6) * 2);
-  if (G.streak % 5 === 0) { confetti(x, y - 30); confetti(x, y - 30); sfx.streak(); grantPower(); }
+  if (G.streak % 5 === 0) grantPower();   // (owner: no confetti burst and fanfare every 5: calmer)
 }
 
 function bump(c, r) {
@@ -4189,6 +4200,12 @@ function senseiTip(txt, q = null, title = "Sensei's tip", t = TIP_T) {
 }
 // The same fact missed twice in one day (also across levels) opens "Work it out with Sensei". Otherwise two misses
 // in a row bring the tip card. Pattern walls and stepping stones (op 'room') have their own help.
+function missPicture(q) {
+  if (!q || q.op === 'room') return;
+  const pic = picFor(q); if (!pic) return;
+  G.missPic = { pic, txt: qSolved(q), t: 170 };
+  G.parts = G.parts.filter(p => !(p.k === 'text' && /^Oops!/.test(p.txt) && p.life > 0 && p.y > -1e9 && (p.age || 0) < 3));
+}
 function missed(q) {
   petSay('sad');
   if (q && q.op !== 'room') {
@@ -4201,11 +4218,12 @@ function missed(q) {
     G.easyAsked = true; G.wrongRun = 0;
     senseiTip('This math is tricky. Want to warm up with easier math?', null, 'Too tricky?', 9 * 60); G.tip.easy = true; return;
   }
-  if (++G.wrongRun >= (G.tipSoon ? 1 : 2)) { senseiTip(tipFor(q), q); G.wrongRun = 0; }   // a step-back level: help after one miss
+  missPicture(q);   // every miss: a small picture of the right answer (dots, rows, groups, a fraction bar), no words
 }
 // The first time a question needs a trick the kid hasn't met, Sensei shows it with a sample fact (once per player, prog.tricks)
 // as the question comes up. Gates from 8 tiles out, the animal and math boxes while they're asked.
 function previewTrick() {
+  return;   // (owner, Nov 23 2026: the trick cards weren't used much; a picture of the right answer shows after a miss instead)
   if (G.tip || G.time % 10 || L.boss || L.vault || G.rescue || G.swing || G.cross) return;
   const m = miniTarget(), st = !m && currentStation();
   const q = m ? (m.kind === 'feed' || m.kind === 'box' ? m.q : null)
@@ -7870,6 +7888,7 @@ function victoryTick() {
   if (v.t >= VIC_LEN) G.victory = null;
 }
 
+function missPicTick() { if (G && G.missPic && G.missPic.t > 0) G.missPic.t--; }
 function updateWin() {
   const p = P; G.winT++; petTick(); victoryTick(); feastTick();
   if (L.boss) {
@@ -8307,8 +8326,6 @@ function fixMark(x) {   // a right answer: put right the nearest thing Kuro spoi
   for (const k of L.marks) { const d = Math.abs(k.x - (P.x + P.w / 2)); if (!k.fixed && d < bd) { bd = d; m = k; } }
   if (!m) return;
   m.fixed = 1; m.t = 0; sfx.correct();
-  const words = { bandit: 'Friends!', vent: 'Cool water!', robot: 'Free!', penguin: 'Come along!', chest: 'Share!', scorpion: 'Peace!', banner: 'Down it comes!' };
-  floatText(m.x, m.y - 70, words[m.kind], '#ff9cc4', 20);
   if (m.kind === 'penguin') G.pengs++;
   if (m.kind === 'chest') { G.feastFish += 2; for (let k = 0; k < 6; k++) G.parts.push({ k: 'bit', x: m.x, y: m.y - 20, vx: (Math.random() - 0.5) * 3, vy: -2 - Math.random() * 2, life: 40, col: ['#3ae374', '#3a86ff', '#ff4d6d'][k % 3], s: 4 }); }
 }
@@ -8394,7 +8411,6 @@ function drawHelpers() {   // (with the followers) the penguins Kai befriended, 
 function feastTick() {   // (updateWin) the sea: everyone shares a feast at the end
   if (!L.water || L.boss || G.feast || G.winT !== 40) return;
   G.feast = { x: P.x + P.w + 30, y: P.y + P.h, n: 4 + (G.feastFish || 0) };
-  floatText(G.feast.x + 90, G.feast.y - 90, 'A fish feast! Everyone shares.', '#ffd23f', 24);
 }
 function drawFeast() {
   const f = G.feast, x = f.x, y = f.y;
@@ -8434,7 +8450,7 @@ function update() {
   if (G.bossIn) bossInTick();   // the boss's entrance: nothing else moves
   else {
     if (G.hand && mode === 'play') updateHand();
-    if (mode === 'play') { updatePlayer(); if (!(G.freezeT > 0)) updateEnemies(); }   // (the Wise owl's Time freeze stops enemies)
+    if (mode === 'play') { updatePlayer(); missPicTick(); if (!(G.freezeT > 0)) updateEnemies(); }   // (the Wise owl's Time freeze stops enemies)
     else if (mode === 'win') { updateWin(); updateEnemies(); }
     if (mode === 'play' || mode === 'win') { updateBoss(); if (L.boss) { updateArena(); updateOrbs(); updateShotsAndProjectiles(); } }
   }
@@ -10679,7 +10695,7 @@ function drawSigns() {
     } else { ctx.fillStyle = '#6e4627'; ctx.fillRect(x + w / 2 - 4, y + h, 8, GR * T - y - h); }
     ctx.fillStyle = '#5e3a1c'; rrect(x - 3, y - 3, w + 6, h + 6, 6); ctx.fill();
     ctx.fillStyle = st.solved ? '#c8f7d4' : '#f6e1b5'; rrect(x, y, w, h, 5); ctx.fill();
-    const txt = st.solved ? qSolved(st.q) : st === currentStation() && gateNear(st) ? qShow(st.q) : `Gate ${L.stations.indexOf(st) + 1}`;
+    const txt = st.solved ? qSolved(st.q) : st === currentStation() && gateNear(st) ? '?' : '';   // (owner: show each problem once, in the top box)
     let size = 21; ctx.font = `${size}px "Lilita One", "Trebuchet MS", sans-serif`;
     while (ctx.measureText(txt).width > w - 10 && size > 12) { size--; ctx.font = `${size}px "Lilita One", "Trebuchet MS", sans-serif`; }
     ctx.fillStyle = '#3a2200'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -12684,18 +12700,15 @@ function kidPic() {
 function drawHUD() {
   drawFreeze();   // (the Wise owl's Time freeze tint, under the HUD)
   const narrow = VW < 700, st = STAGES[G.idx], pic = kidPic(), picH = pic ? (narrow ? 46 : 56) : 0;
-  if (L.twist && G.time < 300 && !L.vault && !G.rescue) hudIconText((TWIST_PIX[L.twist] || ['star'])[0], (TWIST_PIX[L.twist] || [])[1] || null, TWIST_HINT[L.twist], VW / 2, (narrow ? 92 : 10) + 104 + (pic ? picH + 6 : 0), narrow ? 15 : 19, '#ffd23f');
   for (let i = 0; i < G.maxHearts; i++) heart(30 + i * 36, 16, 13, i < G.hearts ? '#ff4d6d' : 'rgba(0,0,0,.35)');
-  drawGem(34, 64, 1, tick * 0.06);
-  hudText('× ' + G.coins, 54, 65, 22 + G.pulse);
+  drawGem(34, 64, 1, 0);
+  hudText('× ' + G.coins, 54, 65, 22);
   if (team && team.run) tmRunHud();   // team run: where the partner is
-  if (G.streak >= 2) { drawPix('flame', 16, 88, 1.6); hudText(`${G.streak} in a row`, 42, 100, 18, '#ffb627'); }
-  if (G.power) { const pw = POWERS[G.power.kind]; drawPix(pw.pix, 18, 112, 2); hudText(`${G.power.name || pw.name} ${Math.ceil(G.power.t / 60)}s`, 50, 126, 17, '#7df9ff'); }
-  const label = st.boss ? `World ${st.w + 1}: Boss` : `Level ${st.label}: ${st.name}`;
-  if (narrow) hudText('Score ' + G.score, VW - 72, 64, 20, '#ffd23f', 'right');
-  else {
-    hudText(label, VW - 70, 26, 18, '#fff', 'right');
-    hudText('Score ' + G.score, VW - 70, 52, 20, '#ffd23f', 'right');
+  if (G.streak >= 3) { drawPix('flame', 16, 88, 1.4); hudText(String(G.streak), 40, 99, 17, '#ffb627'); }   // (a small flame, no words)
+  if (G.power) { const pw = POWERS[G.power.kind], f = Math.max(0, G.power.t / (G.power.max || (G.power.max = G.power.t))); drawPix(pw.pix, 18, 112, 2); ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fillRect(50, 120, 60, 5); ctx.fillStyle = '#7df9ff'; ctx.fillRect(50, 120, 60 * f, 5); }
+  if (G.time < 240) {   // the level's name, only at the start
+    const label = st.boss ? WORLDS[st.w].boss.name : st.name; ctx.globalAlpha = Math.min(1, (240 - G.time) / 60);
+    hudText(label, VW - 70, 26, 18, '#fff', 'right'); ctx.globalAlpha = 1;
   }
 
   if (G.bossIn) { drawBossIn(); return; }   // the boss's entrance: no banner or hints yet
@@ -12720,25 +12733,24 @@ function drawHUD() {
     ctx.fillText(txt, VW / 2, by + 34);
   }
 
-  if (G.rescue) hudText(rescueHint(G.rescue), VW / 2, by + 80, 16, '#fff', 'center');
-  else if (G.swing && G.swing.lift) hudText(G.swing.ph === 'board' ? 'Here comes a chair!' : G.swing.ph === 'ride' && !G.swing.need ? 'Riding up!' : G.swing.ph === 'ride' ? `${isTouch ? 'Tap' : 'Pick'} the right answer to ride past the tower!  (1/2)` : `${isTouch ? 'Tap' : 'Pick'} the right answer to get on the lift!  (0/2)`, VW / 2, by + 80, 16, '#fff', 'center');
-  else if (G.swing && G.swing.free) hudText(G.swing.dir < 0 ? 'Swinging back!' : 'Swinging across!', VW / 2, by + 80, 16, '#fff', 'center');
-  else if (G.raft) hudText(G.raft.ph === 'ask' ? (G.raft.wait ? 'The gate opens anyway...' : `${isTouch ? 'Tap' : 'Pick'} the right answer to open the gate!  (${G.raft.k}/3)`) : G.raft.slow > 0 ? 'Slow water...' : 'Down the river!', VW / 2, by + 80, 16, '#fff', 'center');
-  else if (G.swing) hudText(`${isTouch ? 'Tap' : 'Pick'} the right answer to swing!  (${G.swing.half}/2)  ◀ goes back`, VW / 2, by + 80, 16, '#fff', 'center');
+  if (G.rescue) { /* (no hint line: show, don't tell) */ }
+  else if (G.swing && G.swing.lift) { /* (show, don't tell) */ }
+  else if (G.swing && G.swing.free) { /* (show, don't tell) */ }
+  else if (G.raft) { /* (show, don't tell) */ }
+  else if (G.swing) { /* (show, don't tell) */ }
   else if (L.boss) {
     const b = L.boss, bw = Math.min(320, VW - 60), bx = VW / 2 - bw / 2, segW = bw / b.max;
-    hudText(b.kind === 'octo' ? `${b.name} · ${Math.max(0, b.hp)} / ${b.max} arms left` : b.name, VW / 2, by + 80, 16, '#ffb3b3', 'center');
     ctx.fillStyle = 'rgba(0,0,0,.55)'; rrect(bx - 3, by + 91, bw + 6, 16, 6); ctx.fill();
     for (let i = 0; i < b.max; i++) {
       ctx.fillStyle = i < b.hp ? '#ff3355' : '#3a1a22';
       ctx.fillRect(bx + i * segW + 1, by + 94, segW - 2, 10);
     }
     if (currentStation()) {
-      hudText(isTouch ? 'Tap or grab the right shuriken!' : 'Press its key or grab the right shuriken!', VW / 2, by + 124, 15, '#ffd23f', 'center');
+      // (no words: the timer bar shows it)
       const f = L.arena.phaseT / OPEN_FRAMES(), ww = 160;
       ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(VW / 2 - ww / 2, by + 136, ww, 5);
       ctx.fillStyle = '#ffd23f'; ctx.fillRect(VW / 2 - ww / 2, by + 136, ww * f, 5);
-    } else if (!L.boss.dying && !L.boss.dead && !L.boss.outro && !L.arena.wait) hudText(L.water ? 'Swim up or down to dodge!' : 'Jump over the attacks!', VW / 2, by + 124, 15, '#fff', 'center');
+    }
   } else if (L.vault) {
     const rm = L.room;
     if (rm.kind === 'train' && !rm.open && !rm.show && !(rm.intro > 0)) drawDrill(rm, by + 98);
@@ -12748,15 +12760,19 @@ function drawHUD() {
     const w = wallAt();
     hudText(wallInfo(w.kind).rule + (w.kind === 'prime' ? '' : isTouch ? '  Tap the right number.' : '  Bonk or press the right number.'), VW / 2, by + 80, 16, '#fff', 'center');
   } else if (br) {
-    hudText(`Bonk stones to pick up (one or more), carry to the altar · so far ${br.total}${G.carry ? ` · holding ${G.carry.stones.reduce((a, t) => a + t.val, 0)}` : ''}`, VW / 2, by + 80, 16, '#fff', 'center');
+    if (!(prog.stats || {}).bridges) hudText(`Bonk stones to pick up (one or more), carry to the altar · so far ${br.total}${G.carry ? ` · holding ${G.carry.stones.reduce((a, t) => a + t.val, 0)}` : ''}`, VW / 2, by + 80, 16, '#fff', 'center');
   } else {
-    const done = L.stations.filter(s => s.solved).length, n = L.stations.length;
-    if (!cur) hudText(`All ${n} gates open!`, VW / 2, by + 80, 16, '#fff', 'center');
-    else if (miniTarget()) hudText(`${isTouch ? 'Tap' : 'Pick'} the right answer!`, VW / 2, by + 80, 16, '#fff', 'center');
-    else if (gateNear(cur)) hudText(`${L.water ? (isTouch ? 'Tap the right door!' : 'Pick the right door!') : `${isTouch ? 'Tap' : 'Bonk'} the right answer!`}  (${done}/${n})`, VW / 2, by + 80, 16, '#fff', 'center');
-    else hudText(`${done} / ${n} gates`, VW / 2, by + 18, 16, '#fff', 'center');   // just the progress until the next gate is close
+    const done = L.stations.filter(s => s.solved).length, n = L.stations.length, dy = txt ? by + 78 : by + 14;   // the gates as little dots (filled = open)
+    for (let i = 0; i < n; i++) { const dx = VW / 2 + (i - (n - 1) / 2) * 14; ctx.fillStyle = i < done ? '#ffd23f' : 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.arc(dx, dy, 4, 0, 7); ctx.fill(); }
   }
-  if (pic) {   // the picture in a small panel under the banner, same style as the banner
+  if (G.missPic && G.missPic.t > 0) {   // after a miss: the right answer as a picture, with its equation
+    const mp = G.missPic, pw = narrow ? 300 : 360, ph = 70, px = VW / 2 - pw / 2, py = L.water ? GR * T + 8 : by + 92;
+    ctx.globalAlpha = Math.min(1, mp.t / 20, (170 - mp.t + 1) / 10);
+    ctx.fillStyle = 'rgba(20,20,50,.8)'; rrect(px, py, pw, ph, 12); ctx.fill(); ctx.strokeStyle = '#ff9aa5'; ctx.lineWidth = 2; ctx.stroke();
+    drawTipPic(mp.pic, px + 4, py + 4, pw * 0.58, ph - 8, 22);
+    ctx.font = '24px "Lilita One", "Trebuchet MS", sans-serif'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(mp.txt, px + pw * 0.79, py + ph / 2 + 1); ctx.globalAlpha = 1;
+  } else if (pic) {   // the picture in a small panel under the banner, same style as the banner
     const pw = narrow ? 210 : 250, px = VW / 2 - pw / 2, py = L.water ? GR * T + 8 : by + 92;   // the sea: down on the sand, clear of Kai at the surface
     ctx.fillStyle = 'rgba(20,20,50,.75)'; rrect(px, py, pw, picH, 12); ctx.fill();
     ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2; ctx.stroke();

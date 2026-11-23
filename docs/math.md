@@ -49,3 +49,7 @@ every 3 in a row (`streakUp` → `startDash`): `G.dash` frames of extra speed (`
 ## Word problem at the animal
 
 `wordQ(q, animal, food)` (above `buildLevel`; `WORD_ANIMAL`, `WORD_FOOD` singular/plural) adds `q.story` for + − × ÷ facts (not missing/step/think); `drawMini` shows it in a two-line bubble only when `reader()` (grade 2–5), clamped on screen; answer, choices and fact key unchanged
+
+## A picture after a miss (owner, Nov 23 2026)
+
+`missed(q)` → `missPicture(q)`: `G.missPic = { pic: picFor(q), txt: qSolved(q), t: 170 }`, drawn in `drawHUD` under the banner (the picture plus its equation, no other words; it replaces the "Oops!" float for that miss). Sensei's tip card after two misses and the one-time "New trick!" cards (`previewTrick`, now a no-op) are gone; "Too tricky?" (easier math) and Work it out (the same fact missed twice in a day) stay.
