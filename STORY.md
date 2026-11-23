@@ -31,6 +31,7 @@ This file is the one source for the story. Every bit of story text in `index.htm
 | World 7: Night Castle | Kuro made himself king of this castle. Sensei says: *"Love him anyway."* | Kuro's castle. · Sensei hugs Kai. · "Love him anyway." |
 | The Castle Falls | The castle falls! Kai pushes Kuro out of the way. | A beam falls! · Kai pushes Kuro away. · The beam hits Kai. |
 | Morning | Kuro cries. *"Why did you save me?"* Kai smiles. *"Because you're my brother."* | Kai wakes up. · Kuro is crying. · "Because you're my brother." |
+| (The walk home: no words) | After Morning the two brothers walk the road home from night into sunrise, past everyone Kai helped; lanterns light as they pass. Near the gate Kuro stops; Kai holds out his hand; Sensei runs to them. | (played, not pictures) |
 | Welcome Home | Sensei runs to hug his two sons. **"Welcome home!"** | Two brothers walk home. · Sensei runs to them. · "Welcome home!" |
 
 ## In the boss fights
@@ -78,7 +79,7 @@ The 21 letters are in `SENSEI_LETTERS` in `index.html` (keep in sync): from "Kai
 
 ## Lost friends (optional, one per world)
 
-Little students from Sensei's dojo: **Hana** (Japan), **Tomo** (Lava), **Niko** (Robot), **Yuki** (Snow), **Nami** (Sea), **Suna** (Desert, in a straw hat) and **Mei** with her lamb (Castle). Lines: "Help!" (near the secret), "Help me, Kai!", "Thank you, Kai!", "See you at the dojo!". The Welcome Home page shows the ones found: "Hana, Tomo came home too!" or, with all five, "Every one came home!" (Mei going after her one lost lamb is a quiet nod to the lost sheep.)
+Little students from Sensei's dojo: **Hana** (Japan), **Tomo** (Lava), **Niko** (Robot), **Yuki** (Snow), **Nami** (Sea), **Suna** (Desert, in a straw hat) and **Mei** with her lamb (Castle). Lines: "Help!" (near the secret), "Help me, Kai!", "Thank you, Kai!", "See you at the dojo!". The Welcome Home page shows the ones found: "Hana, Tomo came home too!" or, with all seven, "Every one came home!" (Mei going after her one lost lamb is a quiet nod to the lost sheep.)
 
 ## Home screen
 
