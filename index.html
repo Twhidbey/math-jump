@@ -432,6 +432,7 @@
   .gshelf { border: 3px solid #b0794a; border-radius: 10px; overflow: hidden; }
   .gtiles { display: flex; gap: 8px; align-items: flex-end; min-height: 84px; padding: 8px 8px 6px; }
   .gplank { border-top: 4px solid #b0794a; background: #6e4627; color: #fff; font: 15px "Lilita One", "Trebuchet MS", sans-serif; padding: 5px 8px; text-align: left; letter-spacing: .3px; white-space: nowrap; }
+  .gplank .ghelp { float: right; color: #ff6b81; }
   .gplank i { display: inline-block; width: 11px; height: 11px; margin-right: 6px; border: 2px solid #fff; vertical-align: -2px; }
   .gearslot { position: relative; border: 2px solid transparent; background: rgba(20,20,45,.5); border-radius: 10px; padding: 4px; cursor: pointer; line-height: 0; }
   .gearslot img { width: 60px; height: 60px; object-fit: contain; image-rendering: pixelated; display: block; }
@@ -647,7 +648,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Gear closet: each shelf shows its world</div>
+  <div class="build">Updated Nov 23, 2026 · Help with your gear: a stuck kite in Koi Pond, a lost lamb on Hoodoo Trail</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1820,6 +1821,7 @@ function poundLand(p) {   // the Ground Pound hits the ground: shockwave, enemie
 }
 function boomTick(f) {   // the Bamboo Dragonfly: out in a curve, then home to Kai's hand
   const hx = P.x + P.w / 2, hy = P.y + 16;
+  if (helpAim(f)) return;
   if (!f.back) { f.vx *= 0.955; f.vy += 0.07; f.x += f.vx; f.y += f.vy; if (Math.abs(f.vx) < 1.4 || f.t > 50) f.back = true; }
   else { const dx = hx - f.x, dy = hy - f.y, d = Math.hypot(dx, dy) || 1, v = Math.min(12, 4 + f.t * 0.08); f.x += dx / d * Math.min(v, d); f.y += dy / d * Math.min(v, d); if (d < 20) { f.done = true; tone(900, 0.08, 'triangle', 0.03); } }
   if (f.t % 9 === 0) tone(380 + (f.t % 18) * 20, 0.05, 'triangle', 0.015);
@@ -1828,6 +1830,7 @@ function boomTick(f) {   // the Bamboo Dragonfly: out in a curve, then home to K
 }
 function lassoTick(f) {   // the Lasso: far out (about 9 tiles), then the rope pulls the loop home
   const hx = P.x + P.w / 2, hy = P.y + 16;
+  if (helpAim(f)) return;
   if (!f.back) { f.vx *= 0.97; f.vy += 0.04; f.x += f.vx; f.y += f.vy; if (f.t > 34) f.back = true; }
   else { const dx = hx - f.x, dy = hy - f.y, d = Math.hypot(dx, dy) || 1, v = Math.min(14, 5 + f.t * 0.08); f.x += dx / d * Math.min(v, d); f.y += dy / d * Math.min(v, d); if (d < 20) { f.done = true; tone(700, 0.08, 'triangle', 0.03); } }
   for (const c of L.coins) if (!c.taken && !c.gold && Math.abs(c.x - f.x) < 40 && Math.abs(c.y - f.y) < 44) { c.taken = true; G.coins += c.v; G.score += 100 * c.v; gemSound(); flyGem(c.x, c.y, c.v); }
@@ -6124,7 +6127,7 @@ function openPack() {
   $('packGrid').innerHTML = WORLDS.map((W, w) => {
     const ids = Object.keys(GEAR).filter(id => GEAR[id].w === w).sort((a, b) => GEAR[a].k - GEAR[b].k); if (!ids.length) return '';
     return `<div class="gshelf" style="border-color:${W.flag}"><div class="gtiles" style="background:linear-gradient(${W.skies[0][0]},${W.skies[0][1]})">${ids.map(id => { const g = GEAR[id], got = owned.includes(id), on = eq[g.slot] === id;
-      return `<div role="button" tabindex="0" class="gearslot${got ? '' : ' lost'}${on ? ' on' : ''}${packSel === id ? ' sel' : ''}" data-gear="${id}"><img src="${gearImg(id, 6).toDataURL()}" alt="${got ? g.name : ''}">${got && polishReady(id) ? '<b class="gdot"></b>' : ''}</div>`; }).join('')}</div><div class="gplank"><i style="background:${W.flag}"></i>${W.name}</div></div>`;
+      return `<div role="button" tabindex="0" class="gearslot${got ? '' : ' lost'}${on ? ' on' : ''}${packSel === id ? ' sel' : ''}" data-gear="${id}"><img src="${gearImg(id, 6).toDataURL()}" alt="${got ? g.name : ''}">${got && polishReady(id) ? '<b class="gdot"></b>' : ''}</div>`; }).join('')}</div><div class="gplank"><i style="background:${W.flag}"></i>${W.name}${(prog.helped || {})[W.key] ? '<b class="ghelp">♥</b>' : ''}</div></div>`;
   }).join('');
   const sel = packSel && GEAR[packSel], info = $('packInfo');
   if (sel) {
@@ -8404,7 +8407,78 @@ function groundCol(c) {   // a column near c with ground under it and room above
   for (let d = 0; d < 12; d++) for (const cc of [c - d, c + d]) if (cc > 2 && cc < L.w - 2 && SOLID.has(L.map[GR][cc]) && L.map[GR - 1][cc] === '.' && L.map[GR - 2][cc] === '.') return cc;
   return -1;
 }
+// Helping spots (owner, Nov 23 2026: gear with a story, step 3): one small place per world where someone needs that
+// world's piece. A picture of the piece shows over them; throw it near them and it flies to the spot and does a kind
+// thing (gems, once). It stays helped for good (prog.helped[world key]); without the piece nothing happens.
+// Village (Koi Pond): a child's kite is stuck in the bamboo, the Bamboo Dragonfly knocks it free.
+// Desert (Hoodoo Trail): a lamb is stuck on a rock, the Lasso lowers it to its mother.
+const HELP_SPOTS = { japan: { id: 'boomerang', k: 2, kind: 'kite', fx: 'boom', h: 4.4 }, desert: { id: 'lasso', k: 1, kind: 'lamb', fx: 'lasso', h: 3.2 } };
+function placeHelp(i) {
+  L.help = null;
+  const st = STAGES[i], hs = st && !st.boss && !L.boss && !L.vault && !L.water && HELP_SPOTS[L.world.key]; if (!hs || st.k !== hs.k) return;
+  const flat = c => { for (let d = -3; d <= 3; d++) { const cc = c + d; if (cc < 3 || cc > L.w - 3 || L.map[GR][cc] !== '#') return false; for (let r = GR - 6; r < GR; r++) if (L.map[r][cc] !== '.') return false; } return true; };
+  const busy = c => (L.marks || []).some(m => Math.abs(m.c - c) < 5) || (L.note && Math.abs(L.note.x / T - c) < 5) || (L.stations || []).some(s => Math.abs(s.gate[0] - c) < 6);
+  let c = -1; for (const f of [0.62, 0.56, 0.68, 0.5, 0.74, 0.44]) { const c0 = Math.round(L.w * f); for (let d = 0; d < 14 && c < 0; d++) for (const cc of [c0 + d, c0 - d]) if (c < 0 && flat(cc) && !busy(cc)) c = cc; if (c >= 0) break; }
+  if (c < 0) return;
+  const done = !!(prog.helped || {})[L.world.key];
+  L.help = { ...hs, c, x: c * T + T / 2, y: GR * T, tx: c * T + T / 2 + T, ty: GR * T - hs.h * T, done, t: done ? 999 : 0 };
+}
+function helpAim(f) {   // (boomTick / lassoTick) the thrown piece turns toward someone who needs it; true while it flies there
+  const h = L.help; if (!h || h.done || h.fx !== f.k) return false;
+  if (!f.aim && !f.back && Math.abs(f.x - h.tx) < 5 * T) f.aim = true;
+  if (!f.aim) return false;
+  const dx = h.tx - f.x, dy = h.ty - f.y, d = Math.hypot(dx, dy) || 1;
+  if (d < 14) { f.aim = false; f.back = true; helpDone(); return false; }
+  f.x += dx / d * Math.min(10, d); f.y += dy / d * Math.min(10, d); return true;
+}
+function helpDone() {
+  const h = L.help; h.done = true; h.t = 0;
+  prog.helped = { ...(prog.helped || {}), [L.world.key]: true }; save();
+  sfx.correct(); burst(h.tx, h.ty, '#ffffff', 10, 3);
+  for (let k = 0; k < 5; k++) { G.coins++; flyGem(h.x - T + k * 10, h.y - 50, 1, 0.6 + k * 0.2); }
+  [660, 880, 1320].forEach((n, k) => tone(n, 0.16, 'triangle', 0.04, null, 0.5 + k * 0.1));
+}
+function pixRows(rows, pal, x, y, px, flip) { rows.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch === '.') continue; ctx.fillStyle = pal[ch]; ctx.fillRect(Math.round(x + (flip ? row.length - 1 - i : i) * px), Math.round(y + j * px), px, px); } }); }
+const HELP_ART = {
+  kid: ['..hhhh..', '.hhhhhh.', '.hssssh.', '..sksk..', '..ssss..', '..rrrr..', '.srrrrs.', '.srrrrs.', '..rrrr..', '..bbbb..', '..s..s..'],
+  kidUp: ['s.hhhh.s', 's.hhhh.s', 'rhsssshr', 'r.sksk.r', '.rssssr.', '..rrrr..', '..rrrr..', '..rrrr..', '..rrrr..', '..bbbb..', '..s..s..'],
+  kite: ['..r..', '.rrr.', 'rryrr', '.rrr.', '..r..'],
+  sheep: ['.wwwww..', 'wwwwwwkk', 'wwwwwwkk', 'wwwwww..', '.k...k..'],
+};
+const HELP_PAL = { h: '#2a2030', s: '#f2c9a0', k: '#16121f', r: '#3a86ff', b: '#2a2a44', y: '#ffd23f', w: '#f4f1e8' };
+function drawHelp() {   // (drawStory) world space, behind Kai
+  const h = L.help; if (!h || h.x < cam - 6 * T || h.x > cam + VW + 6 * T) return;
+  const g = h.y, t = h.t, u = h.done ? Math.min(1, t / 50) : 0, near = !h.done && P && Math.abs(P.x - h.x) < 9 * T;
+  if (h.kind === 'kite') {
+    const W = L.world.pipe;   // a clump of bamboo in the world's own greens
+    [[-8, 4.6], [6, 5.1], [20, 4.2]].forEach(([dx, hh]) => { const bx = h.tx + dx - 10, top = g - hh * T; ctx.fillStyle = W[1]; ctx.fillRect(bx, top, 9, g - top); ctx.fillStyle = W[0]; ctx.fillRect(bx + 2, top, 5, g - top); ctx.fillStyle = W[1]; for (let y = g - 30; y > top; y -= 34) ctx.fillRect(bx, y, 9, 3); ctx.fillStyle = W[0]; ctx.fillRect(bx - 12, top + 6, 14, 4); ctx.fillRect(bx + 8, top + 16, 14, 4); });
+    const kx0 = h.tx, ky0 = h.ty, hx = h.x - T - 6 + 20, hy = g - 30;   // the child's raised hand
+    const fly = Math.max(0, Math.min(1, (t - 50) / 60)), bob = h.done && t > 110 ? Math.sin(tick * 0.06) * 6 : 0;
+    const kx = h.done ? kx0 + (hx - 20 - kx0) * u - fly * 40 + bob * 0.6 : kx0 + Math.sin(tick * 0.1) * 1.5, ky = h.done ? ky0 + (hy - 10 - ky0) * u - fly * 96 + bob : ky0;
+    if (h.done) { ctx.strokeStyle = '#f4f1e8'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(hx, hy); ctx.quadraticCurveTo((hx + kx) / 2, (hy + ky) / 2 + 12, kx, ky + 8); ctx.stroke(); }
+    else { ctx.fillStyle = '#f4f1e8'; ctx.fillRect(kx - 1, ky + 8, 2, 26); }   // its string dangles
+    pixRows(HELP_ART.kite, { r: '#e63946', y: '#ffd23f' }, kx - 10, ky - 10, 4);
+    const hop = h.done && t < 140 ? Math.abs(Math.sin(t * 0.2)) * 8 : 0;
+    pixRows(h.done ? HELP_ART.kidUp : HELP_ART.kid, HELP_PAL, h.x - T - 6, g - 33 - hop, 3);
+  } else {
+    const W = L.world.brick, rx = h.tx - 26, top = h.ty + 12;   // a spire of the world's red rock
+    ctx.fillStyle = W[1]; ctx.fillRect(rx + 8, top + 8, 36, g - top - 8); ctx.fillRect(rx, top, 52, 12); ctx.fillStyle = W[0]; ctx.fillRect(rx + 12, top + 12, 24, g - top - 12); ctx.fillRect(rx + 3, top + 2, 44, 6);
+    ctx.fillStyle = W[1]; for (let y = top + 30; y < g - 8; y += 26) ctx.fillRect(rx + 12, y, 24, 3);
+    const mx = h.x - T - 30;   // the mother waits below, looking up
+    pixRows(HELP_ART.sheep, HELP_PAL, mx, g - 20, 4);
+    const lx = h.done ? h.tx - 9 + (mx + 40 - (h.tx - 9)) * u : h.tx - 9 + (tick % 90 < 8 ? 1 : 0), ly = h.done ? top - 15 + (g - 15 - (top - 15)) * u : top - 15;
+    if (h.done && t < 50) { ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(lx + 9, ly + 7, 14, 0, Math.PI * 2); ctx.stroke(); }   // the loop round it
+    pixRows(HELP_ART.sheep, HELP_PAL, lx, ly, 3, h.done);
+    if (h.done && t > 50 && t < 170) { const a = Math.min(1, (170 - t) / 30); ctx.globalAlpha = a; ctx.fillStyle = '#ff4d6d'; const X = mx + 30, Y = g - 40 - (t - 50) * 0.25; ctx.fillRect(X, Y, 4, 4); ctx.fillRect(X + 6, Y, 4, 4); ctx.fillRect(X, Y + 3, 10, 4); ctx.fillRect(X + 2, Y + 7, 6, 2); ctx.fillRect(X + 4, Y + 9, 2, 2); ctx.globalAlpha = 1; }
+  }
+  if (near) {   // a picture of the piece that can help
+    const cv = gearImg(h.id, 3), bx = h.x - T - 6 + 9, by = g - 78 + Math.sin(tick * 0.08) * 2, w = Math.max(30, cv.width + 12), hh = cv.height + 12;
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(bx - w / 2, by - hh, w, hh); ctx.fillRect(bx - 3, by, 6, 4); ctx.fillStyle = '#16121f'; ctx.fillRect(bx - w / 2, by - hh - 2, w, 2); ctx.fillRect(bx - w / 2 - 2, by - hh, 2, hh); ctx.fillRect(bx + w / 2, by - hh, 2, hh); ctx.fillRect(bx - w / 2, by, w, 2);
+    ctx.drawImage(cv, Math.round(bx - cv.width / 2), Math.round(by - hh + 6));
+  }
+}
 function placeStory(i) {   // (startStage)
+  placeHelp(i);
   L.marks = []; L.note = null; L.kuro = null; G.helper = null; G.pengs = 0; G.feastFish = 0;
   const st = STAGES[i]; if (!st || st.boss || L.boss || L.vault) return;
   const kind = MARK_KIND[L.world.key];
@@ -8430,6 +8504,7 @@ function fixMark(x) {   // a right answer: put right the nearest thing Kuro spoi
 }
 function storyTick(p) {   // (shopPowTick) the marks' animations, the note, Kuro, the helpers
   for (const m of L.marks || []) if (m.fixed) m.t++;
+  if (L.help && L.help.done && L.help.t < 999) L.help.t++;
   const k = L.kuro;
   if (k && !k.ph && P.x > k.x - 8 * T) { k.ph = 1; k.t = 0; }
   if (k && k.ph === 1 && ++k.t > 50) { k.ph = 2; k.t = 0; }
@@ -8454,6 +8529,7 @@ function helperCatch() {   // (fell) the Golem lifts Kai out of a pit
   return true;
 }
 function drawStory() {   // world space, before Kai
+  drawHelp();
   for (const m of L.marks || []) {
     if (m.x < cam - 80 || m.x > cam + VW + 80) continue;
     const x = m.x, y = m.y, t = m.t, f = m.fixed;
