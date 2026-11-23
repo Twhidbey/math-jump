@@ -639,7 +639,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · The shop is a market road with a stall in every world</div>
+  <div class="build">Updated Nov 23, 2026 · Home treasures stay wrapped until the end</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -2939,7 +2939,7 @@ const shelfOf = it => (it.badge ? 'prize' : it.w ?? 0);
 function shelfOpen(w) { if (w === 'prize') return true; if (w === SHELF_HOME) return !!prog.best[bossOf(WORLDS.length - 1)]; return unlockedCount() > w * PER_WORLD; }
 function giftLock(it) {   // why this item can't be bought yet ('' = it can)
   const w = shelfOf(it); if (w === 'prize') return '';
-  if (!shelfOpen(w)) return w === SHELF_HOME ? 'Bring Kuro home first' : `Reach ${WORLDS[w].name}`;
+  if (!shelfOpen(w)) return w === SHELF_HOME ? 'Finish the story' : `Reach ${WORLDS[w].name}`;
   if (it.boss && !prog.best[bossOf(w)]) return `Win over ${WORLDS[w].boss.name}`;
   return '';
 }
@@ -13512,6 +13512,11 @@ function renderShop() {
 function shopItem(grid, it) {
   {
     const owned = prog.owned.includes(it.id), on = prog.equip[it.slot] === it.id, lock = owned ? '' : giftLock(it);
+    if (!owned && shelfOf(it) === SHELF_HOME && !shelfOpen(SHELF_HOME)) {   // (owner: the Home things would give the ending away: a wrapped gift until then)
+      const el = document.createElement('div'); el.className = 'item keep';
+      el.innerHTML = `<img class="pix" src="${pixURL('chest', 4)}" alt="" style="width:54px;height:54px;image-rendering:pixelated"><div class="nm">A family treasure</div><div class="istory">Waiting for the right time.</div><button type="button" class="locked" disabled>${pixSm('lock')} Later</button>`;
+      grid.appendChild(el); return;
+    }
     const el = document.createElement('div'); el.className = 'item' + (it.slot === 'gift' ? ' keep' : ''); el.dataset.id = it.id;
     el.innerHTML = `<canvas width="90" height="54"></canvas><div class="nm">${it.name}</div>${it.story ? `<div class="istory">${it.story}</div>` : ''}${DEMO_OF[it.id] ? '<button type="button" class="iplay" aria-label="See it">▶</button>' : ''}<div class="pr">${owned ? 'Owned' : `${gemSm()} ${it.price}`}</div><button type="button"></button>`;
     drawItemPreview(el.querySelector('canvas'), it);
