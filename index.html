@@ -430,7 +430,7 @@
   .gearslot.lost img { filter: brightness(0) opacity(.55); } .gearslot.lost { cursor: default; opacity: .8; }
   .gearslot.on { border-color: #7df9ff; background: rgba(125,249,255,.15); }
   .gearslot .gshine.s1 { color: #dfe6ee; font-weight: 800; } .gearslot .gshine.s2 { color: #ffd23f; font-weight: 800; } .gearslot .gshine.s0 { opacity: .7; }
-  .gearslot small { display: block; font: 12px "Nunito", sans-serif; opacity: .85; } .gearslot .gpow { color: #ffb627; opacity: 1; font-weight: 800; } .gearslot .gwhere { color: #9be7ff; opacity: 1; margin-top: 2px; }
+  .gearslot small { display: block; font: 12px "Nunito", sans-serif; opacity: .85; } .gearslot .gpow { color: #ffb627; opacity: 1; font-weight: 800; } .gearslot .gstory { font-style: italic; opacity: 1; color: #f1e0c5; margin: 2px 0; } .gearslot .gwhere { color: #9be7ff; opacity: 1; margin-top: 2px; }
   .gearslot .ggo { display: block; margin: 6px auto 0; padding: 5px 10px; border: 0; border-radius: 9px; background: #3ae374; color: #10301c; font: 13px "Lilita One", "Trebuchet MS", sans-serif; cursor: pointer; }
   .badge .bt { font-size: 12px; opacity: .85; }
   .badge { display: flex; flex-direction: column; }
@@ -639,7 +639,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · The shop is a market road with a stall in every world</div>
+  <div class="build">Updated Nov 23, 2026 · Gear with a story: Bamboo Dragonfly, Steam Sandals, Ram Horn Hood</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1657,27 +1657,30 @@ var LAYOUT = null;
 // the sea floor between two coral rocks); 5 right answers open its lock. Looks only for now (owner: maybe actions later).
 // Art is drawn on Kai's own 16 × 16 cell grid (gx, gy = where the rows start; 'k' = outline), mirrored when he turns.
 const GEAR = {
-  helmet: { name: 'Samurai Helmet', slot: 'head', power: 'Ground Pound', w: 0, k: 1, gx: 3, gy: -3, pal: { d: '#3a3a4a', D: '#5a5a6e', y: '#ffd23f' },
+  helmet: { story: 'Kuro wore it so people would cheer.', name: 'Samurai Helmet', slot: 'head', power: 'Ground Pound', w: 0, k: 1, gx: 3, gy: -3, pal: { d: '#3a3a4a', D: '#5a5a6e', y: '#ffd23f' },
     rows: ['.ky......yk.', '..ky....yk..', '...kyyyyk...', '..kkDDDDkk..', '.kddDDddddk.', 'kddddddddddk', 'kk........kk'] },
-  cape: { name: 'Fire Cape', slot: 'back', power: 'Flame Dash', w: 1, k: 2, gx: 0, gy: 8, pal: { r: '#e63946', R: '#a91d2b', o: '#ff8c1a', y: '#ffd23f' },
+  cape: { story: 'Kuro wore his anger like a cape.', name: 'Fire Cape', slot: 'back', power: 'Flame Dash', w: 1, k: 2, gx: 0, gy: 8, pal: { r: '#e63946', R: '#a91d2b', o: '#ff8c1a', y: '#ffd23f' },
     rows: ['...krr', '..krRr', '.krrRr', '.krrRr', 'krrRrr', 'krorrr', 'koyoko', '.k.k..'] },
-  jetpack: { name: 'Jetpack', slot: 'back', power: 'Jetpack flight', w: 2, k: 2, gx: 1, gy: 7, pal: { g: '#9aa7b8', G: '#6c7a89', r: '#ff3355', c: '#7df9ff' },
+  jetpack: { story: 'Kuro wanted to be above everyone.', name: 'Jetpack', slot: 'back', power: 'Jetpack flight', w: 2, k: 2, gx: 1, gy: 7, pal: { g: '#9aa7b8', G: '#6c7a89', r: '#ff3355', c: '#7df9ff' },
     rows: ['kkkk', 'kggk', 'kgrk', 'kcgk', 'kggk', 'kGGk', 'kkkk'] },
-  viking: { name: 'Viking Helmet', slot: 'head', power: 'Horn Charge', w: 3, k: 0, gx: 2, gy: -3, pal: { w: '#f4ead2', W: '#c9bfa6', g: '#9aa7b8', G: '#6c7a89', y: '#ffd23f' },
-    rows: ['kw..........wk', 'kwk........kwk', '.kwk.kkkkk.kwk', '..kkkggggGkk..', '..kgggggggGk..', '..kyyyyyyyyk..'] },
-  trident: { name: 'Trident', slot: 'hand', power: 'Water Blast', w: 4, k: 0, gx: 12, gy: 0, pal: { y: '#ffd23f', Y: '#c99a1a' },
+  // (id kept from the Viking Helmet it used to be: a hood with a mountain ram's curled horns, same charge)
+  viking: { story: 'Kuro pushed everyone away.', name: 'Ram Horn Hood', slot: 'head', power: 'Ram Charge', w: 3, k: 0, gx: 2, gy: -3, pal: { w: '#f4ead2', W: '#c9bfa6', h: '#d9b98a', H: '#a8824f', y: '#ffd23f' },
+    rows: ['....kkkkkk....', '..kkwwwwwwkk..', '.khhkwwwwkhhk.', 'khHhhkWWkhhHhk', 'khkkhkWWkhkkhk', 'khhkhkyykhkhhk', '.kkk......kkk.'] },
+  trident: { story: 'Kuro dug for treasure with it.', name: 'Trident', slot: 'hand', power: 'Water Blast', w: 4, k: 0, gx: 12, gy: 0, pal: { y: '#ffd23f', Y: '#c99a1a' },
     rows: ['y.y.y', 'y.y.y', 'yyyyy', '.kYk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '..k..'] },
-  lantern: { name: 'Paper Lantern', slot: 'hand', power: 'Light flash', w: 6, k: 0, gx: 12, gy: 8, pal: { o: '#ffb627', O: '#ff8c1a', r: '#a8323e' },
+  lantern: { story: 'Kuro left his light behind.', name: 'Paper Lantern', slot: 'hand', power: 'Light flash', w: 6, k: 0, gx: 12, gy: 8, pal: { o: '#ffb627', O: '#ff8c1a', r: '#a8323e' },
     rows: ['.k.', '.k.', 'krk', 'koO', 'koO', 'krk', '.k.'] },
   // More gear (owner, Nov 2026: about one new item a week). Second rooms in Japan, the volcano and the factory.
-  boomerang: { name: 'Golden Boomerang', slot: 'hand', power: 'Boomerang', w: 0, k: 2, gx: 12, gy: 7, pal: { y: '#ffd23f', Y: '#c99a1a', r: '#e63946' },
-    rows: ['kk...', 'kyk..', '.kyk.', '.kyrk', '.kYk.', 'kYk..', 'kk...'] },
-  boots: { name: 'Spring Boots', slot: 'feet', power: 'Super Bounce', w: 1, k: 0, gx: 0, gy: 0, pal: { g: '#3ae374', G: '#1f9e4f', y: '#ffd23f' },
-    rows: ['kkk..', 'kgk..', 'kgGgk', 'kGGGk', 'kkkkk', '.y.y.', 'y.y..', '.y.y.'] },
-  gloves: { name: 'Magnet Gloves', slot: 'hand', power: 'Gem Magnet', w: 2, k: 0, gx: 11, gy: 9, pal: { r: '#e63946', R: '#a91d2b', s: '#c9d2de' },
+  // (id kept from the Golden Boomerang: a taketombo, the bamboo toy that spins out and comes back)
+  boomerang: { story: 'Kuro’s old toy. He said he was too big for it.', name: 'Bamboo Dragonfly', slot: 'hand', power: 'Dragonfly throw', w: 0, k: 2, gx: 12, gy: 6, pal: { b: '#8bc34a', y: '#ffd23f', s: '#d8a679' },
+    rows: ['kkkkk', 'bbybb', 'kkskk', '.ksk.', '.ksk.', '.ksk.', '.ksk.', '..k..'] },
+  // (id kept from the Spring Boots: wooden sandals, a puff of volcano steam does the bounce)
+  boots: { story: 'Kuro stomped off in them.', name: 'Steam Sandals', slot: 'feet', power: 'Steam Bounce', w: 1, k: 0, gx: 0, gy: 0, pal: { g: '#c0392b', G: '#8a5a34', y: '#c99a63', w: '#f4f4f4' },
+    rows: ['.kgk.', 'kgkgk', 'kGGGk', 'kyGGk', 'kkkkk', '.w.w.', 'w.w..', '.w.w.'] },
+  gloves: { story: 'Kuro wanted everything to come to him.', name: 'Magnet Gloves', slot: 'hand', power: 'Gem Magnet', w: 2, k: 0, gx: 11, gy: 9, pal: { r: '#e63946', R: '#a91d2b', s: '#c9d2de' },
     rows: ['kkk.', 'krRk', 'krsk', '.kkk'] },
   // The desert's piece (Hoodoo Trail): a rope that reaches far ahead.
-  lasso: { name: 'Lasso', slot: 'hand', power: 'Lasso', w: 5, k: 1, gx: 11, gy: 8, pal: { q: '#c9a063', Q: '#8a6a3a' },
+  lasso: { story: 'Kuro meant to catch the one who hurt him.', name: 'Lasso', slot: 'hand', power: 'Lasso', w: 5, k: 1, gx: 11, gy: 8, pal: { q: '#c9a063', Q: '#8a6a3a' },
     rows: ['.kkk.', 'kqqqk', 'kq.Qk', 'kqQQk', '.kkk.'] },
 };
 const GEAR_SLOTS = ['head', 'back', 'hand', 'feet'];
@@ -1695,7 +1698,7 @@ const JET_FUEL = 100;   // frames of flight per jump (owner, Nov 14 2026: was 60
 // Gear powers (owner, Nov 11 2026: "they really like a separate button"): every piece has a power, only one piece is worn
 // at a time, and one gear button (G on a computer) shows the worn piece and does its power. It refills like the vanish
 // button, or at once with a right answer (streakUp). Jetpack: hold to fly (fuel, refills on landing). Fire Cape: Flame
-// Dash now. Samurai Helmet: Ground Pound (in the air; from the ground he hops first). Viking Helmet: Horn Charge.
+// Dash now. Samurai Helmet: Ground Pound (in the air; from the ground he hops first). Ram Horn Hood: Ram Charge.
 // Trident: Water Blast (in the sea with ▼ held: a fountain that shoots him up). Paper Lantern: a flash that lights the
 // whole dark level for a few seconds and dazzles enemies nearby. Not in bosses, rooms, rescues or crossings.
 const GEAR_CHARGE = { cape: 600, helmet: 150, viking: 300, trident: 120, lantern: 600, boomerang: 150, boots: 90, gloves: 600, lasso: 150 };
@@ -1758,7 +1761,7 @@ function gearPowTick(p) {
     if (p.onGround) { p.vy = -10; p.onGround = false; sfx.jump(); } else { p.vy = 15; tone(900, 0.25, 'square', 0.03, 200); }
   } else if (id === 'viking') {
     G.charge = 45; G.chargeDir = p.face || 1; G.gearCool = GEAR_CHARGE.viking;
-    floatText(cx, p.y - 40, 'Horn charge!', '#ffd23f', 26); tone(220, 0.35, 'sawtooth', 0.05, 330); tone(330, 0.3, 'sawtooth', 0.04, 440, 0.15);   // the horn
+    floatText(cx, p.y - 40, 'Ram charge!', '#ffd23f', 26); tone(220, 0.35, 'sawtooth', 0.05, 330); tone(330, 0.3, 'sawtooth', 0.04, 440, 0.15);   // the horn
   } else if (id === 'trident') {
     G.gearCool = GEAR_CHARGE.trident;
     const down = inWater(p) && keys.down, f = p.face || 1;
@@ -1772,7 +1775,7 @@ function gearPowTick(p) {
     if ((G.gfx || []).some(f => f.k === 'boom')) return;
     G.gearCool = GEAR_CHARGE.boomerang; const f = p.face || 1;
     (G.gfx = G.gfx || []).push({ k: 'boom', x: cx + f * 14, y: p.y + 14, vx: f * 11, vy: -2.2, t: 0, life: 200, back: false });
-    floatText(cx, p.y - 30, 'Boomerang!', '#ffd23f', 24); tone(500, 0.3, 'triangle', 0.03, 900);
+    floatText(cx, p.y - 30, 'Whirr!', '#ffd23f', 24); tone(500, 0.3, 'triangle', 0.03, 900);
   } else if (id === 'lasso') {   // a rope loop flies far ahead: it brings gems back, pops ? boxes and ties up enemies
     if ((G.gfx || []).some(f => f.k === 'lasso')) return;
     G.gearCool = GEAR_CHARGE.lasso; const f = p.face || 1;
@@ -1783,7 +1786,7 @@ function gearPowTick(p) {
     if (noFlyHere(p)) { floatText(cx, p.y - 30, 'No bouncing here!', '#ffb627', 20); return; }
     if (!(p.onGround || p.coyote > 0) || G.climb) { floatText(cx, p.y - 30, 'Stand on the ground!', '#ffffff', 18); return; }
     G.gearCool = GEAR_CHARGE.boots; p.vy = -18.6; p.bounce = true; p.onGround = false; p.coyote = 0; p.squash = -8; G.boing = 30;
-    burst(cx, p.y + p.h, '#ffffff', 10, 3); floatText(cx, p.y - 30, 'BOING!', '#3ae374', 26);
+    burst(cx, p.y + p.h, '#ffffff', 10, 3); floatText(cx, p.y - 30, 'WHOOSH!', '#f4f4f4', 26);
     tone(180, 0.35, 'sine', 0.06, 900); tone(360, 0.25, 'triangle', 0.03, 1400, 0.05);
   } else if (id === 'gloves') {   // every gem on screen zooms to Kai, and ? boxes nearby pop
     G.gearCool = GEAR_CHARGE.gloves; G.magT = 150;
@@ -1808,7 +1811,7 @@ function poundLand(p) {   // the Ground Pound hits the ground: shockwave, enemie
   const r = Math.floor((fy + 2) / T);
   for (let c = Math.floor((p.x - 6) / T); c <= Math.floor((p.x + p.w + 6) / T); c++) if (L.map[r] && (L.map[r][c] === 'B' || L.map[r][c] === '?')) { bump(c, r); if (L.map[r][c] === 'B') { L.map[r][c] = '.'; sfx.brick(); burst(c * T + T / 2, r * T + T / 2, L.world.brick[0], 10); } }
 }
-function boomTick(f) {   // the Golden Boomerang: out in a curve, then home to Kai's hand
+function boomTick(f) {   // the Bamboo Dragonfly: out in a curve, then home to Kai's hand
   const hx = P.x + P.w / 2, hy = P.y + 16;
   if (!f.back) { f.vx *= 0.955; f.vy += 0.07; f.x += f.vx; f.y += f.vy; if (Math.abs(f.vx) < 1.4 || f.t > 50) f.back = true; }
   else { const dx = hx - f.x, dy = hy - f.y, d = Math.hypot(dx, dy) || 1, v = Math.min(12, 4 + f.t * 0.08); f.x += dx / d * Math.min(v, d); f.y += dy / d * Math.min(v, d); if (d < 20) { f.done = true; tone(900, 0.08, 'triangle', 0.03); } }
@@ -1855,9 +1858,9 @@ function drawGearFx() {
       const d = 10 + f.t * 6, a = 1 - f.t / f.life;
       ctx.fillStyle = `rgba(255,255,255,${a})`;
       for (const s of [-1, 1]) for (let i = 0; i < 3; i++) ctx.fillRect(Math.round(f.x + s * (d - i * 10)) - 4, Math.round(f.y - 6 - i * 4), 8, 6 + i * 4);
-    } else if (f.k === 'boom') {   // the boomerang spins (pixel art turned in quarter steps) with a few gold sparkles
+    } else if (f.k === 'boom') {   // the bamboo dragonfly spins (its blade seen wide, then edge on) with a few gold sparkles
       const cv = gearImg('boomerang', 4), q = Math.floor(f.t / 3) % 4;
-      ctx.save(); ctx.translate(Math.round(f.x), Math.round(f.y)); ctx.rotate(q * Math.PI / 2); ctx.drawImage(cv, -Math.round(cv.width / 2), -Math.round(cv.height / 2)); ctx.restore();
+      ctx.save(); ctx.translate(Math.round(f.x), Math.round(f.y)); ctx.scale(q % 2 ? 0.35 : 1, 1); ctx.drawImage(cv, -Math.round(cv.width / 2), -Math.round(cv.height / 2)); ctx.restore();
       if (f.t % 3 === 0 && G) G.parts.push({ k: 'bit', x: f.x, y: f.y, vx: 0, vy: 0, life: 12, col: '#ffd23f', s: 3 });
     } else if (f.k === 'lasso') {   // the rope from Kai's hand to a spinning loop
       const hx = P.x + P.w / 2 + (P.face || 1) * 10, hy = P.y + 18;
@@ -6055,6 +6058,7 @@ function drawGroom() {
   const cx = rx + GR_ROOM.chest;
   if (!gr.done) glowAt(cx, fy - 20, 40 + Math.sin(tick * 0.1) * 5, gr.polish ? 'rgba(220,235,255,.4)' : 'rgba(255,220,120,.35)');
   drawPix(gr.done ? 'chestopen' : 'chest', cx - 18, fy - 36, 3);
+  if (!gr.done && !gr.polish) { ctx.fillStyle = '#c0392b'; ctx.fillRect(cx - 12, fy - 58, 24, 16); ctx.fillStyle = '#16121f'; ctx.fillRect(cx - 7, fy - 53, 14, 5); ctx.fillStyle = '#ff2a4a'; ctx.fillRect(cx - 5, fy - 52, 3, 2); ctx.fillRect(cx + 2, fy - 52, 3, 2); }   // Kuro's mask on the chest: it was his
   if (gr.fly != null && gr.fly < 70) {   // the gear rises out of the chest
     const u = gr.fly / 70, cv = gearImg(gr.gc.id, 4), y = fy - 40 - Math.sin(Math.min(1, u * 1.5) * Math.PI / 2) * 70;
     glowAt(cx, y, 50, 'rgba(255,240,160,.6)'); ctx.globalAlpha = 1 - Math.max(0, u - 0.75) / 0.25; ctx.drawImage(cv, Math.round(cx - cv.width / 2), Math.round(y - cv.height / 2)); ctx.globalAlpha = 1;
@@ -6098,7 +6102,7 @@ function openPack() {
   $('packGrid').innerHTML = Object.keys(GEAR).map(id => {
     const g = GEAR[id], got = owned.includes(id), on = eq[g.slot] === id, st = STAGES.find(x => x.w === g.w && x.k === g.k && !x.boss), si = STAGES.indexOf(st);
     return `<div role="button" tabindex="0" class="gearslot${got ? '' : ' lost'}${on ? ' on' : ''}" data-gear="${id}"><img src="${gearImg(id, 6).toDataURL()}" alt="">${got ? g.name : '???'}
-      <small>${got ? (on ? 'Wearing' : 'Tap to wear') : 'Not found yet'}</small><small class="gwhere">${got ? 'Found in' : 'Lost in'} ${st ? `${st.name} (${g.w + 1}-${g.k + 1})` : WORLDS[g.w].name}</small>${got ? `<small class="gshine s${shineOf(id)}">${SHINE_NAME[shineOf(id)]}${shineOf(id) < 2 ? (polishReady(id) ? ' · polish it today!' : ' · polish tomorrow') : ' ★'}</small>` : ''}${g.power ? `<small class="gpow">Power: ${g.power}</small>` : ''}${si >= 0 && si < unlockedCount() ? `<button type="button" class="ggo" data-go="${si}">Go there ▶</button>` : ''}</div>`;
+      ${got && g.story ? `<small class="gstory">${g.story}</small>` : ''}<small>${got ? (on ? 'Wearing' : 'Tap to wear') : 'Not found yet'}</small><small class="gwhere">${got ? 'Found in' : 'Lost in'} ${st ? `${st.name} (${g.w + 1}-${g.k + 1})` : WORLDS[g.w].name}</small>${got ? `<small class="gshine s${shineOf(id)}">${SHINE_NAME[shineOf(id)]}${shineOf(id) < 2 ? (polishReady(id) ? ' · polish it today!' : ' · polish tomorrow') : ' ★'}</small>` : ''}${g.power ? `<small class="gpow">Power: ${g.power}</small>` : ''}${si >= 0 && si < unlockedCount() ? `<button type="button" class="ggo" data-go="${si}">Go there ▶</button>` : ''}</div>`;
   }).join('');
   $('packGrid').querySelectorAll('[data-gear]').forEach(el => { el.onclick = () => {
     const id = el.dataset.gear, g = GEAR[id]; if (!owned.includes(id)) return;
@@ -12275,7 +12279,7 @@ function noFlyHere(p) {
   const c = (p.x + p.w / 2) / T;
   return (L.rafts || []).some(r => c > r.c0 - 2 && c < r.c1 + 1) || (L.steps || []).some(z => c > z.c0 - 3 && c < z.c0 + z.w + 3) || (L.bridges || []).some(b => c > b.c0 - 3 && c < b.c0 + b.w + 3) || (L.swings || []).some(w => c > w.s - 1 && c < w.e + 1);
 }
-// Spring Boots on Kai: drawn over his feet, which sit in different places when he walks; a coil under them after a bounce.
+// Steam Sandals on Kai: drawn over his feet, which sit in different places when he walks; a coil under them after a bounce.
 function bootsPix(c, ox, oy, px, flip, frame, coil) {
   const g = GEAR.boots, trim = shineTrim(shineOf('boots')), feet = frame === 'stand' ? [[5, 4], [9, 9]] : [[4, 3], [10, 10]];
   const put = (x, y, col) => { c.fillStyle = col; c.fillRect(ox + (flip ? 15 - x : x) * px, oy + y * px, px, px); };
@@ -12283,7 +12287,7 @@ function bootsPix(c, ox, oy, px, flip, frame, coil) {
     put(leg, 13, g.pal.g); put(leg + 1, 13, g.pal.g);
     for (let i = 0; i < 3; i++) put(foot + i, 14, g.pal.G);
     put(foot, 14, trim); put(foot + 2, 14, g.pal.y);
-    if (coil) { put(foot + 1, 15, g.pal.y); put(foot, 16, g.pal.y); put(foot + 2, 16, g.pal.y); }
+    if (coil) { put(foot + 1, 15, g.pal.w); put(foot, 16, g.pal.w); put(foot + 2, 16, g.pal.w); }   // steam
   }
 }
 function drawGearOn(p, frame, layer, diver) {
