@@ -111,3 +111,4 @@ Owner asked for a parent screen with its own link: how long each kid plays, a ti
 
 - **Home treasures stay wrapped (Nov 23, live):** before the ending, the Home stall's items show as "A family treasure" (chest picture, no name, story or preview; lock says "Later") so they don't give the ending away; `giftLock` says "Finish the story" instead of "Bring Kuro home first".
 - **Home stall before the ending (Nov 23, live):** paper sliding doors and a warm light inside instead of boards (owner).
+- **App icon (Nov 23, live):** fully pixel-art icon, Kai leaping over a red sun with a gold plus-shuriken (owner picked option B, "completely pixelated"). Drawn on a 36×36 grid, saved as icon-180.png (apple-touch-icon), icon-192/512.png (manifest.json), favicon-32.png; linked in index.html and parent.html. A phone keeps the old home-screen icon until it's removed and added again.
