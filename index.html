@@ -659,7 +659,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Fix: right answers in the training room always count</div>
+  <div class="build">Updated Nov 23, 2026 · Math fixes: two-digit and Think skills can be passed; fairer answer choices</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1182,6 +1182,7 @@ function factStatus(key) {
 function fastFrames(skill, q, walk = !isTouch) {
   if (q && q.sk) skill = SKILL[q.sk];   // mixed levels: each question has its own skill
   const quick = (q && (q.op === '×' || q.op === '÷')) || (skill && (skill.cat === 'mul' || skill.cat === 'div'));
+  if (skill && !factList(skill)) return (walk ? 18 : 12) * 60;   // two-digit and "think" questions are worked out, not recalled (math review, Nov 23 2026: 5 s was the same as for 2 + 3)
   return (walk ? (quick ? 6 : 10) : (quick ? 3 : 5)) * 60;
 }
 function noteFact(q, right, fast, skill) {
@@ -1202,6 +1203,9 @@ function noteFact(q, right, fast, skill) {
   if (skill && !review && !factList(skill)) {
     const w = prog.win[skill.id] || (prog.win[skill.id] = []);
     w.push(right && fast ? d : 0); if (w.length > 10) w.shift();
+    // (math review, Nov 23 2026) a level asks more than 10, so the window only ever held one day and these skills could
+    // never pass: remember the days on which the window was good (9 of 10), the last 3 of them.
+    if (w.filter(Boolean).length >= 9) { const wd = prog.winOk || (prog.winOk = {}), ds = wd[skill.id] || []; if (!ds.includes(d)) wd[skill.id] = [...ds, d].slice(-3); }
   }
 }
 function skillProgress(k) {
@@ -1215,7 +1219,7 @@ function skillProgressRaw(k) {
     const learned = st.filter(x => x === 'silver' || x === 'gold').length, gold = st.filter(x => x === 'gold').length;
     return { list, st, n, learned, gold, done: learned >= Math.ceil(n * 0.9), ready: learned >= Math.ceil(n * 0.9) && gold >= Math.ceil(n * 0.5), allGold: gold === n, mature: learned >= n * 0.6 };
   }
-  const w = prog.win[k.id] || [], good = w.filter(Boolean), days = new Set(good).size;
+  const w = prog.win[k.id] || [], good = w.filter(Boolean), days = new Set([...good, ...((prog.winOk || {})[k.id] || [])]).size;
   return { n: 10, learned: good.length, gold: good.length >= 9 && days >= 2 ? 10 : 0, done: good.length >= 9, ready: good.length >= 9 && days >= 2, allGold: good.length >= 9 && days >= 2, mature: good.length >= 6, win: w };
 }
 // Facts to bring back: missed ones first, then ones learned on an earlier day that are due again.
@@ -1315,6 +1319,11 @@ function choices(q, n = 3) {
   if (q.op === '+') more.push(Math.abs(q.a - q.b));
   if (q.op === '−') more.push(q.a + q.b);
   if (q.op === '÷') more.push(q.a - q.b);
+  if (n === 3) {   // (math review, Nov 23 2026: the right answer was the middle value 57-70% of the time) lowest / middle / highest equally often
+    const cand = [...shuffle(near), ...shuffle(more)].filter(c => c >= 0 && Number.isInteger(c) && c !== a), lo = [...new Set(cand.filter(c => c < a))], hi = [...new Set(cand.filter(c => c > a))];
+    const below = Math.min(R(0, 2), lo.length);
+    if (hi.length >= 2 - below) return shuffle([a, ...lo.slice(0, below), ...hi.slice(0, 2 - below)]);
+  }
   for (const c of [...shuffle(near), ...shuffle(more)]) {
     if (out.length === n) break;
     if (c >= 0 && Number.isInteger(c) && !seen.has(c)) { seen.add(c); out.push(c); }

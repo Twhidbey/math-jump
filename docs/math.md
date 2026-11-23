@@ -53,3 +53,11 @@ every 3 in a row (`streakUp` → `startDash`): `G.dash` frames of extra speed (`
 ## A picture after a miss (owner, Nov 23 2026)
 
 `missed(q)` → `missPicture(q)`: `G.missPic = { pic: picFor(q), txt: qSolved(q), t: 170 }`, drawn in `drawHUD` under the banner (the picture plus its equation, no other words; it replaces the "Oops!" float for that miss). Sensei's tip card after two misses and the one-time "New trick!" cards (`previewTrick`, now a no-op) are gone; "Too tricky?" (easier math) and Work it out (the same fact missed twice in a day) stay.
+
+## Fixes from the six-reviewer math review (Nov 23 2026)
+
+- **Skills without a fact list could never pass** (add2d1d, add2d, sub2d1d, sub2d and the Think skills): `prog.win[id]` holds only the last 10 answers and "ready" needed 2 different days among them, but a level asks more than 10. `noteFact` now also records in `prog.winOk[id]` the days (last 3) on which the window was good (9 of 10); `skillProgressRaw` counts those days too. So: a good day, then a good day another day = ready.
+- **`fastFrames`:** skills without a fact list get 12 s on touch (18 s walking/bonking) instead of 5 / 10: those questions are worked out, not recalled.
+- **`choices(q, 3)`:** the right answer was the middle value 57-70% of the time (wrong ones were mostly one above and one below). Now the number of wrong choices below the answer is picked evenly (0, 1 or 2), so lowest / middle / highest come up about a third each (measured over 600 questions per skill; very small answers are still the lowest more often).
+- Not done from that review (ideas): typing the answer for gold facts at gates, pictures before the question for more than K, counting / place value / time / money, multi-step problems for strong third graders, `fcmp` "=" only 9% of the time.
+
