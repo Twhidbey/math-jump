@@ -659,7 +659,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · A tidier Settings page</div>
+  <div class="build">Updated Nov 23, 2026 · A tidier Settings page, and the other chat's latest</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1748,7 +1748,9 @@ function gearBtnSync() {
 const suitBtnOn = () => !!(G && P && mode === 'play' && prog.equip.suit === 'suit-legend' && !L.water && !L.vault && !G.rescue && !G.groom && !G.cross && !G.swing && !G.down);
 let suitBtnSet = false, suitBtnReady = null;
 function suitBtnSync() {
-  const on = suitBtnOn(); document.body.classList.toggle('cansuit', on);
+  // Two action buttons at most (owner, Nov 23 2026): the Legend jump has no button of its own any more (jump again in
+  // the air, or L on a keyboard); the gear button and one friend button (dolphin / roadrunner / vanish) are what is left.
+  const on = false && suitBtnOn(); document.body.classList.toggle('cansuit', on);
   if (!on) return;
   const b = document.querySelector('.tbtn[data-k="suit"]');
   if (!suitBtnSet) { suitBtnSet = true; const cv = document.createElement('canvas'); cv.width = 48; cv.height = 48; drawNinjaPreview(cv, { band: 'band-red', suit: 'suit-legend', trail: null, pet: null }, 3); b.querySelector('img').src = cv.toDataURL(); }
@@ -4540,7 +4542,7 @@ function hasFriend(power) { return !!(G && G.friendPow && G.friendPow[power]); }
 // the Shadow Walls guards can't spot him. Refills in 15 s, or at once with a right answer (streakUp). Works in Moon Tower
 // and, once she's freed there, in Shadow Walls too (prog.vanishNext, startStage).
 const VANISH_T = 300, VANISH_CHARGE = 900;
-const vanishOn = () => !!(G && hasFriend('vanish') && !L.boss && !L.room && !G.rescue);
+const vanishOn = () => !!(G && hasFriend('vanish') && !L.boss && !L.room && !G.rescue && !dolphinOn() && !runnerOn());   // (one friend button at a time)
 const vanished = () => !!(G && G.vanish > 0);
 function vanishPuff() {
   for (let i = 0; i < 14; i++) G.parts.push({ k: 'bit', x: P.x + P.w / 2 + (Math.random() - 0.5) * 30, y: P.y + P.h / 2 + (Math.random() - 0.5) * 36, vx: (Math.random() - 0.5) * 2.4, vy: -0.6 - Math.random(), life: 34, col: Math.random() < 0.5 ? '#d9dcea' : '#a9a3c9', s: 6 });
@@ -7667,19 +7669,19 @@ function runOutro(b) {
   if (o.done) return;
   if (k === 'kage') {
     if (t === 30) say('boss', 'Never!', 90);   // Kai already held out his hand ("Take my hand?")
-    if (t === 120) say('boss', 'Kuro paid us a scroll to be his friends. Ha!', 110);   // (each boss says what Kuro came for: owner, Nov 22 2026)
-    if (t > 230) { b.alpha = Math.max(0, 1 - (t - 230) / 70); if (t % 3 === 0) burst(b.x + Math.random() * b.w, b.y + Math.random() * b.h, '#2a2838', 4, 2); }
-    if (t === 300) { o.done = true; b.dead = true; dropPrize(b); }
+    // (owner, Nov 23 2026: the bosses' extra "Kuro said..." lines are cut; Kuro's journal says it in his own words)
+    if (t > 130) { b.alpha = Math.max(0, 1 - (t - 130) / 70); if (t % 3 === 0) burst(b.x + Math.random() * b.w, b.y + Math.random() * b.h, '#2a2838', 4, 2); }
+    if (t === 200) { o.done = true; b.dead = true; dropPrize(b); }
   } else if (k === 'golem') {
     if (t === 20) say('kai', "You don't have to be angry.");
     if (t > 90 && t % 6 === 0) G.parts.push({ k: 'bit', x: b.x + Math.random() * b.w, y: b.y + 20, vx: 0, vy: -1.2, life: 40, col: 'rgba(230,230,240,.8)', s: 8 });
     if (t === 120) { b.calm = true; say('boss', 'Thank you, little ninja.', 110); }
-    if (t === 250) { floatText(cx, b.y - 30, '♥', '#ff5a8a', 40); say('boss', 'Kuro said never let go of my anger. It only made me hurt more.', 150); }
-    if (t === 400) { o.done = true; b.friendly = true; dropPrize(b, (P.x + cx) / 2); }
+    if (t === 230) floatText(cx, b.y - 30, '♥', '#ff5a8a', 40);
+    if (t === 290) { o.done = true; b.friendly = true; dropPrize(b, (P.x + cx) / 2); }
   } else if (k === 'bot') {
     if (t < 200 && t % 9 === 0) burst(b.x + Math.random() * b.w, b.y + Math.random() * b.h, '#7df9ff', 3, 3);
     if (t === 20) say('kai', 'You can rest now.');
-    if (t === 110) say('boss', 'KURO SAID: NEVER STOP. ...WE CAN REST?', 90);
+    if (t === 110) say('boss', '...WE CAN REST?', 90);
     if (t === 200) { b.calm = true; say('boss', 'EVERYONE REST!', 120); }
     if (t === 330) { floatText(cx, b.y - 30, '♥', '#ff5a8a', 40); o.done = true; b.friendly = true; dropPrize(b, (P.x + cx) / 2); }
   } else if (k === 'yeti') {
@@ -7687,8 +7689,7 @@ function runOutro(b) {
     if (t === 130) say('boss', "You're not running away?", 110);
     if (t > 130 && t % 4 === 0) G.parts.push({ k: 'bit', x: b.x + Math.random() * b.w, y: b.y + b.h * 0.6, vx: 0, vy: 1.5, life: 30, col: '#9fd8f5', s: 4 });
     if (t === 250) { floatText(cx, b.y - 30, '♥', '#ff5a8a', 40); say('boss', 'A friend!', 100); }
-    if (t === 340) say('boss', 'Kuro said being alone makes you strong. I was just cold.', 140);
-    if (t === 480) { o.done = true; b.friendly = true; dropPrize(b, (P.x + cx) / 2); }
+    if (t === 360) { o.done = true; b.friendly = true; dropPrize(b, (P.x + cx) / 2); }
   } else if (k === 'octo') {   // grace: Kai shares first, a gem of his own, though the octopus never shared anything
     if (t === 20) {
       say('kai', 'Here. This gem is for you.', 110);
@@ -7698,15 +7699,13 @@ function runOutro(b) {
     if (t === 140) { b.calm = true; L.giftGem = null; say('boss', 'For me? Nobody ever gave me anything!', 120); floatText(cx, b.y - 30, '♥', '#ff5a8a', 40); }
     if (t === 270) { say('boss', 'Here! Everyone gets a piece!', 120); octoDrop(b, 8); }
     if (t > 270 && t < 380 && t % 8 === 0) G.parts.push({ k: 'bit', x: b.x + Math.random() * b.w, y: b.y + 10, vx: 0, vy: -1.2, life: 40, col: 'rgba(225,245,255,.85)', s: 4 });
-    if (t === 400) say('boss', 'Kuro said keep every piece. It was never enough.', 140);
-    if (t === 540) { o.done = true; b.friendly = true; dropPrize(b, (P.x + cx) / 2); }
+    if (t === 410) { o.done = true; b.friendly = true; dropPrize(b, (P.x + cx) / 2); }
   } else if (k === 'scorpion') {   // forgiveness: he stung first, and Kai forgives him anyway
     if (t === 20) say('kai', 'I forgive you.');
     if (t === 120) say('boss', 'But... I stung you!', 100);
     if (t > 120 && t < 230 && t % 6 === 0) G.parts.push({ k: 'bit', x: b.x + Math.random() * b.w, y: b.y + 20, vx: 0, vy: -1.2, life: 40, col: 'rgba(255,230,180,.85)', s: 5 });
     if (t === 230) { b.calm = true; say('boss', 'Then I will put my stinger down.', 120); floatText(cx, b.y - 30, '♥', '#ff5a8a', 40); }
-    if (t === 360) say('boss', 'Kuro taught me to sting first.', 120);
-    if (t === 480) { o.done = true; b.friendly = true; dropPrize(b, (P.x + cx) / 2); }
+    if (t === 370) { o.done = true; b.friendly = true; dropPrize(b, (P.x + cx) / 2); }
   } else if (k === 'shogun') {
     if (t % 8 === 0 && t < 330) { shake(4, 2); L.proj.push({ k: 'rock', x: R(40, L.w * T - 40), y: -20, vx: 0, vy: 2, g: 0.3, r: 8, deco: true }); }
     if (t === 30) say('boss', "Why... why didn't you finish me?", 120);
