@@ -68,6 +68,7 @@
   .btn.alt { background: #5b6bd6; border-bottom-color: #3a46a0; }
   .card p.readtip { font-size: 14px; opacity: .75; margin: 4px 0 0; }
   .btn.ghost { background: transparent; border: 2px solid rgba(255,255,255,.4); font-size: 14px; padding: 6px 12px; }
+  #msgBtns { position: sticky; bottom: -1px; background: #22224a; padding: 8px 0 6px; margin-bottom: -6px; z-index: 3; }   /* (review, Nov 23 2026) on a short screen the story card is taller than the screen: its buttons stay in view */
   .card { background: #22224a; border: 4px solid #ffd23f; border-radius: 16px; padding: 20px 26px; max-width: 540px; }
   .card h2 { margin: 0 0 8px; color: #ffd23f; font-size: clamp(24px, 5vw, 32px); }
   .card p { font-size: 18px; margin: 8px 0 14px; line-height: 1.45; }
@@ -659,7 +660,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Math fixes: two-digit and Think skills can be passed; fairer answer choices</div>
+  <div class="build">Updated Nov 23, 2026 · Bigger picture on upright phones; story buttons always on screen</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -16009,6 +16010,7 @@ document.querySelectorAll('.tbtn').forEach(el => {
 // ---------------------------------------------------------------- main loop
 let last = performance.now(), acc = 0;
 const STEP = 1000 / 60;
+let bandCol = '';
 function frame(now) {
   acc += Math.min(100, now - last); last = now;
   document.body.classList.toggle('canleave', canLeaveDrill());   // the lesson's Leave button
@@ -16030,13 +16032,21 @@ function frame(now) {
   }
   syncAnsBar();
   render();
+  if (tick % 30 === 0 && document.body.classList.contains('portrait')) {   // the band under the picture takes the ground's colour, so the world runs on down the screen
+    try { const d = ctx.getImageData(6, VH - 3, 1, 1).data, col = `rgb(${d[0]},${d[1]},${d[2]})`; if (col !== bandCol) { bandCol = col; $('wrap').style.background = col; } } catch (e) { /* a tainted canvas: leave it */ }
+  }
   requestAnimationFrame(frame);
 }
 
 // Upright phones get a squarer view so everything stays big enough to read.
 function layout() {
   const portrait = window.innerHeight > window.innerWidth;
-  VW = portrait ? 540 : 960;
+  // Upright phones (review, Nov 23 2026: the game was a small square above an empty band): on a tall screen the view
+  // gets narrower in whole tiles (540 down to 432 wide), so the picture is taller on the screen and everything in it
+  // is up to 25% bigger. About 250 px are kept free below it for the buttons.
+  let pw = 540;
+  if (portrait) { const room = Math.max(200, window.innerHeight - 250); pw = Math.max(432, Math.min(540, Math.floor(540 * window.innerWidth / room / T) * T)); }
+  VW = portrait ? pw : 960;
   if (cv.width !== VW) cv.width = VW;
   document.body.classList.toggle('portrait', portrait);
   const stage = $('stage');
