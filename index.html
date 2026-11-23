@@ -660,7 +660,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Calmer gates: no ? sign, one padlock, each problem shows once</div>
+  <div class="build">Updated Nov 23, 2026 · Walk home: the hug under the gate at sunrise</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -8133,7 +8133,7 @@ const endBody = {
 // pass, the sky turns to morning. Near the gate Kuro stops; Kai turns and holds out his hand; then Sensei RUNS to them.
 // Kai walks by himself; holding right / jump or a finger on the screen walks faster. WH = its state (frame / render).
 let WH = null;
-const WH_G = 410;   // the road's height on screen
+const WH_G = 440;   // the road's height on screen
 function startWalk() {
   hide('msg'); hide('menu'); stopReading();
   const who = [], add = o => who.push(o);
@@ -8149,14 +8149,14 @@ function startWalk() {
   const dojo = 760 + who.length * 220 + 900, lamps = [];
   for (let x = 420; x < dojo - 200; x += 250) lamps.push({ x: x + 125, lit: 0 });
   const kept = Math.min(lamps.length, prog.lanterns || 0); for (let i = 0; i < kept; i++) lamps[lamps.length - 1 - i].lit = 1;   // the ones Sensei kept burning, nearest home
-  WH = { x: 140, kx: 60, sx: dojo - 60, dojo, who, lamps, ph: 'walk', t: 0, pt: 0, hold: false, face: 1, was: mode, petals: [] };
+  WH = { x: 140, kx: 60, sx: dojo + 190, dojo, who, lamps, ph: 'walk', t: 0, pt: 0, hold: false, face: 1, was: mode, petals: [] };
   mode = 'walk'; document.body.classList.add('walking');
   if (typeof playMusic === 'function') playMusic('menu');
 }
 function endWalk() { const was = WH.was; WH = null; mode = was; document.body.classList.remove('walking'); showHome(); }
 function walkTick() {
   const w = WH; w.t++; w.pt++;
-  const fast = keys.right || keys.jump || w.hold, v = fast ? 4.2 : 2.2, stop = w.dojo - 560;
+  const fast = keys.right || keys.jump || w.hold, v = fast ? 4.2 : 2.2, stop = w.dojo - 236;   // Kuro stops just outside the gate; they meet their father under it
   if (w.ph === 'walk') {
     w.x += v; w.kx += Math.min(v, Math.max(0, (w.x - 52 - w.kx) * 0.08 + v * 0.6));   // Kuro a step behind, dragging his feet
     if (w.x >= stop) { w.ph = 'wait'; w.pt = 0; }
@@ -8167,8 +8167,8 @@ function walkTick() {
     w.kx += 2; if (w.kx >= w.x - 40) { w.ph = 'run'; w.pt = 0; w.face = 1; sfx.correct(); }
   } else if (w.ph === 'run') {   // Sensei runs to meet them
     if (w.pt > 30) w.sx -= 5.2; w.x += 1.2; w.kx += 1.2;
-    if (w.sx <= w.x + 34) { w.ph = 'hug'; w.pt = 0; [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.5, 'triangle', 0.05, null, i * 0.16)); }
-  } else if (w.ph === 'hug') { if (w.pt > 260) endWalk(); }
+    if (w.sx <= w.x + 30) { w.ph = 'hug'; w.pt = 0; [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.5, 'triangle', 0.05, null, i * 0.16)); }
+  } else if (w.ph === 'hug') { if (w.pt > 340) endWalk(); }
   if (!WH) return;
   for (const l of w.lamps) if (!l.lit && w.x > l.x - 60) { l.lit = 0.01; tone(880 + (l.x % 5) * 60, 0.25, 'sine', 0.02); } else if (l.lit > 0 && l.lit < 1) l.lit = Math.min(1, l.lit + 0.05);
   for (const o of w.who) if (Math.abs(o.x - w.x) < 190) o.t++;
@@ -8177,13 +8177,15 @@ function walkTick() {
   w.petals = w.petals.filter(p => p.y < WH_G);
 }
 function renderWalk() {
-  const w = WH, g = WH_G, len = w.dojo + 420, camx = Math.max(0, Math.min(len - VW, w.x - VW * 0.36)), p = Math.min(1, w.x / (w.dojo - 300)), dawn = w.ph === 'hug' ? Math.min(1, p + w.pt / 200) : p;
+  const w = WH, g = WH_G, len = w.dojo + 420, cam0 = Math.max(0, Math.min(len - VW, w.x - VW * 0.36)), hE = w.ph === 'hug' ? Math.min(1, w.pt / 160) : 0, ez = hE * hE * (3 - 2 * hE), camx = cam0 + (w.x + 3 - VW / 2 - cam0) * ez, p = Math.min(1, w.x / (w.dojo - 300)), dawn = w.ph === 'hug' ? Math.min(1, p + w.pt / 200) : p;
   const mix = (a, b, u) => { const A = parseInt(a.slice(1), 16), B = parseInt(b.slice(1), 16), f = sh => Math.round((A >> sh & 255) + ((B >> sh & 255) - (A >> sh & 255)) * u); return `rgb(${f(16)},${f(8)},${f(0)})`; };
   const sky = ctx.createLinearGradient(0, 0, 0, g); sky.addColorStop(0, mix('#0d1030', '#6fb4f0', dawn)); sky.addColorStop(0.65, mix('#2a2050', '#ffc9a8', dawn)); sky.addColorStop(1, mix('#45306a', '#ffe9b0', dawn));
   ctx.fillStyle = sky; ctx.fillRect(0, 0, VW, VH);
   for (let i = 0; i < 70; i++) { const tw = (0.4 + 0.6 * Math.abs(Math.sin(tick * 0.02 + i))) * (1 - dawn); if (tw > 0.02) { ctx.fillStyle = `rgba(255,255,255,${tw * 0.8})`; ctx.fillRect(hash(i) * VW, hash(i + 40) * g * 0.7, 2, 2); } }
-  const sunX = w.dojo + 160 - camx * 0.92 - (len - VW) * 0.08, sunY = g - 20 - dawn * 150;   // the sun comes up behind home
-  glowAt(sunX, sunY, 200, `rgba(255,220,150,${0.25 + dawn * 0.35})`); blob(sunX, sunY, 34, mix('#ffb38a', '#fff6d5', dawn));
+  // The hug (beauty review, Nov 23 2026): the picture closes in slowly on the three of them, under the gate, with the sun
+  // coming up behind it. Light is added (never a dark smudge on the bright morning).
+  ctx.save(); ctx.translate(VW / 2, g - 34); ctx.scale(1 + ez, 1 + ez); ctx.translate(-VW / 2, -(g - 34));
+  { const sx = w.dojo - 94 - camx, sy = g + 24 - dawn * 110 - ez * 34; ctx.globalCompositeOperation = 'lighter'; glowAt(sx, sy, 190 + ez * 60, `rgba(255,190,110,${0.18 + dawn * 0.3})`); ctx.globalCompositeOperation = 'source-over'; blob(sx, sy, 42, mix('#ff9a6a', '#fff3c8', dawn)); }
   const hills = (par, base, amp, col) => { const pts = [[-40, VH]]; for (let sx = -40; sx <= VW + 40; sx += 40) { const wx = sx + camx * par; pts.push([sx, base - Math.sin(wx * 0.004) * amp - Math.sin(wx * 0.011 + 2) * amp * 0.4]); } pts.push([VW + 40, VH]); poly(pts, col); };
   hills(0.25, g - 90, 50, mix('#1d1a3a', '#a8d5a2', dawn)); hills(0.5, g - 40, 30, mix('#151229', '#7cc47f', dawn));
   ctx.save(); ctx.translate(-Math.round(camx), 0);
@@ -8219,17 +8221,18 @@ function renderWalk() {
   // the brothers, and their father
   if (!KURO_SPR) KURO_SPR = bakeNinja({ r: '#e63946', R: '#a91d2b', n: '#1c1a24', N: '#3d3a52', b: '#1c1a24' });
   const step = Math.floor(tick / 7) % 2 ? 'walkA' : 'stand', kMove = w.ph === 'walk' || w.ph === 'come' || w.ph === 'run', aMove = w.ph === 'walk' || w.ph === 'run' || (w.ph === 'wait' && w.pt < 40);
-  const hug = w.ph === 'hug', kx = hug ? w.kx + Math.min(14, w.pt * 0.5) : w.kx;
+  const hug = w.ph === 'hug', kx = hug ? w.kx + (w.x - 24 - w.kx) * Math.min(1, w.pt / 30) : w.kx;
   drawBaked(KURO_SPR, kMove ? step : 'stand', false, { x: kx - 12, y: g - 44, w: 24, h: 44 });
   drawBaked(SPR, aMove ? step : 'stand', w.face < 0, { x: w.x - 12, y: g - 44, w: 24, h: 44 });
   if (w.ph === 'wait' && w.pt > 60) { const hx = w.x - 22, hy = g - 26 + Math.sin(tick * 0.1) * 1.5; ctx.fillStyle = '#16121f'; ctx.fillRect(hx - 9, hy - 2, 11, 8); ctx.fillStyle = '#f2c9a0'; ctx.fillRect(hx - 8, hy - 1, 9, 6); glowAt(hx - 4, hy + 2, 26, 'rgba(255,240,180,.5)'); }   // Kai's open hand
   const sRun = w.ph === 'run' && w.pt > 30, sy = g - 60 - (sRun ? Math.abs(Math.sin(tick * 0.4)) * 6 : 0);
   drawBaked(SENSEI_SPR, 'a', true, { x: w.sx - 20, y: sy, w: 40, h: 60 });
-  if (hug) { glowAt(w.x + 6, g - 30, 60 + Math.min(120, w.pt), 'rgba(255,236,170,.45)'); for (let k = 0; k < 3; k++) { const ht = w.pt - 30 - k * 40; if (ht > 0 && ht < 120) heart(w.x + 6 + (k - 1) * 22, g - 70 - ht * 0.5, 10, '#ff5a8a'); } }
+  if (hug) { ctx.globalCompositeOperation = 'lighter'; glowAt(w.x + 3, g - 34, 60 + Math.min(110, w.pt), 'rgba(255,196,96,.32)'); ctx.globalCompositeOperation = 'source-over'; for (let k = 0; k < 3; k++) { const ht = w.pt - 30 - k * 40; if (ht > 0 && ht < 120) heart(w.x + 6 + (k - 1) * 22, g - 70 - ht * 0.5, 10, '#ff5a8a'); } }
   for (const pe of w.petals) { ctx.fillStyle = pe.r > 3.5 ? '#ffc4d8' : '#ffe3ef'; ctx.fillRect(Math.round(pe.x), Math.round(pe.y), 4, 3); }
   ctx.restore();
+  ctx.restore();   // (the zoom)
   if (dawn < 1) { ctx.fillStyle = `rgba(12,10,40,${0.28 * (1 - dawn)})`; ctx.fillRect(0, 0, VW, VH); }   // the night thins out
-  if (hug && w.pt > 200) { ctx.fillStyle = `rgba(255,246,220,${Math.min(1, (w.pt - 200) / 60)})`; ctx.fillRect(0, 0, VW, VH); }
+  if (hug && w.pt > 280) { ctx.fillStyle = `rgba(255,246,220,${Math.min(1, (w.pt - 280) / 60)})`; ctx.fillRect(0, 0, VW, VH); }
 }
 cv.addEventListener('pointerdown', () => { if (WH) WH.hold = true; });
 window.addEventListener('pointerup', () => { if (WH) WH.hold = false; });

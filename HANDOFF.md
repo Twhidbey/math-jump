@@ -118,4 +118,5 @@ Owner asked for a parent screen with its own link: how long each kid plays, a ti
 - **Six-reviewer analysis (Nov 23):** six agents scored story 6.5, cohesion 6, art 6.5, beauty 6, engagement 6.5, math 6.5. Owner said build all six recommendations. **1 done (live): math progression fixes** (two-digit and Think skills can pass now, more time for worked-out questions, the right answer is no longer usually the middle one): see the end of `docs/math.md`.
 - **2 done (live): upright phones** get a taller, bigger picture (view 432 to 540 wide by screen height), the band below takes the ground's colour, and story-card buttons stay on screen. See the end of `docs/levels.md`. Checked in emulation at 390x780, 390x664, 375x553, 844x390; not on a real phone.
 - **3 done (live): calmer gates** (no "?" signpost, one padlock, the animal's problem shows once). See the end of `docs/crossings.md`.
+- **4 done (live): the walk-home hug** is under the gate with a slow zoom, a sunrise behind it and golden added light.
 
