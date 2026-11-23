@@ -38,17 +38,17 @@ This file is the one source for the story. Every bit of story text in `index.htm
 
 - **Before the fight (taunts):** Kage "No one gets past my blade... unless they can add!" · Golem "ROCK SMASH! You will never take away my scroll!" · Mega-Bot "BEEP BOOP. CALCULATING... YOUR DEFEAT." · Snowman "ROOOAR! Everyone runs from me. You will too!" · Octopus "Eight arms, and every piece is MINE!" · Scorpion "Come closer... and I will STING you!" · Shogun "Go home, little brother!"
 - **After the last answer** (Kai first says "Take my hand?"):
-  - Kage: "Never!" then "Kuro paid us a scroll to be his friends. Ha!" and he fades away.
-  - Golem: Kai "You don't have to be angry." Golem "Thank you, little ninja." ♥ "Kuro said never let go of my anger. It only made me hurt more."
-  - Mega-Bot: Kai "You can rest now." Bot "KURO SAID: NEVER STOP. ...WE CAN REST?" then "EVERYONE REST!" ♥
-  - Snowman: Kai "Nobody should be alone." Snowman "You're not running away?" ♥ "A friend!" then "Kuro said being alone makes you strong. I was just cold." "A friend!"
-  - Octopus: Kai gives him one of his own gems: "Here. This gem is for you." Octopus "For me? Nobody ever gave me anything!" ♥ then "Here! Everyone gets a piece!" (he lets go of his whole hoard; little fish take the pieces home), then "Kuro said keep every piece. It was never enough." During the fight each hit makes him drop one piece.
-  - Scorpion: Kai "I forgive you." Scorpion "But... I stung you!" then "Then I will put my stinger down." ♥ "Kuro taught me to sting first." (forgiveness: he stung first, and Kai forgives him anyway).
+  - Kage: "Never!" and he fades away.
+  - Golem: Kai "You don't have to be angry." Golem "Thank you, little ninja." ♥
+  - Mega-Bot: Kai "You can rest now." Bot "...WE CAN REST?" then "EVERYONE REST!" ♥
+  - Snowman: Kai "Nobody should be alone." Snowman "You're not running away?" ♥ "A friend!"
+  - Octopus: Kai gives him one of his own gems: "Here. This gem is for you." Octopus "For me? Nobody ever gave me anything!" ♥ then "Here! Everyone gets a piece!" (he lets go of his whole hoard; little fish take the pieces home) During the fight each hit makes him drop one piece.
+  - Scorpion: Kai "I forgive you." Scorpion "But... I stung you!" then "Then I will put my stinger down." ♥ (forgiveness: he stung first, and Kai forgives him anyway).
   - Shogun: "Why... why didn't you finish me?" Kai "Look out!" (the beam falls, then the ending pages).
 
 ## Why Kuro went to each world (owner, Nov 22 2026)
 
-Each world is a place Kuro went looking for something to take the place of his father's love, and he traded one Math Scroll there to get it: **Village** popularity and friends · **Volcano** anger about past hurts · **Factory** control · **Snow** needing no one (pride) · **Sea** riches · **Desert** revenge · **Castle** putting himself on the throne. The world story page says it in one line ("Kuro came here to be popular."), each boss says it after being won over, and Kuro's journal says it in his own words.
+Each world is a place Kuro went looking for something to take the place of his father's love, and he traded one Math Scroll there to get it: **Village** popularity and friends · **Volcano** anger about past hurts · **Factory** control · **Snow** needing no one (pride) · **Sea** riches · **Desert** revenge · **Castle** putting himself on the throne. The world story page says it in one line ("Kuro came here to be popular."), and Kuro's journal says it in his own words.
 
 ## Kuro's journal (one page in each world's middle level; two in the castle)
 
