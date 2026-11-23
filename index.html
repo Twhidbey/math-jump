@@ -615,7 +615,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 12:45 AM PT · Map: just the land names</div>
+  <div class="build">Updated Nov 23, 2026 · Story in the levels: put right what Kuro spoiled, Kuro ahead, friends help, fish feast</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -3542,6 +3542,7 @@ function streakUp(x, y) {
   if (owl(7) && !G.freezeT && (G.owlCharge = Math.min(5, (G.owlCharge || 0) + 1)) === 5) floatText(x, y - 70, 'Time freeze ready!', '#bfefff', 20);   // the Wise owl's Time freeze charges   // a right answer refills Ninja vanish, the dolphin and the gear button
   G.streak++; G.bestStreak = Math.max(G.bestStreak, G.streak);
   giftStreak(x, y);   // the Road Home keepsakes that answer to right answers
+  if (!L.boss) fixMark(x);   // and it puts right something Kuro spoiled nearby
   stat('right'); if (G.streak > statOf('bestStreak')) prog.stats.bestStreak = G.streak;
   if (statOf('right') % 25 === 0 || G.streak === 10 || G.streak === 25 || G.streak === 50) statBadges();
   G.score += 500 * Math.min(G.streak, 5);
@@ -5387,7 +5388,7 @@ function dragonRoar() {   // Dragon suit: every right answer, a roar knocks out 
   if (n) { shake(8, 4); tone(90, 0.5, 'sawtooth', 0.06, 45); floatText(P.x + P.w / 2, P.y - 40, 'ROAR!', '#ff8c1a', 30); }
 }
 function shopPowTick(p) {   // every frame of play: the powers that act on their own
-  if (mode === 'play') { giftTick(p); pageTick(p); }
+  if (mode === 'play') { giftTick(p); pageTick(p); storyTick(p); }
   if (L.boss || L.vault || mode !== 'play') return;
   const cx = p.x + p.w / 2;
   if (wears('trail-dragon')) {   // Fire trail: enemies that run into it get bopped
@@ -5449,7 +5450,7 @@ let KURO_SPR = null;
 const followAt = n => { const h = G.hist || []; return h[Math.max(0, h.length - 1 - n)]; };
 function giftTick(p) {
   (G.hist = G.hist || []).push({ x: p.x, y: p.y, f: p.face, air: !p.onGround, walk: Math.abs(p.vx) > 0.5 });
-  if (G.hist.length > 40) G.hist.shift();
+  if (G.hist.length > 60) G.hist.shift();
   if (wears('gift-stone') && !L.boss) {   // Stone heart: Earth stomp after a big fall
     if (!p.onGround) G.airTop = Math.min(G.airTop ?? p.y, p.y);   // (the highest point of this jump or fall)
     else {
@@ -5558,6 +5559,7 @@ function fell() {
   const b = activeBridge(), first = b && !b.fell;
   if (b) b.fell = true;
   if (prog.easy || prog.safe || first) sfx.bump();
+  else if (helperCatch()) floatText(P.x + P.w / 2, GR * T - 3 * T, 'The Golem caught you!', '#ffd23f', 24);   // a boss friend: the Golem
   else if (wears('gift-cloak') && !G.kuroUsed) { G.kuroUsed = true; sfx.win(); floatText(P.x + P.w / 2, GR * T - 3 * T, 'Got you, little brother!', '#ffd23f', 24); }   // Brother's cloak: Kuro catches him
   else if (G.hearts <= 1 && wears('pet-dragon-gold') && !G.goldSaved) { G.goldSaved = true; sfx.win(); floatText(P.x + P.w / 2, GR * T - 3 * T, 'Golden kite to the rescue!', '#ffd23f', 24); }
   else { G.hearts--; G.hit = true; sfx.hurt(); if (G.hearts <= 0) { gameOver(); return; } }
@@ -7869,7 +7871,7 @@ function victoryTick() {
 }
 
 function updateWin() {
-  const p = P; G.winT++; petTick(); victoryTick();
+  const p = P; G.winT++; petTick(); victoryTick(); feastTick();
   if (L.boss) {
     p.vx *= 0.8; p.vy = Math.min(p.vy + 0.55, 12); moveX(p); moveY(p);
     if (G.winT === 30) startVictory();
@@ -8266,6 +8268,144 @@ function openMap() {
       <br><button type="button" class="btn" id="mapGo">Go there ▶</button>`;
     $('mapGo').onclick = () => { audio(); confirmStage(STAGES.findIndex(s => s.w === w)); };
   };
+}
+// Story in the levels (owner, Nov 23 2026: "tie story into gameplay": ideas 1-3, and a fish feast in the sea).
+// 1. Right answers undo what Kuro did in each world (L.marks, one by each of the first gates): a bandit with a Kuro sign,
+//    an angry steam vent, a chained robot, a lone penguin, a locked treasure chest, a scorpion with its stinger up, a Kuro
+//    banner. A right answer nearby (fixMark, from streakUp) puts it right: the bandit drops the sign, the vent turns to a
+//    cool spring, the robot is unchained, the penguin joins a line behind Kai, the chest opens and fish swim off with the
+//    gems, the scorpion puts its stinger down, the banner falls. In the sea, the fish come back for a feast at the end.
+// 2. Kuro is one step ahead: a note from him on a signpost (L.note) and, near the end, a glimpse of him running off (L.kuro).
+// 3. Bosses Kai won over help in later worlds (G.helper, once a level): the Golem catches Kai from a pit, Mega-Bot brings a
+//    heart, the Snowman throws a snowball at an enemy, the Octopus shares gems, the Scorpion stings an enemy away.
+const MARK_KIND = { japan: 'bandit', lava: 'vent', robot: 'robot', snow: 'penguin', sea: 'chest', desert: 'scorpion', castle: 'banner' };
+const KURO_NOTE = { japan: 'My new friends like ME best! –K', lava: 'Leave me alone! –K', robot: 'Everything here obeys me. –K', snow: "I don't need anyone. Go home! –K",
+  sea: 'All this treasure is mine! –K', desert: "They'll be sorry! –K", castle: 'Bow to the king! –K' };
+const HELPERS = [null, 'golem', 'bot', 'yeti', 'octo', 'scorpion', null];   // by world: the boss who helps once won over
+function groundCol(c) {   // a column near c with ground under it and room above (or -1)
+  for (let d = 0; d < 12; d++) for (const cc of [c - d, c + d]) if (cc > 2 && cc < L.w - 2 && SOLID.has(L.map[GR][cc]) && L.map[GR - 1][cc] === '.' && L.map[GR - 2][cc] === '.') return cc;
+  return -1;
+}
+function placeStory(i) {   // (startStage)
+  L.marks = []; L.note = null; L.kuro = null; G.helper = null; G.pengs = 0; G.feastFish = 0;
+  const st = STAGES[i]; if (!st || st.boss || L.boss || L.vault) return;
+  const kind = MARK_KIND[L.world.key];
+  for (const s of L.stations.slice(0, 5)) {
+    const c = groundCol(s.gate[0] - 3); if (c < 0 || L.marks.some(m => Math.abs(m.c - c) < 3)) continue;
+    L.marks.push({ kind, c, x: c * T + T / 2, y: GR * T, fixed: 0, t: 0 });
+  }
+  if (!L.water) {
+    const nc = [0.25, 0.3, 0.2, 0.35].map(f => groundCol(Math.round(L.w * f))).find(c => c > 0 && !L.marks.some(m => Math.abs(m.c - c) < 3)); if (nc) L.note = { x: nc * T + T / 2, text: st.k === 2 ? 'Turn back, little brother! –K' : KURO_NOTE[L.world.key] };
+    const kc = groundCol(Math.round(L.w * 0.78)); if (kc > 0) L.kuro = { x: kc * T, y: GR * T - 44, ph: 0, t: 0 };
+  }
+  const can = HELPERS.map((k, w) => (k && w < st.w && prog.best[bossOf(w)] ? k : null)).filter(Boolean);
+  if (can.length) G.helper = { kind: can[i % can.length], done: false, show: null };
+}
+function fixMark(x) {   // a right answer: put right the nearest thing Kuro spoiled
+  if (!L.marks || !P) return;
+  let m = null, bd = 9 * T;
+  for (const k of L.marks) { const d = Math.abs(k.x - (P.x + P.w / 2)); if (!k.fixed && d < bd) { bd = d; m = k; } }
+  if (!m) return;
+  m.fixed = 1; m.t = 0; sfx.correct();
+  const words = { bandit: 'Friends!', vent: 'Cool water!', robot: 'Free!', penguin: 'Come along!', chest: 'Share!', scorpion: 'Peace!', banner: 'Down it comes!' };
+  floatText(m.x, m.y - 70, words[m.kind], '#ff9cc4', 20);
+  if (m.kind === 'penguin') G.pengs++;
+  if (m.kind === 'chest') { G.feastFish += 2; for (let k = 0; k < 6; k++) G.parts.push({ k: 'bit', x: m.x, y: m.y - 20, vx: (Math.random() - 0.5) * 3, vy: -2 - Math.random() * 2, life: 40, col: ['#3ae374', '#3a86ff', '#ff4d6d'][k % 3], s: 4 }); }
+}
+function storyTick(p) {   // (shopPowTick) the marks' animations, the note, Kuro, the helpers
+  for (const m of L.marks || []) if (m.fixed) m.t++;
+  const k = L.kuro;
+  if (k && !k.ph && P.x > k.x - 8 * T) { k.ph = 1; k.t = 0; }
+  if (k && k.ph === 1 && ++k.t > 50) { k.ph = 2; k.t = 0; }
+  if (k && k.ph === 2) { k.x += 6; if (++k.t > 70) k.ph = 3; }
+  const h = G.helper; if (!h) return;
+  if (h.show && ++h.show.t > 110) h.show = null;
+  if (h.done) return;
+  const cx = p.x + p.w / 2;
+  if (h.kind === 'yeti' || h.kind === 'scorpion') {
+    const e = L.enemies.find(e => !e.dead && !e.twinRaid && !e.forgiven && e.x > cx + T && e.x - cx < 6 * T && Math.abs(e.y - p.y) < 3 * T && ['ninja', 'rock', 'robot', 'penguin', 'scorpion', 'snake', 'shadow', 'bear', 'fish', 'jelly'].includes(e.kind));
+    if (e) { h.done = true; knockOut(e, h.kind === 'yeti' ? 'Splat!' : 'Zap!'); h.show = { x: cx - 3 * T, y: GR * T, t: 0, say: h.kind === 'yeti' ? 'I got him, Kai!' : 'I sting for you now!' }; burst(e.x + e.w / 2, e.y + 10, h.kind === 'yeti' ? '#ffffff' : '#ffb627', 12, 3); }
+  } else if (h.kind === 'octo' && p.x > L.w * T * 0.4) {
+    h.done = true; payGems(cx, p.y, 5); h.show = { x: cx + 2 * T, y: GR * T, t: 0, say: 'Here, Kai! I share now!' };
+  } else if (h.kind === 'bot' && L.stations.filter(s => s.solved).length >= 3) {
+    h.done = true; if (G.hearts < G.maxHearts) { G.hearts++; floatText(cx, p.y - 40, '+1 heart', '#ff5a8a', 22); } else payGems(cx, p.y, 5);
+    h.show = { x: cx - 3 * T, y: GR * T, t: 0, say: 'REST WELL, KAI!' };
+  }
+}
+function helperCatch() {   // (fell) the Golem lifts Kai out of a pit
+  const h = G.helper; if (!h || h.kind !== 'golem' || h.done) return false;
+  h.done = true; h.show = { x: P.x + P.w / 2, y: GR * T, t: 0, say: 'Up you come, little ninja!' }; sfx.win();
+  return true;
+}
+function drawStory() {   // world space, before Kai
+  for (const m of L.marks || []) {
+    if (m.x < cam - 80 || m.x > cam + VW + 80) continue;
+    const x = m.x, y = m.y, t = m.t, f = m.fixed;
+    if (m.kind === 'bandit' || m.kind === 'robot' || m.kind === 'scorpion' || m.kind === 'penguin') {
+      if (m.kind === 'penguin' && f) continue;   // (it walks with Kai now)
+      const kind = m.kind === 'bandit' ? 'ninja' : m.kind, e = walkerFor(kind, 0, 0);
+      const away = f ? Math.max(0, t - 40) : 0; e.x = x - e.w / 2 + away * 1.6; e.y = y - e.h; e.onGround = true; e.vx = f && t > 40 ? 1 : -1; e.t = f && t > 40 ? t : 0;
+      ctx.globalAlpha = f ? Math.max(0, 1 - away / 70) : 1;
+      if (ctx.globalAlpha > 0) drawEnemy(e);
+      if (m.kind === 'bandit') {   // a sign: a red board with Kuro's mask; dropped when fixed
+        ctx.fillStyle = '#6b4423'; if (!f) ctx.fillRect(x + 12, y - 62, 3, 40); else ctx.fillRect(x + 14, y - 4, 22, 3);
+        if (!f) { ctx.fillStyle = '#c0392b'; ctx.fillRect(x + 2, y - 74, 24, 16); ctx.fillStyle = '#16121f'; ctx.fillRect(x + 7, y - 69, 14, 5); ctx.fillStyle = '#ff2a4a'; ctx.fillRect(x + 9, y - 68, 3, 2); ctx.fillRect(x + 16, y - 68, 3, 2); }
+      }
+      if (m.kind === 'robot' && (!f || t < 25)) { ctx.fillStyle = f ? `rgba(255,210,63,${1 - t / 25})` : '#ffd23f'; for (let k = 0; k < 6; k++) ctx.fillRect(x - 40 + k * 6 - (f ? t : 0), y - 14 + (k % 2) * 2, 5, 3); ctx.fillStyle = '#555'; ctx.fillRect(x - 46, y - 30, 6, 30); }   // its chain to a post
+      if (m.kind === 'scorpion' && !f) { ctx.fillStyle = '#ff2a4a'; ctx.fillRect(x - 3, y - 46, 5, 10); ctx.fillRect(x - 3, y - 33, 5, 4); }   // an angry "!"
+      if (m.kind === 'penguin' && !f) { ctx.fillStyle = 'rgba(160,190,220,.8)'; ctx.beginPath(); ctx.arc(x + 14, y - 46, 8, 0, 7); ctx.arc(x + 24, y - 50, 7, 0, 7); ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillRect(x + 12, y - 48, 2, 2); ctx.fillRect(x + 17, y - 48, 2, 2); ctx.fillRect(x + 22, y - 48, 2, 2); }   // all alone: "..."
+      if (f && t < 90) heart(x, y - 60 - t * 0.3, 9, '#ff5a8a');
+      ctx.globalAlpha = 1;
+    } else if (m.kind === 'vent') {   // angry steam, then a cool spring
+      ctx.fillStyle = '#3d3431'; ctx.fillRect(x - 14, y - 8, 28, 8); ctx.fillStyle = f ? '#3a86ff' : '#ff6a00'; ctx.fillRect(x - 8, y - 9, 16, 3);
+      for (let k = 0; k < 4; k++) { const ph = (tick * (f ? 0.5 : 1.4) + k * 14) % 56, a = 1 - ph / 56; ctx.fillStyle = f ? `rgba(150,210,255,${a})` : `rgba(255,120,40,${a * 0.8})`; ctx.beginPath(); ctx.arc(x + Math.sin(ph / 6 + k) * (f ? 4 : 7), y - 12 - ph * (f ? 0.7 : 1.6), f ? 3 : 7 + ph / 10, 0, 7); ctx.fill(); }
+    } else if (m.kind === 'chest') {   // a locked chest; open, fish swim off with the gems
+      ctx.fillStyle = '#8b5a2b'; ctx.fillRect(x - 16, y - 18, 32, 18); ctx.fillStyle = '#c9a24f'; ctx.fillRect(x - 16, y - 12, 32, 3);
+      if (!f) { ctx.fillStyle = '#6b4423'; ctx.fillRect(x - 17, y - 28, 34, 11); ctx.fillStyle = '#ffd23f'; ctx.fillRect(x - 3, y - 20, 6, 7); ctx.fillStyle = '#16121f'; ctx.fillRect(x - 1, y - 17, 2, 3); }
+      else { ctx.fillStyle = '#6b4423'; ctx.fillRect(x - 17, y - 40, 34, 6); for (let k = 0; k < 3 && t < 160; k++) { const fx = x + (k - 1) * 10 + t * (1.2 + k * 0.3) * (k % 2 ? 1 : -1), fy = y - 30 - t * 0.35 - k * 8 + Math.sin(t / 6 + k) * 3; ctx.fillStyle = ['#ff8a3c', '#3fe0b0', '#ff9cc4'][k]; ctx.beginPath(); ctx.ellipse(fx, fy, 7, 4, 0, 0, 7); ctx.fill(); ctx.fillStyle = ['#3ae374', '#3a86ff', '#ff4d6d'][k]; ctx.fillRect(fx - 2, fy - 10, 5, 5); } }
+    } else if (m.kind === 'banner') {   // Kuro's banner on a pole; it falls
+      const a = f ? Math.min(Math.PI / 2, t / 20) : 0;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(a); ctx.globalAlpha = f ? Math.max(0, 1 - Math.max(0, t - 60) / 40) : 1;
+      ctx.fillStyle = '#3a2a20'; ctx.fillRect(-2, -86, 4, 86); ctx.fillStyle = '#4b2a6b'; ctx.fillRect(2, -84, 24, 34); ctx.fillStyle = '#16121f'; ctx.fillRect(7, -74, 14, 6); ctx.fillStyle = '#ff2a4a'; ctx.fillRect(9, -73, 3, 2); ctx.fillRect(16, -73, 3, 2);
+      ctx.restore(); ctx.globalAlpha = 1;
+    }
+  }
+  if (L.note && Math.abs(L.note.x - cam - VW / 2) < VW) {   // Kuro's note on a signpost
+    const n = L.note, x = n.x, y = GR * T; ctx.fillStyle = '#6b4423'; ctx.fillRect(x - 2, y - 40, 4, 40); ctx.fillStyle = '#c9a24f'; ctx.fillRect(x - 16, y - 50, 32, 18); ctx.fillStyle = '#6b4423'; for (let k = 0; k < 3; k++) ctx.fillRect(x - 11, y - 46 + k * 5, k === 2 ? 12 : 22, 2);
+    if (Math.abs(P.x + P.w / 2 - x) < 2.5 * T) drawSay(x, y - 54, n.text);
+  }
+  const k = L.kuro;
+  if (k && (k.ph === 1 || k.ph === 2)) {   // Kuro, just ahead, then gone
+    if (!KURO_SPR) KURO_SPR = bakeNinja({ r: '#e63946', R: '#a91d2b', n: '#1c1a24', N: '#3d3a52', b: '#1c1a24' });
+    ctx.globalAlpha = k.ph === 2 ? Math.max(0, 1 - k.t / 60) : 1;
+    drawBaked(KURO_SPR, k.ph === 2 && Math.floor(tick / 5) % 2 ? 'walkA' : 'stand', k.ph === 1, { x: k.x, y: k.y, w: 24, h: 44 });
+    ctx.globalAlpha = 1;
+    if (k.ph === 1 && k.t > 10) drawSay(k.x + 12, k.y - 4, 'Go home, Kai!');
+  }
+  if (G.feast) drawFeast();
+}
+function drawHelpers() {   // (with the followers) the penguins Kai befriended, and a boss friend helping out
+  for (let i = 0; i < Math.min(G.pengs || 0, 5); i++) { const f = followAt(10 + i * 7); if (!f) continue; const e = walkerFor('penguin', 0, 0); e.x = f.x - 2; e.y = f.y + P.h - e.h; e.onGround = true; e.vx = f.f; e.t = f.walk ? tick : 0; ctx.save(); ctx.translate(e.x + e.w / 2, e.y + e.h); ctx.scale(0.7, 0.7); ctx.translate(-(e.x + e.w / 2), -(e.y + e.h)); drawEnemy(e); ctx.restore(); }
+  const h = G.helper && G.helper.show; if (!h) return;
+  const a = Math.min(1, h.t / 12, (110 - h.t) / 15), sz = 64;
+  ctx.globalAlpha = Math.max(0, a); drawBaked(BOSS_SPR[G.helper.kind], Math.floor(h.t / 12) % 2 ? 'b' : 'a', h.x < P.x, { x: h.x - sz / 2, y: h.y - sz, w: sz, h: sz }); ctx.globalAlpha = 1;
+  if (h.t > 8 && h.t < 100) drawSay(h.x, h.y - sz - 4, h.say);
+}
+function feastTick() {   // (updateWin) the sea: everyone shares a feast at the end
+  if (!L.water || L.boss || G.feast || G.winT !== 40) return;
+  G.feast = { x: P.x + P.w + 30, y: P.y + P.h, n: 4 + (G.feastFish || 0) };
+  floatText(G.feast.x + 90, G.feast.y - 90, 'A fish feast! Everyone shares.', '#ffd23f', 24);
+}
+function drawFeast() {
+  const f = G.feast, x = f.x, y = f.y;
+  ctx.fillStyle = '#ff8a7a'; ctx.fillRect(x, y - 16, 180, 6); ctx.fillStyle = '#b3463a'; ctx.fillRect(x + 8, y - 10, 6, 10); ctx.fillRect(x + 166, y - 10, 6, 10);   // a coral table
+  for (let k = 0; k < 6; k++) { ctx.fillStyle = ['#ffd23f', '#3ae374', '#fff6c8'][k % 3]; ctx.fillRect(x + 14 + k * 27, y - 22, 8, 6); }   // shells and treats
+  for (let i = 0; i < Math.min(f.n, 12); i++) {   // fish all round it
+    const fx = x + 10 + (i % 6) * 32 + Math.sin(tick / 15 + i) * 4, fy = y - 34 - Math.floor(i / 6) * 22 + Math.sin(tick / 9 + i * 2) * 3, d = i % 2 ? 1 : -1;
+    ctx.fillStyle = ['#ff8a3c', '#3fe0b0', '#ff9cc4', '#7df9ff', '#ffd23f'][i % 5]; ctx.beginPath(); ctx.ellipse(fx, fy, 9, 5, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(fx - d * 8, fy); ctx.lineTo(fx - d * 14, fy - 5); ctx.lineTo(fx - d * 14, fy + 5); ctx.fill();
+    ctx.fillStyle = '#16121f'; ctx.fillRect(fx + d * 4 - 1, fy - 2, 2, 2);
+  }
 }
 function storyPages() {
   const pages = [['The Stolen Scrolls', `${sceneHTML('opening')}<p>${STORY}</p>`]];
@@ -12659,13 +12799,13 @@ function render() {
     if (tick % 2 === 0) G.parts.push({ k: 'bit', x: c.x + (Math.random() - 0.5) * 26, y: c.y + 10, vx: (Math.random() - 0.5) * 0.6, vy: -1.6 - Math.random() * 1.2, life: 30, col: ['#ff6a00', '#ffb300', '#ffd23f', '#ff3d00'][R(0, 3)], s: 7 });
   }
   for (const c of L.coins) if ((!c.taken || (c.fly && c.fly.t > 0)) && c.x > cam - 20 && c.x < cam + VW + 20) drawGem(c.x, c.y + Math.sin(tick * 0.08 + c.x) * 3, c.v, tick * 0.08 + c.x);
-  drawPage();
+  drawPage(); drawStory();
   for (const e of L.enemies) { if (e.forgiven) { ctx.globalAlpha = Math.min(1, e.forgiven / 40); drawEnemy(e); ctx.globalAlpha = 1; heart(e.x + e.w / 2, e.y - 14 - (100 - e.forgiven) * 0.2, 8, '#ff5a8a'); } else drawEnemy(e); }
   drawPits(c0, c1);   // after enemies, so lava blobs rise out of the lava
   drawRainbowBridge();   // (the Rainbow suit's bridge, over the pit)
   drawBoss();
   if (L.boss) { drawOrbs(); }
-  if (G) { drawTeamGhost(); drawTeamTwin(); drawDolphin(); drawRunner(); drawShopPow(); drawOwlEyes(); drawClone(); drawGifts(); drawPet(); drawPlayer(); drawTeamFx(); drawGearFx(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
+  if (G) { drawTeamGhost(); drawTeamTwin(); drawDolphin(); drawRunner(); drawShopPow(); drawOwlEyes(); drawClone(); drawGifts(); drawHelpers(); drawPet(); drawPlayer(); drawTeamFx(); drawGearFx(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
   if (L.twist && G) drawTwistFront();
   if (L.flavor && G) drawFlavorFront();
   if (L.water && !L.room) drawWaterFront();
@@ -12768,6 +12908,7 @@ function startStage(i) {
   G = { idx: i, skill: L.skill, hearts, maxHearts: hearts, coins: 0, score: 0, shake: 0, shakeAmp: 0, freeze: 0, slow: 0, flash: 0, flyers: [], pulse: 0, chain: 0, lastGem: -99, mistakes: 0, streak: 0, bestStreak: 0, solved: 0, fastN: 0, lightN: 0, missed: [], practice: new Map(), power: null, powerN: 0, carry: null, saved: null,
     pet: prog.equip.pet ? { x: P.x, y: P.y, mood: null, moodT: 0 } : null, glide: 0, alarm: 0, climb: false, hidden: false, bubble: null, tip: null, mbox: null, dash: 0, cross: null, wrongRun: 0, tipSoon: !!(plan && plan.mode === 'back'), byTrack: plan ? {} : null, checkpoint: 1.5 * T, time: 0, parts: [], shots: [], bumps: new Map(), winT: 0 };
   placePage(i);   // Kuro's journal page, in each world's middle level
+  placeStory(i);   // what Kuro spoiled in this world, his note, a glimpse of him, a boss friend who helps
   SPR = bakeNinja(heroPal());   // equipped headband and suit, plus the belt you've earned
   const bandIt = ITEM[prog.equip.band], suitIt = ITEM[prog.equip.suit];   // an animated suit (Rainbow) wins over an animated headband
   SPR_ANIM = suitIt && suitIt.anim ? suitIt.anim.map(c => bakeNinja({ ...heroPal(), n: c[0], N: c[1] })) : bandIt && bandIt.anim ? bandIt.anim.map(c => bakeNinja({ ...heroPal(), r: c[0], R: c[1] })) : null;
