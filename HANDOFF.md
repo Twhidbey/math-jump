@@ -126,4 +126,5 @@ Owner asked for a parent screen with its own link: how long each kid plays, a ti
 - **Home screen slimmed (Nov 23, live):** 19 controls to 11: a corner cog for Settings, a Story button (map + friends + scrolls + journal on one page), Race moved below the levels, Team kept (owner: the kids use Team often, Race not). See the end of `docs/levels.md`.
 - **Home screen, more (Nov 23, live):** Race is a small pill beside Daily Dojo; the math chip moved to Settings > Grown-ups > Math level; the belt is a colour bar on the player chip (no belt line). 10 controls. Fixed my own bug: a duplicate `storyBtn` id had broken Settings > Read the story for a few hours.
 - **Home screen: no big Play button (Nov 23, live):** owner: both kids start from the level buttons. 9 controls now; the next level is the one Kai stands on and the menu opens scrolled to it.
+- **Belt in the players menu (Nov 23, live):** the tiny belt bar on the player chip was hard to read; each player's card in "Who's playing?" now shows the belt big, its name and a bar toward the next belt.
 

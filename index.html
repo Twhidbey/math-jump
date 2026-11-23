@@ -195,6 +195,8 @@
   .pcard .pi { font-size: 44px; line-height: 1.1; }
   .pcard .pn { font-weight: 800; font-size: 18px; }
   .pcard .pg { font-size: 13px; opacity: .8; }
+  .pcard .pbelt { display: grid; justify-items: center; gap: 3px; margin: 4px 0 2px; font-size: 15px; } .pcard .pbelt .belt { width: 84px; height: 16px; }
+  .pcard .pbar { display: block; width: 84px; height: 5px; background: rgba(255,255,255,.18); border-radius: 3px; overflow: hidden; } .pcard .pbar i { display: block; height: 100%; }
   .pcard .pe { position: absolute; top: 4px; right: 4px; font-size: 16px; background: rgba(0,0,0,.3); border: none; border-radius: 8px; padding: 3px 6px; cursor: pointer; color: #fff; }
   .pcard.add .pi { opacity: .8; }
   #pName { font: inherit; font-size: 22px; font-weight: 800; width: 100%; box-sizing: border-box; padding: 8px 12px; border-radius: 10px; border: 3px solid #5b6bd6; background: #15153a; color: #fff; text-align: center; margin-top: 6px; }
@@ -680,7 +682,7 @@
   <div class="maprow hidden"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Home screen: no big Play button; tap a level to play</div>
+  <div class="build">Updated Nov 23, 2026 · The belt shows big in the players menu</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -13617,7 +13619,7 @@ function buildMenu() {
   // (owner, Nov 23 2026) no belt line any more: the belt is a small colour bar on the player's chip (Kai also wears it);
   // the line under the chips is only there when the player has picked a title.
   $('rank').innerHTML = prog.title ? `<span class="ptitle">${prog.title}</span>` : ''; $('rank').classList.toggle('hidden', !prog.title);
-  const me = curPlayer(); $('playerChip').innerHTML = `${playerIcon(me.icon, 'picon sm')} `; $('playerChip').append(`${me.name} `); $('playerChip').insertAdjacentHTML('beforeend', `<span class="belt chipbelt" style="background:${b.col}" title="${b.name} Belt"></span> ▾`);
+  const me = curPlayer(); $('playerChip').innerHTML = `${playerIcon(me.icon, 'picon sm')} `; $('playerChip').append(`${me.name} ▾`);   // (the small belt bar on the chip was hard to read: the belt is shown big in the players menu instead)
   const pr = skillProgress(k);
   $('skillChip').innerHTML = `${pixImg('compass', 'pix sm')} ${k.name} <span class="tier">${stars(k.tier)}</span> <span class="dots">${pr.learned}/${pr.n}</span> ✎`;
   const dl = prog.daily, live = dl.last >= today() - 1 ? dl.streak : 0;
@@ -15816,8 +15818,9 @@ function showPlayers() {
   for (const pl of players.list) {
     let pts = 0;
     try { const s = JSON.parse(localStorage.getItem(keyFor(pl.id))) || {}; pts = Object.values(s.best || {}).reduce((a, b) => a + (b.pts || b || 0), 0); } catch (e) { /* no storage */ }
+    const bt = beltFor(pts), nb = BELTS[bt.idx + 1];   // (owner, Nov 23 2026) the belt, big, on each player's card: the belt itself, its name, and a bar toward the next one in that belt's colour
     const b = document.createElement('div'); b.className = 'pcard' + (pl.id === players.cur ? ' on' : ''); b.tabIndex = 0;
-    b.innerHTML = `<span class="pi">${playerIcon(pl.icon)}</span><span class="pn"></span><span class="pg">${GRADE[pl.grade] ? GRADE[pl.grade].name : 'No grade set'} · ${beltFor(pts).name} belt</span><button class="pe" type="button" aria-label="Edit">✏️</button>`;
+    b.innerHTML = `<span class="pi">${playerIcon(pl.icon)}</span><span class="pn"></span><span class="pbelt">${beltHTML(bt)}<b>${bt.name} Belt</b>${nb ? `<i class="pbar"><i style="width:${Math.round((pts - bt.need) / (nb.need - bt.need) * 100)}%;background:${nb.col}"></i></i>` : ''}</span><span class="pg">${GRADE[pl.grade] ? GRADE[pl.grade].name : 'No grade set'}</span><button class="pe" type="button" aria-label="Edit">✏️</button>`;
     b.querySelector('.pn').textContent = pl.name;
     b.onclick = async () => { audio(); if (pl.id !== players.cur && typeof famAsk === 'function' && !(await famAsk('switch player'))) return; switchPlayer(pl.id); };
     b.querySelector('.pe').onclick = async e => { e.stopPropagation(); audio(); if (typeof famAsk === 'function' && !(await famAsk('change a player'))) return; editPlayer(pl); };
