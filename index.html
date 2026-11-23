@@ -562,6 +562,12 @@
   .jpage.miss { background: rgba(255,255,255,.08); color: #ccc; box-shadow: none; }
   .jpage.miss .jw { color: #aaa; }
   .jpage.sensei { background: #fff6c8; }
+  .shopgrid.tiles { grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 6px; }
+  .stile { position: relative; border: 2px solid transparent; border-radius: 10px; background: rgba(255,255,255,.07); padding: 4px 2px 3px; display: grid; justify-items: center; gap: 1px; cursor: pointer; color: #fff; font: inherit; min-height: 64px; }
+  .stile canvas { width: 66px; height: 40px; image-rendering: pixelated; } .stile > img { width: 40px; height: 40px; image-rendering: pixelated; }
+  .stile small { font-size: 11px; font-weight: 800; opacity: .9; } .stile.own { background: rgba(255,210,63,.12); } .stile.on { border-color: #7df9ff; } .stile.sel { border-color: #fff; } .stile.on.sel { border-color: #7df9ff; box-shadow: 0 0 0 2px #fff; }
+  #shopInfo { margin: 8px 0 4px; } #shopInfo .item { grid-template-columns: 100px minmax(0, 1fr); justify-items: start; text-align: left; column-gap: 10px; align-items: center; min-height: 104px; padding: 10px; }
+  #shopInfo .item > canvas, #shopInfo .item > img { grid-row: 1 / span 5; justify-self: center; } #shopInfo .item .istory { text-align: left; } #shopInfo .item .nm { font-size: 17px; padding-right: 34px; }
   .shopgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 10px 0 14px; }
   .item { background: rgba(255,255,255,.07); border-radius: 12px; padding: 8px; display: grid; gap: 4px; justify-items: center; }
   .item canvas { image-rendering: pixelated; }
@@ -684,7 +690,7 @@
   <div class="maprow hidden"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Badge Book fits the phone; every badge has its own picture</div>
+  <div class="build">Updated Nov 23, 2026 · The shop shows small picture tiles, one card at a time</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -777,7 +783,8 @@
     <div class="roadnav"><button type="button" class="btn alt" id="roadPrev">◀</button><div id="roadDots" class="roaddots"></div><button type="button" class="btn alt" id="roadNext">▶</button></div>
     <h3 id="stallName" class="stallname"></h3>
     <div class="buybox hidden" id="buyBox"></div>
-    <div class="shopgrid" id="shopGrid"></div>
+    <div id="shopInfo"></div>
+    <div class="shopgrid tiles" id="shopGrid"></div>
     <div class="row"><button class="btn alt" id="shopClose" type="button">Back</button></div>
   </div>
 </div>
@@ -13957,7 +13964,23 @@ function renderStallCards() {
   $('roadPrev').disabled = stallI === 0; $('roadNext').disabled = stallI === STALLS.length - 1;
   $('roadDots').innerHTML = STALLS.map((t, i) => `<i class="${i === stallI ? 'on' : ''}${stallOpen(t) ? '' : ' shut'}" data-i="${i}"></i>`).join('');
   $('roadDots').querySelectorAll('i').forEach(d => { d.onclick = () => { audio(); walkTo(+d.dataset.i); }; });
-  for (const it of SHOP.filter(x => shelfOf(x) === s.w)) shopItem(grid, it);
+  // The stall's things as small picture tiles; the words and buttons for the one that was tapped are on one card above
+  // them (owner, Nov 23 2026: clean the shop up the same way as the Badge Book).
+  const items = SHOP.filter(x => shelfOf(x) === s.w);
+  if (!items.some(x => x.id === shopSel)) shopSel = (items.find(x => !prog.owned.includes(x.id)) || items[0] || {}).id;
+  const info = $('shopInfo'); info.innerHTML = ''; const cur = items.find(x => x.id === shopSel); if (cur) shopItem(info, cur);
+  for (const it of items) shopTile(grid, it);
+}
+let shopSel = null;
+function shopTile(grid, it) {
+  const owned = prog.owned.includes(it.id), on = prog.equip[it.slot] === it.id, wrapped = !owned && shelfOf(it) === SHELF_HOME && !shelfOpen(SHELF_HOME);
+  const locked = !owned && (giftLock(it) || (it.badge && !prog.badges[it.badge]));
+  const el = document.createElement('button'); el.type = 'button'; el.className = 'stile' + (on ? ' on' : '') + (owned ? ' own' : '') + (it.id === shopSel ? ' sel' : '');
+  el.innerHTML = wrapped ? `<img class="pix" src="${pixURL('chest', 4)}" alt="">` : `<canvas width="90" height="54"></canvas>${owned ? '' : `<small>${locked ? pixSm('lock') : `${gemSm()} ${it.price}`}</small>`}`;
+  if (!wrapped) drawItemPreview(el.querySelector('canvas'), it);
+  el.setAttribute('aria-label', wrapped ? 'A family treasure' : it.name);
+  el.onclick = () => { audio(); shopSel = it.id; hide('buyBox'); renderStallCards(); };
+  grid.appendChild(el);
 }
 function openShop() { hide('menu'); hide('buyBox'); renderShop(); show('shop'); }
 // A badge prize in the shop: how close the kid is, and Practice / Pick a level for a math badge (else: see the badge).
@@ -15977,8 +16000,8 @@ $('roadNext').onclick = () => { audio(); walkTo(stallI + 1); };
 $('roadCv').onclick = e => {   // tap a thing on the stall: its card
   const cv = $('roadCv'), r = cv.getBoundingClientRect(), x = (e.clientX - r.left) * cv.width / r.width, y = (e.clientY - r.top) * cv.height / r.height;
   const h = roadHits.find(o => x >= o.x && x <= o.x + o.w && y >= o.y && y <= o.y + o.h); if (!h) return;
-  audio(); const el = [...document.querySelectorAll('#shopGrid .item')].find(d => d.dataset.id === h.id);
-  if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+  audio(); shopSel = h.id; hide('buyBox'); renderStallCards();   // (the things are tiles now: tapping one on the stall picks it, its card shows under the stall)
+  const el = document.querySelector('#shopInfo .item'); if (el) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
 };
 $('shopClose').onclick = () => { hide('shop'); buildMenu(); show('menu'); };
 $('badgeBtn').onclick = () => { audio(); openBadges(); };

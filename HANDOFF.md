@@ -128,4 +128,5 @@ Owner asked for a parent screen with its own link: how long each kid plays, a ti
 - **Home screen: no big Play button (Nov 23, live):** owner: both kids start from the level buttons. 9 controls now; the next level is the one Kai stands on and the menu opens scrolled to it.
 - **Belt in the players menu (Nov 23, live):** the tiny belt bar on the player chip was hard to read; each player's card in "Who's playing?" now shows the belt big, its name and a bar toward the next belt.
 - **Badge Book fixes (Nov 23, live):** the card no longer runs off the left edge on upright phones (same fix for the shop, Gear Pack and race setup); every badge has its own picture, and bronze / silver / gold show 1 / 2 / 3 small squares.
+- **Shop tiles (Nov 23, live):** each stall shows small picture tiles and one card for the tapped item (same idea as the Badge Book and Gear Pack). Owner also asked whether badges and shop items are tied to the story enough: answered in chat with options, nothing built for that yet.
 
