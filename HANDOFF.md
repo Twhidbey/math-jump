@@ -127,4 +127,5 @@ Owner asked for a parent screen with its own link: how long each kid plays, a ti
 - **Home screen, more (Nov 23, live):** Race is a small pill beside Daily Dojo; the math chip moved to Settings > Grown-ups > Math level; the belt is a colour bar on the player chip (no belt line). 10 controls. Fixed my own bug: a duplicate `storyBtn` id had broken Settings > Read the story for a few hours.
 - **Home screen: no big Play button (Nov 23, live):** owner: both kids start from the level buttons. 9 controls now; the next level is the one Kai stands on and the menu opens scrolled to it.
 - **Belt in the players menu (Nov 23, live):** the tiny belt bar on the player chip was hard to read; each player's card in "Who's playing?" now shows the belt big, its name and a bar toward the next belt.
+- **Badge Book fixes (Nov 23, live):** the card no longer runs off the left edge on upright phones (same fix for the shop, Gear Pack and race setup); every badge has its own picture, and bronze / silver / gold show 1 / 2 / 3 small squares.
 

@@ -447,6 +447,7 @@
   .bst { position: relative; height: 62px; border: 2px solid transparent; border-radius: 10px; background: rgba(255,255,255,.06); padding: 4px; display: grid; place-items: center; cursor: pointer; color: #fff; }
   .bst > img, .bst > .pix { width: 40px; height: 40px; image-rendering: pixelated; } .bst .tnum { transform: scale(.8); }
   .bst:not(.on) > img, .bst:not(.on) > .pix, .bst:not(.on) > .tnum { filter: grayscale(1); opacity: .38; }
+  .tpips { position: absolute; top: 4px; right: 4px; display: flex; gap: 2px; } .tpips b { width: 6px; height: 6px; background: #cd7f32; } .tpips.t2 b { background: #dfe6ee; } .tpips.t3 b { background: #ffd23f; }   /* bronze / silver / gold of the same badge: one, two, three squares */
   .bst.on { background: rgba(255,210,63,.14); } .bst.sel { border-color: #7df9ff; }
   .bst .ttbar { position: absolute; left: 8px; right: 8px; bottom: 4px; height: 4px; background: rgba(255,255,255,.18); border-radius: 2px; overflow: hidden; } .bst .ttbar i { display: block; height: 100%; background: #ffd23f; }
   #badges h3.bsec { margin: 10px 0 2px; font-size: 16px; text-align: left; }
@@ -531,7 +532,8 @@
   @keyframes toastin { from { transform: translate(-50%, -30px); opacity: 0; } }
   @media (prefers-reduced-motion: reduce) { #toast { animation: none; } }
   .bigrow .btn { font-size: 17px; }
-  .shopcard { width: min(720px, 100%); max-width: 720px; }
+  .shopcard { width: min(720px, 100%); max-width: 720px; box-sizing: border-box; }
+  @media (max-width: 500px) { .shopcard { padding: 16px 12px; } }
   .shoptop { display: flex; gap: 16px; align-items: center; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
   .shoptop canvas { image-rendering: pixelated; background: rgba(255,255,255,.06); border-radius: 10px; }
   .bankline { font-size: 22px; }
@@ -682,7 +684,7 @@
   <div class="maprow hidden"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · The belt shows big in the players menu</div>
+  <div class="build">Updated Nov 23, 2026 · Badge Book fits the phone; every badge has its own picture</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -3982,15 +3984,15 @@ const BADGES = [
     get text() { return youngTables() ? `Make every way to make ${n} and take away from ${n} gold in the Fact Book.` : `Make every ${n}s fact gold in the Fact Book.`; } })),
   { id: 't-all', pix: 'crown', swap: { y: '#9fe8ff', Y: '#4fb3d9' }, sec: 'math', get name() { return youngTables() ? 'Number Master' : 'Times-Table Master'; }, get text() { return youngTables() ? 'Master every number from 2 to 10.' : 'Master every table from 2s to 10s.'; }, prog: () => [[2, 3, 4, 5, 6, 7, 8, 9, 10].filter(n => prog.badges['t' + n]).length, 9], prize: 'suit-diamond', get title() { return youngTables() ? 'Number Master' : 'Times-Table Master'; } },
   { id: 'gold-medal', pix: 'medal', sec: 'math', name: 'Gold Medal', text: 'Win a gold medal in a math skill (no mistakes).' },
-  { id: 'brave', pix: 'brain', sec: 'math', name: 'Brave Brain', text: 'Finish a level with ★★★★ math or harder.' },
+  { id: 'brave', pix: 'heart', sec: 'math', name: 'Brave Brain', text: 'Finish a level with ★★★★ math or harder.' },
   // keep going: bronze, silver, gold
   ...tierBadges(n => `Open ${n} math gates.`, 'torii', () => statOf('gates'), [['gates50', 'Gate Opener', 50], ['gates250', 'Gate Crasher', 250], ['gates1000', 'Gate Breaker', 1000, 'Gate Breaker']]),
   ...tierBadges(n => `Get ${n} answers right.`, 'brain', () => statOf('right'), [['right100', 'Quick Thinker', 100], ['right500', 'Number Ninja', 500], ['right2000', 'Math Machine', 2000, 'Math Machine']]),
   ...tierBadges(n => `Get ${n} answers in a row.`, 'flame', () => statOf('bestStreak'), [['streak10', 'On Fire', 10], ['streak25', 'Blazing', 25], ['streak50', 'Unstoppable', 50, 'Unstoppable']]),
   ...tierBadges(n => (n === 1 ? 'Finish a level with no wrong answers.' : `Finish ${n} levels with no wrong answers.`), 'shuriken', () => statOf('perfect'), [['perfect', 'Perfect!', 1], ['perfect5', 'Flawless', 5], ['perfect20', 'Perfect Ninja', 20, 'Perfect Ninja']]),
   // adventures
-  { id: 'first-gate', pix: 'torii', sec: 'adv', name: 'First Gate', text: 'Open your first math gate.' },
-  { id: 'power', pix: 'bolt', sec: 'adv', name: 'Powered Up', text: 'Earn a streak power-up.' },
+  { id: 'first-gate', pix: 'lock', sec: 'adv', name: 'First Gate', text: 'Open your first math gate.' },
+  { id: 'power', pix: 'fist', sec: 'adv', name: 'Powered Up', text: 'Earn a streak power-up.' },
   { id: 'light10', pix: 'bolt', swap: { y: '#7df9ff' }, sec: 'adv', name: 'Lightning Fast', text: 'Get 10 Lightning bonuses (answer before you reach the gate).', prog: () => [statOf('light'), 10], gems: 50 },
   { id: 'bridge', pix: 'bridge', sec: 'adv', name: 'Bridge Builder', text: 'Build a number-stone bridge.' },
   { id: 'bridge10', pix: 'hammer', sec: 'adv', name: 'Master Builder', text: 'Build 10 bridges.', prog: () => [statOf('bridges'), 10] },
@@ -4003,14 +4005,14 @@ const BADGES = [
   { id: 'vault', pix: 'gi', sec: 'adv', name: 'Sensei\'s Student', text: 'Learn a move in a training room.' },
   { id: 'moves-all', pix: 'dragon', sec: 'adv', name: 'Master\'s Student', text: `Learn all ${MOVES.length} moves from Sensei.`, prog: () => [nKeys(prog.moves), MOVES.length] },
   { id: 'golden', pix: 'gem', swap: { c: '#ffd23f', b: '#e8452c', w: '#fff6c8' }, sec: 'adv', name: 'Golden Gem', text: 'Grab a flaming golden gem.' },
-  { id: 'golden-all', pix: 'crown', sec: 'adv', name: 'Golden Hunter', text: `Grab all ${GOLD_N} golden gems.`, prog: () => [nKeys(prog.golden), GOLD_N], prize: 'suit-gold' },
+  { id: 'golden-all', pix: 'chest', sec: 'adv', name: 'Golden Hunter', text: `Grab all ${GOLD_N} golden gems.`, prog: () => [nKeys(prog.golden), GOLD_N], prize: 'suit-gold' },
   { id: 'boss-nohit', pix: 'shield', sec: 'adv', name: 'Untouchable', text: 'Beat a boss without getting hit.' },
   { id: 'boss-all', pix: 'scroll', sec: 'adv', name: 'Scroll Keeper', text: 'Win back all seven scrolls.' },
   { id: 'race-win', pix: 'trophy', sec: 'adv', name: 'Champion Rider', text: 'Win a race.' },
   { id: 'race-perfect', pix: 'horse', sec: 'adv', name: 'Perfect Ride', text: 'Get every gate right in a race.' },
   { id: 'roads', pix: 'race', sec: 'adv', name: 'Every Road', text: 'Win a race on every track.', prog: () => [nKeys(prog.stats.roads), 6], gems: 50 },
   { id: 'shopper', pix: 'bag', sec: 'adv', name: 'Shopper', text: 'Buy something in the Dojo Shop.' },
-  { id: 'gems500', pix: 'gem', sec: 'adv', name: 'Gem Collector', text: 'Collect 500 gems in total.', prog: () => [statOf('gems'), 500] },
+  { id: 'gems500', pix: 'chestopen', sec: 'adv', name: 'Gem Collector', text: 'Collect 500 gems in total.', prog: () => [statOf('gems'), 500] },
   { id: 'black-belt', pix: 'belt', swap: { b: '#26262e' }, sec: 'adv', name: 'Black Belt', text: 'Reach the Black Belt rank.' },
   { id: 'friends', pix: 'house', sec: 'adv', name: 'Every One Matters', text: 'Find all the lost friends and bring them home.', prog: () => [FRIENDS.filter(f => (prog.friends || {})[f.id]).length, FRIENDS.length] },
 ];
@@ -4077,7 +4079,7 @@ function openBadges() {
   hide('menu'); statBadges();
   const got = BADGES.filter(b => prog.badges[b.id]).length, titles = TITLES();
   $('badgeCount').innerHTML = `${got} / ${BADGES.length} · ${pixImg('gem', 'pix sm', { c: '#ffd23f', b: '#e8452c', w: '#fff6c8' })} ${nKeys(prog.golden)} / ${GOLD_N}`;
-  const tile = b => { const on = !!prog.badges[b.id], r = on ? 0 : badgeRatio(b); return `<button type="button" class="bst${on ? ' on' : ''}" data-b="${b.id}">${badgeImg(b)}${r > 0 ? `<i class="ttbar"><i style="width:${Math.round(r * 100)}%"></i></i>` : ''}</button>`; };
+  const tile = b => { const on = !!prog.badges[b.id], r = on ? 0 : badgeRatio(b); return `<button type="button" class="bst${on ? ' on' : ''}" data-b="${b.id}">${badgeImg(b)}${b.tier ? `<i class="tpips t${b.tier}">${'<b></b>'.repeat(b.tier)}</i>` : ''}${r > 0 ? `<i class="ttbar"><i style="width:${Math.round(r * 100)}%"></i></i>` : ''}</button>`; };
   const open = BADGES.filter(b => !prog.badges[b.id]), next = [...open].sort((a, b) => badgeRatio(b) - badgeRatio(a)).slice(0, 3);
   $('badgeGrid').innerHTML = (next.length ? `<h3 class="bsec">Next up</h3><div class="bstgrid nextup">${next.map(tile).join('')}</div>` : '')
     + BADGE_SECS.map(([sec, name]) => { const list = BADGES.filter(b => b.sec === sec), n = list.filter(b => prog.badges[b.id]).length; return `<h3 class="bsec">${name} <small>${n} / ${list.length}</small></h3><div class="bstgrid">${list.map(tile).join('')}</div>`; }).join('')
