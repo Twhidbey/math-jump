@@ -77,6 +77,9 @@
   .bigicon { font-size: 64px; line-height: 1.1; }
   .bigicon small { font-size: 22px; font-weight: 800; margin-left: 4px; color: #ffd23f; vertical-align: middle; }
   .medalrow { font-size: 30px; margin: 2px 0 6px; }
+  .nextgoal { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 12px; font: 17px "Lilita One", "Trebuchet MS", sans-serif; }
+  .nextgoal .ngbar { width: 110px; height: 12px; background: rgba(255,255,255,.14); border-radius: 6px; overflow: hidden; } .nextgoal .ngbar i { display: block; height: 100%; background: #ffd23f; }
+  .nextgoal .ngn { white-space: nowrap; } .nextgoal .ngc { white-space: nowrap; font: 14px "Nunito", sans-serif; opacity: .8; }
   .statrow { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 0 0 12px; }
   .statrow span { background: rgba(255,255,255,.1); border-radius: 999px; padding: 6px 14px; font-size: 22px; font-weight: 800; }
   .statrow.sum span { font-size: 17px; padding: 4px 12px; background: rgba(125,249,255,.12); }
@@ -660,7 +663,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Kuro's story: why he left, and how he changes world by world</div>
+  <div class="build">Updated Nov 23, 2026 · One next goal on the end card; Kuro's story; calmer gates; bigger phone view</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -8045,6 +8048,17 @@ function updateAmbient() {
   }
 }
 
+// The one thing closest to being won: a badge, the next belt, or the owl's next level. A picture, its name, a bar.
+function nextGoalHTML() {
+  const c = [];
+  for (const b of BADGES) { if (prog.badges[b.id] || !b.prog) continue; let pr; try { pr = b.prog(); } catch (e) { continue; } const [now, need] = pr || []; if (need > 0 && now > 0 && now < need) c.push({ r: now / need, now, need, name: b.name, img: pixImg(b.pix || 'star', 'pix sm') }); }
+  const bt = currentBelt(), nb = BELTS[bt.idx + 1], pts = totalPoints();
+  if (nb && pts > bt.need) c.push({ r: (pts - bt.need) / (nb.need - bt.need) * 0.999, now: pts - bt.need, need: nb.need - bt.need, name: `${nb.name} Belt`, img: beltHTML(nb) });
+  if (prog.owned.includes('pet-owl')) { const lv = owlLevel(), a = OWL_AT[lv - 1], n = OWL_AT[lv], g = goldFacts(); if (n && g > a) c.push({ r: (g - a) / (n - a) * 0.999, now: g - a, need: n - a, name: `Owl: ${OWL_POW[lv]}`, img: petImg('pet-owl') }); }
+  if (!c.length) return '';
+  const t = c.sort((x, y) => y.r - x.r)[0];
+  return `<div class="nextgoal">${t.img}<span class="ngn">${t.name}</span><span class="ngbar"><i style="width:${Math.round(t.r * 100)}%"></i></span><span class="ngc">${t.now} / ${t.need}</span></div>`;
+}
 function finishLevel() {
   if (typeof famLog === 'function') famLog(true);   // the parent page: what was played
   if (prog.owned.includes('pet-owl')) { const lv = owlLevel(); if (lv > (prog.owlLv || 1)) { prog.owlLv = lv; setTimeout(() => toastMsg(`${petImg('pet-owl')} Owl level up! Level ${lv}: ${OWL_POW[lv - 1]}`, 4200), 1200); } else if (!prog.owlLv) prog.owlLv = lv; }   // the Wise owl grows
@@ -8080,13 +8094,10 @@ function finishLevel() {
   const path = pathRound(sk, { right: G.solved, wrong: G.mistakes, fast: G.fastN }), up = path.startsWith('<div');
   body += `<div class="statrow"><span>${pixImg('gem', 'pix sm')} +${earned}</span><span>${pixImg('belt', 'pix sm')} +${pts}</span>${up ? '' : path}</div>`;
   if (up) body += path;
-  // how much math got done, and the best so far on this level
-  if (G.solved) {
-    const pb = prog.mathBest || (prog.mathBest = {}), prev = pb[i] || 0;
-    if (G.solved > prev) { pb[i] = G.solved; save(); }
-    body += `<div class="statrow sum"><span>${G.solved} solved</span><span>${G.fastN} fast</span>${G.lightN ? `<span>${G.lightN} Lightning</span>` : ''}${G.bestStreak > 1 ? `<span>${G.bestStreak} in a row</span>` : ''}</div>`
-      + (prev && G.solved > prev ? '<p class="sumnew">New record!</p>' : prev ? `<p class="sumnew">Record: ${prev}</p>` : '');
-  }
+  // One next goal (engagement review, Nov 23 2026: the card showed eight different numbers and the goals were a blur):
+  // the rows of counts (solved, fast, Lightning, in a row, record) are gone; the level's best is still kept.
+  if (G.solved) { const pb = prog.mathBest || (prog.mathBest = {}); if (G.solved > (pb[i] || 0)) { pb[i] = G.solved; save(); } }
+  body += nextGoalHTML();
   if (after.idx > before.idx) body += `<div class="promo">${beltHTML(after)} &nbsp;<b>${after.name} Belt!</b></div>`;
   body += journalHTML() + chestHTML() + gearHTML();
   if (G.practice.size) body += `<div class="practice">🔁 ${[...G.practice.values()].slice(0, 3).map(q => `<span>${qSolved(q)}</span>`).join('')}</div>`;
