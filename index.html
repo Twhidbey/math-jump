@@ -663,7 +663,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · One next goal on the end card; Kuro's story; calmer gates; bigger phone view</div>
+  <div class="build">Updated Nov 23, 2026 · Fix for buttons on upright phones</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -16048,7 +16048,7 @@ document.querySelectorAll('.tbtn').forEach(el => {
 // ---------------------------------------------------------------- main loop
 let last = performance.now(), acc = 0;
 const STEP = 1000 / 60;
-let bandCol = '';
+let bandCol = '', bandKey = '', bandAt = 0, bandCv = null;
 function frame(now) {
   acc += Math.min(100, now - last); last = now;
   document.body.classList.toggle('canleave', canLeaveDrill());   // the lesson's Leave button
@@ -16070,8 +16070,21 @@ function frame(now) {
   }
   syncAnsBar();
   render();
-  if (tick % 30 === 0 && document.body.classList.contains('portrait')) {   // the band under the picture takes the ground's colour, so the world runs on down the screen
-    try { const d = ctx.getImageData(6, VH - 3, 1, 1).data, col = `rgb(${d[0]},${d[1]},${d[2]})`; if (col !== bandCol) { bandCol = col; $('wrap').style.background = col; } } catch (e) { /* a tainted canvas: leave it */ }
+  // The band under the picture takes the ground's colour, so the world runs on down the screen. (Fix, Nov 23 2026: this
+  // used to read a pixel straight from the game's canvas twice a second; on an iPhone that makes the browser stop
+  // drawing the canvas on the graphics chip, the game crawls and the buttons seem dead. Now: once per level, a single
+  // pixel is copied to a tiny canvas of its own and read there, so the game's canvas is never read.)
+  if (document.body.classList.contains('portrait')) {
+    const key = (mode === 'menu' && !G ? 'menu' : G ? G.idx + '|' + (L && L.room ? 'r' : '') + (L && L.vault ? 'v' : '') : '') + '|' + VW;
+    if (key !== bandKey) { bandKey = key; bandAt = tick + 40; }
+    if (bandAt && tick >= bandAt) {
+      bandAt = 0;
+      try {
+        if (!bandCv) { bandCv = document.createElement('canvas'); bandCv.width = bandCv.height = 1; }
+        const o = bandCv.getContext('2d', { willReadFrequently: true }); o.drawImage(cv, 6, VH - 3, 1, 1, 0, 0, 1, 1);
+        const d = o.getImageData(0, 0, 1, 1).data, col = `rgb(${d[0]},${d[1]},${d[2]})`; if (col !== bandCol) { bandCol = col; $('wrap').style.background = col; }
+      } catch (e) { /* leave the band as it is */ }
+    }
   }
   requestAnimationFrame(frame);
 }
