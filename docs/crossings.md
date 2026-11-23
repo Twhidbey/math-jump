@@ -37,3 +37,11 @@ One per level, replaces the middle gate (`wallGate = feedAt` in `buildLevel`, `w
 ## Math ? box bubbles never inside a wall (owner, Nov 18 2026: a bubble was stuck in a red rock tower)
 
 `startMathBox` walks out from Kai (1.6 tiles, then every 1.9, as before on open ground) and skips spots inside solid tiles; it stops at anything too tall to jump (a gate). Ahead first, else behind, else both sides together, else the bubble moves up over what's there. A short pillar in the way: the bubbles go on past it (he jumps over).
+
+## Calmer gates and animal (beauty review, Nov 23 2026)
+
+- **No "?" signpost:** `drawSigns` draws a gate's sign only once it is solved (then it shows the finished sum, green) or while it is a double gate (the `x2` tag needs it). The problem is only in the top box.
+- **One padlock per gate** (was four): `G` tiles draw it at row `GR - 3` of the gate's first column only.
+- **The hungry animal's thought bubble** with the problem shows only until Kai is there: once `miniTarget()` is this animal (the top box shows the problem) the bubble is not drawn, so each problem shows once. The readers' story bubble (words) is unchanged.
+- Already the case: the ten-frame picture under the box is only for tier-1 (kindergarten) skills (`kidPic`). Not done: a badge toast can still cover the question box for a moment.
+

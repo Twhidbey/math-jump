@@ -660,7 +660,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Bigger picture on upright phones; story buttons always on screen</div>
+  <div class="build">Updated Nov 23, 2026 · Calmer gates: no ? sign, one padlock, each problem shows once</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -6420,6 +6420,7 @@ function drawMini() {
   if (L.currents) drawCurrents();   // the sea's current tunnel
   for (const fd of L.squads || []) {
     if (fd.ax < cam - 6 * T || fd.foods[0].x > cam + VW + 60) continue;
+    const mini = mode === 'play' ? miniTarget() : null;
     const g = GR * T, chew = fd.mood === 'yum' && fd.moodT > 20 && fd.moodT < 80 ? Math.abs(Math.sin(fd.moodT * 0.4)) : 0;
     drawAnimal(fd.kind, fd.ax, g - (fd.mood === 'yum' && fd.moodT > 80 && fd.moodT < 140 ? Math.abs(Math.sin(fd.moodT * 0.2)) * 14 : 0), fd.mood, chew);
     if (!fd.done && fd.q.story && reader()) {   // a readers' thought bubble: the story in two short lines (the banner keeps the numbers)
@@ -6429,7 +6430,7 @@ function drawMini() {
       rrect(bx - w / 2, by, w, h, 16); ctx.fill(); ctx.strokeStyle = '#cfd6e4'; ctx.lineWidth = 2; ctx.stroke();
       ctx.fillStyle = '#22224a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       lines.forEach((l, k) => ctx.fillText(l, bx, by + 16 + k * 19));
-    } else if (!fd.done) {   // a thought bubble with the problem
+    } else if (!fd.done && !(mini && mini.ref === fd)) {   // a thought bubble with the problem, until Kai is there and the top box shows it (each problem shows once)
       const txt = qShow(fd.q); ctx.font = '22px "Lilita One", "Trebuchet MS", sans-serif'; const w = ctx.measureText(txt).width + 26, bx = fd.ax - 10, by = g - 112;
       ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(fd.ax + 8, g - 62, 4, 0, 7); ctx.arc(fd.ax + 2, g - 74, 6, 0, 7); ctx.fill();
       rrect(bx - w / 2, by - 20, w, 40, 18); ctx.fill(); ctx.strokeStyle = '#cfd6e4'; ctx.lineWidth = 2; ctx.stroke();
@@ -10917,7 +10918,7 @@ function drawTile(t, x, y, c, r) {
     case 'G': {
       const [fill, dark, light, lock] = W.gate;
       if (drawGateTile(gateKey(), x, y, r, c)) {
-        if ((r === GR - 3 || r === GR - 8) && !L.water) {   // padlock
+        if (r === GR - 3 && L.map[r][c - 1] !== 'G' && !L.water) {   // one padlock (review, Nov 23 2026: there were four)
           ctx.strokeStyle = lock; ctx.lineWidth = 3;
           ctx.beginPath(); ctx.arc(x + T / 2, y + 15, 6, Math.PI, 0); ctx.stroke();
           ctx.fillStyle = lock; ctx.fillRect(x + T / 2 - 9, y + 15, 18, 13);
@@ -10928,7 +10929,7 @@ function drawTile(t, x, y, c, r) {
       ctx.fillStyle = dark; ctx.fillRect(x, y, T, T);
       ctx.fillStyle = fill; ctx.fillRect(x + 2, y + 2, T - 4, T - 4);
       ctx.fillStyle = light; ctx.fillRect(x + 2, y + 2, T - 4, 3);
-      if (r === GR - 3 || r === GR - 8) {   // padlock
+      if (r === GR - 3 && L.map[r][c - 1] !== 'G') {   // one padlock
         ctx.strokeStyle = lock; ctx.lineWidth = 3;
         ctx.beginPath(); ctx.arc(x + T / 2, y + 15, 6, Math.PI, 0); ctx.stroke();
         ctx.fillStyle = lock; ctx.fillRect(x + T / 2 - 9, y + 15, 18, 13);
@@ -11203,6 +11204,7 @@ function drawSigns() {
     if (st.star) drawShuriken(st.star.x, st.star.y, st.star.spin, '#d8dfe8', '#5a6472', 16);
     const x = (st.sea ? st.s + 2 : st.s) * T + 4, y = st.sea ? L.water - (L.abyss ? 1.6 : 2.6) * T : (GR - 3.1) * T, w = 3.5 * T, h = 1.25 * T;
     if (x > cam + VW || x + w < cam) continue;
+    if (!st.solved && !(st.need > 1)) continue;   // (review, Nov 23 2026: calmer gates) no "?" signpost: the sign comes up with the finished sum once the gate is answered
     if (st.sea && L.abyss) {   // deep sea: the sign hangs under a glowing float, tied to a rock on the sea floor
       const bob = Math.sin(tick * 0.05 + st.s) * 2, cx = x + w / 2;
       ctx.fillStyle = '#8a7a5a'; ctx.fillRect(cx - 1, y + h, 3, GR * T - y - h - 10);   // the rope
