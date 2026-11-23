@@ -385,9 +385,9 @@
   .z-castle .node:disabled:not(.boss) { background: #a678ff !important; } .node.boss:disabled { background: #6a1a2a !important; }
   .node.boss:disabled .bossimg { filter: brightness(0) opacity(.75); }
   .node .boss-lock { position: absolute; right: -6px; bottom: -6px; width: 26px !important; height: 26px !important; }
-  .homebar { display: grid; grid-template-columns: auto 1fr auto; grid-template-areas: "player rank rank" "skill skill dojo"; gap: 8px; align-items: center; margin: 4px 0 2px; width: min(720px, 100%); }
-  #playerChip { grid-area: player; justify-self: start; } #skillChip { grid-area: skill; } #dojoBtn { grid-area: dojo; } .homebar .rank { grid-area: rank; justify-self: end; margin: 0; }
-  @media (max-width: 560px) { .homebar { grid-template-columns: 1fr auto; grid-template-areas: "player dojo" "skill skill" "rank rank"; } .homebar .rank { justify-self: center; } }
+  .homebar { display: grid; grid-template-columns: auto 1fr auto auto; grid-template-areas: "player rank rank rank" "skill skill race dojo"; gap: 8px; align-items: center; margin: 4px 0 2px; width: min(720px, 100%); }
+  #playerChip { grid-area: player; justify-self: start; } #skillChip { grid-area: skill; } #dojoBtn { grid-area: dojo; } #raceBtn { grid-area: race; } .racechip { background: #3a4a8a; border-bottom-color: #26325e; }   /* (owner, Nov 23 2026: Race looked lost under the levels) a small pill beside Daily Dojo */ .homebar .rank { grid-area: rank; justify-self: end; margin: 0; }
+  @media (max-width: 560px) { .homebar { grid-template-columns: 1fr auto auto; grid-template-areas: "player race dojo" "skill skill skill" "rank rank rank"; } #playerChip { white-space: nowrap; } .homebar .dojobtn { font-size: 15px; padding: 6px 9px; white-space: nowrap; } .homebar .rank { justify-self: center; } }
   .mathchip { font: inherit; font-weight: 800; font-size: 18px; color: #3a2200; background: #ffd23f; border: none; border-bottom: 4px solid #b8860b;
     border-radius: 999px; padding: 8px 18px; cursor: pointer; }
   .mathchip .tier, .mathline .tier { color: #d35400; letter-spacing: 1px; }
@@ -663,6 +663,7 @@
   <div class="homebar">
     <button class="pchip" id="playerChip" type="button"></button>
     <button class="mathchip" id="skillChip" type="button"></button>
+    <button class="dojobtn racechip" id="raceBtn" type="button"><span data-pixsm="race"></span> Race</button>
     <button class="dojobtn" id="dojoBtn" type="button"></button>
     <div class="rank" id="rank"></div>
   </div>
@@ -678,8 +679,7 @@
   <div class="maprow hidden"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="maprow"><button class="ibtn" id="raceBtn" type="button"><span data-pix="race"></span>Race</button></div>
-  <div class="build">Updated Nov 23, 2026 · Simpler home screen: one Story button, Settings is the cog, Race is below the levels</div>
+  <div class="build">Updated Nov 23, 2026 · Race is a small button beside Daily Dojo</div>
 </div>
 
 <div id="settings" class="overlay hidden">
