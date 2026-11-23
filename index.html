@@ -423,15 +423,21 @@
   .badge.got { background: rgba(255,210,63,.14); border: 2px solid #ffd23f; opacity: 1; }
   .badge .bi { font-size: 34px; } .badge .bi .pix { margin: 0 auto; width: 48px; height: 48px; }
   .badge .bn { font-weight: 800; font-size: 15px; margin-top: 2px; }
-  #packPreview { display: block; margin: 8px auto; image-rendering: pixelated; }
-  .packgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 8px 0 14px; }
-  .gearslot { border: 2px solid rgba(255,255,255,.2); background: rgba(255,255,255,.05); border-radius: 12px; padding: 8px 4px; color: #fff; font: 14px "Lilita One", "Trebuchet MS", sans-serif; cursor: pointer; }
-  .gearslot img { width: 72px; height: 72px; image-rendering: pixelated; display: block; margin: 0 auto 4px; }
-  .gearslot.lost img { filter: brightness(0) opacity(.55); } .gearslot.lost { cursor: default; opacity: .8; }
+  #packPreview { display: block; margin: 8px 0; flex: 0 1 auto; max-width: 45%; image-rendering: pixelated; }
+  .packgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px 12px; margin: 8px 0 14px; }
+  .packtop { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 150px; position: sticky; top: 0; z-index: 2; background: #22224a; }
+  #packInfo { flex: 1 1 140px; max-width: 300px; text-align: left; color: #fff; }
+  #packInfo .gname { font: 20px "Lilita One", "Trebuchet MS", sans-serif; } #packInfo .gstory { font: italic 14px "Nunito", sans-serif; color: #f1e0c5; margin: 4px 0 8px; } #packInfo .gwhere { font: 13px "Nunito", sans-serif; color: #9be7ff; }
+  .gpips { display: inline-flex; gap: 3px; vertical-align: middle; margin-left: 4px; } .gpips i { width: 9px; height: 9px; background: rgba(255,255,255,.15); } .gpips .p0 { background: #7d7884; } .gpips .p1 { background: #dfe6ee; } .gpips .p2 { background: #ffd23f; }
+  .gtiles { display: flex; gap: 8px; align-items: flex-end; min-height: 76px; padding: 0 6px; }
+  .gplank { border-top: 4px solid #b0794a; background: #6e4627; border-radius: 0 0 6px 6px; color: #f1e0c5; font: 12px "Lilita One", "Trebuchet MS", sans-serif; padding: 3px 8px; text-align: left; letter-spacing: .3px; }
+  .gearslot { position: relative; border: 2px solid transparent; background: rgba(255,255,255,.07); border-radius: 10px; padding: 4px; cursor: pointer; line-height: 0; }
+  .gearslot img { width: 60px; height: 60px; object-fit: contain; image-rendering: pixelated; display: block; }
+  .gearslot.lost img { filter: brightness(0) invert(1) opacity(.16); }
+  .gearslot.sel { border-color: rgba(255,255,255,.45); background: rgba(255,255,255,.08); }
   .gearslot.on { border-color: #7df9ff; background: rgba(125,249,255,.15); }
-  .gearslot .gshine.s1 { color: #dfe6ee; font-weight: 800; } .gearslot .gshine.s2 { color: #ffd23f; font-weight: 800; } .gearslot .gshine.s0 { opacity: .7; }
-  .gearslot small { display: block; font: 12px "Nunito", sans-serif; opacity: .85; } .gearslot .gpow { color: #ffb627; opacity: 1; font-weight: 800; } .gearslot .gstory { font-style: italic; opacity: 1; color: #f1e0c5; margin: 2px 0; } .gearslot .gwhere { color: #9be7ff; opacity: 1; margin-top: 2px; }
-  .gearslot .ggo { display: block; margin: 6px auto 0; padding: 5px 10px; border: 0; border-radius: 9px; background: #3ae374; color: #10301c; font: 13px "Lilita One", "Trebuchet MS", sans-serif; cursor: pointer; }
+  .gearslot .gdot { position: absolute; right: 2px; top: 2px; width: 9px; height: 9px; background: #ffd23f; box-shadow: 0 0 6px #ffd23f; }
+  .ggo { padding: 6px 12px; border: 0; border-radius: 9px; background: #3ae374; color: #10301c; font: 14px "Lilita One", "Trebuchet MS", sans-serif; cursor: pointer; } .ggo.glow { background: #ffd23f; color: #3a2a00; box-shadow: 0 0 10px rgba(255,210,63,.7); }
   .badge .bt { font-size: 12px; opacity: .85; }
   .badge { display: flex; flex-direction: column; }
   .badge .bfoot { margin-top: auto; padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
@@ -639,7 +645,7 @@
   <div class="maprow"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Gear with a story: Bamboo Dragonfly, Steam Sandals, Ram Horn Hood</div>
+  <div class="build">Updated Nov 23, 2026 · Gear closet: a shelf per world, gear made new by polishing</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -735,8 +741,7 @@
 <div id="pack" class="overlay hidden">
   <div class="card shopcard">
     <h2>Gear Pack</h2>
-    <div class="shophint">Lost gear is hidden in secret rooms. Tap a piece to wear it: Kai wears one at a time, and the gear button (G on a computer) uses its power. Right answers refill it. Open its room again on another day to polish it: silver, then gold.</div>
-    <canvas id="packPreview" width="200" height="150"></canvas>
+    <div class="packtop"><canvas id="packPreview" width="200" height="150"></canvas><div id="packInfo"></div></div>
     <div class="packgrid" id="packGrid"></div>
     <div class="row"><button class="btn alt" id="packClose" type="button">Back</button></div>
   </div>
@@ -1657,30 +1662,30 @@ var LAYOUT = null;
 // the sea floor between two coral rocks); 5 right answers open its lock. Looks only for now (owner: maybe actions later).
 // Art is drawn on Kai's own 16 × 16 cell grid (gx, gy = where the rows start; 'k' = outline), mirrored when he turns.
 const GEAR = {
-  helmet: { story: 'Kuro wore it so people would cheer.', name: 'Samurai Helmet', slot: 'head', power: 'Ground Pound', w: 0, k: 1, gx: 3, gy: -3, pal: { d: '#3a3a4a', D: '#5a5a6e', y: '#ffd23f' },
+  helmet: { made: 'Now it guards the little ones.', story: 'Kuro wore it so people would cheer.', name: 'Samurai Helmet', slot: 'head', power: 'Ground Pound', w: 0, k: 1, gx: 3, gy: -3, pal: { d: '#3a3a4a', D: '#5a5a6e', y: '#ffd23f' },
     rows: ['.ky......yk.', '..ky....yk..', '...kyyyyk...', '..kkDDDDkk..', '.kddDDddddk.', 'kddddddddddk', 'kk........kk'] },
-  cape: { story: 'Kuro wore his anger like a cape.', name: 'Fire Cape', slot: 'back', power: 'Flame Dash', w: 1, k: 2, gx: 0, gy: 8, pal: { r: '#e63946', R: '#a91d2b', o: '#ff8c1a', y: '#ffd23f' },
+  cape: { made: 'Now it warms the cold.', story: 'Kuro wore his anger like a cape.', name: 'Fire Cape', slot: 'back', power: 'Flame Dash', w: 1, k: 2, gx: 0, gy: 8, pal: { r: '#e63946', R: '#a91d2b', o: '#ff8c1a', y: '#ffd23f' },
     rows: ['...krr', '..krRr', '.krrRr', '.krrRr', 'krrRrr', 'krorrr', 'koyoko', '.k.k..'] },
-  jetpack: { story: 'Kuro wanted to be above everyone.', name: 'Jetpack', slot: 'back', power: 'Jetpack flight', w: 2, k: 2, gx: 1, gy: 7, pal: { g: '#9aa7b8', G: '#6c7a89', r: '#ff3355', c: '#7df9ff' },
+  jetpack: { made: 'Now it lifts others up.', story: 'Kuro wanted to be above everyone.', name: 'Jetpack', slot: 'back', power: 'Jetpack flight', w: 2, k: 2, gx: 1, gy: 7, pal: { g: '#9aa7b8', G: '#6c7a89', r: '#ff3355', c: '#7df9ff' },
     rows: ['kkkk', 'kggk', 'kgrk', 'kcgk', 'kggk', 'kGGk', 'kkkk'] },
   // (id kept from the Viking Helmet it used to be: a hood with a mountain ram's curled horns, same charge)
-  viking: { story: 'Kuro pushed everyone away.', name: 'Ram Horn Hood', slot: 'head', power: 'Ram Charge', w: 3, k: 0, gx: 2, gy: -3, pal: { w: '#f4ead2', W: '#c9bfa6', h: '#d9b98a', H: '#a8824f', y: '#ffd23f' },
+  viking: { made: 'Now it opens the way for others.', story: 'Kuro pushed everyone away.', name: 'Ram Horn Hood', slot: 'head', power: 'Ram Charge', w: 3, k: 0, gx: 2, gy: -3, pal: { w: '#f4ead2', W: '#c9bfa6', h: '#d9b98a', H: '#a8824f', y: '#ffd23f' },
     rows: ['....kkkkkk....', '..kkwwwwwwkk..', '.khhkwwwwkhhk.', 'khHhhkWWkhhHhk', 'khkkhkWWkhkkhk', 'khhkhkyykhkhhk', '.kkk......kkk.'] },
-  trident: { story: 'Kuro dug for treasure with it.', name: 'Trident', slot: 'hand', power: 'Water Blast', w: 4, k: 0, gx: 12, gy: 0, pal: { y: '#ffd23f', Y: '#c99a1a' },
+  trident: { made: 'Now it sets things free.', story: 'Kuro dug for treasure with it.', name: 'Trident', slot: 'hand', power: 'Water Blast', w: 4, k: 0, gx: 12, gy: 0, pal: { y: '#ffd23f', Y: '#c99a1a' },
     rows: ['y.y.y', 'y.y.y', 'yyyyy', '.kYk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '.kyk.', '..k..'] },
-  lantern: { story: 'Kuro left his light behind.', name: 'Paper Lantern', slot: 'hand', power: 'Light flash', w: 6, k: 0, gx: 12, gy: 8, pal: { o: '#ffb627', O: '#ff8c1a', r: '#a8323e' },
+  lantern: { made: 'Now it lights the way home.', story: 'Kuro left his light behind.', name: 'Paper Lantern', slot: 'hand', power: 'Light flash', w: 6, k: 0, gx: 12, gy: 8, pal: { o: '#ffb627', O: '#ff8c1a', r: '#a8323e' },
     rows: ['.k.', '.k.', 'krk', 'koO', 'koO', 'krk', '.k.'] },
   // More gear (owner, Nov 2026: about one new item a week). Second rooms in Japan, the volcano and the factory.
   // (id kept from the Golden Boomerang: a taketombo, the bamboo toy that spins out and comes back)
-  boomerang: { story: 'Kuro’s old toy. He said he was too big for it.', name: 'Bamboo Dragonfly', slot: 'hand', power: 'Dragonfly throw', w: 0, k: 2, gx: 12, gy: 6, pal: { b: '#8bc34a', y: '#ffd23f', s: '#d8a679' },
+  boomerang: { made: 'Now the brothers can play again.', story: 'Kuro’s old toy. He said he was too big for it.', name: 'Bamboo Dragonfly', slot: 'hand', power: 'Dragonfly throw', w: 0, k: 2, gx: 12, gy: 6, pal: { b: '#8bc34a', y: '#ffd23f', s: '#d8a679' },
     rows: ['kkkkk', 'bbybb', 'kkskk', '.ksk.', '.ksk.', '.ksk.', '.ksk.', '..k..'] },
   // (id kept from the Spring Boots: wooden sandals, a puff of volcano steam does the bounce)
-  boots: { story: 'Kuro stomped off in them.', name: 'Steam Sandals', slot: 'feet', power: 'Steam Bounce', w: 1, k: 0, gx: 0, gy: 0, pal: { g: '#c0392b', G: '#8a5a34', y: '#c99a63', w: '#f4f4f4' },
+  boots: { made: 'Now Kai runs to help.', story: 'Kuro stomped off in them.', name: 'Steam Sandals', slot: 'feet', power: 'Steam Bounce', w: 1, k: 0, gx: 0, gy: 0, pal: { g: '#c0392b', G: '#8a5a34', y: '#c99a63', w: '#f4f4f4' },
     rows: ['.kgk.', 'kgkgk', 'kGGGk', 'kyGGk', 'kkkkk', '.w.w.', 'w.w..', '.w.w.'] },
-  gloves: { story: 'Kuro wanted everything to come to him.', name: 'Magnet Gloves', slot: 'hand', power: 'Gem Magnet', w: 2, k: 0, gx: 11, gy: 9, pal: { r: '#e63946', R: '#a91d2b', s: '#c9d2de' },
+  gloves: { made: 'Now it gathers to give away.', story: 'Kuro wanted everything to come to him.', name: 'Magnet Gloves', slot: 'hand', power: 'Gem Magnet', w: 2, k: 0, gx: 11, gy: 9, pal: { r: '#e63946', R: '#a91d2b', s: '#c9d2de' },
     rows: ['kkk.', 'krRk', 'krsk', '.kkk'] },
   // The desert's piece (Hoodoo Trail): a rope that reaches far ahead.
-  lasso: { story: 'Kuro meant to catch the one who hurt him.', name: 'Lasso', slot: 'hand', power: 'Lasso', w: 5, k: 1, gx: 11, gy: 8, pal: { q: '#c9a063', Q: '#8a6a3a' },
+  lasso: { made: 'Now it pulls friends to safety.', story: 'Kuro meant to catch the one who hurt him.', name: 'Lasso', slot: 'hand', power: 'Lasso', w: 5, k: 1, gx: 11, gy: 8, pal: { q: '#c9a063', Q: '#8a6a3a' },
     rows: ['.kkk.', 'kqqqk', 'kq.Qk', 'kqQQk', '.kkk.'] },
 };
 const GEAR_SLOTS = ['head', 'back', 'hand', 'feet'];
@@ -1885,10 +1890,18 @@ const gearAt = (w, k) => Object.keys(GEAR).find(id => GEAR[id].w === w && GEAR[i
 // The shine is the item's outline: dark, silver trim, gold trim (+ sparkles on Kai).
 const shineTrim = sh => (sh === 2 ? '#ffd23f' : sh === 1 ? '#c9d2de' : OUTLINE), SHINE_NAME = ['Plain', 'Silver', 'Gold'];   // (a function: OUTLINE is defined further down)
 const shineOf = id => Math.min(2, (prog.gearShine || {})[id] || 0);
+// Made new (owner, Nov 23 2026): a piece is dull and scuffed when found (it was Kuro's); polishing brings its colours
+// back (silver), then gold. gearPal = the piece's colours for its shine.
+const DULL_PAL = {};
+function gearPal(id) {
+  const g = GEAR[id]; if (shineOf(id) > 0) return g.pal;
+  if (!DULL_PAL[id]) { DULL_PAL[id] = {}; for (const k in g.pal) { const n = parseInt(g.pal[k].slice(1), 16), m = [n >> 16, n >> 8 & 255, n & 255], gr = (m[0] * 3 + m[1] * 6 + m[2]) / 10; DULL_PAL[id][k] = 'rgb(' + m.map(v => Math.round((v * 0.35 + gr * 0.65) * 0.6 + 38)).join(',') + ')'; } }
+  return DULL_PAL[id];
+}
 const polishReady = id => (prog.gearOwned || []).includes(id) && shineOf(id) < 2 && (prog.gearDay || {})[id] !== today();
 function gearPix(c, id, ox, oy, px, flip) {
-  const g = GEAR[id], trim = shineTrim(shineOf(id));
-  g.rows.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch === '.') continue; const cx = g.gx + i; c.fillStyle = ch === 'k' ? trim : g.pal[ch]; c.fillRect(ox + (flip ? 15 - cx : cx) * px, oy + (g.gy + j) * px, px, px); } });
+  const g = GEAR[id], trim = shineTrim(shineOf(id)), pal = gearPal(id);
+  g.rows.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch === '.') continue; const cx = g.gx + i; c.fillStyle = ch === 'k' ? trim : pal[ch]; c.fillRect(ox + (flip ? 15 - cx : cx) * px, oy + (g.gy + j) * px, px, px); } });
 }
 // "Play 7s" from the Badge Book (set by startStage for that one level): questions favour the facts not gold yet.
 var FOCUS = false;
@@ -6015,7 +6028,7 @@ function gearPolished(gc) {
   prog.gearShine = { ...(prog.gearShine || {}), [gc.id]: sh }; prog.gearDay = { ...(prog.gearDay || {}), [gc.id]: today() };
   prog.newPack = true; save(); sfx.win();
   [784, 988, 1175, 1568].forEach((f, i) => tone(f, 0.18, 'triangle', 0.05, null, 0.2 + i * 0.09));   // sparkle
-  if (G.groom) { G.groom.msg = sh >= 2 ? `Your ${g.name} is GOLD now!` : `Your ${g.name} is silver now! Polish it again another day.`; G.groom.msgCol = sh >= 2 ? '#ffd23f' : '#dfe6ee'; G.groom.msgT = 240; }
+  if (G.groom) { G.groom.msg = sh >= 2 ? g.made || `Your ${g.name} is GOLD now!` : `Your ${g.name} is silver now! Polish it again another day.`; G.groom.msgCol = sh >= 2 ? '#ffd23f' : '#dfe6ee'; G.groom.msgT = 240; }
 }
 // The way in, on the ledge: a block of the world's stone with a glowing crack, or a little cave mouth.
 function drawGearChest() {
@@ -6085,10 +6098,11 @@ function drawGroom() {
 const gearImgs = {};
 function gearImg(id, px) {
   const key = id + px + '_' + shineOf(id); if (gearImgs[key]) return gearImgs[key];
-  const g = GEAR[id], w = Math.max(...g.rows.map(r => r.length)), c = document.createElement('canvas'); c.width = w * px; c.height = g.rows.length * px; const trim = shineTrim(shineOf(id));
-  const x = c.getContext('2d'); g.rows.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch === '.') continue; x.fillStyle = ch === 'k' ? trim : g.pal[ch]; x.fillRect(i * px, j * px, px, px); } });
+  const g = GEAR[id], w = Math.max(...g.rows.map(r => r.length)), c = document.createElement('canvas'); c.width = w * px; c.height = g.rows.length * px; const trim = shineTrim(shineOf(id)), pal = gearPal(id);
+  const x = c.getContext('2d'); g.rows.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch === '.') continue; x.fillStyle = ch === 'k' ? trim : pal[ch]; x.fillRect(i * px, j * px, px, px); } });
   return (gearImgs[key] = c);
 }
+let packSel = null;
 function openPack() {
   hide('menu'); prog.newPack = false; save();
   const owned = prog.gearOwned || [], eq = prog.gear || {};
@@ -6099,16 +6113,29 @@ function openPack() {
   if (eq.head) gearPix(c, eq.head, ox, oy, 5, false);
   if (eq.hand) gearPix(c, eq.hand, ox, oy, 5, false);
   if (eq.feet === 'boots') bootsPix(c, ox, oy, 5, false, 'stand', false);
-  $('packGrid').innerHTML = Object.keys(GEAR).map(id => {
-    const g = GEAR[id], got = owned.includes(id), on = eq[g.slot] === id, st = STAGES.find(x => x.w === g.w && x.k === g.k && !x.boss), si = STAGES.indexOf(st);
-    return `<div role="button" tabindex="0" class="gearslot${got ? '' : ' lost'}${on ? ' on' : ''}" data-gear="${id}"><img src="${gearImg(id, 6).toDataURL()}" alt="">${got ? g.name : '???'}
-      ${got && g.story ? `<small class="gstory">${g.story}</small>` : ''}<small>${got ? (on ? 'Wearing' : 'Tap to wear') : 'Not found yet'}</small><small class="gwhere">${got ? 'Found in' : 'Lost in'} ${st ? `${st.name} (${g.w + 1}-${g.k + 1})` : WORLDS[g.w].name}</small>${got ? `<small class="gshine s${shineOf(id)}">${SHINE_NAME[shineOf(id)]}${shineOf(id) < 2 ? (polishReady(id) ? ' · polish it today!' : ' · polish tomorrow') : ' ★'}</small>` : ''}${g.power ? `<small class="gpow">Power: ${g.power}</small>` : ''}${si >= 0 && si < unlockedCount() ? `<button type="button" class="ggo" data-go="${si}">Go there ▶</button>` : ''}</div>`;
+  // The closet (owner, Nov 23 2026: fewer words, shelves by world like the market): one shelf per world, a tile is just
+  // the piece (dark = not found, a gold dot = polish it today). The words are on one card for the piece that was tapped.
+  const stOf = g => STAGES.findIndex(x => x.w === g.w && x.k === g.k && !x.boss);
+  const pips = id => `<span class="gpips">${[0, 1, 2].map(k => `<i class="${k <= shineOf(id) ? 'p' + k : ''}"></i>`).join('')}</span>`;
+  if (packSel && !GEAR[packSel]) packSel = null;
+  if (!packSel) packSel = GEAR_SLOTS.map(sl => eq[sl]).find(Boolean) || null;
+  $('packGrid').innerHTML = WORLDS.map((W, w) => {
+    const ids = Object.keys(GEAR).filter(id => GEAR[id].w === w).sort((a, b) => GEAR[a].k - GEAR[b].k); if (!ids.length) return '';
+    return `<div class="gshelf"><div class="gtiles">${ids.map(id => { const g = GEAR[id], got = owned.includes(id), on = eq[g.slot] === id;
+      return `<div role="button" tabindex="0" class="gearslot${got ? '' : ' lost'}${on ? ' on' : ''}${packSel === id ? ' sel' : ''}" data-gear="${id}"><img src="${gearImg(id, 6).toDataURL()}" alt="${got ? g.name : ''}">${got && polishReady(id) ? '<b class="gdot"></b>' : ''}</div>`; }).join('')}</div><div class="gplank" style="border-top-color:${W.flag}">${W.name}</div></div>`;
   }).join('');
+  const sel = packSel && GEAR[packSel], info = $('packInfo');
+  if (sel) {
+    const id = packSel, got = owned.includes(id), si = stOf(sel), st = STAGES[si], sh = shineOf(id);
+    info.innerHTML = `<div class="gname">${got ? sel.name : '???'} ${got ? pips(id) : ''}</div>${got ? `<div class="gstory">${sh >= 2 && sel.made ? sel.made : sel.story || ''}</div>` : ''}
+      ${si >= 0 && si < unlockedCount() ? `<button type="button" class="ggo${got && polishReady(id) ? ' glow' : ''}" data-go="${si}">${st.name} ▶</button>` : `<div class="gwhere">${st ? st.name : WORLDS[sel.w].name}</div>`}`;
+  } else info.innerHTML = '';
   $('packGrid').querySelectorAll('[data-gear]').forEach(el => { el.onclick = () => {
-    const id = el.dataset.gear, g = GEAR[id]; if (!owned.includes(id)) return;
-    audio(); wearGear(id); save(); openPack();
+    const id = el.dataset.gear; audio();
+    if (owned.includes(id) && !(packSel !== id && eq[GEAR[id].slot] === id)) { wearGear(id); save(); }   // tap = wear it (tap it again = take it off)
+    packSel = id; openPack();
   }; });
-  $('packGrid').querySelectorAll('[data-go]').forEach(el => { el.onclick = e => { e.stopPropagation(); audio(); hide('pack'); startStage(+el.dataset.go); }; });   // straight to that level (owner: so kids can find the room again)
+  info.querySelectorAll('[data-go]').forEach(el => { el.onclick = () => { audio(); hide('pack'); startStage(+el.dataset.go); }; });   // straight to that level (owner: so kids can find the room again)
   show('pack');
 }
 function countsTick(p) {   // the current: Kai can't swim past the next bubble until it's answered
@@ -12281,7 +12308,7 @@ function noFlyHere(p) {
 }
 // Steam Sandals on Kai: drawn over his feet, which sit in different places when he walks; a coil under them after a bounce.
 function bootsPix(c, ox, oy, px, flip, frame, coil) {
-  const g = GEAR.boots, trim = shineTrim(shineOf('boots')), feet = frame === 'stand' ? [[5, 4], [9, 9]] : [[4, 3], [10, 10]];
+  const g = { pal: gearPal('boots') }, trim = shineTrim(shineOf('boots')), feet = frame === 'stand' ? [[5, 4], [9, 9]] : [[4, 3], [10, 10]];
   const put = (x, y, col) => { c.fillStyle = col; c.fillRect(ox + (flip ? 15 - x : x) * px, oy + y * px, px, px); };
   for (const [leg, foot] of feet) {
     put(leg, 13, g.pal.g); put(leg + 1, 13, g.pal.g);
