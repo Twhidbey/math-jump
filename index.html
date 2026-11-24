@@ -694,7 +694,7 @@
   <div class="maprow hidden"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Parent page: Extra practice says when it can't apply</div>
+  <div class="build">Updated Nov 23, 2026 · Parent page: extra practice for low or high times tables</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -3430,7 +3430,14 @@ function behind(sts, tm) {   // the kind furthest behind (not the last one playe
 // While it is on, that kind stands in for every world's own kind: the first level of each world is only that, and it
 // gets 60% of the other levels and the boss. If the kid's grade has passed all of it (or has none), the next grade's
 // track of the same name carries on (2nd grade's Times is 2, 5, 10; then 3rd grade's 3, 4, 6...).
+// Two more picks (owner, Nov 24 2026): the low tables (2, 5, 10, 3, 4) or the high ones (6, 7, 8, 9), whatever the grade.
+// One table at a time in that order, then the mixed skill of that half for as long as the pick stays on.
+const FOCUS_SETS = { 'Times low': 'x2 x5 x10 x3 x4 xmix25', 'Times high': 'x6 x7 x8 x9 xmix69' };
 function focusState(plan, name) {
+  if (FOCUS_SETS[name]) {
+    const t = { name: 'Times', ids: FOCUS_SETS[name].split(' ') }, x = trackState(t, plan.gi);
+    return x.done ? { t, f: t.ids.length - 1, done: false, frac: 1 } : { ...x, locked: false };
+  }
   let last = plan.sts.find(x => x.t.name === name) || null;
   if (last && !last.done) return last;
   for (let gi = plan.gi + (last ? 1 : 0); gi < GRADES.length; gi++) { const t = gradeTracks(gi).find(q => q.name === name); if (!t) continue; last = trackState(t, gi); if (!last.done) return last; }
