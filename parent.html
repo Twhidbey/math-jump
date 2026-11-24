@@ -270,6 +270,7 @@
       <h3>Extra practice</h3>
       <div class="chips">${['', ...new Set(['Times', ...(m.tracks || []).map(t => t.n)])].map(n => `<button class="chip ${(lm && lm.focus || '') === n ? 'on' : ''}" data-act="focus" data-n="${esc(n)}">${n ? esc(n) : 'Off'}</button>`).join('')}</div>
       <p class="muted">${lm && lm.focus ? `Every level leans on ${esc(lm.focus)} (the first level of each world is all ${esc(lm.focus)}), starting with the next level, until you tap Off.` : 'Pick one kind of math to get more of it in every level.'}</p>
+      ${m.auto === false || !m.grade ? `<p class="muted"><b>Not working for this player yet:</b> ${!m.grade ? 'no grade is set (in the game: tap the player, then the pencil).' : 'the math level was picked by hand. In the game: Settings, Grown-ups, Math level, and tap Auto so it says on.'}</p>` : ''}
       ${!m.tracks || !m.tracks.length ? (d && d.tracks ? d.tracks.map((t, i) => dt(id, 'trk' + i, `<div><b>${esc(t.n)}</b></div>`, trackBody(id, t, facts))).join('') : '') : ''}
       ${(m.weak || []).length ? `<h3>Still tricky</h3>${chips(m.weak, 'weak', 'weak')}` : ''}
       ${(m.slow || []).length ? `<h3>Right, but slow</h3>${chips(m.slow, 'slow', 'slow')}` : ''}
