@@ -241,6 +241,8 @@
     const pic = typeof k.pic === 'string' && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(k.pic) ? k.pic : '';
     const on = !!(lm && lm.on), lmins = lm && lm.mins || 30, extra = lm && lm.extra && lm.extra.day === dayStr() ? lm.extra.mins || 0 : 0;
     const left = on ? (lmins + extra) * 60 - today : null, stopped = !!(lm && lm.stop === dayStr());
+    // One more level (Nov 24 2026): shown when the kid is stopped or out of time. `more: {day, n}` is a one-use pass; the game sends back the last pass it used (k.more).
+    const out = stopped || (on && left <= 0), mr = lm && lm.more && lm.more.day === dayStr() ? lm.more : null, moreUsed = !!(mr && k.more === mr.n);
     const d = (data && data.detail || {})[id], facts = (d && d.facts) || {};
     const keyOf = txt => Object.keys(facts).find(k => `${facts[k].t} = ${facts[k].a}` === txt);
     const chips = (list, cls, where) => `<div class="chips">${list.map(f => { const k = keyOf(f); return `<button class="fact ${cls}${sel[id] && sel[id].where === where && sel[id].key === k ? ' sel' : ''}" ${k ? `data-fact="${esc(k)}" data-where="${where}"` : ''}>${esc(f)}</button>`; }).join('')}</div>${sel[id] && sel[id].where === where ? factInfo(facts[sel[id].key]) : ''}`;
@@ -251,6 +253,7 @@
         <div class="muted"><span class="dot ${live ? 'on' : ''}"></span>${live ? (k.where ? `Playing now: ${esc(k.where)}` : 'In the game now') : k.seen ? `Last played ${ago(k.seen)}` : 'Not played yet'}${k.backup ? ` · Backed up ${ago(k.backup)}` : ''}</div></div>
         <button class="linkish" data-act="name">${st.names[id] ? 'Rename' : 'Name'}</button></div>
       <div class="row">${stopped ? `<span class="left out">Stopped: the game ends after this level</span><button class="btn small alt" data-act="go">Let them play</button>` : '<button class="btn small stop" data-act="stop">Stop after this level</button>'}</div>
+      ${out ? `<div class="row">${mr && !moreUsed ? '<span class="left">One more level: allowed</span>' : `<button class="btn small" data-act="more">One more level</button>${moreUsed ? '<span class="muted">They played their one more level</span>' : ''}`}</div>` : ''}
       <h3>Play time</h3>
       <div><b>Today: ${mins(today)}</b> <span class="muted">· this week ${mins(Object.entries(k.days || {}).reduce((a, [, s]) => a + (+s || 0), 0))}</span></div>
       ${dt(id, 'time', weekHTML(k.days), timeBody(d))}
@@ -258,7 +261,7 @@
       <div class="row" style="margin-top:0"><button class="switch ${on ? 'on' : ''}" data-act="limit" aria-label="Time limit"></button>
         <span>${on ? `<span class="left ${left <= 0 ? 'out' : ''}">${left <= 0 ? "Time's up for today" : `${mins(left)} left today`}</span>` : '<span class="muted">Off: no limit</span>'}</span></div>
       ${on ? `<div class="chips">${[15, 20, 30, 45, 60, 90].map(n => `<button class="chip ${n === lmins ? 'on' : ''}" data-act="mins" data-n="${n}">${n} min</button>`).join('')}</div>
-        <div class="row"><button class="btn small" data-act="extra">+15 min today</button>${extra ? `<span class="muted">+${extra} min added today</span>` : ''}</div>
+        <div class="row"><button class="btn small" data-act="extra1">+1 min</button><button class="btn small" data-act="extra">+15 min today</button>${extra ? `<span class="muted">+${extra} min added today</span>` : ''}</div>
         <p class="muted">When time runs out, ${esc(name === 'Unnamed player' ? 'they' : name)} can finish the level they're in, then the game says "Time's up for today!" until tomorrow.</p>` : ''}
       <h3>Math</h3>
       <div>${m.grade ? `<b>${esc(m.grade)}</b> · ` : ''}${esc(m.belt || '')} belt · ${+m.levels || 0} levels won · ${+m.gold || 0} facts known by heart</div>
@@ -310,8 +313,9 @@
         if (act === 'limit') put({ ...lm, on: !lm.on });
         if (act === 'stop') put({ ...lm, stop: dayStr() });
         if (act === 'go') { const v = { ...lm }; delete v.stop; put(v); }
+        if (act === 'more') put({ ...lm, more: { day: dayStr(), n: Date.now() } });
         if (act === 'mins') put({ ...lm, on: true, mins: +b.dataset.n });
-        if (act === 'extra') { const ex = lm.extra && lm.extra.day === dayStr() ? lm.extra.mins || 0 : 0; put({ ...lm, extra: { day: dayStr(), mins: ex + 15 } }); }
+        if (act === 'extra' || act === 'extra1') { const ex = lm.extra && lm.extra.day === dayStr() ? lm.extra.mins || 0 : 0; put({ ...lm, extra: { day: dayStr(), mins: ex + (act === 'extra1' ? 1 : 15) } }); }   // (+1 min: owner, Nov 24 2026)
         if (act === 'remove' && confirm('Remove this player from the page? Their online backup is deleted too (their own device keeps its save). If they play again on a linked device, they come back.')) {
           delete data.kids[id]; delete limits[id]; render();
           fetch(url(`/kids/${id}`), { method: 'DELETE' }).catch(() => {}); fetch(url(`/limits/${id}`), { method: 'DELETE' }).catch(() => {});

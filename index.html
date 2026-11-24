@@ -694,7 +694,7 @@
   <div class="maprow hidden"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Badge tiles: colourful stickers, words that fit</div>
+  <div class="build">Updated Nov 23, 2026 · Parent page can allow one more level, or +1 minute</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -8126,6 +8126,7 @@ function nextGoalHTML() {
 }
 function finishLevel() {
   if (typeof famLog === 'function') famLog(true);   // the parent page: what was played
+  if (typeof famMoreDone === 'function') famMoreDone();   // (a "one more level" from the parent page is used up now)
   if (prog.owned.includes('pet-owl')) { const lv = owlLevel(); if (lv > (prog.owlLv || 1)) { prog.owlLv = lv; setTimeout(() => toastMsg(`${petImg('pet-owl')} Owl level up! Level ${lv}: ${OWL_POW[lv - 1]}`, 4200), 1200); } else if (!prog.owlLv) prog.owlLv = lv; }   // the Wise owl grows
   if (typeof famPush === 'function') setTimeout(() => { famPush(); famPushDetail(); famSync(); }, 500);   // the parent page: a fresh report after each level
   mode = 'done'; checkUpdate(true);   // quietly look for a new version (loaded on the next tap)
@@ -9278,6 +9279,7 @@ function updateRace(dt) {
 function racePlace() { return 1 + RC.rivals.filter(v => (v.finishT !== undefined && (!RC.finished || v.finishT <= RC.time)) || (!RC.finished && v.z > RC.z)).length; }
 
 function finishRace() {
+  if (typeof famMoreDone === 'function') famMoreDone();
   const r = RC; r.finished = true; r.place = racePlace(); stopMusic();
   sfx.win(); raceText(['1st place!', '2nd place!', '3rd place!', '4th place'][r.place - 1], '#ffd23f');
   const reward = Math.round(([15, 10, 6, 3][r.place - 1] + r.right) * TIER_GEMS[r.topic.tier - 1]), prev = prog.raceBest[r.topic.id];
@@ -16328,7 +16330,7 @@ function famPush(keep) {   // send this player's report
   const days = {}; for (let i = 0; i < 7; i++) { const d = new Date(); d.setDate(d.getDate() - i); const k = dayStr(d); days[k] = famSecs(k); }
   const pl = curPlayer(), m = famMath(), where = mode === 'play' && G && STAGES[G.idx] ? (STAGES[G.idx].boss ? `${WORLDS[STAGES[G.idx].w].boss.name}` : STAGES[G.idx].name) : mode === 'race' ? 'a race' : '';
   if (!playerIconURL[pl.icon]) playerIcon(pl.icon);
-  const body = { pic: playerIconURL[pl.icon] || '', grade: pl.grade || '', seen: { '.sv': 'timestamp' }, where, days, math: m, sugg: famSuggest(m), v: 1 };
+  const body = { pic: playerIconURL[pl.icon] || '', grade: pl.grade || '', seen: { '.sv': 'timestamp' }, where, days, math: m, sugg: famSuggest(m), v: 1, more: prog.moreUsed || 0 };
   fetch(famUrl(`/kids/${famKid()}`), { method: 'PATCH', body: JSON.stringify(body), keepalive: !!keep }).catch(() => {});
   fetch(famUrl(`/time/${famKid()}/${famDev}`), { method: 'PUT', body: JSON.stringify(prog.time || {}), keepalive: !!keep }).catch(() => {});   // this device's own play time
 }
@@ -16357,15 +16359,32 @@ async function famPull() {   // the time limit for this player (and the parent P
     if (prog.kidId === kid) famOther = { kid, days };
   } catch (e) { /* offline: keep the last one */ }
 }
+let famUpShown = false;
 function famTimeUp() {
   const pl = curPlayer();
-  hide('menu');
+  hide('menu'); famUpShown = true;
   showMsg(famStopped() ? 'Time to stop!' : "Time's up for today!", `<p>${playerIcon(pl.icon)}</p><p>Great work today, ${pl.name}! ${famStopped() ? 'See you next time.' : 'Come back tomorrow.'}</p>`, [
-    { label: 'Check again', fn: async () => { await famPull(); if (famLeft() > 0) toMenu(); else famTimeUp(); }, primary: true },
-    { label: 'Switch player', fn: () => { hide('msg'); showPlayers(); }, alt: true },
+    { label: 'Check again', fn: async () => { await famPull(); if (famLeft() > 0 || famMore()) { famUpShown = false; toMenu(); } else famTimeUp(); }, primary: true },
+    { label: 'Switch player', fn: () => { famUpShown = false; hide('msg'); showPlayers(); }, alt: true },
   ]);
 }
-function famStop() { if (famLeft() > 0) return false; famTimeUp(); return true; }   // at the start of a level, race or team game
+// One more level (owner, Nov 24 2026): the parent page writes `more: {day, n}` into the kid's limit. While that token is
+// unused the kid may start levels although the time is up or they were stopped; finishing a level or a race uses it up
+// (losing all hearts does not: they get to finish one), and so does 20 minutes after the first start. prog.moreAt = the
+// token being played and when it began; prog.moreUsed = the last token used up (sent back so the parent page can say so).
+function famMore() {
+  const m = famCode && prog.limit && prog.limit.more; if (!m || m.day !== dayStr() || !m.n || m.n === prog.moreUsed) return false;
+  return !(prog.moreAt && prog.moreAt.n === m.n && Date.now() - prog.moreAt.t > 20 * 60000);
+}
+function famMoreDone() {   // (finishLevel, finishRace) the one more level has been played
+  const m = prog.limit && prog.limit.more; if (!m || !prog.moreAt || prog.moreAt.n !== m.n || prog.moreUsed === m.n) return;
+  prog.moreUsed = m.n; save(); famPush();
+}
+function famStop() {   // at the start of a level, race or team game
+  if (famLeft() > 0) return false;
+  if (famMore()) { const n = prog.limit.more.n; if (!prog.moreAt || prog.moreAt.n !== n) { prog.moreAt = { n, t: Date.now() }; save(); } return false; }
+  famTimeUp(); return true;
+}
 setInterval(() => {   // once a second
   if (!prog || document.hidden) return;
   const playing = mode === 'play' || mode === 'race', active = playing || Date.now() - famInput < 120000;
@@ -16378,8 +16397,10 @@ setInterval(() => {   // once a second
   if (famTick % 20 === 0) famPull();   // (often, so "Stop after this level" gets here quickly)
   const left = famLeft();
   if (left === 300 && playing && G && P) floatText(cam + VW / 2, P.y - 60, '5 minutes left today!', '#ffd23f', 24);
-  if (left <= 0 && playing && G && P && !G.upTold) { G.upTold = true; floatText(cam + VW / 2, P.y - 60, famStopped() ? 'Last level! Finish this one.' : "Time's up! Finish this level.", '#ffd23f', 26); }
-  if (left <= 0 && mode === 'menu' && !$('menu').classList.contains('hidden')) famTimeUp();
+  const bonus = left <= 0 && famMore();   // the parent page allowed one more level
+  if (left <= 0 && playing && G && P && !G.upTold) { G.upTold = true; floatText(cam + VW / 2, P.y - 60, bonus ? 'One more level!' : famStopped() ? 'Last level! Finish this one.' : "Time's up! Finish this level.", '#ffd23f', 26); }
+  if (left <= 0 && !bonus && mode === 'menu' && !$('menu').classList.contains('hidden')) famTimeUp();
+  if (famUpShown && (left > 0 || bonus) && !$('msg').classList.contains('hidden')) { famUpShown = false; toastMsg(bonus ? 'One more level!' : 'You can play again!', 3000); toMenu(); }   // the card goes away by itself when the parent says yes
 }, 1000);
 document.addEventListener('visibilitychange', () => { if (!famCode) return; if (document.hidden) { famPush(true); famBackup(true); } else { famSync(); famPull().then(() => { if (famLeft() <= 0 && mode === 'menu') famTimeUp(); }); famPush(); } });
 async function famLinkNew() {   // link this device to a family (a new one, or another one)
