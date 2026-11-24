@@ -267,6 +267,9 @@
       <div>${m.grade ? `<b>${esc(m.grade)}</b> · ` : ''}${esc(m.belt || '')} belt · ${+m.levels || 0} levels won · ${+m.gold || 0} facts known by heart</div>
       ${m.skill ? `<div class="muted">Playing with: ${esc(m.skill)} (${+m.skillP || 0}% learned)</div>` : ''}
       ${tracks}
+      <h3>Extra practice</h3>
+      <div class="chips">${['', ...new Set(['Times', ...(m.tracks || []).map(t => t.n)])].map(n => `<button class="chip ${(lm && lm.focus || '') === n ? 'on' : ''}" data-act="focus" data-n="${esc(n)}">${n ? esc(n) : 'Off'}</button>`).join('')}</div>
+      <p class="muted">${lm && lm.focus ? `Every level leans on ${esc(lm.focus)} (the first level of each world is all ${esc(lm.focus)}), starting with the next level, until you tap Off.` : 'Pick one kind of math to get more of it in every level.'}</p>
       ${!m.tracks || !m.tracks.length ? (d && d.tracks ? d.tracks.map((t, i) => dt(id, 'trk' + i, `<div><b>${esc(t.n)}</b></div>`, trackBody(id, t, facts))).join('') : '') : ''}
       ${(m.weak || []).length ? `<h3>Still tricky</h3>${chips(m.weak, 'weak', 'weak')}` : ''}
       ${(m.slow || []).length ? `<h3>Right, but slow</h3>${chips(m.slow, 'slow', 'slow')}` : ''}
@@ -314,6 +317,7 @@
         if (act === 'stop') put({ ...lm, stop: dayStr() });
         if (act === 'go') { const v = { ...lm }; delete v.stop; put(v); }
         if (act === 'more') put({ ...lm, more: { day: dayStr(), n: Date.now() } });
+        if (act === 'focus') { const v = { ...lm }; if (b.dataset.n) v.focus = b.dataset.n; else delete v.focus; put(v); }   // extra practice of one kind of math (Nov 24 2026)
         if (act === 'mins') put({ ...lm, on: true, mins: +b.dataset.n });
         if (act === 'extra' || act === 'extra1') { const ex = lm.extra && lm.extra.day === dayStr() ? lm.extra.mins || 0 : 0; put({ ...lm, extra: { day: dayStr(), mins: ex + (act === 'extra1' ? 1 : 15) } }); }   // (+1 min: owner, Nov 24 2026)
         if (act === 'remove' && confirm('Remove this player from the page? Their online backup is deleted too (their own device keeps its save). If they play again on a linked device, they come back.')) {

@@ -694,7 +694,7 @@
   <div class="maprow hidden"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Parent page can allow one more level, or +1 minute</div>
+  <div class="build">Updated Nov 23, 2026 · Parent page: Extra practice (pick times tables or another kind of math)</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -3425,11 +3425,23 @@ function behind(sts, tm) {   // the kind furthest behind (not the last one playe
 }
 // The plan for stage i: { focus, track, skill, mode, mix: [{ track, skill | ids, p }], note, fresh }. commit = this
 // level is starting (uses up a challenge / step back, remembers it); otherwise it's a preview for the level card.
+// Extra practice (owner, Nov 24 2026: a 2nd grader needed his times tables but kept getting fractions and two-digit
+// take-away): the parent page can pick one kind of math for a kid (`limits/<kid>.focus` = a track's name, in prog.limit).
+// While it is on, that kind stands in for every world's own kind: the first level of each world is only that, and it
+// gets 60% of the other levels and the boss. If the kid's grade has passed all of it (or has none), the next grade's
+// track of the same name carries on (2nd grade's Times is 2, 5, 10; then 3rd grade's 3, 4, 6...).
+function focusState(plan, name) {
+  let last = plan.sts.find(x => x.t.name === name) || null;
+  if (last && !last.done) return last;
+  for (let gi = plan.gi + (last ? 1 : 0); gi < GRADES.length; gi++) { const t = gradeTracks(gi).find(q => q.name === name); if (!t) continue; last = trackState(t, gi); if (!last.done) return last; }
+  return last;
+}
 function planStage(i, commit) {
   const plan = prog.auto && !prog.pickOnce && trackPlan(); if (!plan) return null;
   const st = STAGES[i], W = WORLDS[st.w], cat = WORLD_HOME[W.key], tm = trackMem(), gname = GRADES[plan.gi].name;
-  const home = plan.sts.find(x => trackCat(x) === cat), homeOk = home && !home.done && !home.locked;
-  const note = homeOk || !KIND_NAME[cat] ? '' : !home ? '' : home.done ? `You passed all your ${KIND_NAME[cat]}! Mixed math here.`
+  const fx = prog.limit && prog.limit.focus ? focusState(plan, prog.limit.focus) : null;   // the parent page's extra practice
+  const home = fx || plan.sts.find(x => trackCat(x) === cat), homeOk = home && !home.done && !home.locked;
+  const note = fx || homeOk || !KIND_NAME[cat] ? '' : !home ? '' : home.done ? `You passed all your ${KIND_NAME[cat]}! Mixed math here.`
     : `${KIND_NAME[cat]} opens after ${SKILL[TRACK_REQ[home.t.ids[home.f]]].name}.`;
   const at = x => { const d = downOf(tm, x.t.name); return d ? easierSkill(x.t.ids[x.f], d) : x.t.ids[x.f]; };   // the kid's spot, minus any easier steps
   const spot = x => ({ track: x.t.name, ...(x.done ? { ids: x.t.ids } : { skill: at(x) }) });
@@ -3446,12 +3458,12 @@ function planStage(i, commit) {
     const others = plan.sts.filter(x => x !== home && !x.locked && (st.boss || !x.done));
     const withHome = (homeOk || (st.boss && home && home.done)) ? home : null;
     if (!withHome && !others.length) return null;
-    const hp = !withHome ? 0 : others.length ? Math.max(0.4, 1 / (others.length + 1) + 0.1) : 1;   // the world's kind always leads
+    const hp = !withHome ? 0 : others.length ? Math.max(fx ? 0.6 : 0.4, 1 / (others.length + 1) + 0.1) : 1;   // the world's kind always leads
     const mix = [...(withHome ? [{ ...spot(withHome), p: hp }] : []), ...others.map(x => ({ ...spot(x), p: (1 - hp) / others.length }))];
     const main = withHome && !withHome.done ? withHome : behind(others, tm) || withHome || others[0];
     out = { focus: false, track: main.t.name, skill: main.done ? main.t.ids[main.t.ids.length - 1] : at(main), mode: others.concat(withHome || []).some(x => !x.done && downOf(tm, x.t.name)) ? 'back' : '', mix };
   }
-  out.note = note; out.fresh = !tm.seen[out.skill]; out.grade = gname; out.home = homeOk ? KIND_NAME[cat] : null;
+  out.note = note; out.fresh = !tm.seen[out.skill]; out.grade = gname; out.home = homeOk ? (fx ? fx.t.name : KIND_NAME[cat]) : null;
   if (commit) {
     tm.seen[out.skill] = true;
     out.passed = plan.sts.flatMap(x => x.t.ids).filter(id => skillProgress(SKILL[id]).ready);

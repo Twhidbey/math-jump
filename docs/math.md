@@ -61,3 +61,4 @@ every 3 in a row (`streakUp` → `startDash`): `G.dash` frames of extra speed (`
 - **`choices(q, 3)`:** the right answer was the middle value 57-70% of the time (wrong ones were mostly one above and one below). Now the number of wrong choices below the answer is picked evenly (0, 1 or 2), so lowest / middle / highest come up about a third each (measured over 600 questions per skill; very small answers are still the lowest more often).
 - Not done from that review (ideas): typing the answer for gold facts at gates, pictures before the question for more than K, counting / place value / time / money, multi-step problems for strong third graders, `fcmp` "=" only 9% of the time.
 
+**Extra practice from the parent page (Nov 24 2026):** `prog.limit.focus` (a track name) makes `planStage` treat that track as every world's home kind (`focusState`): see the end of `docs/parent.md`.
