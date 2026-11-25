@@ -694,7 +694,7 @@
   <div class="maprow hidden"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Parent page: extra practice for low or high times tables</div>
+  <div class="build">Updated Nov 23, 2026 · Parent page says when an extra practice set is finished</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -3442,6 +3442,16 @@ function focusState(plan, name) {
   if (last && !last.done) return last;
   for (let gi = plan.gi + (last ? 1 : 0); gi < GRADES.length; gi++) { const t = gradeTracks(gi).find(q => q.name === name); if (!t) continue; last = trackState(t, gi); if (!last.done) return last; }
   return last;
+}
+// For the parent page: where the kid is in the extra practice, and whether the set is finished (every table of the low
+// or high half learned; for a whole track: the kid's own grade's part of it).
+function focusReport() {
+  const name = prog.limit && prog.limit.focus, plan = name && prog.auto && trackPlan(); if (!plan) return null;
+  const set = FOCUS_SETS[name], x = focusState(plan, name); if (!x) return null;
+  const own = plan.sts.find(q => q.t.name === name);
+  const done = set ? set.split(' ').every(id => skillProgress(SKILL[id]).ready) : !own || own.done;
+  const id = x.t.ids[Math.min(x.f, x.t.ids.length - 1)];
+  return { name, done, now: SKILL[id] ? SKILL[id].name : '' };
 }
 function planStage(i, commit) {
   const plan = prog.auto && !prog.pickOnce && trackPlan(); if (!plan) return null;
@@ -16290,7 +16300,7 @@ function famMath() {   // what the parent page shows: grade, belt, each kind of 
   const slow = facts.filter(f => !f.weak && f.practice).sort((a, b) => b.last - a.last).slice(0, 8).map(said);
   const sk = SKILL[prog.skill], kp = sk ? skillProgress(sk) : null;
   return { grade: plan ? GRADES[plan.gi].name : GRADE[pl.grade] ? GRADE[pl.grade].name : '', skill: sk ? sk.name : '', skillP: kp ? Math.round(kp.learned / Math.max(1, kp.n) * 100) : 0,
-    belt: currentBelt().name, tracks, weak, slow, gold: facts.filter(f => f.days && f.days.length >= 2 && !f.weak).length, levels: Object.keys(prog.best || {}).length, auto: !!prog.auto };
+    belt: currentBelt().name, focus: typeof focusReport === 'function' ? focusReport() : null, tracks, weak, slow, gold: facts.filter(f => f.days && f.days.length >= 2 && !f.weak).length, levels: Object.keys(prog.best || {}).length, auto: !!prog.auto };
 }
 function famSuggest(m) {   // a few plain sentences for the parent
   const out = [];
