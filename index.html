@@ -694,7 +694,7 @@
   <div class="maprow hidden"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Extra practice is 70% of all questions, reviews included</div>
+  <div class="build">Updated Nov 23, 2026 · Extra practice: more questions in every level and in the Daily Dojo</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -2119,7 +2119,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     }
     // Every other ? box asks a question first (not right before a gate).
     L.mboxes = new Set();
-    { let k = 0; for (let c = 0; c < L.w; c++) for (let r = 0; r < GR; r++) if (map[r][c] === '?' && !L.stations.some(st => c > st.s - 9 && c <= st.gate[1]) && k++ % 2 === 0) L.mboxes.add(c + ',' + r); }
+    { let k = 0; for (let c = 0; c < L.w; c++) for (let r = 0; r < GR; r++) if (map[r][c] === '?' && !L.stations.some(st => c > st.s - 9 && c <= st.gate[1]) && (L.gen.fx || k++ % 2 === 0)) L.mboxes.add(c + ',' + r); }
     { let k = 0; L.coins = L.coins.filter(c => c.v >= 10 || k++ % 2 === 0); }
     // The finale: the sand slopes up out of the water to a beach with the scroll and a little beach hut.
     // Deep sea: the scroll waits on an old anchor on the sea floor, by a little diving bell with lit windows.
@@ -2419,7 +2419,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
   }
   // Every other ? box asks a quick question before giving its prize.
   L.mboxes = new Set();
-  { let k = 0; for (let c = 0; c < L.w; c++) for (let r = 0; r < GR; r++) if (map[r][c] === '?' && !L.stations.some(st => c > st.s - 9 && c <= st.gate[1]) && k++ % 2 === 0) L.mboxes.add(c + ',' + r); }   // not right before a gate
+  { let k = 0; for (let c = 0; c < L.w; c++) for (let r = 0; r < GR; r++) if (map[r][c] === '?' && !L.stations.some(st => c > st.s - 9 && c <= st.gate[1]) && (L.gen.fx || k++ % 2 === 0)) L.mboxes.add(c + ',' + r); }   // not right before a gate
   // Gems mostly come from right answers now, so only every other small loose gem stays.
   { let k = 0; L.coins = L.coins.filter(c => c.v >= 10 || k++ % 2 === 0); }
   // One flaming golden gem: about four tiles above a pillar or stair top, so you have to climb up and jump for it.
@@ -3502,8 +3502,10 @@ function mixGen(mix) {
     const rv = same => { const pool = reviewPool().filter(f => !seen.has(factKey(f.q)) && !!(op && f.q.op === op) === same); if (!pool.length) return null; const q = { ...pool[R(0, pool.length - 1)].q, review: true }; seen.add(factKey(q)); return q; };
     const pick = list => { let r = Math.random() * list.reduce((a, m) => a + m.p, 0), w = list[list.length - 1]; for (const m of list) if ((r -= m.p) < 0) { w = m; break; } const id = w.skill || w.ids[R(0, w.ids.length - 1)]; return { ...gen(id)(), trk: w.track, sk: id }; };
     const others = mix.mix.filter(m => !m.fx);
-    return () => (Math.random() < 0.7 ? (Math.random() < 0.25 && rv(true)) || pick([fxm])
+    const fn = () => (Math.random() < 0.7 ? (Math.random() < 0.25 && rv(true)) || pick([fxm])
       : (Math.random() < (others.length ? 0.4 : 1) && rv(false)) || (others.length ? pick(others) : pick([fxm])));
+    fn.fx = true; fn.fxGen = () => (Math.random() < 0.25 && rv(true)) || pick([fxm]);   // (more reps, Nov 25 2026) practice-only questions for the running questions
+    return fn;
   }
   return () => {
     if (Math.random() < 0.25) {
@@ -5624,7 +5626,7 @@ function dragonRoar() {   // Dragon suit: every right answer, a roar knocks out 
   if (n) { shake(8, 4); tone(90, 0.5, 'sawtooth', 0.06, 45); floatText(P.x + P.w / 2, P.y - 40, 'ROAR!', '#ff8c1a', 30); }
 }
 function shopPowTick(p) {   // every frame of play: the powers that act on their own
-  if (mode === 'play') { giftTick(p); pageTick(p); storyTick(p); }
+  if (mode === 'play') { giftTick(p); pageTick(p); storyTick(p); runQTick(p); }
   if (L.boss || L.vault || mode !== 'play') return;
   const cx = p.x + p.w / 2;
   if (wears('trail-dragon')) {   // Fire trail: enemies that run into it get bopped
@@ -6069,7 +6071,52 @@ function miniTarget() {
     if (!ct.opts) countOpts(ct);
     return { kind: 'count', q: countQ(ct), vals: ct.opts, off: ct.opts.map(() => false), ref: ct };
   }
+  if (G.runQ) return { kind: 'run', q: G.runQ.q, vals: G.runQ.vals, off: G.runQ.vals.map(() => false), ref: G.runQ };   // a running question (last: everything else comes first)
   return null;
+}
+// Running questions (owner, Nov 25 2026: "more practice in levels when the toggle is selected, lots of reps"; this is
+// also the long-approved "quick question while Kai runs"). Only while the parent page's Extra practice is on (the level's
+// generator is marked `fx`). On open ground between the gates a question of the practised kind comes up in the top box;
+// Kai keeps running and answers with the buttons (keys on a computer: three chips over his head show the choices).
+// Right: a gem and the streak. Wrong: the right answer is shown and the fact comes back later; no heart, no lost medal.
+// It goes away unanswered after 12 s or when Kai reaches the next gate's stretch (nothing is recorded then).
+const RUNQ_GAP = 5 * 60, RUNQ_LIFE = 12 * 60;
+function runQTick(p) {
+  if (!G || !L.gen || !L.gen.fx || L.boss || L.vault || L.room) return;
+  const cs = currentStation(), busy = G.rescue || G.swing || G.raft || G.cross || G.groom || G.mbox || G.dive || G.down || (G.rr && G.rr.ph === 'ride');
+  const nearGate = cs && cs.s && p.x >= (cs.s - 4) * T, soonGate = cs && cs.s && p.x >= (cs.s - 12) * T;
+  if (G.runQ) {
+    const other = (() => { const keep = G.runQ; G.runQ = null; const m = miniTarget(); G.runQ = keep; return m; })();   // another question has come up
+    if (busy || other || nearGate || G.time - G.runQ.shownAt > RUNQ_LIFE) { G.runQ = null; G.runGap = 0; }
+    return;
+  }
+  G.runGap = (G.runGap || 0) + 1;
+  if (G.runGap < RUNQ_GAP || busy || soonGate || !cs || G.time < 180 || miniTarget()) return;
+  const q = L.gen.fxGen(); if (!q || typeof q.ans === 'undefined') return;
+  G.runQ = { q, vals: choices(q, 3), shownAt: G.time };
+}
+function runPick(rq, i) {
+  if (G.runQ !== rq) return;
+  G.runQ = null; G.runGap = 0;
+  const right = rq.vals[i] === rq.q.ans, fast = G.time - rq.shownAt <= fastFrames(L.skill, rq.q), x = P.x + P.w / 2, y = P.y;
+  noteFact(rq.q, right, right && fast, L.skill);
+  if (right) {
+    G.solved++; if (fast) G.fastN++;
+    sfx.correct(); streakUp(x, y); gotIt(); G.coins++; flyGem(x, y - 20, 1); burst(x, y + 10, '#fff6c8', 8, 3);
+    floatText(x, y - 2 * T, `${qSolved(rq.q)}!`, '#3ae374', 26);
+  } else {
+    remember(rq.q); missed(rq.q); sfx.wrong();
+    floatText(x, y - 2 * T, `Oops! ${qSolved(rq.q)}`, '#ff6b6b', 24);
+  }
+}
+function drawRunQ() {   // (render, world space) the three choices over Kai's head, for players without answer buttons
+  const rq = G.runQ; if (!rq || isTouch || mode !== 'play') return;
+  rq.vals.forEach((v, j) => {
+    const tx = Math.round(P.x + P.w / 2 + (j - 1) * 50), ty = Math.round(P.y - 34), c1 = ansCol(j)[0];
+    ctx.fillStyle = c1; rrect(tx - 21, ty - 17, 42, 34, 9); ctx.fill(); ctx.fillStyle = '#ffffff'; rrect(tx - 18, ty - 14, 36, 28, 7); ctx.fill();
+    ctx.font = `${String(v).length > 3 ? 14 : 18}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.fillStyle = '#1a1426'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(v, tx, ty + 1);
+    keyTag(ANS_KEYS(3)[j], tx + 18, ty - 16);
+  });
 }
 // The sea's counting bubble line (in place of the stepping stones): the first bubble shows a number, the rest "?" (choices under the next one).
 // Kai can't swim past the next one until he picks its number (buttons / keys). Right = it pops (+1 gem) and he swims on;
@@ -6396,6 +6443,7 @@ function drawCounts() {
   }
 }
 function miniAnswer(m, i) {
+  if (m.kind === 'run') { runPick(m.ref, i); return; }
   if (m.kind === 'steps') { stepsPick(m.ref, i); return; }
   if (m.kind === 'feed') { feedPick(m.ref, i); return; }
   if (m.kind === 'wall') { wallPick(m.ref, i); return; }
@@ -13487,7 +13535,7 @@ function render() {
   drawRainbowBridge();   // (the Rainbow suit's bridge, over the pit)
   drawBoss();
   if (L.boss) { drawOrbs(); }
-  if (G) { drawTeamGhost(); drawTeamTwin(); drawDolphin(); drawRunner(); drawShopPow(); drawOwlEyes(); drawClone(); drawGifts(); drawHelpers(); drawDemo(); drawStripeFx(); drawPet(); drawPlayer(); drawTeamFx(); drawGearFx(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
+  if (G) { drawTeamGhost(); drawTeamTwin(); drawDolphin(); drawRunner(); drawShopPow(); drawOwlEyes(); drawClone(); drawGifts(); drawHelpers(); drawDemo(); drawStripeFx(); drawPet(); drawPlayer(); drawRunQ(); drawTeamFx(); drawGearFx(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
   if (L.twist && G) drawTwistFront();
   if (L.flavor && G) drawFlavorFront();
   if (L.water && !L.room) drawWaterFront();
@@ -15025,11 +15073,15 @@ let dojo = null;
 function dojoQuestions() {
   const d = today(), seen = new Set(), out = [];
   const add = q => { const k = factKey(q); if (!seen.has(k) && out.length < DOJO_N) { seen.add(k); out.push(q); } };
-  const all = Object.values(prog.facts);
+  // (more reps, Nov 25 2026) with the parent page's Extra practice on, the dojo drills that kind: its missed and due
+  // facts first, then new ones from the skill the kid is on in that set.
+  const fplan = prog.limit && prog.limit.focus && prog.auto ? trackPlan() : null, fx = fplan ? focusState(fplan, prog.limit.focus) : null;
+  const fsk = fx ? SKILL[fx.t.ids[Math.min(fx.f, fx.t.ids.length - 1)]] : null, fop = fsk && { add: '+', sub: '−', mul: '×', div: '÷' }[fsk.cat];
+  const all = Object.values(prog.facts).filter(f => !fop || (f.q && f.q.op === fop));
   shuffle(all.filter(f => f.weak || f.practice)).slice(0, 4).forEach(f => add(f.q));
   shuffle(all.filter(f => !f.weak && !f.practice && f.days.length === 1 && f.days[0] < d)).slice(0, 4).forEach(f => add(f.q));
   shuffle(all.filter(f => !f.weak && f.days.length >= 2 && d - f.last >= 4)).slice(0, 2).forEach(f => add(f.q));
-  for (let i = 0; out.length < DOJO_N && i < 60; i++) add(curSkill().gen());
+  for (let i = 0; out.length < DOJO_N && i < 60; i++) add((fsk || curSkill()).gen());
   return shuffle(out);
 }
 // Test-out (owner asked: can a check move a kid up a grade?): 20 quick questions from the grade's skills that aren't

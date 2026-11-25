@@ -67,6 +67,6 @@ Tile letters: `X` pattern-wall block, `Z` pattern-wall choice block, `#` ground,
 
 - **Training rooms: built, waiting for owner/kids feedback.** Possible next: moves usable in boss fights, a Moves page with pictures, bigger Sensei sprite.
 - **Lost friends: built, waiting for owner/kids feedback.** Owner chose: human-like kids (no dragon), freed with the kid's own tricky facts (option A), powers stay for good, friends go home to the dojo.
-- **Approved, not built yet:** the pet asks a quick question while Kai runs (answer with buttons/keys for a pet trick + gems).
+- **Running questions** (the old "pet asks a quick question while Kai runs" idea) are built, but only while the parent page's Extra practice is on: see the end of `docs/parent.md`.
 - Ideas offered, not chosen yet: cannon barrels (hop in the barrel with the answer to launch), target practice (hit all the 4s-table numbers), gem thief chase, gem grids (arrays: "how many?"), rescue friends trapped in bubbles (fits "welcome home"), fork in the path (right answer = shortcut), number gem trails during kite flight, locked treasure chest. Parked earlier: time medals, speed meter, ghost race, settings per kid.
 - Not yet tested on a real phone: the answer-button arc and sizes, long-press paste for save codes, the iPhone sound fix (if still silent: ask which phone/browser).
