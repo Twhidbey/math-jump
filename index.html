@@ -694,7 +694,7 @@
   <div class="maprow hidden"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Parent page says when an extra practice set is finished</div>
+  <div class="build">Updated Nov 23, 2026 · Extra practice is 70% of all questions, reviews included</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -3469,14 +3469,14 @@ function planStage(i, commit) {
     let k = Math.max(0, Math.min(x.t.ids.length - 1, x.f + adj));
     if (k > x.f && !reqMet(x.t.ids[k], plan.gi)) k = x.f;
     const sk = dn ? easierSkill(x.t.ids[Math.min(x.f, x.t.ids.length - 1)], dn) : x.t.ids[k];   // asked for easier math: that wins
-    out = { focus: true, track: x.t.name, skill: sk, mode: dn ? 'back' : k > x.f ? 'challenge' : k < x.f ? 'back' : '', mix: [{ track: x.t.name, skill: sk, p: 1 }] };
+    out = { focus: true, track: x.t.name, skill: sk, mode: dn ? 'back' : k > x.f ? 'challenge' : k < x.f ? 'back' : '', mix: [{ track: x.t.name, skill: sk, p: 1, fx: !!fx && x === fx }] };
     if (commit) { tm.adj[x.t.name] = 0; tm.last = x.t.name; }
   } else {   // levels 2, 3 and the boss: a mix leaning 40% to the world's kind
     const others = plan.sts.filter(x => x !== home && !x.locked && (st.boss || !x.done));
     const withHome = (homeOk || (st.boss && home && home.done)) ? home : null;
     if (!withHome && !others.length) return null;
     const hp = !withHome ? 0 : others.length ? Math.max(fx ? 0.6 : 0.4, 1 / (others.length + 1) + 0.1) : 1;   // the world's kind always leads
-    const mix = [...(withHome ? [{ ...spot(withHome), p: hp }] : []), ...others.map(x => ({ ...spot(x), p: (1 - hp) / others.length }))];
+    const mix = [...(withHome ? [{ ...spot(withHome), p: hp, fx: !!fx && withHome === fx }] : []), ...others.map(x => ({ ...spot(x), p: (1 - hp) / others.length }))];
     const main = withHome && !withHome.done ? withHome : behind(others, tm) || withHome || others[0];
     out = { focus: false, track: main.t.name, skill: main.done ? main.t.ids[main.t.ids.length - 1] : at(main), mode: others.concat(withHome || []).some(x => !x.done && downOf(tm, x.t.name)) ? 'back' : '', mix };
   }
@@ -3492,6 +3492,19 @@ function planStage(i, commit) {
 // its kind (trk) and skill (sk) so the level can be judged kind by kind.
 function mixGen(mix) {
   const gens = {}, gen = id => gens[id] || (gens[id] = genFor(SKILL[id], false)), seen = new Set();
+  // Extra practice from the parent page (owner, Nov 25 2026: "70% even with review"): 7 questions in 10 are that kind,
+  // reviews counted. Of those, 1 in 4 is a review of a fact of that kind when one is due. The other 3 in 10 are reviews
+  // of other kinds and the kid's other math (in a world's first level, where there is no other math: reviews, else more
+  // of the practice).
+  const fxm = mix.mix.find(m => m.fx);
+  if (fxm) {
+    const op = { add: '+', sub: '−', mul: '×', div: '÷' }[SKILL[fxm.skill || fxm.ids[0]].cat];
+    const rv = same => { const pool = reviewPool().filter(f => !seen.has(factKey(f.q)) && !!(op && f.q.op === op) === same); if (!pool.length) return null; const q = { ...pool[R(0, pool.length - 1)].q, review: true }; seen.add(factKey(q)); return q; };
+    const pick = list => { let r = Math.random() * list.reduce((a, m) => a + m.p, 0), w = list[list.length - 1]; for (const m of list) if ((r -= m.p) < 0) { w = m; break; } const id = w.skill || w.ids[R(0, w.ids.length - 1)]; return { ...gen(id)(), trk: w.track, sk: id }; };
+    const others = mix.mix.filter(m => !m.fx);
+    return () => (Math.random() < 0.7 ? (Math.random() < 0.25 && rv(true)) || pick([fxm])
+      : (Math.random() < (others.length ? 0.4 : 1) && rv(false)) || (others.length ? pick(others) : pick([fxm])));
+  }
   return () => {
     if (Math.random() < 0.25) {
       const pool = reviewPool().filter(f => !seen.has(factKey(f.q)));

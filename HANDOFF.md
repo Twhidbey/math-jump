@@ -134,4 +134,5 @@ Owner asked for a parent screen with its own link: how long each kid plays, a ti
 - **Parent page: Extra practice (Nov 24, live):** chips per kid (Off / Times / the kid's tracks); the chosen kind fills the first level of every world and 60% of the rest, and carries on into the next grade's track when finished. See the end of `docs/parent.md`. Tested by simulation and with a pretend database, not with the family's real data.
 - **Extra practice: low / high times tables (Nov 24, live):** chips "Times 2, 3, 4, 5, 10" and "Times 6, 7, 8, 9" for every kid, plus a note on the card when Extra practice can't apply (math level picked by hand, or no grade). Offered, not built: two kinds at once, tricky facts, a strength setting, one table only.
 - **Extra practice: "Now on" and "Finished" lines (Nov 25, live):** the parent page shows which table the kid is on and says when the chosen set is finished (the practice stays on until the parent taps Off).
+- **Extra practice is 70% counting reviews (Nov 25, live):** owner asked; `mixGen` handles the marked (`fx`) entry. Measured 69 to 72% with a full review pile, more when there are no reviews.
 
