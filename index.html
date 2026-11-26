@@ -1653,7 +1653,7 @@ const WORD_ANIMAL = { coyote: 'coyote pup', robodog: 'robot dog', robocat: 'robo
 const WORD_FOOD = { carrot: ['carrot', 'carrots'], bamboo: ['bamboo', 'bamboo'], bread: ['bread', 'bread'], bug: ['bug', 'bugs'], chili: ['chili', 'chilis'],
   mushroom: ['mushroom', 'mushrooms'], bolt: ['bolt', 'bolts'], battery: ['battery', 'batteries'], spark: ['spark', 'sparks'], fish: ['fish', 'fish'],
   berries: ['berry', 'berries'], riceball: ['rice ball', 'rice balls'], dango: ['dango', 'dango'], apple: ['apple', 'apples'],
-  jelly: ['jellyfish', 'jellyfish'], clam: ['clam', 'clams'], shrimp: ['shrimp', 'shrimp'], pear: ['cactus pear', 'cactus pears'], bone: ['bone', 'bones'] };
+  jelly: ['jellyfish', 'jellyfish'], clam: ['clam', 'clams'], shrimp: ['shrimp', 'shrimp'], pear: ['cactus pear', 'cactus pears'], bone: ['bone', 'bones'], acorn: ['acorn', 'acorns'] };
 function wordQ(q, animal, food) {
   if (!q || q.missing || q.step || q.puzzle || !['+', '−', '×', '÷'].includes(q.op)) return q;
   const an = WORD_ANIMAL[animal] || animal, [one, many] = WORD_FOOD[food] || [food, food + 's'], f = n => (n === 1 ? one : many);
@@ -1986,6 +1986,36 @@ var SPECIAL = null;
 function thanksgivingDay(y) { const d = new Date(y, 10, 1); return 1 + ((4 - d.getDay() + 7) % 7) + 21; }   // the 4th Thursday of November
 function feastOpen(now = new Date()) { if (now.getMonth() !== 10) return false; const t = thanksgivingDay(now.getFullYear()), d = now.getDate(); return d >= t - 1 && d <= t + 3; }
 function startFeast() { SPECIAL = 'feast'; startStage(0); if (L && !L.feast) SPECIAL = null; }
+// The Road to the Feast (owner, Nov 26 2026): one long level in three parts, one evening walk at sunset. Part 1 Cherry
+// Path (the harvest: pumpkin stepping stones), part 2 the Koi Pond's lake (three tired travellers by a little boat join
+// Kai when he opens the gate there), part 3 the dojo road (lanterns on posts light as he passes; the friends he found
+// wait by the road). The turkey is the level's hungry animal: fed right, it trots along too. Everyone walks behind Kai
+// on his own path (L.fe.trail), and at the end each one sits down at the long table as he passes their seat; the last
+// seat is Kuro's. buildLevel makes the layout (L.fe), paradeTick moves everyone, drawFeastBack / drawFeastFront draw it.
+const FEAST_PER = 6, FEAST_GATES = 18, FEAST_GAP = 30;   // gates per part, gates in all, px between walkers
+const FEAST_SKY = [['#ff9d5c', '#ffe2b8'], ['#f47a5a', '#ffd3a0'], ['#b9577e', '#ffb072']];   // one sunset, getting later
+// The three travellers (16 × 21, facing right like the friends): a man in a tall hat, a woman in a bonnet, a child.
+const TRAV_PAL = { s: '#f2c49a', e: '#16121f', w: '#f4f1e8', H: '#2b2633', y: '#e0c050', h: '#6b4423', c: '#4f4658', C: '#383144', l: '#2b2633', f: '#16121f', t: '#7a5230', u: '#f4f1e8', U: '#c9c2b2', d: '#5e4a3a', D: '#46362a', g: '#7a6a5a' };
+let TRAV_SPR = null;
+function travSpr(n) {
+  if (!TRAV_SPR) TRAV_SPR = [0, 1, 2].map(k => bake(makeFrames(16, 21, TRAV_PAL, ({ P, R, E, L }, f) => {
+    const legs = (y, col) => { if (f) { R(5, y, 2, 2, col); R(10, y, 2, 2, col); R(4, y + 2, 3, 1, 'f'); R(10, y + 2, 3, 1, 'f'); } else { R(6, y, 2, 2, col); R(9, y, 2, 2, col); R(5, y + 2, 3, 1, 'f'); R(9, y + 2, 3, 1, 'f'); } };
+    if (k === 0) {   // the man: tall black hat with a buckle, white collar, a walking stick
+      R(6, 0, 6, 4, 'H'); R(8, 3, 2, 1, 'y'); R(4, 4, 10, 1, 'H');
+      R(6, 5, 2, 3, 'h'); R(8, 5, 5, 4, 's'); P(13, 7, 's'); P(11, 6, 'e'); P(10, 5, 'h'); P(11, 5, 'h');
+      R(6, 9, 7, 2, 'w'); R(5, 11, 8, 6, 'c'); R(6, 11, 1, 6, 'C'); R(10, 11, 2, 4, 'C'); P(12, 14, 's');
+      L(13, 12, 13, 19, 't'); legs(17, 'l');
+    } else if (k === 1) {   // the woman: a white bonnet, a long dress and apron
+      E(8.5, 5.5, 4.6, 4.6, 'u'); R(9, 4, 4, 5, 's'); P(13, 6, 's'); P(11, 6, 'e'); R(13, 2, 1, 3, 'U'); R(5, 3, 1, 5, 'U');
+      R(6, 10, 7, 2, 'w'); R(5, 12, 8, 3, 'd'); R(4, 15, 10, 3, 'd'); R(9, 12, 3, 5, 'w'); R(5, 12, 1, 6, 'D'); P(12, 13, 's');
+      legs(18, 'D');
+    } else {   // the child: a little cap, the same plain clothes
+      R(6, 5, 6, 2, 'H'); R(5, 7, 8, 1, 'H'); R(6, 8, 2, 2, 'h'); R(8, 8, 5, 3, 's'); P(13, 9, 's'); P(11, 9, 'e');
+      R(6, 11, 7, 1, 'w'); R(6, 12, 7, 5, 'g'); R(7, 12, 1, 5, 'C'); P(11, 15, 's'); legs(17, 'l');
+    }
+  }, 2), ['stand', 'step'], 2));
+  return TRAV_SPR[n];
+}
 function focusGen(skill) {
   const base = genFor(skill, false), rank = q => { const f = prog.facts[factKey(q)]; return f && (f.weak || f.practice) ? 2 : factStatus(factKey(q)) === 'silver' ? 1 : 0; };
   const want = shuffle((factList(skill) || []).filter(q => factStatus(factKey(q)) !== 'gold')).sort((a, b) => rank(b) - rank(a));
@@ -1994,7 +2024,8 @@ function focusGen(skill) {
 }
 function buildLevel(idx, easy = false, skill = curSkill()) {
   const shared = LAYOUT; if (shared) easy = !!shared.easy;   // team run: one layout for both devices
-  const def = STAGES[idx], W = WORLDS[def.w], rng = mulberry32(1234 + def.si * 7919);
+  const feast = SPECIAL === 'feast' && idx === 0 && !shared;   // The Road to the Feast: three parts, three times as long
+  const def = feast ? { ...STAGES[idx], n: FEAST_GATES } : STAGES[idx], W = WORLDS[def.w], rng = mulberry32(1234 + def.si * 7919);
   const map = newMap();
   const twist = def.boss ? null : TWISTS[slotOf(def)];
   const L = { idx, def, skill, twist, fx: [], plats: [], chaseX: -8 * T, gen: LEVEL_MIX ? mixGen(LEVEL_MIX) : FOCUS ? focusGen(skill) : genFor(skill), expert: skillProgress(skill).mature, world: W, sky: W.skies[def.k], map, w: 0, enemies: [], coins: [], stations: [], walls: [], wallCells: new Map(), bridges: [], doors: [], decor: [], flagC: 0, castleC: 0, boss: null, proj: [] };
@@ -2368,13 +2399,15 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
 
   const kinds = easy ? ['coins', 'bricks', 'pipe', 'stairs'] : ['coins', 'pit', 'bricks', 'pipe', 'stairs', 'float'];
   if (twist === 'koi' && !easy) kinds.push('pit', 'pit');
-  const doorAt = def.n > 6 ? 4 : 3;
+  const doorAt = feast ? FEAST_PER + 1 : def.n > 6 ? 4 : 3;
+  const fe = feast ? (L.fe = { parts: [], guests: [], line: [], trail: [], lamps: [], travGate: -1, boat: 0, table: null }) : null;
+  if (feast) L.feast = true;
   flat(10);
   L.squads = []; L.steps = [];
   // Bridges and stepping stones take turns, level by level (each is in about half the levels). Kindergarten math never
   // gets a number-stone bridge (carrying stones to an exact sum is the trickiest thing in the game): stones every level.
   const young = shared ? true : skill.tier === 1, useBridge = !young && slotOf(def) % 2 === 1 && W.key !== 'desert';   // (the desert always has stones: Hoodoo Trail's are the hoodoo hop)
-  const feedAt = Math.floor(def.n / 2), stepsAt = useBridge ? [] : [1];   // one set of stepping stones in a stones level
+  const feedAt = feast ? 2 : Math.floor(def.n / 2), stepsAt = useBridge ? [] : feast ? [1, FEAST_PER + 2, 2 * FEAST_PER + 1] : [1];   // one set of stepping stones in a stones level (The Feast: one in each part)
   // Breathing room: after each big moment a long stretch of plain running. The first two also get a pair of ledges
   // up in the sky (the world's own blocks, one higher than the other) with gems on top, just for jumping.
   let skyLeft = 2;
@@ -2384,20 +2417,32 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     if (gid && !L.gearChest) { L.gearChest = { id: gid, x: (c + 7) * T + T / 2, y: (GR - 7) * T, lock: 0, open: 0 }; L.coins = L.coins.filter(g => !(Math.abs(g.x - L.gearChest.x) < T && Math.abs(g.y - (GR - 8) * T - T / 2) < T)); }   // the Gear Pack chest, up on the high ledge
   };
   const run = () => { const s = flat(ri(rng, 14, 18)); if (skyLeft > 0 && !def.boss) { skyLeft--; sky(s + 3); } };
-  const wk = def.boss || shared ? [] : wallKinds(skill), wallGate = wk.length && def.n >= 3 ? feedAt : -1;   // older players: the middle gate is a pattern wall
+  const wk = def.boss || shared ? [] : wallKinds(skill), wallGate = wk.length && def.n >= 3 ? (feast ? 3 : feedAt) : -1;   // older players: the middle gate is a pattern wall
   for (let i = 0; i < def.n; i++) {
+    if (feast && i > 0 && i % FEAST_PER === 0) {   // The Feast: the next part starts here (the background changes at this spot)
+      const s0 = flat(14); fe.parts.push(s0 * T);
+      if (i === FEAST_PER) {   // the Koi Pond's lake: a little boat at the shore, three tired travellers beside it, then their gate
+        fe.boat = (s0 + 4) * T; fe.travGate = L.stations.length;
+        [0, 1, 2].forEach(k => fe.guests.push({ kind: 'trav', n: k, x: (s0 + 9 + k * 1.3) * T, y: GR * T, state: 'wait', face: k === 2 ? 1 : -1, a: 1, t: k * 40 }));
+      } else {   // the dojo road: lanterns on posts from here on, and the friends Kai found waiting by the road
+        FRIENDS.filter(f => (prog.friends || {})[f.id]).forEach((f, k) => fe.guests.push({ kind: 'kid', id: f.id, x: (s0 + 5 + k * 1.2) * T, y: GR * T, state: 'wait', face: -1, a: 1, t: k * 23 }));
+        for (let c = s0 + 2; c < s0 + 14; c += 7) fe.lamps.push({ x: c * T + T / 2, lit: 0 });
+      }
+    }
     if (i === feedAt) {   // one hungry animal per level, mid-way, with three numbered foods floating ahead of it
-      const s0 = flat(11), [kind, food] = ANIMALS[slotOf(def)] || ANIMALS[0], q = wordQ(L.gen(), kind, food);
+      const s0 = flat(11), [kind, food] = feast ? ['turkey', 'acorn'] : ANIMALS[slotOf(def)] || ANIMALS[0], q = wordQ(L.gen(), kind, food);
       L.squads.push({ s: s0, q, done: false, kind, food, ax: (s0 + 9) * T + T / 2, foods: choices(q, 3).map((val, j) => ({ x: (s0 + 3 + j * 2) * T + T / 2, y: GR * T - 2.1 * T, val })) });
       run();
     }
-    const n = ri(rng, 1, 2);   // short runs between gates: more math, less walking
+    const shore = feast && i === FEAST_PER;   // (the travellers' gate comes straight after the shore)
+    const n = shore ? 0 : ri(rng, 1, 2);   // short runs between gates: more math, less walking
     for (let k = 0; k < n; k++) chunk(kinds[ri(rng, 0, kinds.length - 1)]);
     if (useBridge && (i === 2 || (i === 5 && def.w >= 2))) { bridgeChunk(); run(); }
     if (i === doorAt) doorChunk();
-    if (stepsAt.includes(i)) { stepsChunk(); run(); }
+    if (stepsAt.includes(i)) { const k0 = L.steps.length; stepsChunk(); if (feast && i < FEAST_PER) L.steps[k0].pumpkin = true; run(); }   // (The Feast's first part: pumpkins)
     if (i === def.n - 2) { if (W.key === 'snow') liftChunk(); else if (W.key === 'desert' && def.k === 2) raftChunk(); else swingChunk(); run(); }   // one swing crossing per level (a ski lift in the snow)
-    if (twist && (i % 2 === 0 || twist === 'walljump')) twistChunk();   // wall-jump levels get one before every gate
+    if (feast && i >= 2 * FEAST_PER) { const c = L.w; flat(2); fe.lamps.push({ x: c * T + T, lit: 0 }); }   // the dojo road: a lantern on a post before each gate
+    if (twist && !shore && (feast ? i % 4 === 0 && i < def.n - 3 : i % 2 === 0 || twist === 'walljump')) twistChunk();   // wall-jump levels get one before every gate
     if (i === wallGate) { wallChunk(wk[slotOf(def) % wk.length]); run(); continue; }
     // Question station: sign, answer blocks, and a locked gate.
     const s = flat(16), q = L.gen(), five = L.expert;
@@ -2410,7 +2455,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
   // A steady number of ? boxes: 3 in the first world up to 6 in the last. Extra ones become bricks;
   // missing ones turn bricks over solid ground into ? boxes, then go over open flat ground.
   {
-    const want = { japan: 3, lava: 4, robot: 5, snow: 5, sea: 5, desert: 5, castle: 6 }[W.key] || 5, boxes = [], spare = [];
+    const want = feast ? 9 : { japan: 3, lava: 4, robot: 5, snow: 5, sea: 5, desert: 5, castle: 6 }[W.key] || 5, boxes = [], spare = [];
     const nearGate = c => (L.swings || []).some(w => c >= w.s - 2 && c <= w.e + 2) || L.steps.some(z => c >= z.c0 - 6 && c <= z.c0 + z.w + 2) || L.squads.some(q => c >= q.s && c <= q.s + 10) || L.stations.some(st => c >= st.s - 1 && c <= st.gate[1] + 1) || L.walls.some(w => c >= w.s - 1 && c <= w.gate[1] + 1) || L.bridges.some(b => c >= b.signC - 1 && c <= b.altarC + 1) || L.doors.some(d => Math.abs(c - d.c) <= 2);
     for (let c = 0; c < L.w; c++) for (let r = 0; r < GR; r++) {
       if (map[r][c] === '?') boxes.push([r, c]);
@@ -2439,6 +2484,18 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     const g = goldSpots[Math.floor(rng() * goldSpots.length)];
     L.coins = L.coins.filter(c => Math.abs(c.x - g.x) > T * 1.5 || c.y > g.top * T);   // nothing else up there
     L.coins.push({ x: g.x, y: g.top * T - 4.2 * T, v: 25, gold: true, taken: false });
+  }
+  if (feast) {   // The Feast's finale: a flat road, then the long table by the dojo (Sensei at its head), no flag
+    const most = 4 + FRIENDS.filter(f => (prog.friends || {})[f.id]).length, tw = Math.max(14, most * 2 + 4);   // room for everyone who could come
+    const lead = flat(8); fe.lamps.push({ x: (lead + 3) * T + T / 2, lit: 0 });
+    const t0 = flat(tw + 3) + 1;
+    fe.table = { x0: t0 * T, x1: (t0 + tw) * T, kuro: (t0 + tw - 1) * T, seats: null };
+    for (let c = t0 + 3; c < t0 + tw; c += 6) fe.lamps.push({ x: c * T + T / 2, lit: 0, back: true });
+    L.flagC = t0 + tw + 1; L.castleC = L.flagC + 4; fe.sensei = (L.flagC + 2) * T;   // reaching Sensei ends the level
+    flat(16);
+    L.flagC = t0 - 2 + 14; addFlavor(L); L.flagC = t0 + tw + 1;   // (the level's extras stay off the table)
+    addFriend(L);
+    return L;
   }
   // Finale: staircase, flag, dojo.
   const s = flat(24);
@@ -5999,7 +6056,7 @@ function drawSteps() {
     if (st.done) {   // after the crossing: stones falling into the pit, then their numbers painted on the filled floor
       for (const o of st.path) {
         const top = o.filled ? GR * T : o.top;
-        if (!o.filled) block(o.x - T / 2, top, W.stair[0], W.stair[1], W.stair[2]);
+        if (!o.filled) (st.pumpkin ? pumpkinBlock : block)(o.x - T / 2, top, ...(st.pumpkin ? PUMPKIN : W.stair));
         ctx.font = `${String(o.val).length > 2 ? 15 : 19}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.strokeText(o.val, o.x, top + T / 2 + 1); ctx.fillText(o.val, o.x, top + T / 2 + 1);
       }
@@ -6014,8 +6071,9 @@ function drawSteps() {
     ctx.fillStyle = st.back ? '#e8590c' : '#2f9e44';
     ctx.fillRect(ax - 2, ay - 9, 4, 18);
     for (let i = 0; i < 5; i++) { const yy = st.back ? ay + 9 - i * 2 : ay - 11 + i * 2; ctx.fillRect(ax - 1 - i * 2 + 1, yy, i * 4 + 2, 2); }
-    const sq = (x, top, val, fill, dark, light, a = 1) => {   // a plain square block with its number
-      ctx.globalAlpha = a; block(x - T / 2, top, fill, dark, light);
+    const sq = (x, top, val, fill, dark, light, a = 1) => {   // a plain square block with its number (The Feast's first part: a pumpkin)
+      if (st.pumpkin && fill === W.stair[0]) [fill, dark, light] = PUMPKIN;
+      ctx.globalAlpha = a; (st.pumpkin ? pumpkinBlock : block)(x - T / 2, top, fill, dark, light);
       ctx.font = `${String(val).length > 2 ? 15 : 19}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.strokeText(val, x, top + T / 2 + 1); ctx.fillText(val, x, top + T / 2 + 1);
       ctx.globalAlpha = 1;
@@ -6482,7 +6540,7 @@ function feedPick(fd, i) {
   if (right) {
     G.solved++; if (fd.fast = fast) G.fastN++;
     fd.mood = 'yum'; sfx.correct(); streakUp(fd.ax, y); gotIt();
-    (prog.stats.fed || (prog.stats.fed = {}))[slotOf(L.def)] = true;   // Animal Friend badge
+    if (!L.feast) (prog.stats.fed || (prog.stats.fed = {}))[slotOf(L.def)] = true;   // Animal Friend badge (The Feast's turkey is a guest, not the Cherry Path rabbit)
     floatText(fd.ax, y - 50, `${qSolved(fd.q)}! Yum!`, '#3ae374', 26);
   } else {
     G.mistakes++; G.streak = 0; remember(fd.q); missed(fd.q); sfx.wrong();
@@ -6592,7 +6650,7 @@ function drawMini() {
   if (L.counts) drawCounts();   // the sea's counting bubble line
   if (L.currents) drawCurrents();   // the sea's current tunnel
   for (const fd of L.squads || []) {
-    if (fd.ax < cam - 6 * T || fd.foods[0].x > cam + VW + 60) continue;
+    if (fd.joined || fd.ax < cam - 6 * T || fd.foods[0].x > cam + VW + 60) continue;   // (The Feast: the turkey walks with Kai now)
     const mini = mode === 'play' ? miniTarget() : null;
     const g = GR * T, chew = fd.mood === 'yum' && fd.moodT > 20 && fd.moodT < 80 ? Math.abs(Math.sin(fd.moodT * 0.4)) : 0;
     drawAnimal(fd.kind, fd.ax, g - (fd.mood === 'yum' && fd.moodT > 80 && fd.moodT < 140 ? Math.abs(Math.sin(fd.moodT * 0.2)) * 14 : 0), fd.mood, chew);
@@ -6638,6 +6696,9 @@ function drawMini() {
 // Feeding animals as little pixel sprites (16 wide, chibi: big head, big eyes). Each has its own palette; a dark outline
 // is added around the shape. eyes = top-left of each 2×2 eye, mouth = where it chews, face = colour used to blink.
 const ANIMAL_SPR = {
+  turkey: { pal: { R: '#d9482b', O: '#f08a2c', Y: '#ffb627', H: '#9a6a42', B: '#7a4a2a', b: '#5a321a', K: '#ffb627', W: '#e63946', e: '#1a1426', w: '#ffffff', p: '#ff9a8a', L: '#e8a040' }, eyes: [[5, 4], [9, 4]], mouth: [7, 7], face: 'H', rows: [   // The Feast: a guest, not dinner
+    '...RROOOOOORR...', '..RROOYYYYOORR..', '.RROYHHHHHHYORR.', '.ROYHHHHHHHHYOR.', 'ROYHHeeHHeeHHYOR', 'ROYHHewHHewHHYOR', 'ROYHpHHKKHHpHYOR',
+    '.OYHHHHWWHHHHYO.', '.OYBBBBWWBBBBYO.', '..BBBBBBBBBBBB..', '.BBBbBBBBBBbBBB.', '.BBBBbBBBBbBBBB.', '..BBBBBBBBBBBB..', '....LL....LL....'] },
   roadrunner: { pal: { B: '#8a6a4a', L: '#f0e0c0', C: '#4a3a2a', O: '#ffb627', e: '#1a1426', w: '#ffffff', p: '#ffb3a0' }, eyes: [[4, 4], [8, 4]], mouth: [10, 6], face: 'B', rows: [
     '....CC.C........', '.....CCCC.......', '....BBBBBB......', '...BBBBBBBB.....', '...BeeBBeeB.....', '...BewBBewBOO...', '...BpBBBBpBO....', '....BBBBBB......',
     '....LLLLLLBB....', '...LLLLLLLBBBC..', '...LLLLLLLBBCCC.', '....LLLLLLB..CC.', '.....O...O......', '....OO..OO......'] },
@@ -6704,6 +6765,7 @@ const ANIMAL_SPR = {
 };
 // little pixel foods (10 wide), same outline treatment
 const FOOD_SPR = {
+  acorn: { pal: { c: '#7a4a2a', C: '#5a321a', a: '#c98a3a', A: '#e8b060', s: '#5a321a' }, rows: ['....s.....', '..cccccc..', '.cCcCcCcc.', '.cccccccc.', '..aaaaaa..', '..aAaaaa..', '..aaaaaa..', '...aaaa...', '....aa....'] },
   pear: { pal: { m: '#e0408a', M: '#b02a66', g: '#5f9a4a', w: '#ffb3d0' }, rows: ['....gg....', '...mmmm...', '..mwmmmm..', '..mmmmMm..', '..mmMmmm..', '..mmmmmm..', '...mmmm...'] },
   bone: { pal: { w: '#f4f0e0', d: '#c9c0a8' }, rows: ['.ww....ww.', 'wwww..wwww', '.wwwwwwww.', '.wwddddww.', 'wwww..wwww', '.ww....ww.'] },
   jelly: { pal: { p: '#ff9ccf', P: '#c8609a', w: '#ffffff' }, rows: ['...pppp...', '..pwpppp..', '.pppppppp.', '.PPPPPPPP.', '..p.p.p...', '..p..p.p..', '...p...p..'] },
@@ -7620,7 +7682,7 @@ function updatePlayer() {
     if (!c.taken && Math.abs(c.x - (p.x + p.w / 2)) < (p.flipT > 0 ? 40 : 22) && Math.abs(c.y - (p.y + p.h / 2)) < (p.flipT > 0 ? 46 : 30)) {
       c.taken = true; G.coins += c.v; G.score += 100 * c.v; gemSound(); flyGem(c.x, c.y, c.v);
       if (c.gold) {
-        prog.golden[L.idx] = true; save(); G.score += 2500; sfx.win(); confetti(c.x, c.y); shake(8, 3); petSay('wow');
+        if (!L.feast) { prog.golden[L.idx] = true; save(); } G.score += 2500; sfx.win(); confetti(c.x, c.y); shake(8, 3); petSay('wow');   // (The Feast: not Cherry Path's golden gem)
         floatText(c.x, c.y - 50, 'Golden gem! +25', '#ffd23f', 28);
         award('golden'); statBadges();
       } else if (c.v > 1) floatText(c.x, c.y - 24, '+' + c.v, GEM_COL[c.v][0], 22);
@@ -7637,6 +7699,7 @@ function updatePlayer() {
     floatText(p.x + p.w / 2, p.y - 6, 'Ready for the deep sea!', '#9be7ff', 20);
   }
   if (!L.boss && !L.vault && p.x + p.w >= L.flagC * T + T / 2 - 6) {
+    if (L.fe) { mode = 'win'; G.winT = 0; hide('pauseBtn'); showTouch(false); petSay('dance'); return; }   // The Feast: Kai has walked the table to Sensei
     mode = 'win'; G.winT = 0; stopMusic(); sfx.win(); hide('pauseBtn'); showTouch(false); petSay('dance');
     const bonus = Math.max(0, GR - Math.floor((p.y + p.h) / T)) * 100 + G.hearts * 300;
     G.score += bonus; floatText(p.x, p.y - 10, '+' + bonus, '#ffd23f', 26);
@@ -8185,6 +8248,7 @@ function victoryTick() {
 function missPicTick() { if (G && G.missPic && G.missPic.t > 0) G.missPic.t--; }
 function updateWin() {
   const p = P; G.winT++; petTick(); victoryTick(); feastTick();
+  if (L.fe) { feastWin(); return; }   // The Feast: at the table
   if (L.boss) {
     p.vx *= 0.8; p.vy = Math.min(p.vy + 0.55, 12); moveX(p); moveY(p);
     if (G.winT === 30) startVictory();
@@ -8238,7 +8302,7 @@ function finishLevel() {
   const i = G.idx, st = STAGES[i], W = WORLDS[st.w];
   const dots = G.mistakes === 0 ? 3 : G.mistakes <= 2 ? 2 : 1, sk = G.skill, pts = dots * sk.tier;
   const before = currentBelt();
-  if (!prog.best[i] || pts > prog.best[i].pts) prog.best[i] = { pts, dots, tier: sk.tier };
+  if (!L.feast && (!prog.best[i] || pts > prog.best[i].pts)) prog.best[i] = { pts, dots, tier: sk.tier };   // (The Feast is not a stage: no stars for Cherry Path)
   prog.mastery[sk.id] = Math.max(prog.mastery[sk.id] || 0, dots);
   save();
   const after = currentBelt(), last = i === STAGES.length - 1;
@@ -8270,7 +8334,7 @@ function finishLevel() {
   if (up) body += path;
   // One next goal (engagement review, Nov 23 2026: the card showed eight different numbers and the goals were a blur):
   // the rows of counts (solved, fast, Lightning, in a row, record) are gone; the level's best is still kept.
-  if (G.solved) { const pb = prog.mathBest || (prog.mathBest = {}); if (G.solved > (pb[i] || 0)) { pb[i] = G.solved; save(); } }
+  if (G.solved && !L.feast) { const pb = prog.mathBest || (prog.mathBest = {}); if (G.solved > (pb[i] || 0)) { pb[i] = G.solved; save(); } }
   body += nextGoalHTML();
   if (after.idx > before.idx) body += `<div class="promo">${beltHTML(after)} &nbsp;<b>${after.name} Belt!</b></div>`;
   body += journalHTML() + chestHTML() + gearHTML();
@@ -8892,7 +8956,7 @@ function openCol(c0) {   // a column of plain open ground near c0 (searching for
 function placeStory(i) {   // (startStage)
   L.help = null; L.mem = null;
   L.marks = []; L.note = null; L.kuro = null; G.helper = null; G.pengs = 0; G.feastFish = 0;
-  const st = STAGES[i]; if (!st || st.boss || L.boss || L.vault) return;
+  const st = STAGES[i]; if (!st || st.boss || L.boss || L.vault || L.feast) return;   // (The Feast: no story marks, notes or glimpses of Kuro)
   const kind = MARK_KIND[L.world.key];
   for (const s of L.stations.slice(0, 5)) {
     const c = groundCol(s.gate[0] - 3); if (c < 0 || L.marks.some(m => Math.abs(m.c - c) < 3)) continue;
@@ -9006,31 +9070,185 @@ function feastDish(c, kind, dx, y) {   // 14 px wide, standing on y
   else if (kind === 2) { c.fillStyle = '#c9a24f'; c.fillRect(dx, y - 5, 14, 5); c.fillStyle = '#8a5a34'; c.fillRect(dx + 1, y - 8, 12, 3); c.fillStyle = '#f08a2c'; c.fillRect(dx + 3, y - 9, 8, 1); }   // a pie
   else { c.fillStyle = '#c0392b'; c.fillRect(dx + 1, y - 8, 5, 8); c.fillStyle = '#ffb627'; c.fillRect(dx + 8, y - 7, 5, 7); c.fillStyle = '#3f7a22'; c.fillRect(dx + 3, y - 10, 2, 2); c.fillRect(dx + 10, y - 9, 2, 2); }   // an apple and a persimmon
 }
-function drawThanks() {   // (drawHUD) the dishes Kai has won so far: one for each gate opened
-  if (!L.feast) return;
-  const n = L.stations.filter(z => z.solved).length;
-  for (let k = 0; k < Math.min(n, 9); k++) feastDish(ctx, k % 4, 22 + k * 18, 104);
+function drawThanks() {   // (drawHUD) the dishes Kai has won so far, one per gate opened, in rows under the gems; returns their height
+  if (!L.feast) return 0;
+  const n = Math.min(FEAST_GATES, L.stations.filter(z => z.solved).length), narrow = VW < 700, per = narrow ? 5 : 9;   // (a 432-wide phone: clear of the question banner)
+  for (let k = 0; k < n; k++) feastDish(ctx, k % 4, (narrow ? 12 : 22) + (k % per) * (narrow ? 15 : 16), 100 + Math.floor(k / per) * 15);
+  return n ? Math.ceil(n / per) * 15 + 2 : 0;
 }
-function feastPicture(cv, n) {   // the long table by the dojo: Sensei, the friends who are home, a dish per gate, and Kuro's place
+// ---- The Road to the Feast: the walkers, the lanterns, the table (see FEAST_PER)
+function mixHex(a, b, u) { const A = parseInt(a.slice(1), 16), B = parseInt(b.slice(1), 16), f = sh => Math.round((A >> sh & 255) + ((B >> sh & 255) - (A >> sh & 255)) * u); return `rgb(${f(16)},${f(8)},${f(0)})`; }
+function feastWeights() {   // how far into part 2 and part 3 the camera is (0..1 each: they fade in over half a screen before each border)
+  const cx = cam + VW / 2, w = b => (b ? clamp((cx - b + VW * 0.5) / (VW * 0.5), 0, 1) : 0);
+  return [w(L.fe.parts[0]), w(L.fe.parts[1])];
+}
+function feastSky() { const [u, v] = feastWeights(), S = FEAST_SKY; return [0, 1].map(j => (v > 0 ? mixHex(S[1][j], S[2][j], v) : mixHex(S[0][j], S[1][j], u))); }   // (part 3 starts long after part 2)
+function feastHidden() { return !G || !!(G.rescue || G.groom || G.swing || G.raft || G.down || G.dive || G.ride); }   // the walkers wait out of sight
+function trailAt(tr, s) {   // the point s px along Kai's path; over a gap he jumped, a hop
+  const n = tr.length - 1;
+  if (s <= tr[0].s) return { x: tr[0].x, y: tr[0].y };
+  if (s >= tr[n].s) return { x: tr[n].x, y: tr[n].y };
+  let lo = 0, hi = n; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (tr[m].s <= s) lo = m; else hi = m; }
+  const a = tr[lo], b = tr[hi], len = b.s - a.s, u = len ? (s - a.s) / len : 0;
+  return { x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u - (len > 12 ? Math.sin(u * Math.PI) * Math.min(60, len * 0.45) : 0) };
+}
+function trailRest(tr, s) {   // where a walker may stand still: never in the middle of a hop
+  const n = tr.length - 1; if (n < 1 || s <= tr[0].s || s >= tr[n].s) return s;
+  let lo = 0, hi = n; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (tr[m].s <= s) lo = m; else hi = m; }
+  return tr[hi].s - tr[lo].s > 12 ? tr[lo].s : s;
+}
+function paradeTick() {   // (update) who joins, Kai's path, everyone walking behind him, the lanterns, sitting down at the table
+  const fe = L.fe; if (!fe || !G || !P) return;
+  const p = P, cx = p.x + p.w / 2, feet = p.y + p.h;
+  for (const g of fe.guests) g.t++;
+  for (const fd of L.squads || []) if (fd.kind === 'turkey' && fd.mood === 'yum' && !fd.joined && fd.moodT > 140) {   // fed right: the turkey comes along
+    fd.joined = true; fe.turkey = true; const g = { kind: 'turkey', x: fd.ax, y: GR * T, state: 'join', face: -1, a: 1, t: 0, delay: 0 };
+    fe.guests.unshift(g); fe.line.push(g); tone(660, 0.12, 'triangle', 0.04, 990);
+  }
+  const ts = L.stations[fe.travGate];
+  if (ts && ts.solved && !fe.travOn) {   // their gate is open: the travellers come along
+    fe.travOn = true; fe.guests.filter(g => g.kind === 'trav').forEach((g, k) => { g.state = 'join'; g.delay = 24 + k * 18; fe.line.push(g); });
+    [523, 659, 784].forEach((f, i) => tone(f, 0.18, 'triangle', 0.035, null, 0.3 + i * 0.12));
+  }
+  for (const g of fe.guests) if (g.kind === 'kid' && g.state === 'wait' && cx > g.x - 1.5 * T) { g.state = 'join'; g.delay = 4; fe.line.push(g); tone(784, 0.1, 'triangle', 0.03, 1046); }
+  for (const l of fe.lamps) if (!l.lit && cx > l.x - 1.5 * T) { l.lit = 0.01; tone(880 + (l.x % 5) * 60, 0.25, 'sine', 0.02); } else if (l.lit > 0 && l.lit < 1) l.lit = Math.min(1, l.lit + 0.05);
+  // Kai's path: a point every few px while he stands on something; a jump to somewhere far away starts it again
+  if (feastHidden()) fe.lost = true;
+  else {
+    const tr = fe.trail, last = tr[tr.length - 1], d = last ? Math.hypot(cx - last.x, feet - last.y) : 0;
+    const ground = p.onGround || (G.cross && !G.cross.hop);
+    if (fe.lost || !last || (d > 9 * T && ground)) { fe.trail = [{ x: cx, y: feet, s: (last ? last.s : 0) + 5000 }]; fe.lost = false; }   // (a long flight: they wait where he took off)
+    else if (ground && d >= 4) { tr.push({ x: cx, y: feet, s: last.s + d }); if (tr.length > 600) tr.splice(0, tr.length - 600); }
+  }
+  const tr = fe.trail, head = tr.length ? tr[tr.length - 1].s : 0;
+  fe.line.forEach((g, k) => {
+    const want = head - FEAST_GAP * (k + 1) - (k ? 4 : 8), rest = tr.length ? trailRest(tr, Math.max(tr[0].s, want)) : 0;
+    if (g.state === 'join') {   // walking from where they stood to their place in the line
+      if (g.delay > 0) { g.delay--; g.walk = false; return; }
+      const to = tr.length ? trailAt(tr, rest) : { x: cx, y: feet }, dx = to.x - g.x, sp = Math.max(3.2, Math.abs(dx) * 0.05);
+      g.x += clamp(dx, -sp, sp); g.y += (to.y - g.y) * 0.2; g.walk = Math.abs(dx) > 0.5; if (Math.abs(dx) > 1) g.face = Math.sign(dx);
+      if (Math.abs(dx) < 5 && Math.abs(to.y - g.y) < 8 && tr.length) { g.state = 'follow'; g.s = rest; g.hide = false; }
+      return;
+    }
+    if (g.state !== 'follow') return;
+    if (!tr.length || want < tr[0].s) { g.s = null; g.hide = true; g.walk = false; return; }   // just after Kai was somewhere else: they come back one by one
+    if (g.s == null || g.s < tr[0].s) { g.s = rest; g.a = 0; }
+    const was = g.s; if (rest > g.s) g.s = Math.min(rest, g.s + Math.max(5, (rest - g.s) * 0.15));
+    const pt = trailAt(tr, g.s); if (Math.abs(pt.x - g.x) > 0.3 && !g.hide) g.face = pt.x < g.x ? -1 : 1;
+    g.x = pt.x; g.y = pt.y; g.walk = g.s > was + 0.3; g.hide = false; g.a = Math.min(1, (g.a ?? 1) + 0.08);
+  });
+  // the table: one seat for each guest, spread along it; as Kai passes a seat, the guest right behind him sits down there
+  const tb = fe.table;
+  if (tb && !tb.seats && cx > tb.x0 - 30 * T) {   // (well before the table is on screen: everyone has joined by then)
+    const n = fe.line.length, a = tb.x0 + 1.2 * T, b = tb.kuro - 1.6 * T;
+    tb.seats = Array.from({ length: n }, (_, j) => ({ x: n === 1 ? (a + b) / 2 : a + (b - a) * j / (n - 1), g: null }));
+  }
+  if (tb && tb.seats) for (const st of tb.seats) if (!st.g && cx > st.x - 4 && fe.line.length) {
+    const g = fe.line.shift(); st.g = g; g.state = 'seat'; g.seat = st;
+    if (g.hide || Math.abs(g.x - st.x) > 5 * T) { g.x = Math.min(st.x, cx) - 1.5 * T; g.y = GR * T; g.a = 0; }   // (still out of sight: they come in just behind)
+    g.hide = false;
+  }
+  for (const g of fe.guests) {
+    if (g.state === 'seat') {
+      const dx = g.seat.x - g.x; g.x += clamp(dx, -4, 4); g.y += (GR * T - g.y) * 0.25; g.a = Math.min(1, (g.a ?? 1) + 0.08); g.walk = Math.abs(dx) > 0.5; if (Math.abs(dx) > 1) g.face = Math.sign(dx);
+      if (Math.abs(dx) < 1 && Math.abs(GR * T - g.y) < 3) { g.state = 'sit'; g.sitT = 0; g.face = 1; g.x = g.seat.x; g.walk = false; tone(587 + (fe.guests.indexOf(g) % 4) * 88, 0.14, 'triangle', 0.035, 880); }
+    } else if (g.state === 'sit') g.sitT++;
+  }
+}
+function feastSpots(tb, kx) {   // places on the table for the dishes: not in front of anyone sitting there
+  const seats = (tb.seats || []).map(s => s.x), out = [];
+  for (let x = tb.x0 + 22; x < kx - 30; x += 12) if (!seats.some(sx => Math.abs(sx - x) < 22)) out.push(x);
+  return out;
+}
+function feastGuest(g, x, feet, cheer) {   // one guest: the turkey (its own sprite, small), a traveller or a friend
+  const bob = g.walk ? Math.abs(Math.sin(g.t * 0.3)) * 2 : 0;
+  ctx.imageSmoothingEnabled = false;
+  if (g.kind === 'turkey') { const cv = bakeSpr('turkey', ANIMAL_SPR.turkey, 2); ctx.drawImage(cv, Math.round(x - cv.width / 2 + (g.walk ? Math.sin(g.t * 0.3) * 1.5 : 0)), Math.round(feet - cv.height + 2 - bob)); }
+  else if (g.kind === 'trav') drawBaked(travSpr(g.n), g.walk && Math.floor(g.t / 7) % 2 ? 'step' : 'stand', g.face < 0, { x: x - 12, y: feet - 40 - bob, w: 24, h: 40 });
+  else drawBaked(kidSpr(g.id), cheer ? 'cheer' : 'stand', g.face < 0, { x: x - 12, y: feet - 40 - bob, w: 24, h: 40 });
+}
+function drawLamp(l, b) {   // a lantern on a post (like the walk home): dark until Kai passes
+  ctx.fillStyle = '#3a2a20'; ctx.fillRect(l.x - 2, b - 70, 4, 70); ctx.fillRect(l.x - 9, b - 72, 18, 3);
+  ctx.fillStyle = '#16121f'; ctx.fillRect(l.x - 8, b - 92, 16, 20); ctx.fillRect(l.x - 10, b - 96, 20, 5);
+  ctx.fillStyle = l.lit ? '#ffd87a' : '#4a2a30'; ctx.fillRect(l.x - 6, b - 90, 12, 16);
+  if (l.lit) glowAt(l.x, b - 82, (72 + Math.sin(tick * 0.08 + l.x) * 4) * l.lit, 'rgba(255,216,122,.45)');
+}
+function drawFeastBack() {   // (render, behind the blocks) the dojo's wall behind the table, the lanterns
+  const fe = L.fe, b = GR * T, tb = fe.table, D = WORLDS[0].dojo;
+  if (tb && tb.x1 > cam - 200 && tb.x0 - 2 * T < cam + VW) {
+    const x0 = tb.x0 - 2 * T, x1 = L.castleC * T + T;
+    ctx.fillStyle = D[2]; ctx.fillRect(x0, b - 104, x1 - x0, 104); ctx.fillStyle = D[0]; ctx.fillRect(x0 + 4, b - 96, x1 - x0 - 8, 96);
+    ctx.fillStyle = D[2]; for (let x = x0 + 4; x < x1; x += 2 * T) ctx.fillRect(x, b - 96, 6, 96);
+    ctx.fillStyle = D[1]; ctx.fillRect(x0 - 8, b - 116, x1 - x0 + 16, 14); ctx.fillStyle = '#ffd23f'; ctx.fillRect(x0 - 8, b - 102, x1 - x0 + 16, 3);
+  }
+  for (const l of fe.lamps) if (l.x > cam - 60 && l.x < cam + VW + 60) drawLamp(l, b);
+}
+function drawFeastFront() {   // (render, before Kai) the table and the ones sitting at it, the walkers, the ones still waiting
+  const fe = L.fe, g0 = GR * T, tb = fe.table, hid = feastHidden();
+  if (tb && tb.x1 > cam - 120 && tb.x0 < cam + VW + 160) {
+    const home = !!prog.best[bossOf(WORLDS.length - 1)], top = g0 - 30;
+    for (const g of fe.guests) if (g.state === 'sit') feastGuest(g, g.x, g0 - 16 - (g.sitT < 14 ? Math.sin(g.sitT / 14 * Math.PI) * 10 : 0), mode === 'win' && G.winT > 20 && Math.floor((G.winT + g.t) / 16) % 2 === 0);   // (on a bench behind the table)
+    const kx = tb.kuro + T / 2;   // Kuro's place, by his father
+    if (home) { if (!KURO_SPR) KURO_SPR = bakeNinja({ r: '#e63946', R: '#a91d2b', n: '#1c1a24', N: '#3d3a52', b: '#1c1a24' }); drawBaked(KURO_SPR, 'stand', false, { x: kx - 12, y: g0 - 16 - 44, w: 24, h: 44 }); }
+    else { ctx.globalCompositeOperation = 'lighter'; glowAt(kx, top - 14, 44 + Math.sin(tick * 0.05) * 4, 'rgba(255,214,140,.35)'); ctx.globalCompositeOperation = 'source-over'; }   // kept warm for him
+    ctx.fillStyle = '#16121f'; ctx.fillRect(tb.x0 - 2, top - 2, tb.x1 - tb.x0 + 4, 14);   // the table
+    for (let x = tb.x0 + 8; x < tb.x1 - 8; x += 3 * T) ctx.fillRect(x - 1, top + 10, 10, 20);
+    ctx.fillRect(tb.x1 - 18, top + 10, 10, 20);
+    ctx.fillStyle = '#6e4627'; for (let x = tb.x0 + 8; x < tb.x1 - 8; x += 3 * T) ctx.fillRect(x, top + 10, 8, 20);
+    ctx.fillRect(tb.x1 - 17, top + 10, 8, 20);
+    ctx.fillStyle = '#b0794a'; ctx.fillRect(tb.x0, top, tb.x1 - tb.x0, 10);
+    ctx.fillStyle = '#f4ead2'; ctx.fillRect(tb.x0 + 6, top - 2, tb.x1 - tb.x0 - 12, 5);
+    ctx.fillStyle = '#c0392b'; for (let x = tb.x0 + 12; x < tb.x1 - 16; x += 22) ctx.fillRect(x, top + 4, 10, 3);
+    ctx.save(); ctx.translate(kx - 12, top - 2); ctx.scale(1.5, 1.5);   // his bowl and chopsticks, always
+    ctx.fillStyle = '#f4f1e8'; ctx.fillRect(0, -8, 16, 8); ctx.fillStyle = '#c9d2de'; ctx.fillRect(3, -1, 10, 1); ctx.fillStyle = '#6e4627'; ctx.fillRect(18, -3, 12, 2); ctx.restore();
+    const n = Math.min(FEAST_GATES, L.stations.filter(z => z.solved).length), spots = feastSpots(tb, kx);   // a dish for every gate opened, between the places
+    for (let k = 0; k < n && spots.length; k++) { ctx.save(); ctx.translate(spots[Math.floor(k * spots.length / n)] - 10, top - 2); ctx.scale(1.5, 1.5); feastDish(ctx, k % 4, 0, 0); ctx.restore(); }
+    drawBaked(SENSEI_SPR, 'a', true, { x: fe.sensei - 20, y: g0 - 60, w: 40, h: 60 });   // Sensei at the head of the table
+    if (mode === 'win' || mode === 'done') for (let k = 0; k < 3; k++) { const ht = (G.winT || 0) - 20 - k * 30; if (ht > 0 && ht < 120) { ctx.globalAlpha = 1 - ht / 120; heart(fe.sensei - 50 + (k - 1) * 34, g0 - 76 - ht * 0.5, 9, '#ff5a8a'); ctx.globalAlpha = 1; } }
+  }
+  for (const g of fe.guests) {
+    if (g.state === 'sit' || g.x < cam - 60 || g.x > cam + VW + 60) continue;
+    if (g.state === 'wait') {   // tired travellers by the boat; the friends wave as Kai comes
+      const near = Math.abs(g.x - (P.x + P.w / 2)) < 6 * T;
+      if (g.kind === 'trav') feastGuest(g, g.x + Math.sin(g.t * 0.02) * 0.6, g.y, false);
+      else feastGuest(g, g.x, g.y - (near ? Math.abs(Math.sin(g.t * 0.12)) * 6 : 0), near && Math.floor(g.t / 14) % 2 === 0);
+      continue;
+    }
+    if (g.state !== 'seat' && (hid || g.hide)) continue;
+    ctx.globalAlpha = g.state === 'join' ? 1 : g.a ?? 1; feastGuest(g, g.x, g.y, false); ctx.globalAlpha = 1;
+  }
+}
+// (updateWin) The Feast ends at the table: Kai stops by Sensei, everyone cheers, then the end card.
+function feastWin() {
+  const p = P; p.vx *= 0.8; p.vy = Math.min(p.vy + 0.55, 12); moveX(p); moveY(p); p.face = 1;
+  if (G.winT === 20) [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.5, 'triangle', 0.05, null, i * 0.16));
+  if (G.winT === 170) finishLevel();
+}
+function feastPicture(cv, n) {   // the end card: the long table by the dojo; Sensei at its head, the travellers, the turkey, Kai, the friends who are home behind them, a dish per gate, and Kuro's place
   if (!cv) return;
   const c = cv.getContext('2d'), W = cv.width, H = cv.height, g = H - 22; c.imageSmoothingEnabled = false;
-  const sky = c.createLinearGradient(0, 0, 0, g); sky.addColorStop(0, '#ff9d5c'); sky.addColorStop(1, '#ffe2b8'); c.fillStyle = sky; c.fillRect(0, 0, W, H);
+  const sky = c.createLinearGradient(0, 0, 0, g); sky.addColorStop(0, FEAST_SKY[2][0]); sky.addColorStop(1, FEAST_SKY[2][1]); c.fillStyle = sky; c.fillRect(0, 0, W, H);
   const D = WORLDS[0].dojo;   // the dojo's wall behind them
   c.fillStyle = D[2]; c.fillRect(0, g - 96, W, 96); c.fillStyle = D[0]; c.fillRect(0, g - 90, W, 90); c.fillStyle = D[2]; for (let x = 20; x < W; x += 70) c.fillRect(x, g - 90, 5, 90); c.fillStyle = D[1]; c.fillRect(0, g - 104, W, 10);
   c.fillStyle = '#7ec850'; c.fillRect(0, g, W, 6); c.fillStyle = '#b0794a'; c.fillRect(0, g + 6, W, H - g - 6);
   const put = (img, x, y) => c.drawImage(img, Math.round(x), Math.round(y - img.height));
-  const x0 = 26, w = W - 52, home = !!prog.best[bossOf(WORLDS.length - 1)], got = FRIENDS.filter(f => (prog.friends || {})[f.id]);
-  put(SENSEI_SPR.a[0], x0 - 14, g - 6);
-  got.forEach((f, k) => put(kidSpr(f.id).stand[k % 2], x0 + 44 + k * 30, g - 10));
-  const kx = x0 + w - 40;   // Kuro's place, at the end of the table
-  if (home) { if (!KURO_SPR) KURO_SPR = bakeNinja({ r: '#e63946', R: '#a91d2b', n: '#1c1a24', N: '#3d3a52', b: '#1c1a24' }); put(KURO_SPR.stand[1], kx - 8, g - 10); }
-  else { const gl = c.createRadialGradient(kx + 10, g - 30, 2, kx + 10, g - 30, 30); gl.addColorStop(0, 'rgba(255,236,170,.75)'); gl.addColorStop(1, 'rgba(255,236,170,0)'); c.fillStyle = gl; c.fillRect(kx - 22, g - 62, 64, 64); }   // kept warm for him
-  put(SPR.stand[0], x0 + w / 2 - 12, g - 10);   // Kai, in the middle
-  c.fillStyle = '#6e4627'; c.fillRect(x0 + 12, g - 12, 8, 12); c.fillRect(x0 + w - 20, g - 12, 8, 12); c.fillRect(x0 + w / 2 - 4, g - 12, 8, 12);
-  c.fillStyle = '#b0794a'; c.fillRect(x0, g - 20, w, 8); c.fillStyle = '#f4ead2'; c.fillRect(x0 + 6, g - 22, w - 12, 4); c.fillStyle = '#c0392b'; for (let x = x0 + 12; x < x0 + w - 16; x += 22) c.fillRect(x, g - 18, 10, 3);
-  c.fillStyle = '#f4f1e8'; c.fillRect(kx + 2, g - 30, 16, 8); c.fillStyle = '#c9d2de'; c.fillRect(kx + 5, g - 23, 10, 2); c.fillStyle = '#6e4627'; c.fillRect(kx + 20, g - 26, 12, 2);   // his bowl and chopsticks, always
-  const m = Math.min(n, 11), step = Math.min(22, (w - 70) / Math.max(1, m));
-  for (let k = 0; k < m; k++) feastDish(c, k % 4, x0 + 14 + k * step, g - 22);
+  const x0 = 22, w = W - 60, home = !!prog.best[bossOf(WORLDS.length - 1)], got = FRIENDS.filter(f => (prog.friends || {})[f.id]);
+  const fe = L && L.fe, turkey = !fe || fe.turkey;   // (the turkey only if it came along)
+  const row = [...[0, 1, 2].map(k => ({ img: travSpr(k).stand[0] })), ...(turkey ? [{ turkey: true }] : []), ...got.map(f => ({ img: kidSpr(f.id).stand[0] })), { img: SPR.stand[0], kai: true }, { kuro: true }];   // everyone on the bench, in the order they came
+  const kx = x0 + w - 28, seat = g - 19, gap = (kx - 36 - x0 - 20) / Math.max(1, row.length - 2);   // (Kai sits by his brother's place)
+  row.forEach((o, k) => {
+    const x = o.kuro ? kx : o.kai ? kx - 36 : x0 + 20 + gap * k;
+    if (o.kuro) { if (home) { if (!KURO_SPR) KURO_SPR = bakeNinja({ r: '#e63946', R: '#a91d2b', n: '#1c1a24', N: '#3d3a52', b: '#1c1a24' }); put(KURO_SPR.stand[0], x - 24, seat); }
+      else { const gl = c.createRadialGradient(x, g - 34, 2, x, g - 34, 30); gl.addColorStop(0, 'rgba(255,236,170,.75)'); gl.addColorStop(1, 'rgba(255,236,170,0)'); c.fillStyle = gl; c.fillRect(x - 32, g - 66, 64, 64); } }   // kept warm for him
+    else if (o.turkey) put(bakeSpr('turkey', ANIMAL_SPR.turkey, 2), x - 18, seat + 2);
+    else put(o.img, x - o.img.width / 2, seat + (o.kai ? 4 : 0));
+  });
+  put(SENSEI_SPR.a[1], W - 48, g);   // Sensei at the head, facing them
+  c.fillStyle = '#6e4627'; c.fillRect(x0 + 8, g - 12, 8, 12); c.fillRect(x0 + w - 12, g - 12, 8, 12); c.fillRect(x0 + w / 2 - 4, g - 12, 8, 12);
+  c.fillStyle = '#b0794a'; c.fillRect(x0, g - 20, w, 8); c.fillStyle = '#f4ead2'; c.fillRect(x0 + 4, g - 22, w - 8, 4); c.fillStyle = '#c0392b'; for (let x = x0 + 10; x < x0 + w - 14; x += 22) c.fillRect(x, g - 18, 10, 3);
+  c.fillStyle = '#f4f1e8'; c.fillRect(kx - 8, g - 30, 16, 8); c.fillStyle = '#c9d2de'; c.fillRect(kx - 5, g - 23, 10, 2); c.fillStyle = '#6e4627'; c.fillRect(kx + 10, g - 26, 10, 2);   // his bowl and chopsticks, always
+  const m = Math.min(n, FEAST_GATES), step = (kx - 30 - x0 - 8) / Math.max(1, m);
+  for (let k = 0; k < m; k++) feastDish(c, k % 4, Math.round(x0 + 8 + k * step), g - 22);
 }
 function drawStory() {   // world space, before Kai
   drawHelp(); drawMemory();
@@ -9217,7 +9435,7 @@ function update() {
     else if (mode === 'win') { updateWin(); updateEnemies(); }
     if (mode === 'play' || mode === 'win') { updateBoss(); if (L.boss) { updateArena(); updateOrbs(); updateShotsAndProjectiles(); } }
   }
-  if (mode === 'play' || mode === 'win') gearFxTick();
+  if (mode === 'play' || mode === 'win') { gearFxTick(); if (L.fe) paradeTick(); }   // (The Feast: everyone walking with Kai)
   updateGates();
   for (const [k, v] of G.bumps) { if (v <= 1) G.bumps.delete(k); else G.bumps.set(k, v - 1); }
   for (const p of G.parts) {
@@ -9236,8 +9454,10 @@ function update() {
   for (const f of G.flyers) { f.t += 1 / 28; if (f.t >= 1) G.pulse = 8; }
   G.flyers = G.flyers.filter(f => f.t < 1);
   if (G.pulse > 0) G.pulse--;
-  const camTo = clamp((G.demo ? G.demo.x + 12 : P.x + P.w / 2) - VW * 0.4, 0, Math.max(0, L.w * T - VW));
-  if (G.demo || G.camBack > 0) { cam += (camTo - cam) * 0.1; if (!G.demo) G.camBack--; } else cam = camTo;
+  const feastEnd = L.fe && L.fe.table && (mode === 'win' || mode === 'done');   // The Feast's end: the camera eases back to show the table, Sensei at its head
+  const camTo = clamp(feastEnd ? Math.max(L.fe.table.x0 - 2 * T, L.fe.sensei + 1.6 * T - VW) : (G.demo ? G.demo.x + 12 : P.x + P.w / 2) - VW * 0.4, 0, Math.max(0, L.w * T - VW));
+  if (feastEnd) cam += (camTo - cam) * 0.04;
+  else if (G.demo || G.camBack > 0) { cam += (camTo - cam) * 0.1; if (!G.demo) G.camBack--; } else cam = camTo;
 }
 
 
@@ -9796,6 +10016,7 @@ function drawScroll(x, y, s = 1) {
 
 // ---------------------------------------------------------------- drawing: backgrounds
 function drawBackground() {
+  if (L.fe) L.sky = feastSky();   // The Feast: one sunset, a little later in each part
   const g = ctx.createLinearGradient(0, 0, 0, VH);
   g.addColorStop(0, L.sky[0]); g.addColorStop(1, L.sky[1]);
   ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
@@ -9817,25 +10038,51 @@ function clouds(col) {
     ctx.beginPath(); ctx.ellipse(x, y, 70 * s, 16 * s, 0, 0, 7); ctx.ellipse(x + 40 * s, y - 8 * s, 46 * s, 14 * s, 0, 0, 7); ctx.fill();
   }, 1);
 }
+function koiLake() {   // (bgJapan) Koi Pond's touch: a strip of lake with one torii gate in it
+  const wy = GR * T - 60; ctx.fillStyle = '#6fb0e0'; ctx.fillRect(0, wy, VW, 60); ctx.fillStyle = 'rgba(255,255,255,.5)';
+  for (let n = 0; n < 8; n++) ctx.fillRect(((n * 131 - cam * 0.5 + tick * 0.2) % VW + VW) % VW, wy + 12 + (n * 23) % 40, 26, 2);
+  repeat(0.5, 1400, x => {
+    const b = GR * T - 24;
+    ctx.fillStyle = '#d63a2a'; ctx.fillRect(x - 40, b - 110, 9, 110); ctx.fillRect(x + 31, b - 110, 9, 110); ctx.fillRect(x - 50, b - 94, 100, 8);
+    poly([[x - 64, b - 118], [x + 64, b - 118], [x + 56, b - 108], [x - 56, b - 108]], '#d63a2a'); ctx.fillStyle = '#2b1d18'; ctx.fillRect(x - 68, b - 124, 136, 6);
+  }, 82);
+}
+function feastBoat() {   // The Feast: the travellers' little boat at the shore, rocking on the lake
+  const bx = Math.round(L.fe.boat - cam), by = Math.round(GR * T - 30 + Math.sin(tick * 0.05) * 2);
+  if (!L.fe.boat || bx < -120 || bx > VW + 120) return;
+  ctx.fillStyle = '#4a3424'; ctx.fillRect(bx - 2, by - 72, 4, 70);   // the mast and a plain sail, furled a little
+  poly([[bx + 3, by - 68], [bx + 38, by - 16], [bx + 3, by - 16]], '#16121f'); poly([[bx + 5, by - 63], [bx + 34, by - 18], [bx + 5, by - 18]], '#f4ead2');
+  poly([[bx - 60, by - 5], [bx + 60, by - 5], [bx + 46, by + 20], [bx - 46, by + 20]], '#16121f');
+  poly([[bx - 56, by - 2], [bx + 56, by - 2], [bx + 43, by + 18], [bx - 43, by + 18]], '#8a5a34');
+  ctx.fillStyle = '#b07a48'; ctx.fillRect(bx - 56, by - 2, 112, 4); ctx.fillStyle = '#6e4627'; ctx.fillRect(bx - 50, by + 7, 100, 2);
+  ctx.fillStyle = 'rgba(111,176,224,.75)'; ctx.fillRect(bx - 64, by + 12, 128, 10);   // the water in front of the hull
+}
+function dojoRoad() {   // The Feast's last part: the dojo's long garden wall beside the road, autumn trees over it
+  const D = WORLDS[0].dojo, top = GR * T - 66;
+  repeat(0.55, 260, (x, i) => { if (hash(i + 4) < 0.7) cherryTree(x, top + 20, 0.55 + hash(i) * 0.2); }, 13);
+  ctx.fillStyle = D[2]; ctx.fillRect(0, top - 4, VW, 70); ctx.fillStyle = D[0]; ctx.fillRect(0, top + 4, VW, 62);
+  repeat(0.6, 150, x => { ctx.fillStyle = D[2]; ctx.fillRect(x - 3, top + 4, 6, 62); }, 5);
+  ctx.fillStyle = D[1]; ctx.fillRect(0, top - 12, VW, 9);
+}
 function bgJapan() {
   repeat(0.05, 1500, x => {
     poly([[x - 380, GR * T - 20], [x - 70, GR * T - 270], [x + 70, GR * T - 270], [x + 380, GR * T - 20]], '#8e9fd6');
     poly([[x - 112, GR * T - 205], [x - 70, GR * T - 270], [x + 70, GR * T - 270], [x + 112, GR * T - 205], [x + 70, GR * T - 220], [x + 30, GR * T - 200], [x - 20, GR * T - 222], [x - 60, GR * T - 202]], '#fff');
   }, 3);
   clouds('rgba(255,255,255,.75)');
-  hills(0.25, 420, L.feast ? '#e3c877' : '#b5dfa8', 170, 11);
+  const fw = L.fe ? feastWeights() : null;   // The Feast: the hills darken as the evening goes on
+  hills(0.25, 420, fw ? mixHex('#e3c877', '#c4946a', fw[1]) : L.feast ? '#e3c877' : '#b5dfa8', 170, 11);
   repeat(0.35, 640, (x, i) => { if (hash(i + 5) < 0.65) pagoda(x, GR * T - 10, '#9a6a86', 0.9); }, 7);
-  hills(0.5, 300, L.feast ? '#c9a24f' : '#7fc56f', 100, 23);
-  const k = L.def && !L.def.boss ? L.def.k : 0;
-  if (k === 2) {   // Koi Pond: a strip of lake with one torii gate in it
-    const wy = GR * T - 60; ctx.fillStyle = '#6fb0e0'; ctx.fillRect(0, wy, VW, 60); ctx.fillStyle = 'rgba(255,255,255,.5)';
-    for (let n = 0; n < 8; n++) ctx.fillRect(((n * 131 - cam * 0.5 + tick * 0.2) % VW + VW) % VW, wy + 12 + (n * 23) % 40, 26, 2);
-    repeat(0.5, 1400, x => {
-      const b = GR * T - 24;
-      ctx.fillStyle = '#d63a2a'; ctx.fillRect(x - 40, b - 110, 9, 110); ctx.fillRect(x + 31, b - 110, 9, 110); ctx.fillRect(x - 50, b - 94, 100, 8);
-      poly([[x - 64, b - 118], [x + 64, b - 118], [x + 56, b - 108], [x - 56, b - 108]], '#d63a2a'); ctx.fillStyle = '#2b1d18'; ctx.fillRect(x - 68, b - 124, 136, 6);
-    }, 82);
+  hills(0.5, 300, fw ? mixHex('#c9a24f', '#a4704a', fw[1]) : L.feast ? '#c9a24f' : '#7fc56f', 100, 23);
+  if (fw) {   // The Feast: each part keeps its own world's touch, crossfading at the borders (cherry trees, the koi lake, the dojo road)
+    const a = [1 - fw[0], fw[0] * (1 - fw[1]), fw[1]];
+    if (a[1] > 0.01) { ctx.globalAlpha = a[1]; koiLake(); feastBoat(); ctx.globalAlpha = 1; }
+    if (a[2] > 0.01) { ctx.globalAlpha = a[2]; dojoRoad(); ctx.globalAlpha = 1; }
+    if (a[0] > 0.01) { ctx.globalAlpha = a[0]; repeat(0.65, 330, (x, i) => cherryTree(x, GR * T, 0.8 + hash(i) * 0.4), 9); ctx.globalAlpha = 1; }
+    return;
   }
+  const k = L.def && !L.def.boss ? L.def.k : 0;
+  if (k === 2) koiLake();   // Koi Pond: a strip of lake with one torii gate in it
   if (k === 1) repeat(0.65, 70, (x, i) => {   // Bamboo Grove: bamboo instead of cherry trees
     if (hash(i + 3) > 0.6) return;
     const h = 160 + hash(i) * 140, w = 8 + hash(i + 1) * 5;
@@ -10465,6 +10712,14 @@ function bgCastle() {
 }
 
 // ---------------------------------------------------------------- drawing: tiles
+const PUMPKIN = ['#e8662a', '#a8401a', '#ffa24a'];
+function pumpkinBlock(x, y, fill, dark, light) {   // The Feast: a stepping stone as a plain square-ish pumpkin (same size as a block)
+  ctx.fillStyle = '#16121f'; rrect(x, y + 2, T, T - 2, 9); ctx.fill();
+  ctx.fillStyle = fill; rrect(x + 2, y + 4, T - 4, T - 6, 8); ctx.fill();
+  ctx.fillStyle = dark; ctx.fillRect(x + 10, y + 6, 3, T - 10); ctx.fillRect(x + T - 13, y + 6, 3, T - 10);
+  ctx.fillStyle = light; ctx.fillRect(x + 5, y + 9, 3, 9);
+  ctx.fillStyle = '#16121f'; ctx.fillRect(x + T / 2 - 4, y - 3, 8, 8); ctx.fillStyle = '#3f7a22'; ctx.fillRect(x + T / 2 - 2, y - 1, 4, 6);   // the stem
+}
 function block(x, y, fill, dark, light) {
   ctx.fillStyle = dark; ctx.fillRect(x, y, T, T);
   ctx.fillStyle = fill; ctx.fillRect(x + 2, y + 2, T - 4, T - 4);
@@ -11765,6 +12020,7 @@ const HOMES = {
   },
 };
 function drawGoal() {
+  if (L.fe) { const cx = L.castleC * T; if (cx < cam + VW + 60 && cx + 5 * T > cam - 60) HOMES.japan(cx, GR * T); return; }   // The Feast: no scroll, the dojo behind the table
   const px = L.flagC * T + T / 2, b = L.goalB || GR * T;
   const inside = G && (mode === 'win' || mode === 'done') && P.x > (L.castleC + 2.2) * T;
   if (px > cam - 300 && px < cam + VW + 300) {
@@ -11815,7 +12071,7 @@ function divingBell(cx, b) {
 // The scroll flies into Kai's hands and he carries it home. Drawn right after Kai, so the house never covers it
 // while he is in front of the house; it disappears with him when he goes inside.
 function drawCarriedScroll() {
-  if (!G || L.boss || L.vault || !(mode === 'win' || mode === 'done') || P.x > (L.castleC + 2.2) * T) return;
+  if (!G || L.boss || L.vault || L.fe || !(mode === 'win' || mode === 'done') || P.x > (L.castleC + 2.2) * T) return;
   let { x, y } = scrollSpot();
   const t = Math.min(1, G.winT / 40), hx = P.x + P.w / 2, hy = P.y - 16;
   x += (hx - x) * t; y += (hy - y) * t - Math.sin(t * Math.PI) * 50;
@@ -13471,10 +13727,10 @@ function drawHUD() {
   for (let i = 0; i < G.maxHearts; i++) heart(30 + i * 36, 16, 13, i < G.hearts ? '#ff4d6d' : 'rgba(0,0,0,.35)');
   drawGem(34, 64, 1, 0);
   hudText('× ' + G.coins, 54, 65, 22);
-  drawThanks();   // The Feast: the dishes won so far
+  const dy = drawThanks();   // The Feast: the dishes won so far (the flame and the power go below them)
   if (team && team.run) tmRunHud();   // team run: where the partner is
-  if (G.streak >= 3) { drawPix('flame', 16, 88, 1.4); hudText(String(G.streak), 40, 99, 17, '#ffb627'); }   // (a small flame, no words)
-  if (G.power) { const pw = POWERS[G.power.kind], f = Math.max(0, G.power.t / (G.power.max || (G.power.max = G.power.t))); drawPix(pw.pix, 18, 112, 2); ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fillRect(50, 120, 60, 5); ctx.fillStyle = '#7df9ff'; ctx.fillRect(50, 120, 60 * f, 5); }
+  if (G.streak >= 3) { drawPix('flame', 16, 88 + dy, 1.4); hudText(String(G.streak), 40, 99 + dy, 17, '#ffb627'); }   // (a small flame, no words)
+  if (G.power) { const pw = POWERS[G.power.kind], f = Math.max(0, G.power.t / (G.power.max || (G.power.max = G.power.t))); drawPix(pw.pix, 18, 112 + dy, 2); ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fillRect(50, 120 + dy, 60, 5); ctx.fillStyle = '#7df9ff'; ctx.fillRect(50, 120 + dy, 60 * f, 5); }
   if (G.time < 240) {   // the level's name, only at the start
     const label = L.feast ? 'The Feast' : st.boss ? WORLDS[st.w].boss.name : st.name; ctx.globalAlpha = Math.min(1, (240 - G.time) / 60);
     hudText(label, VW - 70, 26, 18, '#fff', 'right'); ctx.globalAlpha = 1;
@@ -13492,7 +13748,7 @@ function drawHUD() {
   else if (miniTarget()) txt = qShow(miniTarget().q);
   else if (cur) txt = cur === L.arena || gateNear(cur) ? qShow(cur.q) : null;   // a boss's question always; a gate's only near it
   else if (L.boss) txt = G.hand ? 'Take my hand?' : L.boss.outro && !L.boss.outro.done ? L.boss.name : L.boss.dead || L.boss.dying || L.boss.outro ? 'Grab the scroll!' : L.arena.wait ? 'Nice hit!' : `Dodge! ${Math.ceil(L.arena.phaseT / 60)}`;
-  else txt = 'Get the scroll piece!';
+  else txt = L.fe ? null : 'Get the scroll piece!';   // (The Feast has no scroll)
   if (txt) {
     ctx.font = '38px "Lilita One", "Trebuchet MS", sans-serif';
     const w = Math.max(240, ctx.measureText(txt).width + 50);
@@ -13560,6 +13816,7 @@ function render() {
   const shk = G && G.shake > 0 ? G.shakeAmp : 0;
   ctx.save(); ctx.translate(-Math.round(cam) + (Math.random() - 0.5) * 2 * shk, (Math.random() - 0.5) * 2 * shk);
   for (const d of L.decor) if (d * T > cam - 80 && d * T < cam + VW + 40) drawDecor(d);
+  if (L.fe) drawFeastBack();   // The Feast: lanterns on posts, the dojo's wall by the table
   if (L.flavor) drawFlavorBack();
   drawSigns();
   drawPuzzles();
@@ -13591,7 +13848,7 @@ function render() {
   drawRainbowBridge();   // (the Rainbow suit's bridge, over the pit)
   drawBoss();
   if (L.boss) { drawOrbs(); }
-  if (G) { drawTeamGhost(); drawTeamTwin(); drawDolphin(); drawRunner(); drawShopPow(); drawOwlEyes(); drawClone(); drawGifts(); drawHelpers(); drawDemo(); drawStripeFx(); drawPet(); drawPlayer(); drawRunQ(); drawTeamFx(); drawGearFx(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
+  if (G) { drawTeamGhost(); drawTeamTwin(); drawDolphin(); drawRunner(); drawShopPow(); drawOwlEyes(); drawClone(); drawGifts(); drawHelpers(); drawDemo(); drawStripeFx(); if (L.fe) drawFeastFront(); drawPet(); drawPlayer(); drawRunQ(); drawTeamFx(); drawGearFx(); drawCarriedScroll(); drawProjectiles(); drawParticles(); }
   if (L.twist && G) drawTwistFront();
   if (L.flavor && G) drawFlavorFront();
   if (L.water && !L.room) drawWaterFront();
@@ -13677,7 +13934,7 @@ function showMsg(title, body, btns) {
 function startStage(i) {
   if (typeof famStop === 'function' && famStop()) return;   // the parent page's daily time limit
   if (team && team.run && i !== team.lvl) tmClose(true);   // went to another level: the team run is over
-  if (!(team && team.run) && updateBeforeLeaving(i)) return;   // a new version came out during the last level: load it, then this level
+  if (!(team && team.run) && updateBeforeLeaving(SPECIAL === 'feast' ? 'feast' : i)) return;   // a new version came out during the last level: load it, then this level (or The Feast)
   puff();
   const st = STAGES[i], W = WORLDS[st.w];
   RC = null; document.body.classList.remove('racing');
@@ -16722,7 +16979,7 @@ function reloadNow(there, resume) {
 }
 function updateBeforeLeaving(resume) { if (!updateReady) return false; reloadNow(updateReady, resume); return true; }
 checkUpdate();
-{ const rs = sessionStorage.getItem('mn-resume'); sessionStorage.removeItem('mn-resume'); const i = Number(rs); if (rs !== null && i >= 0 && i < STAGES.length) startStage(i); }   // just updated after a level: on to the level the kid picked
+{ const rs = sessionStorage.getItem('mn-resume'); sessionStorage.removeItem('mn-resume'); const i = Number(rs); if (rs === 'feast') startFeast(); else if (rs !== null && i >= 0 && i < STAGES.length) startStage(i); }   // just updated after a level: on to the level the kid picked
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
 requestAnimationFrame(frame);
 })();
