@@ -2,6 +2,10 @@
 
 Everything is in `index.html`. `CLAUDE.md` is the short index of the code notes and records the owner's decisions; the detail per area is in `docs/` (open only the file for the area you are changing); older history is in `docs/HISTORY.md`; `STORY.md` is the story text; `README.md` is for people; `MATH_GOALS.md` holds the math-learning ideas. Work on **`main`** of this repo (`Twhidbey/math-jump`) and push there: pushing IS publishing (GitHub Pages). After every change: update the build stamp (search `class="build"`), commit, push, and tell the owner it's live (bump `?v=` on the link if the phone shows the old one). This repo is public: keep personal details out of the notes.
 
+## Newest: The Feast (Nov 25 2026) and Christmas plans
+- **The Feast**, a Thanksgiving special level, is live from the day before Thanksgiving through the Sunday after (home-screen tile; details in `docs/levels.md`, "The Feast"). Built in a hurry the evening before: the badge name, the prize trail and the picture are drafts, not yet seen by the owner or tested on a real phone.
+- **Christmas is next** (owner: "24 days of Christmas easter eggs"; December 1 is close). Questions asked, not answered yet: what builds over the 24 days (A a carved nativity set, B dojo decorations, C both), and the catch-up rule for missed days. Ask before building.
+
 ## The owner and players
 - Players: young kids (kindergarten to about 3rd grade math), mostly on an iPhone. The lost-friend rescues are a favourite.
 - Owner likes: ask before coding (short options + a recommendation), short kid-friendly text, pixel art (no emoji in the game), cohesion (plain blocks from each world), every right answer visibly doing something, Kai keeps moving, subtle Christian themes (grace, the lost sheep, welcome home).

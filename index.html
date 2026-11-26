@@ -397,6 +397,9 @@
   .mathline .tier { color: #ffd23f; }
   .titlebar { position: relative; width: min(720px, 100%); text-align: center; }
   .cogbtn { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; padding: 4px; border: 0; border-radius: 10px; background: rgba(255,255,255,.08); cursor: pointer; opacity: .8; } .cogbtn .pix { width: 28px; height: 28px; image-rendering: pixelated; }
+  .feastcv { width: min(100%, 340px); image-rendering: pixelated; border: 3px solid #ffd23f; border-radius: 10px; margin: 0 auto 8px; display: block; }
+  #special { width: min(720px, 100%); } .feasttile { width: 100%; margin: 2px 0 8px; padding: 12px; border: 3px solid #ffd23f; border-radius: 12px; cursor: pointer; color: #fff; background: linear-gradient(#ff9d5c, #d9482b); display: grid; gap: 2px; justify-items: center; box-shadow: 0 4px 0 #8a2a12; }
+  .feasttile b { font: 24px "Lilita One", "Trebuchet MS", sans-serif; text-shadow: 0 2px 0 rgba(0,0,0,.3); } .feasttile small { font: 13px "Nunito", sans-serif; opacity: .95; }
   .iconrow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; width: min(720px, 100%); margin: 6px 0 4px; }
   .ibtn { font: inherit; font-weight: 800; font-size: 13px; color: #fff; background: rgba(255,255,255,.1); border: none; border-radius: 14px;
     padding: 8px 2px; cursor: pointer; display: grid; justify-items: center; gap: 2px; }
@@ -693,8 +696,9 @@
   <div class="scrollrow hidden" id="scrollRow"></div>
   <div class="maprow hidden"><button class="ibtn" id="mapBtn" type="button"><span data-pix="compass"></span>World map</button><button class="ibtn" id="journalBtn" type="button"><span data-pix="book"></span>Kuro's journal <b id="journalMenu"></b></button></div>
   </div>
+  <div id="special"></div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 23, 2026 · Extra practice: more questions in every level and in the Daily Dojo</div>
+  <div class="build">Updated Nov 25, 2026 · The Feast: a Thanksgiving level (through Sunday)</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1974,6 +1978,14 @@ function gearPix(c, id, ox, oy, px, flip) {
 }
 // "Play 7s" from the Badge Book (set by startStage for that one level): questions favour the facts not gold yet.
 var FOCUS = false;
+// The Feast (owner, Nov 25 2026: a Thanksgiving special level, small version): Cherry Path in autumn colours. Sensei is
+// laying a long table by the dojo; each gate Kai opens puts a dish on it; the friends he found stand round it; one
+// place is kept for Kuro (he sits there once he is home). SPECIAL is set by startFeast for one startStage; L.feast marks
+// the level. On the home screen from the day before Thanksgiving to the Sunday after (feastOpen).
+var SPECIAL = null;
+function thanksgivingDay(y) { const d = new Date(y, 10, 1); return 1 + ((4 - d.getDay() + 7) % 7) + 21; }   // the 4th Thursday of November
+function feastOpen(now = new Date()) { if (now.getMonth() !== 10) return false; const t = thanksgivingDay(now.getFullYear()), d = now.getDate(); return d >= t - 1 && d <= t + 3; }
+function startFeast() { SPECIAL = 'feast'; startStage(0); if (L && !L.feast) SPECIAL = null; }
 function focusGen(skill) {
   const base = genFor(skill, false), rank = q => { const f = prog.facts[factKey(q)]; return f && (f.weak || f.practice) ? 2 : factStatus(factKey(q)) === 'silver' ? 1 : 0; };
   const want = shuffle((factList(skill) || []).filter(q => factStatus(factKey(q)) !== 'gold')).sort((a, b) => rank(b) - rank(a));
@@ -2958,6 +2970,7 @@ const SHOP = [
   { id: 'trail-fire', w: 1, story: "Flames from the lava falls.", slot: 'trail', name: 'Flame trail', price: 180 },
   { id: 'trail-star', slot: 'trail', name: 'Star trail', story: 'Sensei says: small steps make stars.', price: 0, badge: 'as-add5' },
   { id: 'trail-heart', slot: 'trail', name: 'Heart trail', story: 'For making 10. Two parts that belong together.', price: 0, badge: 'as-make10' },
+  { id: 'trail-autumn', slot: 'trail', name: 'Autumn leaves', story: 'Leaves from the day of the feast.', price: 0, badge: 'thankful' },
   { id: 'trail-leaf', slot: 'trail', name: 'Leaf trail', story: 'Leaves from the dojo garden follow Kai.', price: 0, badge: 'as-add20' },
   { id: 'trail-rainbow', slot: 'trail', name: 'Rainbow trail', story: 'Sensei says: after the hard work, the colours.', price: 0, badge: 'as-all' },
   { id: 'trail-petal', slot: 'trail', name: 'Petal trail', story: 'Petals from the tree the brothers climbed.', price: 0, badge: 't2' },
@@ -2998,6 +3011,7 @@ const TRAIL_LOOK = {
   'trail-star': { cols: ['#ffd23f', '#fff6c8', '#ffffff'], vy: -0.6, life: 34, s: 5, up: true },
   'trail-heart': { cols: ['#ff5a8a', '#ff9cbf', '#ffffff'], vy: -0.8, life: 40, s: 5, up: true },
   'trail-leaf': { cols: ['#3fbf6a', '#7bd36a', '#2a8a4a'], vy: 0.5, vx: 1, life: 50, up: true },
+  'trail-autumn': { cols: ['#f08a2c', '#ffb627', '#d9482b'], vy: 0.5, vx: 1, life: 50, up: true },
   'trail-rainbow': { cols: ['#ff4d6d', '#ff8c1a', '#ffd23f', '#3ae374', '#3a86ff', '#9b59d6'], vy: -0.4, life: 36, s: 5, up: true },
   'trail-bubble': { cols: ['#bfefff', '#e8fbff', '#7fd6ff'], vy: -1.5, life: 40, s: 5, up: true },
   'trail-snow': { cols: ['#ffffff', '#e8f4ff', '#cfe6ff'], vy: 0.55, vx: 0.4, life: 54, up: true },
@@ -4076,6 +4090,7 @@ const BADGES = [
   { id: 'journal-all', pix: 'book', sec: 'adv', name: "Kuro's Journal", text: "Find every page of Kuro's journal.", prog: () => [pagesFound(), JOURNAL.length], gems: 50 },
   { id: 'made-new', pix: 'ring', sec: 'adv', name: 'Made New', text: 'Polish three pieces of gear until they are gold.', prog: () => [Object.values(prog.gearShine || {}).filter(v => v >= 2).length, 3], gems: 50 },
   { id: 'walk-home', pix: 'sandals', sec: 'adv', name: 'Welcome Home', text: 'Walk home with your brother.', prog: () => [prog.walked ? 1 : 0, 1] },
+  { id: 'thankful', season: true, pix: 'feather', sec: 'adv', name: 'Thankful', text: 'Share the Thanksgiving feast.', prize: 'trail-autumn' },   // (season: only shown once earned; given by The Feast)
   { id: 'friends', pix: 'house', sec: 'adv', name: 'Every One Matters', text: 'Find all the lost friends and bring them home.', prog: () => [FRIENDS.filter(f => (prog.friends || {})[f.id]).length, FRIENDS.length] },
 ];
 for (const b of BADGES) if (b.sk && !b.prog) b.prog = () => factGoal(b);   // fact-set tiles count gold facts
@@ -4121,7 +4136,7 @@ function award(id) {
 }
 // Every badge with a goal (prog) is checked here: after right answers, at the end of a level / race / dojo, and when the
 // Badge Book opens (so badges earned before this update show up too).
-const liveBadges = () => BADGES.filter(b => !b.old || prog.badges[b.id]);   // the badges that count: every current one, and a phased-out one only for a kid who has it
+const liveBadges = () => BADGES.filter(b => (!b.old && !b.season) || prog.badges[b.id]);   // the badges that count: every current one, and a phased-out one only for a kid who has it
 function statBadges() {
   for (const b of BADGES) if (b.prog && !b.old && !prog.badges[b.id]) { const [now, need] = b.prog(); if (need > 0 && now >= need) award(b.id); }
 }
@@ -7001,7 +7016,7 @@ function drawFlavorBack() {
       ctx.fillStyle = '#6b4226'; ctx.fillRect(f.x - 9, Y - 3 * T, 18, 3 * T); ctx.fillRect(f.x - 9, Y - 2.6 * T, 40, 8); ctx.fillRect(f.x - 30, Y - 2.2 * T, 30, 7);
       const sw = Math.sin(tick * 0.02 + f.x) * 3;
       [[0, -3.6, 52], [-46, -3.1, 38], [46, -3.2, 40], [-20, -4.2, 36], [24, -4.1, 34]].forEach(([dx, dy, r], k) => {
-        ctx.fillStyle = k % 2 ? '#ffb3d1' : '#ff9cc4'; ctx.beginPath(); ctx.arc(f.x + dx + sw, Y + dy * T, r * (f.shook ? 0.85 : 1), 0, 7); ctx.fill();
+        ctx.fillStyle = L.feast ? (k % 2 ? '#ffb627' : '#f08a2c') : k % 2 ? '#ffb3d1' : '#ff9cc4'; ctx.beginPath(); ctx.arc(f.x + dx + sw, Y + dy * T, r * (f.shook ? 0.85 : 1), 0, 7); ctx.fill();
       });
       ctx.fillStyle = '#fff0f6'; for (let k = 0; k < 8; k++) ctx.fillRect(f.x - 50 + hash(f.x + k) * 100 + sw, Y - 4.4 * T + hash(k + f.x * 2) * 60, 4, 4);
     } else if (f.k === 'stalk' && f.back) drawStalk(f, '#4d8a3a', '#3b6e2c');
@@ -8229,10 +8244,13 @@ function finishLevel() {
   const after = currentBelt(), last = i === STAGES.length - 1;
   // Kept short for kids: a big picture, the medal, two numbers, and at most a couple of highlights.
   const found = [0, 1, 2].filter(k => prog.best[st.w * PER_WORLD + k]).length;
-  const title = st.boss ? 'Scroll won!' : G.mistakes === 0 ? 'Perfect!' : 'Level complete!';
+  const title = L.feast ? 'Happy Thanksgiving!' : st.boss ? 'Scroll won!' : G.mistakes === 0 ? 'Perfect!' : 'Level complete!';
+  if (L.feast) award('thankful');
+  const feastN = L.feast ? L.stations.filter(z => z.solved).length : 0;
   let body = st.boss ? `<div class="bigicon">${pixImg('scroll', 'pix big')}</div>` : `<div class="bigicon">${pixImg('piece', 'pix big')}<small>${found}/3</small></div>`;
   // Each boss's win card (the Shogun's is the ending).
   if (st.boss && BOSS_CARD[W.boss.kind]) body = sceneHTML(W.boss.kind) + `<p class="freed">${BOSS_CARD[W.boss.kind]}</p>`;
+  if (L.feast) body = '<canvas id="feastCv" class="feastcv" width="340" height="150"></canvas>';   // the table is the picture
   if (G.suit) body += `<p class="freed">Kai got a diving suit! Next stop: the deep sea.</p>`;
   body += `<div class="medalrow"><span class="dots">${'●'.repeat(dots) + '○'.repeat(3 - dots)}</span> ${medalImg(dots, 'pix sm')}</div>`;
   const earned = Math.round((G.coins + (st.boss ? 20 : 0)) * TIER_GEMS[sk.tier - 1]);
@@ -8258,16 +8276,18 @@ function finishLevel() {
   body += journalHTML() + chestHTML() + gearHTML();
   if (G.practice.size) body += `<div class="practice">🔁 ${[...G.practice.values()].slice(0, 3).map(q => `<span>${qSolved(q)}</span>`).join('')}</div>`;
   const btns = [];
-  const wolfOffer = i === 0 && !prog.owned.includes('pet-wolf');
+  const wolfOffer = i === 0 && !L.feast && !prog.owned.includes('pet-wolf');
   if (wolfOffer) body += `<div class="promo">${petImg('pet-wolf')} Wolf pup: just <b>5</b> ${pixImg('gem', 'pix sm')}</div>`;
   if (last) btns.push({ label: 'The end ▶', fn: showEnding, primary: true });
   else if (st.boss) btns.push({ label: `Ride to ${WORLDS[st.w + 1].name} ▶`, fn: () => travelRace(st.w + 1), primary: true });
+  else if (L.feast) btns.push({ label: 'Levels', fn: toMenu, primary: true });
   else btns.push({ label: 'Next ▶', fn: () => startStage(i + 1), primary: true });
-  btns.push({ label: 'Replay', fn: () => startStage(i), alt: true });
-  btns.push({ label: 'Levels', fn: toMenu, alt: true });
+  btns.push({ label: 'Replay', fn: L.feast ? startFeast : () => startStage(i), alt: true });
+  if (!L.feast) btns.push({ label: 'Levels', fn: toMenu, alt: true });
   if (wolfOffer) btns.push({ label: '🐺 Adopt the wolf', fn: () => { hide('msg'); openShop(); } });
   if (team && team.run && team.room && i === team.lvl) { tmRunDone(); body += `<div class="tmrunbox" id="tmRunBox">${tmRunBoxHTML()}</div>`; }   // team run: the partner / the team chest
   showMsg(title, body, btns);
+  if (L.feast) feastPicture($('feastCv'), feastN);
   tmRunBox();
 }
 
@@ -8977,6 +8997,40 @@ function drawMemory() {
     else if (kind === 'castle') { R('#3a2a20', -3, -30, 2, 8); R('#ffd87a', -6, -22, 8, 9); glowAt(-2, -18, 30, 'rgba(255,216,122,.6)'); }   // the big one carries the light
   }
   ctx.restore();
+}
+// The Feast's picture. There is no room for a long table between the last gate and the dojo's steps, so the table is
+// the end card's picture (feastPicture) and, during the level, the dishes won so far sit in a row under the gems.
+function feastDish(c, kind, dx, y) {   // 14 px wide, standing on y
+  if (kind === 0) { c.fillStyle = '#e8662a'; c.fillRect(dx, y - 10, 14, 10); c.fillStyle = '#c0491a'; c.fillRect(dx + 4, y - 10, 2, 10); c.fillRect(dx + 9, y - 10, 2, 10); c.fillStyle = '#3f7a22'; c.fillRect(dx + 6, y - 13, 3, 3); }   // a pumpkin
+  else if (kind === 1) { c.fillStyle = '#c9d2de'; c.fillRect(dx, y - 6, 14, 6); c.fillStyle = '#ffffff'; c.fillRect(dx + 2, y - 10, 10, 4); }   // a bowl of rice
+  else if (kind === 2) { c.fillStyle = '#c9a24f'; c.fillRect(dx, y - 5, 14, 5); c.fillStyle = '#8a5a34'; c.fillRect(dx + 1, y - 8, 12, 3); c.fillStyle = '#f08a2c'; c.fillRect(dx + 3, y - 9, 8, 1); }   // a pie
+  else { c.fillStyle = '#c0392b'; c.fillRect(dx + 1, y - 8, 5, 8); c.fillStyle = '#ffb627'; c.fillRect(dx + 8, y - 7, 5, 7); c.fillStyle = '#3f7a22'; c.fillRect(dx + 3, y - 10, 2, 2); c.fillRect(dx + 10, y - 9, 2, 2); }   // an apple and a persimmon
+}
+function drawThanks() {   // (drawHUD) the dishes Kai has won so far: one for each gate opened
+  if (!L.feast) return;
+  const n = L.stations.filter(z => z.solved).length;
+  for (let k = 0; k < Math.min(n, 9); k++) feastDish(ctx, k % 4, 22 + k * 18, 104);
+}
+function feastPicture(cv, n) {   // the long table by the dojo: Sensei, the friends who are home, a dish per gate, and Kuro's place
+  if (!cv) return;
+  const c = cv.getContext('2d'), W = cv.width, H = cv.height, g = H - 22; c.imageSmoothingEnabled = false;
+  const sky = c.createLinearGradient(0, 0, 0, g); sky.addColorStop(0, '#ff9d5c'); sky.addColorStop(1, '#ffe2b8'); c.fillStyle = sky; c.fillRect(0, 0, W, H);
+  const D = WORLDS[0].dojo;   // the dojo's wall behind them
+  c.fillStyle = D[2]; c.fillRect(0, g - 96, W, 96); c.fillStyle = D[0]; c.fillRect(0, g - 90, W, 90); c.fillStyle = D[2]; for (let x = 20; x < W; x += 70) c.fillRect(x, g - 90, 5, 90); c.fillStyle = D[1]; c.fillRect(0, g - 104, W, 10);
+  c.fillStyle = '#7ec850'; c.fillRect(0, g, W, 6); c.fillStyle = '#b0794a'; c.fillRect(0, g + 6, W, H - g - 6);
+  const put = (img, x, y) => c.drawImage(img, Math.round(x), Math.round(y - img.height));
+  const x0 = 26, w = W - 52, home = !!prog.best[bossOf(WORLDS.length - 1)], got = FRIENDS.filter(f => (prog.friends || {})[f.id]);
+  put(SENSEI_SPR.a[0], x0 - 14, g - 6);
+  got.forEach((f, k) => put(kidSpr(f.id).stand[k % 2], x0 + 44 + k * 30, g - 10));
+  const kx = x0 + w - 40;   // Kuro's place, at the end of the table
+  if (home) { if (!KURO_SPR) KURO_SPR = bakeNinja({ r: '#e63946', R: '#a91d2b', n: '#1c1a24', N: '#3d3a52', b: '#1c1a24' }); put(KURO_SPR.stand[1], kx - 8, g - 10); }
+  else { const gl = c.createRadialGradient(kx + 10, g - 30, 2, kx + 10, g - 30, 30); gl.addColorStop(0, 'rgba(255,236,170,.75)'); gl.addColorStop(1, 'rgba(255,236,170,0)'); c.fillStyle = gl; c.fillRect(kx - 22, g - 62, 64, 64); }   // kept warm for him
+  put(SPR.stand[0], x0 + w / 2 - 12, g - 10);   // Kai, in the middle
+  c.fillStyle = '#6e4627'; c.fillRect(x0 + 12, g - 12, 8, 12); c.fillRect(x0 + w - 20, g - 12, 8, 12); c.fillRect(x0 + w / 2 - 4, g - 12, 8, 12);
+  c.fillStyle = '#b0794a'; c.fillRect(x0, g - 20, w, 8); c.fillStyle = '#f4ead2'; c.fillRect(x0 + 6, g - 22, w - 12, 4); c.fillStyle = '#c0392b'; for (let x = x0 + 12; x < x0 + w - 16; x += 22) c.fillRect(x, g - 18, 10, 3);
+  c.fillStyle = '#f4f1e8'; c.fillRect(kx + 2, g - 30, 16, 8); c.fillStyle = '#c9d2de'; c.fillRect(kx + 5, g - 23, 10, 2); c.fillStyle = '#6e4627'; c.fillRect(kx + 20, g - 26, 12, 2);   // his bowl and chopsticks, always
+  const m = Math.min(n, 11), step = Math.min(22, (w - 70) / Math.max(1, m));
+  for (let k = 0; k < m; k++) feastDish(c, k % 4, x0 + 14 + k * step, g - 22);
 }
 function drawStory() {   // world space, before Kai
   drawHelp(); drawMemory();
@@ -9698,8 +9752,9 @@ function cherryTree(x, base, s) {
   ctx.save(); ctx.strokeStyle = '#6b3e2a'; ctx.lineWidth = 5 * s;
   ctx.beginPath(); ctx.moveTo(x, base - 60 * s); ctx.lineTo(x - 30 * s, base - 90 * s); ctx.moveTo(x, base - 70 * s); ctx.lineTo(x + 28 * s, base - 100 * s); ctx.stroke();
   ctx.restore();
+  const fall = L && L.feast ? { '#ffb7d5': '#f08a2c', '#ffc8df': '#ffb627', '#ff9cc4': '#d9482b' } : null;   // (The Feast: the same trees in autumn)
   [[-34, -96, 26, '#ffb7d5'], [30, -106, 28, '#ffb7d5'], [0, -118, 32, '#ffc8df'], [-14, -88, 22, '#ff9cc4'], [18, -86, 22, '#ff9cc4']].forEach(([dx, dy, r, c]) => {
-    ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x + dx * s, base + dy * s, r * s, 0, 7); ctx.fill();
+    ctx.fillStyle = fall ? fall[c] : c; ctx.beginPath(); ctx.arc(x + dx * s, base + dy * s, r * s, 0, 7); ctx.fill();
   });
 }
 function gear(x, y, r, rot, col) {
@@ -9749,7 +9804,7 @@ function drawBackground() {
     if (p.k === 'flake') { ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fillRect(p.x, p.y, 3, 3); continue; }
     if (p.k === 'bubble') { ctx.strokeStyle = 'rgba(225,245,255,.6)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.stroke(); continue; }
     if (p.k === 'petal') {
-      ctx.fillStyle = '#ffc1dc'; ctx.beginPath(); ctx.ellipse(p.x, p.y, 4, 2.5, p.a, 0, 7); ctx.fill();
+      ctx.fillStyle = L.feast ? ['#f08a2c', '#ffb627', '#d9482b'][Math.floor(p.a * 3) % 3] : '#ffc1dc'; ctx.beginPath(); ctx.ellipse(p.x, p.y, 4, 2.5, p.a, 0, 7); ctx.fill();
     } else {
       ctx.fillStyle = `rgba(255,${140 + (Math.sin(p.a * 3) * 60 | 0)},40,.85)`; ctx.fillRect(p.x, p.y, 3, 3);
     }
@@ -9768,9 +9823,9 @@ function bgJapan() {
     poly([[x - 112, GR * T - 205], [x - 70, GR * T - 270], [x + 70, GR * T - 270], [x + 112, GR * T - 205], [x + 70, GR * T - 220], [x + 30, GR * T - 200], [x - 20, GR * T - 222], [x - 60, GR * T - 202]], '#fff');
   }, 3);
   clouds('rgba(255,255,255,.75)');
-  hills(0.25, 420, '#b5dfa8', 170, 11);
+  hills(0.25, 420, L.feast ? '#e3c877' : '#b5dfa8', 170, 11);
   repeat(0.35, 640, (x, i) => { if (hash(i + 5) < 0.65) pagoda(x, GR * T - 10, '#9a6a86', 0.9); }, 7);
-  hills(0.5, 300, '#7fc56f', 100, 23);
+  hills(0.5, 300, L.feast ? '#c9a24f' : '#7fc56f', 100, 23);
   const k = L.def && !L.def.boss ? L.def.k : 0;
   if (k === 2) {   // Koi Pond: a strip of lake with one torii gate in it
     const wy = GR * T - 60; ctx.fillStyle = '#6fb0e0'; ctx.fillRect(0, wy, VW, 60); ctx.fillStyle = 'rgba(255,255,255,.5)';
@@ -13416,11 +13471,12 @@ function drawHUD() {
   for (let i = 0; i < G.maxHearts; i++) heart(30 + i * 36, 16, 13, i < G.hearts ? '#ff4d6d' : 'rgba(0,0,0,.35)');
   drawGem(34, 64, 1, 0);
   hudText('× ' + G.coins, 54, 65, 22);
+  drawThanks();   // The Feast: the dishes won so far
   if (team && team.run) tmRunHud();   // team run: where the partner is
   if (G.streak >= 3) { drawPix('flame', 16, 88, 1.4); hudText(String(G.streak), 40, 99, 17, '#ffb627'); }   // (a small flame, no words)
   if (G.power) { const pw = POWERS[G.power.kind], f = Math.max(0, G.power.t / (G.power.max || (G.power.max = G.power.t))); drawPix(pw.pix, 18, 112, 2); ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fillRect(50, 120, 60, 5); ctx.fillStyle = '#7df9ff'; ctx.fillRect(50, 120, 60 * f, 5); }
   if (G.time < 240) {   // the level's name, only at the start
-    const label = st.boss ? WORLDS[st.w].boss.name : st.name; ctx.globalAlpha = Math.min(1, (240 - G.time) / 60);
+    const label = L.feast ? 'The Feast' : st.boss ? WORLDS[st.w].boss.name : st.name; ctx.globalAlpha = Math.min(1, (240 - G.time) / 60);
     hudText(label, VW - 70, 26, 18, '#fff', 'right'); ctx.globalAlpha = 1;
   }
 
@@ -13631,6 +13687,7 @@ function startStage(i) {
   prog.pickOnce = false; LEVEL_MIX = plan;
   LAYOUT = team && team.run && i === team.lvl && !st.boss ? { easy: !!team.lyEasy } : null;   // team run: both devices build the same level
   L = st.boss ? buildArena(i, prog.easy) : buildLevel(i, prog.easy);
+  if (SPECIAL === 'feast' && !st.boss) { L.feast = true; L.sky = ['#ff9d5c', '#ffe2b8']; ambient.length = 0; } SPECIAL = null;
   LAYOUT = null;
   LEVEL_MIX = null; FOCUS = false;
   P = { x: 1.5 * T, y: GR * T - 44, w: 24, h: 44, vx: 0, vy: 0, onGround: false, face: 1, inv: 0, anim: 0, coyote: 0, jbuf: 0, throwT: 0 };
@@ -13759,6 +13816,8 @@ function buildMenu() {
   $('packMenu').textContent = `${(prog.gearOwned || []).length}/${Object.keys(GEAR).length}${prog.newPack ? ' ★' : ''}`;
   countUp($('bankMenu'), prog.bank);
   // The world map: four coloured zones with a winding path; Kai stands on the newest level.
+  $('special').innerHTML = feastOpen() ? `<button type="button" class="feasttile" id="feastBtn"><b>The Feast</b><small>${prog.badges.thankful ? 'Play it again' : 'A special level'}</small></button>` : '';
+  if ($('feastBtn')) $('feastBtn').onclick = () => { audio(); startFeast(); };
   const box = $('worlds'); box.innerHTML = '';
   const open = unlockedCount(), here = Math.min(open - 1, STAGES.length - 1);
   const DECOR = [['blossom', 'torii', 'blossom'], ['volcano', 'flame', 'volcano'], ['gear', 'bolt', 'gear'], ['flake', 'pine', 'flake'], ['fish', 'gem', 'fish'], ['cactus', 'arch', 'cactus'], ['moon', 'pagoda', 'star']];
@@ -14007,7 +14066,7 @@ function drawStallScene(c, s, ox) {   // one stall, its keeper and its goods, of
   const bg = roadBg(s); if (bg.complete && bg.naturalWidth) c.drawImage(bg, ox, 0, 960, 330); else { c.fillStyle = W.skies[0][0]; c.fillRect(ox, 0, 960, 330); }
   if (s.look === 'home' || s.look === 'prize') { c.fillStyle = 'rgba(40,20,60,.35)'; c.fillRect(ox, 0, 960, 330); }
   const post = W.stair[1], wood = W.stair[0], trim = W.stair[2] || '#fff', cloth = s.look === 'home' || s.look === 'prize' ? '#c0392b' : W.gate[0];
-  const items = SHOP.filter(it => shelfOf(it) === s.w);
+  const items = SHOP.filter(it => shelfOf(it) === s.w && shopShown(it));
   if (open && keeperHere(s)) {   // the keeper, behind the counter
     const kx = (x0 + x1) / 2 + 40;
     if (s.kind === 'boss') drawBaked(BOSS_SPR[s.keep], Math.floor(Date.now() / 600) % 2 ? 'b' : 'a', true, { x: kx - 50, y: gy - 150, w: 100, h: 110 });
@@ -14076,12 +14135,13 @@ function renderStallCards() {
   $('roadDots').querySelectorAll('i').forEach(d => { d.onclick = () => { audio(); walkTo(+d.dataset.i); }; });
   // The stall's things as small picture tiles; the words and buttons for the one that was tapped are on one card above
   // them (owner, Nov 23 2026: clean the shop up the same way as the Badge Book).
-  const items = SHOP.filter(x => shelfOf(x) === s.w);
+  const items = SHOP.filter(x => shelfOf(x) === s.w && shopShown(x));
   if (!items.some(x => x.id === shopSel)) shopSel = (items.find(x => !prog.owned.includes(x.id)) || items[0] || {}).id;
   const info = $('shopInfo'); info.innerHTML = ''; const cur = items.find(x => x.id === shopSel); if (cur) shopItem(info, cur);
   for (const it of items) shopTile(grid, it);
 }
 let shopSel = null;
+function shopShown(it) { const b = it.badge && BADGE[it.badge]; return !(b && b.season) || prog.owned.includes(it.id) || !!prog.badges[it.badge]; }   // a seasonal prize is only in the shop for a kid who won it
 function shopTile(grid, it) {
   const owned = prog.owned.includes(it.id), on = prog.equip[it.slot] === it.id, wrapped = !owned && shelfOf(it) === SHELF_HOME && !shelfOpen(SHELF_HOME);
   const locked = !owned && (giftLock(it) || (it.badge && !prog.badges[it.badge]));

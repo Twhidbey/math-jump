@@ -77,3 +77,13 @@ Later the same day (owner: "kids never change their math level; is the belt the 
 The big **Play** button (`#playBtn`) is hidden too (owner: both kids start from the level buttons); it is still filled by `buildMenu`. The next level is the node Kai stands on (`.node.here`), and the menu opens scrolled to it. Home screen: 9 controls.
 
 The small belt bar on the player chip is gone again (owner: hard to read). The belt is shown big in the players menu (`showPlayers`, tap the chip): on each player's card, the belt itself (`.pbelt`), its name, and a thin bar toward the next belt in that belt's colour.
+
+## The Feast (Thanksgiving special level, Nov 25 2026)
+
+A seasonal level, open from the day before Thanksgiving through the Sunday after (`thanksgivingDay(y)`, `feastOpen(now)`). The home screen shows one tile (`#special` > `#feastBtn.feasttile`, built in `buildMenu`); `startFeast()` sets `SPECIAL = 'feast'` and runs `startStage(0)`, so it is Cherry Path with the player's own math, flagged `L.feast`: sunset sky, autumn colours in `cherryTree`, the `bgJapan` hills, the petals and the shake-tree flavour, HUD name "The Feast". It does not count as a stage (no stars or best saved for stage 0).
+
+- **Every gate opened brings a dish**: `drawThanks` (in `drawHUD`) shows the dishes won so far in a row under the gems (`feastDish`: pumpkin, rice, pie, fruit).
+- **The table is the end card's picture** (`feastPicture(cv, n)` on `#feastCv`): the dojo wall, a long table, Sensei, Kai, every friend already found, one dish per gate, and **a place kept for Kuro** (his bowl with a warm glow; Kuro himself sits there once the last boss is beaten). No words explain it. (A table in the level was tried first: there is no room between the last gate and the dojo steps.)
+- End card: "Happy Thanksgiving!", buttons Levels and Replay only (no wolf offer). Badge `thankful` (`season: true`, picture `feather`) gives the trail `trail-autumn` "Autumn leaves".
+- Test with a faked date: `page.clock.install({ time: new Date('2026-11-26T10:00:00') })`.
+- **Christmas (planned, not built; waiting for the owner's answers):** an Advent calendar Dec 1–24 on the Story page opened by the Daily Dojo, hidden presents in levels, something that builds over the 24 days (a carved nativity set, dojo decorations, or both), a catch-up rule, a special Christmas level. `SPECIAL` and the `#special` tile are meant to be reused.
