@@ -2,6 +2,10 @@
 
 Everything is in `index.html`. `CLAUDE.md` is the short index of the code notes and records the owner's decisions; the detail per area is in `docs/` (open only the file for the area you are changing); older history is in `docs/HISTORY.md`; `STORY.md` is the story text; `README.md` is for people; `MATH_GOALS.md` holds the math-learning ideas. Work on **`main`** of this repo (`Twhidbey/math-jump`) and push there: pushing IS publishing (GitHub Pages). After every change: update the build stamp (search `class="build"`), commit, push, and tell the owner it's live (bump `?v=` on the link if the phone shows the old one). This repo is public: keep personal details out of the notes.
 
+## Newest (Nov 26 2026): high times tables = both numbers 6 to 9
+
+Owner: "both digits in the product need to be >5". The parent page's Extra practice chip `Times high` now uses the new skill `xhi` (6 × 6 to 9 × 9 only). See `docs/parent.md`. Live on `main`. **The Road to the Feast is still waiting on branch `feast-road` for the owner's go** (merge `main` into it first).
+
 ## Newest: The Feast (Nov 25 2026) and Christmas plans
 - **The Feast**, a Thanksgiving special level, is live from the day before Thanksgiving through the Sunday after (home-screen tile; details in `docs/levels.md`, "The Feast"). Built in a hurry the evening before: the badge name, the prize trail and the picture are drafts, not yet seen by the owner or tested on a real phone.
 - **Christmas is next** (owner: "24 days of Christmas easter eggs"; December 1 is close). Questions asked, not answered yet: what builds over the 24 days (A a carved nativity set, B dojo decorations, C both), and the catch-up rule for missed days. Ask before building.

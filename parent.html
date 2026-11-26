@@ -101,7 +101,7 @@
   const DB = 'https://math-ninja-team-default-rtdb.firebaseio.com';
   const ABC = 'BCDFGHJKLMNPRSTVWXZ2345679';
   const LS = 'mathninja-parent';
-  const focusName = n => ({ '': 'Off', 'Times': 'Times (in order)', 'Times low': 'Times 2, 3, 4, 5, 10', 'Times high': 'Times 6, 7, 8, 9' }[n] || n);   // Extra practice chips
+  const focusName = n => ({ '': 'Off', 'Times': 'Times (in order)', 'Times low': 'Times 2, 3, 4, 5, 10', 'Times high': 'Times 6×6 to 9×9' }[n] || n);   // Extra practice chips
   let st = {}; try { st = JSON.parse(localStorage.getItem(LS)) || {}; } catch (e) { st = {}; }
   st.names = st.names || {};
   const keep = () => { try { localStorage.setItem(LS, JSON.stringify(st)); } catch (e) { /* no storage */ } };

@@ -698,7 +698,7 @@
   </div>
   <div id="special"></div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 25, 2026 · The Feast: a Thanksgiving level (through Sunday)</div>
+  <div class="build">Updated Nov 26, 2026 · High times tables practice: both numbers 6 to 9</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1075,6 +1075,8 @@ const SKILLS = [
   ...[2, 5, 10, 3, 4, 11, 6, 7, 8, 9, 12].map(n => ({ cat: 'mul', id: 'x' + n, name: `Times ${n}`, ex: `${n} × 4`, tier: [2, 5, 10].includes(n) ? 2 : [3, 4, 11].includes(n) ? 3 : 4, gen: table(n) })),
   { cat: 'mul', id: 'xmix25', name: 'Times 2 to 5', ex: '4 × 7', tier: 3, gen: deck(() => pairs(range(2, 5), range(2, 10), () => true).map(([n, k]) => times(n, k))) },
   { cat: 'mul', id: 'xmix69', name: 'Times 6 to 9', ex: '8 × 6', tier: 4, gen: deck(() => pairs(range(6, 9), range(2, 10), () => true).map(([n, k]) => times(n, k))) },
+  // (owner, Nov 26 2026) the parent page's high times tables: both numbers are 6 to 9 (6 × 6 up to 9 × 9), since 3 × 7 is a low fact either way round
+  { cat: 'mul', id: 'xhi', name: 'Times 6 × 6 to 9 × 9', ex: '8 × 7', tier: 4, gen: deck(() => pairs(range(6, 9), range(6, 9), () => true).map(([n, k]) => times(n, k))) },
   { cat: 'mul', id: 'xtens', name: 'Times tens', ex: '3 × 40', tier: 4, gen: deck(() => pairs(range(2, 9), range(2, 9), () => true).map(([a, b]) => tens(mk(a, '×', b * 10, a * b * 10)))) },
   { cat: 'mul', id: 'xall', name: 'All times tables', ex: '7 × 12', tier: 5, gen: () => times(R(2, 12), R(2, 12)) },
   ...[2, 5, 10, 3, 4, 6, 7, 8, 9].map(n => ({ cat: 'div', id: 'd' + n, name: `Divide by ${n}`, ex: `${n * 6} ÷ ${n}`, tier: [2, 5, 10, 3, 4].includes(n) ? 3 : 4, gen: divTable(n) })),
@@ -3446,7 +3448,8 @@ function behind(sts, tm) {   // the kind furthest behind (not the last one playe
 // track of the same name carries on (2nd grade's Times is 2, 5, 10; then 3rd grade's 3, 4, 6...).
 // Two more picks (owner, Nov 24 2026): the low tables (2, 5, 10, 3, 4) or the high ones (6, 7, 8, 9), whatever the grade.
 // One table at a time in that order, then the mixed skill of that half for as long as the pick stays on.
-const FOCUS_SETS = { 'Times low': 'x2 x5 x10 x3 x4 xmix25', 'Times high': 'x6 x7 x8 x9 xmix69' };
+// High means BOTH numbers are 6 to 9 (owner, Nov 26 2026): one mixed skill of those ten facts.
+const FOCUS_SETS = { 'Times low': 'x2 x5 x10 x3 x4 xmix25', 'Times high': 'xhi' };
 function focusState(plan, name) {
   if (FOCUS_SETS[name]) {
     const t = { name: 'Times', ids: FOCUS_SETS[name].split(' ') }, x = trackState(t, plan.gi);
