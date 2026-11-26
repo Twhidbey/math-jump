@@ -397,9 +397,10 @@
   .mathline .tier { color: #ffd23f; }
   .titlebar { position: relative; width: min(720px, 100%); text-align: center; }
   .cogbtn { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; padding: 4px; border: 0; border-radius: 10px; background: rgba(255,255,255,.08); cursor: pointer; opacity: .8; } .cogbtn .pix { width: 28px; height: 28px; image-rendering: pixelated; }
-  .feastcv { width: min(100%, 340px); image-rendering: pixelated; border: 3px solid #ffd23f; border-radius: 10px; margin: 0 auto 8px; display: block; }
-  #special { width: min(720px, 100%); } .feasttile { width: 100%; margin: 2px 0 8px; padding: 12px; border: 3px solid #ffd23f; border-radius: 12px; cursor: pointer; color: #fff; background: linear-gradient(#ff9d5c, #d9482b); display: grid; gap: 2px; justify-items: center; box-shadow: 0 4px 0 #8a2a12; }
-  .feasttile b { font: 24px "Lilita One", "Trebuchet MS", sans-serif; text-shadow: 0 2px 0 rgba(0,0,0,.3); } .feasttile small { font: 13px "Nunito", sans-serif; opacity: .95; }
+  .feastdish { height: 54px; image-rendering: pixelated; } .feastcv { width: min(100%, 340px); image-rendering: pixelated; border: 3px solid #ffd23f; border-radius: 10px; margin: 0 auto 8px; display: block; }
+  #special { width: min(720px, 100%); } .feastrow { display: flex; gap: 6px; } .feasttile { flex: 1 1 0; min-width: 0; margin: 2px 0 8px; padding: 6px 4px 4px; border: 3px solid #ffd23f; border-radius: 12px; cursor: pointer; color: #fff; background: linear-gradient(#ff9d5c, #d9482b); display: grid; gap: 2px; justify-items: center; box-shadow: 0 4px 0 #8a2a12; }
+  .feasttile b { font: 17px/1.1 "Lilita One", "Trebuchet MS", sans-serif; text-shadow: 0 2px 0 rgba(0,0,0,.3); } .feasttile small { font: 700 12px "Nunito", sans-serif; opacity: .9; }
+  .feasttile i { height: 22px; display: block; } .feasttile.locked { opacity: .45; cursor: default; filter: saturate(.5); }
   .iconrow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; width: min(720px, 100%); margin: 6px 0 4px; }
   .ibtn { font: inherit; font-weight: 800; font-size: 13px; color: #fff; background: rgba(255,255,255,.1); border: none; border-radius: 14px;
     padding: 8px 2px; cursor: pointer; display: grid; justify-items: center; gap: 2px; }
@@ -698,7 +699,7 @@
   </div>
   <div id="special"></div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 26, 2026 · The Road to the Feast: a long Thanksgiving level (through Sunday)</div>
+  <div class="build">Updated Nov 26, 2026 · The Feast is now three short levels (through Sunday)</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -1987,8 +1988,20 @@ var FOCUS = false;
 var SPECIAL = null;
 function thanksgivingDay(y) { const d = new Date(y, 10, 1); return 1 + ((4 - d.getDay() + 7) % 7) + 21; }   // the 4th Thursday of November
 function feastOpen(now = new Date()) { if (now.getMonth() !== 10) return false; const t = thanksgivingDay(now.getFullYear()), d = now.getDate(); return d >= t - 1 && d <= t + 3; }
-function startFeast() { SPECIAL = 'feast'; startStage(0); if (L && !L.feast) SPECIAL = null; }
-// The Road to the Feast (owner, Nov 26 2026): one long level in three parts, one evening walk at sunset. Part 1 Cherry
+// Since Nov 26 2026 (owner: "Let's split - it's more fun that way") the road is three short levels, three tiles on the home
+// screen: The Harvest, The Travellers, The Feast. A part opens once the one before it is finished. SPECIAL = 'feast1' ..
+// 'feast3' for one startStage; L.fe.part = 0..2. prog.feast keeps this year's progress: { y, done, turkey, dishes }.
+const FEAST_NAMES = ['The Harvest', 'The Travellers', 'The Feast'];
+function feastPartOf(s) { const m = /^feast([123])$/.exec(s || ''); return m ? +m[1] - 1 : -1; }
+function feastProg() {   // this year's road (a new year starts it again)
+  const y = new Date().getFullYear(); let f = prog.feast;
+  if (!f || f.y !== y || !Array.isArray(f.done) || !Array.isArray(f.dishes)) f = prog.feast = { y, done: [false, false, false], turkey: false, dishes: [0, 0, 0] };
+  return f;
+}
+function feastNext() { const f = feastProg(), k = f.done.indexOf(false); return k < 0 ? 0 : k; }   // the first part not finished yet
+function feastOpenPart(p) { return p === 0 || !!feastProg().done[p - 1]; }
+function startFeast(part) { const p = part == null ? feastNext() : part; SPECIAL = 'feast' + (p + 1); startStage(0); if (L && !L.feast) SPECIAL = null; }
+// The Road to the Feast (owner, Nov 26 2026): three short levels, one evening walk at sunset. Part 1 Cherry
 // Path (the harvest: pumpkin stepping stones), part 2 the Koi Pond's lake (three tired travellers by a little boat join
 // Kai when he opens the gate there), part 3 the dojo road (lanterns on posts light as he passes; the friends he found
 // wait by the road). The turkey is the level's hungry animal: fed right, it trots along too. Everyone walks behind Kai
@@ -2026,8 +2039,8 @@ function focusGen(skill) {
 }
 function buildLevel(idx, easy = false, skill = curSkill()) {
   const shared = LAYOUT; if (shared) easy = !!shared.easy;   // team run: one layout for both devices
-  const feast = SPECIAL === 'feast' && idx === 0 && !shared;   // The Road to the Feast: three parts, three times as long
-  const def = feast ? { ...STAGES[idx], n: FEAST_GATES } : STAGES[idx], W = WORLDS[def.w], rng = mulberry32(1234 + def.si * 7919);
+  const fpart = idx === 0 && !shared ? feastPartOf(SPECIAL) : -1, feast = fpart >= 0;   // The Road to the Feast: one of its three parts
+  const def = feast ? { ...STAGES[idx], n: FEAST_PER } : STAGES[idx], W = WORLDS[def.w], rng = mulberry32(1234 + def.si * 7919 + (feast ? fpart * 101 : 0));
   const map = newMap();
   const twist = def.boss ? null : TWISTS[slotOf(def)];
   const L = { idx, def, skill, twist, fx: [], plats: [], chaseX: -8 * T, gen: LEVEL_MIX ? mixGen(LEVEL_MIX) : FOCUS ? focusGen(skill) : genFor(skill), expert: skillProgress(skill).mature, world: W, sky: W.skies[def.k], map, w: 0, enemies: [], coins: [], stations: [], walls: [], wallCells: new Map(), bridges: [], doors: [], decor: [], flagC: 0, castleC: 0, boss: null, proj: [] };
@@ -2401,15 +2414,30 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
 
   const kinds = easy ? ['coins', 'bricks', 'pipe', 'stairs'] : ['coins', 'pit', 'bricks', 'pipe', 'stairs', 'float'];
   if (twist === 'koi' && !easy) kinds.push('pit', 'pit');
-  const doorAt = feast ? FEAST_PER + 1 : def.n > 6 ? 4 : 3;
-  const fe = feast ? (L.fe = { parts: [], guests: [], line: [], trail: [], lamps: [], travGate: -1, boat: 0, table: null }) : null;
+  const doorAt = feast ? FEAST_PER + 1 : def.n > 6 ? 4 : 3;   // (The Feast: gate numbers count along the whole road, see gi)
+  const fe = feast ? (L.fe = { part: fpart, parts: [], guests: [], line: [], trail: [], lamps: [], travGate: -1, boat: 0, table: null }) : null;
   if (feast) L.feast = true;
   flat(10);
+  if (feast && fpart > 0) {   // The Feast, parts 2 and 3: the ones who came along before walk behind Kai from the start
+    const fp = feastProg(), x0 = 1.5 * T + 12, came = [...(fp.turkey ? [{ kind: 'turkey' }] : []), ...(fpart === 2 ? [0, 1, 2].map(n => ({ kind: 'trav', n })) : [])];
+    fe.turkey = fp.turkey; fe.travOn = fpart === 2;
+    for (let x = -10 * T; x <= x0; x += 4) fe.trail.push({ x, y: GR * T, s: x + 1000 });
+    came.forEach((o, k) => { const s = x0 + 1000 - FEAST_GAP * (k + 1) - (k ? 4 : 8), g = { ...o, x: s - 1000, y: GR * T, state: 'follow', s, face: 1, a: 1, t: k * 31 }; fe.guests.push(g); fe.line.push(g); });
+    const s0 = flat(14);
+    if (fpart === 1) {   // the Koi Pond's lake: a little boat at the shore, three tired travellers beside it, then their gate
+      fe.boat = (s0 + 4) * T; fe.travGate = 0;
+      [0, 1, 2].forEach(k => fe.guests.push({ kind: 'trav', n: k, x: (s0 + 9 + k * 1.3) * T, y: GR * T, state: 'wait', face: k === 2 ? 1 : -1, a: 1, t: k * 40 }));
+    } else {   // the dojo road: lanterns on posts from here on, and the friends Kai found waiting by the road
+      FRIENDS.filter(f => (prog.friends || {})[f.id]).forEach((f, k) => fe.guests.push({ kind: 'kid', id: f.id, x: (s0 + 5 + k * 1.2) * T, y: GR * T, state: 'wait', face: -1, a: 1, t: k * 23 }));
+      for (let c = s0 + 2; c < s0 + 14; c += 7) fe.lamps.push({ x: c * T + T / 2, lit: 0 });
+    }
+  }
   L.squads = []; L.steps = [];
   // Bridges and stepping stones take turns, level by level (each is in about half the levels). Kindergarten math never
   // gets a number-stone bridge (carrying stones to an exact sum is the trickiest thing in the game): stones every level.
   const young = shared ? true : skill.tier === 1, useBridge = !young && slotOf(def) % 2 === 1 && W.key !== 'desert';   // (the desert always has stones: Hoodoo Trail's are the hoodoo hop)
   const feedAt = feast ? 2 : Math.floor(def.n / 2), stepsAt = useBridge ? [] : feast ? [1, FEAST_PER + 2, 2 * FEAST_PER + 1] : [1];   // one set of stepping stones in a stones level (The Feast: one in each part)
+  const allN = feast ? FEAST_GATES : def.n;   // (The Feast: the whole road's gates)
   // Breathing room: after each big moment a long stretch of plain running. The first two also get a pair of ledges
   // up in the sky (the world's own blocks, one higher than the other) with gems on top, just for jumping.
   let skyLeft = 2;
@@ -2421,31 +2449,22 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
   const run = () => { const s = flat(ri(rng, 14, 18)); if (skyLeft > 0 && !def.boss) { skyLeft--; sky(s + 3); } };
   const wk = def.boss || shared ? [] : wallKinds(skill), wallGate = wk.length && def.n >= 3 ? (feast ? 3 : feedAt) : -1;   // older players: the middle gate is a pattern wall
   for (let i = 0; i < def.n; i++) {
-    if (feast && i > 0 && i % FEAST_PER === 0) {   // The Feast: the next part starts here (the background changes at this spot)
-      const s0 = flat(14); fe.parts.push(s0 * T);
-      if (i === FEAST_PER) {   // the Koi Pond's lake: a little boat at the shore, three tired travellers beside it, then their gate
-        fe.boat = (s0 + 4) * T; fe.travGate = L.stations.length;
-        [0, 1, 2].forEach(k => fe.guests.push({ kind: 'trav', n: k, x: (s0 + 9 + k * 1.3) * T, y: GR * T, state: 'wait', face: k === 2 ? 1 : -1, a: 1, t: k * 40 }));
-      } else {   // the dojo road: lanterns on posts from here on, and the friends Kai found waiting by the road
-        FRIENDS.filter(f => (prog.friends || {})[f.id]).forEach((f, k) => fe.guests.push({ kind: 'kid', id: f.id, x: (s0 + 5 + k * 1.2) * T, y: GR * T, state: 'wait', face: -1, a: 1, t: k * 23 }));
-        for (let c = s0 + 2; c < s0 + 14; c += 7) fe.lamps.push({ x: c * T + T / 2, lit: 0 });
-      }
-    }
-    if (i === feedAt) {   // one hungry animal per level, mid-way, with three numbered foods floating ahead of it
+    const gi = feast ? fpart * FEAST_PER + i : i;   // (The Feast: this gate's number along the whole road)
+    if (gi === feedAt) {   // one hungry animal per level, mid-way, with three numbered foods floating ahead of it
       const s0 = flat(11), [kind, food] = feast ? ['turkey', 'acorn'] : ANIMALS[slotOf(def)] || ANIMALS[0], q = wordQ(L.gen(), kind, food);
       L.squads.push({ s: s0, q, done: false, kind, food, ax: (s0 + 9) * T + T / 2, foods: choices(q, 3).map((val, j) => ({ x: (s0 + 3 + j * 2) * T + T / 2, y: GR * T - 2.1 * T, val })) });
       run();
     }
-    const shore = feast && i === FEAST_PER;   // (the travellers' gate comes straight after the shore)
+    const shore = feast && gi === FEAST_PER;   // (the travellers' gate comes straight after the shore)
     const n = shore ? 0 : ri(rng, 1, 2);   // short runs between gates: more math, less walking
     for (let k = 0; k < n; k++) chunk(kinds[ri(rng, 0, kinds.length - 1)]);
     if (useBridge && (i === 2 || (i === 5 && def.w >= 2))) { bridgeChunk(); run(); }
-    if (i === doorAt) doorChunk();
-    if (stepsAt.includes(i)) { const k0 = L.steps.length; stepsChunk(); if (feast && i < FEAST_PER) L.steps[k0].pumpkin = true; run(); }   // (The Feast's first part: pumpkins)
-    if (i === def.n - 2) { if (W.key === 'snow') liftChunk(); else if (W.key === 'desert' && def.k === 2) raftChunk(); else swingChunk(); run(); }   // one swing crossing per level (a ski lift in the snow)
-    if (feast && i >= 2 * FEAST_PER) { const c = L.w; flat(2); fe.lamps.push({ x: c * T + T, lit: 0 }); }   // the dojo road: a lantern on a post before each gate
-    if (twist && !shore && (feast ? i % 4 === 0 && i < def.n - 3 : i % 2 === 0 || twist === 'walljump')) twistChunk();   // wall-jump levels get one before every gate
-    if (i === wallGate) { wallChunk(wk[slotOf(def) % wk.length]); run(); continue; }
+    if (gi === doorAt) doorChunk();
+    if (stepsAt.includes(gi)) { const k0 = L.steps.length; stepsChunk(); if (feast && gi < FEAST_PER) L.steps[k0].pumpkin = true; run(); }   // (The Feast's first part: pumpkins)
+    if (gi === allN - 2) { if (W.key === 'snow') liftChunk(); else if (W.key === 'desert' && def.k === 2) raftChunk(); else swingChunk(); run(); }   // one swing crossing per level (a ski lift in the snow)
+    if (feast && gi >= 2 * FEAST_PER) { const c = L.w; flat(2); fe.lamps.push({ x: c * T + T, lit: 0 }); }   // the dojo road: a lantern on a post before each gate
+    if (twist && !shore && (feast ? gi % 4 === 0 && gi < allN - 3 : i % 2 === 0 || twist === 'walljump')) twistChunk();   // wall-jump levels get one before every gate
+    if (gi === wallGate) { wallChunk(wk[slotOf(def) % wk.length]); run(); continue; }
     // Question station: sign, answer blocks, and a locked gate.
     const s = flat(16), q = L.gen(), five = L.expert;
     // Answer blocks hang over the run-up; the answer bar's buttons match them (same order and colour).
@@ -2457,7 +2476,7 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
   // A steady number of ? boxes: 3 in the first world up to 6 in the last. Extra ones become bricks;
   // missing ones turn bricks over solid ground into ? boxes, then go over open flat ground.
   {
-    const want = feast ? 9 : { japan: 3, lava: 4, robot: 5, snow: 5, sea: 5, desert: 5, castle: 6 }[W.key] || 5, boxes = [], spare = [];
+    const want = feast ? 3 : { japan: 3, lava: 4, robot: 5, snow: 5, sea: 5, desert: 5, castle: 6 }[W.key] || 5, boxes = [], spare = [];
     const nearGate = c => (L.swings || []).some(w => c >= w.s - 2 && c <= w.e + 2) || L.steps.some(z => c >= z.c0 - 6 && c <= z.c0 + z.w + 2) || L.squads.some(q => c >= q.s && c <= q.s + 10) || L.stations.some(st => c >= st.s - 1 && c <= st.gate[1] + 1) || L.walls.some(w => c >= w.s - 1 && c <= w.gate[1] + 1) || L.bridges.some(b => c >= b.signC - 1 && c <= b.altarC + 1) || L.doors.some(d => Math.abs(c - d.c) <= 2);
     for (let c = 0; c < L.w; c++) for (let r = 0; r < GR; r++) {
       if (map[r][c] === '?') boxes.push([r, c]);
@@ -2486,6 +2505,19 @@ function buildLevel(idx, easy = false, skill = curSkill()) {
     const g = goldSpots[Math.floor(rng() * goldSpots.length)];
     L.coins = L.coins.filter(c => Math.abs(c.x - g.x) > T * 1.5 || c.y > g.top * T);   // nothing else up there
     L.coins.push({ x: g.x, y: g.top * T - 4.2 * T, v: 25, gold: true, taken: false });
+  }
+  if (feast && fpart < 2) {   // The Feast, parts 1 and 2: a flat road to the next part's look; reaching the spot ends it (no flag)
+    const lead = flat(10), s0 = flat(14); fe.parts.push(s0 * T);   // (the background crossfades just before s0)
+    if (fpart === 0) {   // the lake shore: the boat and the three travellers are waiting there (they come along in part 2)
+      fe.boat = (s0 + 5) * T; L.flagC = s0 + 3;
+      [0, 1, 2].forEach(k => fe.guests.push({ kind: 'trav', n: k, x: (s0 + 8 + k * 1.2) * T, y: GR * T, state: 'wait', face: k === 2 ? 1 : -1, a: 1, t: k * 40 }));
+    } else {   // the dojo road: the first lantern lights as Kai comes to it
+      fe.lamps.push({ x: (s0 + 4) * T + T / 2, lit: 0 }); L.flagC = s0 + 4;
+    }
+    flat(16); L.castleC = L.flagC + 4;
+    const fc = L.flagC; L.flagC = lead + 14; addFlavor(L); L.flagC = fc;   // (the level's extras stay before the end)
+    addFriend(L);
+    return L;
   }
   if (feast) {   // The Feast's finale: a flat road, then the long table by the dojo (Sensei at its head), no flag
     const most = 4 + FRIENDS.filter(f => (prog.friends || {})[f.id]).length, tw = Math.max(14, most * 2 + 4);   // room for everyone who could come
@@ -8311,13 +8343,15 @@ function finishLevel() {
   const after = currentBelt(), last = i === STAGES.length - 1;
   // Kept short for kids: a big picture, the medal, two numbers, and at most a couple of highlights.
   const found = [0, 1, 2].filter(k => prog.best[st.w * PER_WORLD + k]).length;
-  const title = L.feast ? 'Happy Thanksgiving!' : st.boss ? 'Scroll won!' : G.mistakes === 0 ? 'Perfect!' : 'Level complete!';
-  if (L.feast) award('thankful');
-  const feastN = L.feast ? L.stations.filter(z => z.solved).length : 0;
+  const fpart = L.fe ? L.fe.part : -1, feastEnd = fpart === 2, feastN = L.fe ? feastDishes() : 0, partN = L.fe ? feastGates() : 0;
+  if (L.fe) { const f = feastProg(); f.done[fpart] = true; f.dishes[fpart] = Math.max(f.dishes[fpart] || 0, partN); save(); }   // The Feast: this part is finished (the next one opens)
+  const title = feastEnd ? 'Happy Thanksgiving!' : L.fe ? 'The road goes on' : st.boss ? 'Scroll won!' : G.mistakes === 0 ? 'Perfect!' : 'Level complete!';
+  if (feastEnd) award('thankful');
   let body = st.boss ? `<div class="bigicon">${pixImg('scroll', 'pix big')}</div>` : `<div class="bigicon">${pixImg('piece', 'pix big')}<small>${found}/3</small></div>`;
   // Each boss's win card (the Shogun's is the ending).
   if (st.boss && BOSS_CARD[W.boss.kind]) body = sceneHTML(W.boss.kind) + `<p class="freed">${BOSS_CARD[W.boss.kind]}</p>`;
-  if (L.feast) body = '<canvas id="feastCv" class="feastcv" width="340" height="150"></canvas>';   // the table is the picture
+  if (feastEnd) body = '<canvas id="feastCv" class="feastcv" width="340" height="150"></canvas>';   // the table is the picture
+  else if (L.fe) body = `<div class="bigicon"><canvas id="feastCv" class="feastdish" width="${Math.max(1, partN) * 18 + 4}" height="18"></canvas></div>`;   // parts 1 and 2: this part's dishes
   if (G.suit) body += `<p class="freed">Kai got a diving suit! Next stop: the deep sea.</p>`;
   body += `<div class="medalrow"><span class="dots">${'●'.repeat(dots) + '○'.repeat(3 - dots)}</span> ${medalImg(dots, 'pix sm')}</div>`;
   const earned = Math.round((G.coins + (st.boss ? 20 : 0)) * TIER_GEMS[sk.tier - 1]);
@@ -8347,14 +8381,16 @@ function finishLevel() {
   if (wolfOffer) body += `<div class="promo">${petImg('pet-wolf')} Wolf pup: just <b>5</b> ${pixImg('gem', 'pix sm')}</div>`;
   if (last) btns.push({ label: 'The end ▶', fn: showEnding, primary: true });
   else if (st.boss) btns.push({ label: `Ride to ${WORLDS[st.w + 1].name} ▶`, fn: () => travelRace(st.w + 1), primary: true });
-  else if (L.feast) btns.push({ label: 'Levels', fn: toMenu, primary: true });
+  else if (feastEnd) btns.push({ label: 'Levels', fn: toMenu, primary: true });
+  else if (L.fe) btns.push({ label: 'Next ▶', fn: () => startFeast(fpart + 1), primary: true });   // The Feast: on to the next part
   else btns.push({ label: 'Next ▶', fn: () => startStage(i + 1), primary: true });
-  btns.push({ label: 'Replay', fn: L.feast ? startFeast : () => startStage(i), alt: true });
-  if (!L.feast) btns.push({ label: 'Levels', fn: toMenu, alt: true });
+  btns.push({ label: 'Replay', fn: L.fe ? () => startFeast(fpart) : () => startStage(i), alt: true });
+  if (!feastEnd) btns.push({ label: 'Levels', fn: toMenu, alt: true });
   if (wolfOffer) btns.push({ label: '🐺 Adopt the wolf', fn: () => { hide('msg'); openShop(); } });
   if (team && team.run && team.room && i === team.lvl) { tmRunDone(); body += `<div class="tmrunbox" id="tmRunBox">${tmRunBoxHTML()}</div>`; }   // team run: the partner / the team chest
   showMsg(title, body, btns);
-  if (L.feast) feastPicture($('feastCv'), feastN);
+  if (feastEnd) feastPicture($('feastCv'), feastN);
+  else if (L.fe) { const c = $('feastCv').getContext('2d'); for (let k = 0; k < partN; k++) feastDish(c, (fpart * FEAST_PER + k) % 4, 2 + k * 18, 16); }
   tmRunBox();
 }
 
@@ -9073,17 +9109,22 @@ function feastDish(c, kind, dx, y) {   // 14 px wide, standing on y
   else if (kind === 2) { c.fillStyle = '#c9a24f'; c.fillRect(dx, y - 5, 14, 5); c.fillStyle = '#8a5a34'; c.fillRect(dx + 1, y - 8, 12, 3); c.fillStyle = '#f08a2c'; c.fillRect(dx + 3, y - 9, 8, 1); }   // a pie
   else { c.fillStyle = '#c0392b'; c.fillRect(dx + 1, y - 8, 5, 8); c.fillStyle = '#ffb627'; c.fillRect(dx + 8, y - 7, 5, 7); c.fillStyle = '#3f7a22'; c.fillRect(dx + 3, y - 10, 2, 2); c.fillRect(dx + 10, y - 9, 2, 2); }   // an apple and a persimmon
 }
+function feastGates() { return Math.min(FEAST_PER, L.stations.filter(z => z.solved).length + L.walls.filter(w => w.done).length); }   // gates opened in this part (a pattern wall is a gate too)
+function feastDishes() {   // the dishes on the table: the best of the earlier parts, and this part's gates opened so far
+  const f = feastProg(), p = L.fe ? L.fe.part : 2, now = feastGates();
+  return Math.min(FEAST_GATES, f.dishes.slice(0, p).reduce((a, b) => a + (b || 0), 0) + Math.min(FEAST_PER, now));
+}
 function drawThanks() {   // (drawHUD) the dishes Kai has won so far, one per gate opened, in rows under the gems; returns their height
   if (!L.feast) return 0;
-  const n = Math.min(FEAST_GATES, L.stations.filter(z => z.solved).length), narrow = VW < 700, per = narrow ? 5 : 9;   // (a 432-wide phone: clear of the question banner)
-  for (let k = 0; k < n; k++) feastDish(ctx, k % 4, (narrow ? 12 : 22) + (k % per) * (narrow ? 15 : 16), 100 + Math.floor(k / per) * 15);
+  const n = feastGates(), narrow = VW < 700, per = 6;   // (this part's dishes only: one short row)
+  for (let k = 0; k < n; k++) feastDish(ctx, (L.fe.part * FEAST_PER + k) % 4, (narrow ? 12 : 22) + (k % per) * (narrow ? 15 : 16), 100 + Math.floor(k / per) * 15);
   return n ? Math.ceil(n / per) * 15 + 2 : 0;
 }
 // ---- The Road to the Feast: the walkers, the lanterns, the table (see FEAST_PER)
 function mixHex(a, b, u) { const A = parseInt(a.slice(1), 16), B = parseInt(b.slice(1), 16), f = sh => Math.round((A >> sh & 255) + ((B >> sh & 255) - (A >> sh & 255)) * u); return `rgb(${f(16)},${f(8)},${f(0)})`; }
-function feastWeights() {   // how far into part 2 and part 3 the camera is (0..1 each: they fade in over half a screen before each border)
-  const cx = cam + VW / 2, w = b => (b ? clamp((cx - b + VW * 0.5) / (VW * 0.5), 0, 1) : 0);
-  return [w(L.fe.parts[0]), w(L.fe.parts[1])];
+function feastWeights() {   // how much of part 2's and part 3's look is showing (0..1 each: the next part's look fades in over half a screen before the end of parts 1 and 2)
+  const cx = cam + VW / 2, w = b => (b ? clamp((cx - b + VW * 0.5) / (VW * 0.5), 0, 1) : 0), p = L.fe.part, b = L.fe.parts[0];
+  return p === 0 ? [w(b), 0] : p === 1 ? [1, w(b)] : [1, 1];
 }
 function feastSky() { const [u, v] = feastWeights(), S = FEAST_SKY; return [0, 1].map(j => (v > 0 ? mixHex(S[1][j], S[2][j], v) : mixHex(S[0][j], S[1][j], u))); }   // (part 3 starts long after part 2)
 function feastHidden() { return !G || !!(G.rescue || G.groom || G.swing || G.raft || G.down || G.dive || G.ride); }   // the walkers wait out of sight
@@ -9105,7 +9146,8 @@ function paradeTick() {   // (update) who joins, Kai's path, everyone walking be
   const p = P, cx = p.x + p.w / 2, feet = p.y + p.h;
   for (const g of fe.guests) g.t++;
   for (const fd of L.squads || []) if (fd.kind === 'turkey' && fd.mood === 'yum' && !fd.joined && fd.moodT > 140) {   // fed right: the turkey comes along
-    fd.joined = true; fe.turkey = true; const g = { kind: 'turkey', x: fd.ax, y: GR * T, state: 'join', face: -1, a: 1, t: 0, delay: 0 };
+    fd.joined = true; fe.turkey = true; if (!feastProg().turkey) { feastProg().turkey = true; save(); }   // (it walks with Kai in the next parts too)
+    const g = { kind: 'turkey', x: fd.ax, y: GR * T, state: 'join', face: -1, a: 1, t: 0, delay: 0 };
     fe.guests.unshift(g); fe.line.push(g); tone(660, 0.12, 'triangle', 0.04, 990);
   }
   const ts = L.stations[fe.travGate];
@@ -9204,7 +9246,7 @@ function drawFeastFront() {   // (render, before Kai) the table and the ones sit
     ctx.fillStyle = '#c0392b'; for (let x = tb.x0 + 12; x < tb.x1 - 16; x += 22) ctx.fillRect(x, top + 4, 10, 3);
     ctx.save(); ctx.translate(kx - 12, top - 2); ctx.scale(1.5, 1.5);   // his bowl and chopsticks, always
     ctx.fillStyle = '#f4f1e8'; ctx.fillRect(0, -8, 16, 8); ctx.fillStyle = '#c9d2de'; ctx.fillRect(3, -1, 10, 1); ctx.fillStyle = '#6e4627'; ctx.fillRect(18, -3, 12, 2); ctx.restore();
-    const n = Math.min(FEAST_GATES, L.stations.filter(z => z.solved).length), spots = feastSpots(tb, kx);   // a dish for every gate opened, between the places
+    const n = feastDishes(), spots = feastSpots(tb, kx);   // a dish for every gate opened, between the places
     for (let k = 0; k < n && spots.length; k++) { ctx.save(); ctx.translate(spots[Math.floor(k * spots.length / n)] - 10, top - 2); ctx.scale(1.5, 1.5); feastDish(ctx, k % 4, 0, 0); ctx.restore(); }
     drawBaked(SENSEI_SPR, 'a', true, { x: fe.sensei - 20, y: g0 - 60, w: 40, h: 60 });   // Sensei at the head of the table
     if (mode === 'win' || mode === 'done') for (let k = 0; k < 3; k++) { const ht = (G.winT || 0) - 20 - k * 30; if (ht > 0 && ht < 120) { ctx.globalAlpha = 1 - ht / 120; heart(fe.sensei - 50 + (k - 1) * 34, g0 - 76 - ht * 0.5, 9, '#ff5a8a'); ctx.globalAlpha = 1; } }
@@ -9225,7 +9267,7 @@ function drawFeastFront() {   // (render, before Kai) the table and the ones sit
 function feastWin() {
   const p = P; p.vx *= 0.8; p.vy = Math.min(p.vy + 0.55, 12); moveX(p); moveY(p); p.face = 1;
   if (G.winT === 20) [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.5, 'triangle', 0.05, null, i * 0.16));
-  if (G.winT === 170) finishLevel();
+  if (G.winT === (L.fe.table ? 170 : 120)) finishLevel();   // (parts 1 and 2: a short stop where the road goes on)
 }
 function feastPicture(cv, n) {   // the end card: the long table by the dojo; Sensei at its head, the travellers, the turkey, Kai, the friends who are home behind them, a dish per gate, and Kuro's place
   if (!cv) return;
@@ -12023,7 +12065,7 @@ const HOMES = {
   },
 };
 function drawGoal() {
-  if (L.fe) { const cx = L.castleC * T; if (cx < cam + VW + 60 && cx + 5 * T > cam - 60) HOMES.japan(cx, GR * T); return; }   // The Feast: no scroll, the dojo behind the table
+  if (L.fe) { const cx = L.castleC * T; if (L.fe.table && cx < cam + VW + 60 && cx + 5 * T > cam - 60) HOMES.japan(cx, GR * T); return; }   // The Feast: no scroll, the dojo behind the table
   const px = L.flagC * T + T / 2, b = L.goalB || GR * T;
   const inside = G && (mode === 'win' || mode === 'done') && P.x > (L.castleC + 2.2) * T;
   if (px > cam - 300 && px < cam + VW + 300) {
@@ -13735,7 +13777,7 @@ function drawHUD() {
   if (G.streak >= 3) { drawPix('flame', 16, 88 + dy, 1.4); hudText(String(G.streak), 40, 99 + dy, 17, '#ffb627'); }   // (a small flame, no words)
   if (G.power) { const pw = POWERS[G.power.kind], f = Math.max(0, G.power.t / (G.power.max || (G.power.max = G.power.t))); drawPix(pw.pix, 18, 112 + dy, 2); ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fillRect(50, 120 + dy, 60, 5); ctx.fillStyle = '#7df9ff'; ctx.fillRect(50, 120 + dy, 60 * f, 5); }
   if (G.time < 240) {   // the level's name, only at the start
-    const label = L.feast ? 'The Feast' : st.boss ? WORLDS[st.w].boss.name : st.name; ctx.globalAlpha = Math.min(1, (240 - G.time) / 60);
+    const label = L.fe ? FEAST_NAMES[L.fe.part] : st.boss ? WORLDS[st.w].boss.name : st.name; ctx.globalAlpha = Math.min(1, (240 - G.time) / 60);
     hudText(label, VW - 70, 26, 18, '#fff', 'right'); ctx.globalAlpha = 1;
   }
 
@@ -13937,7 +13979,7 @@ function showMsg(title, body, btns) {
 function startStage(i) {
   if (typeof famStop === 'function' && famStop()) return;   // the parent page's daily time limit
   if (team && team.run && i !== team.lvl) tmClose(true);   // went to another level: the team run is over
-  if (!(team && team.run) && updateBeforeLeaving(SPECIAL === 'feast' ? 'feast' : i)) return;   // a new version came out during the last level: load it, then this level (or The Feast)
+  if (!(team && team.run) && updateBeforeLeaving(feastPartOf(SPECIAL) >= 0 ? SPECIAL : i)) return;   // a new version came out during the last level: load it, then this level (or that part of The Feast)
   puff();
   const st = STAGES[i], W = WORLDS[st.w];
   RC = null; document.body.classList.remove('racing');
@@ -13947,7 +13989,7 @@ function startStage(i) {
   prog.pickOnce = false; LEVEL_MIX = plan;
   LAYOUT = team && team.run && i === team.lvl && !st.boss ? { easy: !!team.lyEasy } : null;   // team run: both devices build the same level
   L = st.boss ? buildArena(i, prog.easy) : buildLevel(i, prog.easy);
-  if (SPECIAL === 'feast' && !st.boss) { L.feast = true; L.sky = ['#ff9d5c', '#ffe2b8']; ambient.length = 0; } SPECIAL = null;
+  if (L.fe) { L.sky = FEAST_SKY[L.fe.part]; ambient.length = 0; } SPECIAL = null;
   LAYOUT = null;
   LEVEL_MIX = null; FOCUS = false;
   P = { x: 1.5 * T, y: GR * T - 44, w: 24, h: 44, vx: 0, vy: 0, onGround: false, face: 1, inv: 0, anim: 0, coyote: 0, jbuf: 0, throwT: 0 };
@@ -14076,8 +14118,9 @@ function buildMenu() {
   $('packMenu').textContent = `${(prog.gearOwned || []).length}/${Object.keys(GEAR).length}${prog.newPack ? ' ★' : ''}`;
   countUp($('bankMenu'), prog.bank);
   // The world map: four coloured zones with a winding path; Kai stands on the newest level.
-  $('special').innerHTML = feastOpen() ? `<button type="button" class="feasttile" id="feastBtn"><b>The Feast</b><small>${prog.badges.thankful ? 'Play it again' : 'A special level'}</small></button>` : '';
-  if ($('feastBtn')) $('feastBtn').onclick = () => { audio(); startFeast(); };
+  $('special').innerHTML = feastOpen() ? `<div class="feastrow">${FEAST_NAMES.map((nm, p) => { const open = feastOpenPart(p), done = feastProg().done[p];   // The Road to the Feast: three parts, each opens when the one before is finished
+    return `<button type="button" class="feasttile${open ? '' : ' locked'}" id="feastBtn${p + 1}"${open ? '' : ' disabled'}><small>${p + 1}</small><b>${nm}</b><i>${done ? pixImg('check', 'pix sm') : open ? '' : pixImg('lock', 'pix sm')}</i></button>`; }).join('')}</div>` : '';
+  FEAST_NAMES.forEach((_, p) => { const b = $('feastBtn' + (p + 1)); if (b && feastOpenPart(p)) b.onclick = () => { audio(); startFeast(p); }; });
   const box = $('worlds'); box.innerHTML = '';
   const open = unlockedCount(), here = Math.min(open - 1, STAGES.length - 1);
   const DECOR = [['blossom', 'torii', 'blossom'], ['volcano', 'flame', 'volcano'], ['gear', 'bolt', 'gear'], ['flake', 'pine', 'flake'], ['fish', 'gem', 'fish'], ['cactus', 'arch', 'cactus'], ['moon', 'pagoda', 'star']];
@@ -14578,6 +14621,7 @@ const PIX = {
   help: ['..wwwwwwww', '.wwwwwwwwww', '.wwwbbbbwww', '.wwwwwwbwww', '.wwwwwbbwww', '.wwwwbbwwww', '.wwwwbwwwww', '.wwwwwwwwww', '.wwwwbwwwww', '..wwwwwwww', '....ww', '...w'],
   flame: ['.....r', '....rr', '....rrr.r', '...rryrrrr', '..rryyyrrr', '..ryyyyyrr', '.rryyWyyyr', '.ryyWWWyyr', '.ryyWWWyyrr', '.rryyWyyyr', '..rryyyyr', '...rrrrr'],
   compass: ['....oooo', '..oowwwwoo', '.owwwwrwwwo', '.owwwwrrwwo', 'owwwwrrwwwwo', 'owwwwrwwwwwo', 'owwwwwbwwwwo', 'owwwwbbwwwwo', '.owwbbwwwwo', '.owwwbwwwwo', '..oowwwwoo', '....oooo'],
+  check: ['.........LL', '........LLL', '.......LLL', 'LL....LLL', 'LLL..LLL', '.LLLLLL', '..LLLL', '...LL'],
   lock: ['....gggg', '...g....g', '...g....g', '...g....g', '..yyyyyyyy', '..yYYYYYYy', '..yYYddYYy', '..yYYddYYy', '..yYYYdYYy', '..yYYYYYYy', '..yyyyyyyy'],
   blossom: ['.....pp', '....pPPp', '..pp.pp.pp', '.pPPp..pPPp', '.pPPpyypPPp', '..pp.yy.pp', '....pppp', '...pPPPPp', '...pPPPPp', '....pppp'],
   torii: ['rrrrrrrrrrrr', '.rrrrrrrrrr', '..r......r', '.rrrrrrrrrr', '..r......r', '..r......r', '..r......r', '..r......r', '..r......r', '..r......r', '.dd......dd'],
@@ -16982,7 +17026,7 @@ function reloadNow(there, resume) {
 }
 function updateBeforeLeaving(resume) { if (!updateReady) return false; reloadNow(updateReady, resume); return true; }
 checkUpdate();
-{ const rs = sessionStorage.getItem('mn-resume'); sessionStorage.removeItem('mn-resume'); const i = Number(rs); if (rs === 'feast') startFeast(); else if (rs !== null && i >= 0 && i < STAGES.length) startStage(i); }   // just updated after a level: on to the level the kid picked
+{ const rs = sessionStorage.getItem('mn-resume'); sessionStorage.removeItem('mn-resume'); const i = Number(rs); if (rs === 'feast') startFeast(); else if (feastPartOf(rs) >= 0) startFeast(feastPartOf(rs)); else if (rs !== null && i >= 0 && i < STAGES.length) startStage(i); }   // just updated after a level: on to the level the kid picked
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
 requestAnimationFrame(frame);
 })();
