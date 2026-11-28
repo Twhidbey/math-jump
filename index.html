@@ -699,7 +699,7 @@
   </div>
   <div id="special"></div>
   <div class="worlds" id="worlds"></div>
-  <div class="build">Updated Nov 26, 2026 · The Feast is now three short levels (through Sunday)</div>
+  <div class="build">Updated Nov 28, 2026 · Math level needs the parent PIN; Easier math has a floor</div>
 </div>
 
 <div id="settings" class="overlay hidden">
@@ -3506,14 +3506,19 @@ const trackMem = () => prog.gtrack || (prog.gtrack = { last: null, adj: {}, seen
 // Easier math (owner, Nov 11 2026: a 1st grader got discouraged): each kind's skills easy to hard across all grades,
 // so a step back can drop below the kid's grade (Add to 10 after 1st grade's first Add). tm.down[track] = steps back
 // the kid asked for; a great round on that kind takes one back off (trackRound).
+const EASIER_MAX = 2;
 function easierSkill(id, n) {
   const cat = SKILL[id].cat, lad = [];
   GRADES.forEach((g, gi) => gradeTracks(gi).forEach(t => t.ids.forEach(s => { if (SKILL[s].cat === cat && !lad.includes(s)) lad.push(s); })));
   let i = lad.indexOf(id);
+  n = Math.min(n, EASIER_MAX);
   if (i < 0) { const pi = PATH.indexOf(id); return pi < 0 ? id : PATH[Math.max(0, pi - n)]; }
-  return lad[Math.max(0, i - n)];
+  // A floor (owner, Nov 28 2026: a kid rode Easier math down to adding to 5): at most two steps back, and never below
+  // one step under the first skill of this kind in the kid's own grade.
+  const g = GRADE[curPlayer().grade], f0 = g ? gradeTracks(GRADES.indexOf(g)).flatMap(t => t.ids).find(s => SKILL[s].cat === cat) : null, fi = f0 ? lad.indexOf(f0) : 0;
+  return lad[Math.max(Math.min(i, Math.max(0, fi - 1)), i - n)];   // (one step below the grade's first skill is allowed: a kid new to the grade can still get relief)
 }
-const downOf = (tm, track) => (tm.down && tm.down[track]) || 0;
+const downOf = (tm, track) => Math.min(EASIER_MAX, (tm.down && tm.down[track]) || 0);   // (older saves may hold more steps)
 // Each world favours one kind of math: level 1 is only that kind (at the kid's spot in it, a step up after a great
 // level, a step back after a hard one), levels 2 and 3 and the boss mix: 40% the world's kind (at least 10 points over an
 // even share, so 60/40 with two kinds), the rest shared by the
@@ -3638,7 +3643,7 @@ function trackRound(skill, how) {
     const n = b.right + b.wrong; if (n < 4) continue;
     const rate = b.right / n, quick = b.right ? b.fast / b.right : 0, x = plan && plan.sts.find(y => y.t.name === track);
     if (rate >= 0.9 && quick >= 0.7 && downOf(tm, track)) {   // easier math went great: one step back up
-      tm.down[track]--;
+      tm.down[track] = downOf(tm, track) - 1;
       const id = x && !x.done ? (tm.down[track] ? easierSkill(x.t.ids[x.f], tm.down[track]) : x.t.ids[x.f]) : null;
       if (id) lines.push(`${pixImg('star', 'pix sm')} Great job! Next time: <b>${SKILL[id].name}</b>`);
     } else if (rate >= 0.9 && quick >= 0.7) {
@@ -14169,7 +14174,10 @@ function confirmStage(i) {
 
 // The skill picker: tabs for each kind of math, every skill showing its stars, gem bonus and best medal.
 let skillsThen = null, skillTab = null;
-function openSkills(then) {
+// On a game linked to a parent page, the math picker, Reset progress and Unlock all levels ask for the parent PIN
+// (owner, Nov 28 2026: a kid set himself back to adding to 5). famAsk says yes straight away when nothing is linked.
+async function openSkills(then, asked) {
+  if (!asked && !(await famAsk('change the math'))) { (then || toMenu)(); return; }
   skillsThen = then; skillTab = curSkill().cat;
   hide('menu'); hide('msg'); renderSkills(); show('skills');
 }
@@ -14204,7 +14212,7 @@ function renderSkills() {
     if (mine) b.classList.add('grade');
     const kp = skillProgress(k);
     b.innerHTML = `${prog.trophies[k.id] ? `<span class="ttag">${pixSm('trophy')}</span>` : ''}${mine ? `<span class="gtag">${g.id === 'K' ? 'K' : g.name.split(' ')[0]}</span>` : ''}<span class="sn">${k.name} ${medal}</span><span class="se">like ${k.ex}</span><span class="st">${stars(k.tier)}</span><span class="sm">${gemSm()} ×${TIER_GEMS[k.tier - 1]} · ${pixSm('book')} ${kp.learned}/${kp.n}</span>`;
-    b.onclick = () => { audio(); prog.skill = k.id; prog.pickOnce = !!prog.auto; save(); hide('skills'); (skillsThen || toMenu)(); };
+    b.onclick = () => { audio(); prog.skill = k.id; prog.downN = 0; prog.pickOnce = !!prog.auto; save(); hide('skills'); (skillsThen || toMenu)(); };
     $('skillGrid').appendChild(b);
   }
 }
@@ -14547,10 +14555,10 @@ function makeEasier() {
   let moved = false;
   if (now && now.stage === i && prog.auto) {
     tm.down = tm.down || {};
-    for (const m of now.mix) if (m.skill && easierSkill(m.skill, 1) !== m.skill) { tm.down[m.track] = downOf(tm, m.track) + 1; moved = true; }
+    for (const m of now.mix) if (m.skill && downOf(tm, m.track) < EASIER_MAX && easierSkill(m.skill, 1) !== m.skill) { tm.down[m.track] = downOf(tm, m.track) + 1; moved = true; }
   } else {
-    const e = easierSkill(prog.skill, 1);
-    if (e !== prog.skill) { prog.skill = e; prog.pickOnce = !!prog.auto; moved = true; }
+    const e = (prog.downN || 0) < EASIER_MAX ? easierSkill(prog.skill, 1) : prog.skill;   // (hand-picked math: two steps at most, until a grown-up picks again)
+    if (e !== prog.skill) { prog.skill = e; prog.downN = (prog.downN || 0) + 1; prog.pickOnce = !!prog.auto; moved = true; }
   }
   save();
   if (moved) {
@@ -14592,10 +14600,10 @@ $('wkSkip').onclick = () => { audio(); closeWork(); };
 $('musicBtn').onclick = () => { audio(); setMusic(!musicOn); };
 $('easyBtn').onclick = () => setEasy(!prog.easy);
 $('safeBtn').onclick = () => setSafe(!prog.safe);
-$('unlockBtn').onclick = () => setAllOpen(!prog.allOpen);
+$('unlockBtn').onclick = async () => { if (await famAsk(prog.allOpen ? 'lock the levels' : 'unlock all levels')) setAllOpen(!prog.allOpen); };
 $('storyBtn').onclick = () => { hide('settings'); storyBook(0); };
 $('skillChip').onclick = () => { audio(); openSkills(toMenu); };
-$('mathBtn').onclick = () => { audio(); hide('settings'); openSkills(toMenu); };   // (the math chip left the home screen: kids don't change it; grown-ups find it here)
+$('mathBtn').onclick = async () => { audio(); if (!(await famAsk('change the math'))) return; hide('settings'); openSkills(toMenu, true); };   // (the math chip left the home screen: kids don't change it; grown-ups find it here)
 $('autoBtn').onclick = () => { audio(); prog.auto = !prog.auto; save(); renderSkills(); };
 
 // ---------------------------------------------------------------- pixel icons for the menus
@@ -16372,7 +16380,7 @@ $('pSave').onclick = () => {
   if (editing) {
     const gradeChanged = editing.grade !== pickGrade;
     Object.assign(editing, { name, grade: pickGrade, icon: pickIcon });
-    if (gradeChanged && g && editing.id === players.cur) { prog.skill = g.skill; prog.gtrack = null; prog.trackNow = null; if (g.easy !== null) setEasy(g.easy); save(); }
+    if (gradeChanged && g && editing.id === players.cur) { prog.skill = g.skill; prog.downN = 0; prog.gtrack = null; prog.trackNow = null; if (g.easy !== null) setEasy(g.easy); save(); }
     else if (gradeChanged && g) {   // update the other player's save directly
       const k = keyFor(editing.id);
       try { const s = JSON.parse(localStorage.getItem(k)) || freshProg(); s.skill = g.skill; s.gtrack = null; s.trackNow = null; if (g.easy !== null) s.easy = g.easy; localStorage.setItem(k, JSON.stringify(s)); } catch (e) { /* no storage */ }
@@ -16466,7 +16474,8 @@ $('settingsBtn').onclick = () => { audio(); hide('menu'); show('settings'); };
 $('settingsClose').onclick = () => { hide('settings'); buildMenu(); show('menu'); };
 $('helpBtn').onclick = () => { audio(); hide('settings'); showHowTo(); };   // (How to play lives in Settings now)
 $('demoBtn').onclick = () => { audio(); prog.demos = {}; save(); $('demoBtn').textContent = '👻 Will show again'; };   // the ghost Kai demos play again
-$('resetBtn').onclick = () => {
+$('resetBtn').onclick = async () => {
+  if (!(await famAsk('reset progress'))) return;
   if (confirm(`Reset ${curPlayer().name}'s belts, points and unlocked levels?`)) { prog.best = {}; prog.mastery = {}; prog.seenWorld = {}; setAllOpen(false); }
 };
 $('pauseBtn').onclick = togglePause;

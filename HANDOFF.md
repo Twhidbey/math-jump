@@ -2,6 +2,10 @@
 
 Everything is in `index.html`. `CLAUDE.md` is the short index of the code notes and records the owner's decisions; the detail per area is in `docs/` (open only the file for the area you are changing); older history is in `docs/HISTORY.md`; `STORY.md` is the story text; `README.md` is for people; `MATH_GOALS.md` holds the math-learning ideas. Work on **`main`** of this repo (`Twhidbey/math-jump`) and push there: pushing IS publishing (GitHub Pages). After every change: update the build stamp (search `class="build"`), commit, push, and tell the owner it's live (bump `?v=` on the link if the phone shows the old one). This repo is public: keep personal details out of the notes.
 
+## Newest (Nov 28 2026): kids can't set the math down themselves
+
+Owner: a kid ended up on adding to 5. Easier math now stops after two steps and near the kid's grade (old saves are capped too), and Math level / Reset progress / Unlock all levels ask for the parent PIN on a linked game. See "Easier math" in `docs/math.md`. Offered, not chosen: a Math level control on the parent page.
+
 ## Newest (Nov 26 2026): The Feast is three short levels
 
 Owner: "Let's split - it's more fun that way". Three home tiles (The Harvest, The Travellers, The Feast), 6 gates each, opened in order; the turkey and travellers carry over (`prog.feast`), the table and the Thankful badge come at the end of part 3. See "The Feast" in `docs/levels.md`. Live on `main`. Not yet played on a real phone.
